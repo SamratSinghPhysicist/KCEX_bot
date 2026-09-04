@@ -483,6 +483,18 @@ def prompt_stop_loss(
             else:
                 target_p = val
 
+            # Check liquidation conflict
+            mmr = contract.maintenance_margin_ratio if contract.maintenance_margin_ratio > 0 else 0.01
+            buf_pct = max(0.0001, (1.0 / leverage) - mmr)
+            buf_ticks = int(round((cur_price * buf_pct) / pu))
+            sl_dist_ticks = abs(cur_price - target_p) / pu
+            if sl_dist_ticks >= buf_ticks:
+                print(f"    {Style.BG_RED}{Style.BOLD} ⚠️ CONFLICT: Requested SL is beyond Liquidation (~{buf_ticks} ticks away at {leverage}x)! {Style.RESET}")
+                print(f"    {Style.RED}   At {leverage}x leverage, max possible SL is ~{int(buf_ticks * 0.8)} ticks before liquidation occurs.{Style.RESET}")
+                retry = input("    Do you want to re-enter a tighter SL? [Y/n]: ").strip().lower()
+                if retry not in ("n", "no"):
+                    continue
+
             print(f"    {Style.RED}✓ SL Target Price: {target_p:.{ps}f} USDT{Style.RESET} (At current ref price {cur_price:.{ps}f})")
             return chosen_mode, val
         except ValueError:

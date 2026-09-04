@@ -1316,25 +1316,31 @@ class MasterplanStrategy:
             # Liquidation price for Long: Entry * (1 - 1/leverage + mmr)
             approx_liq = entry_price * (1.0 - (1.0 / float(max(1, leverage))) + mmr)
             if sl_price <= approx_liq:
-                clamped_sl = approx_liq + (2 * price_unit)
-                # Ensure clamped SL is below entry
-                if clamped_sl < entry_price:
-                    logger.warning(
-                        f"Liquidation Guard: Requested SL {sl_price:.{precision}f} was at/past liq price {approx_liq:.{precision}f}. Clamped to {clamped_sl:.{precision}f}."
-                    )
-                    sl_price = clamped_sl
+                # Clamp safely within 85% of liquidation distance
+                clamped_sl = entry_price - (entry_price - approx_liq) * 0.85
+                clamped_sl = min(clamped_sl, entry_price - price_unit)
+                clamped_ticks = int(round((entry_price - clamped_sl) / price_unit))
+                max_liq_ticks = (entry_price - approx_liq) / price_unit
+                logger.warning(
+                    f"Liquidation Guard: Requested SL {sl_price:.{precision}f} was past liq price {approx_liq:.{precision}f} "
+                    f"(Total liq buffer is only ~{max_liq_ticks:.1f} ticks at {leverage}x). Clamped safely to {clamped_sl:.{precision}f} (~{clamped_ticks} ticks)."
+                )
+                sl_price = clamped_sl
         else:
             sl_price = entry_price + price_offset
             # Liquidation price for Short: Entry * (1 + 1/leverage - mmr)
             approx_liq = entry_price * (1.0 + (1.0 / float(max(1, leverage))) - mmr)
             if sl_price >= approx_liq:
-                clamped_sl = approx_liq - (2 * price_unit)
-                # Ensure clamped SL is above entry
-                if clamped_sl > entry_price:
-                    logger.warning(
-                        f"Liquidation Guard: Requested SL {sl_price:.{precision}f} was at/past liq price {approx_liq:.{precision}f}. Clamped to {clamped_sl:.{precision}f}."
-                    )
-                    sl_price = clamped_sl
+                # Clamp safely within 85% of liquidation distance
+                clamped_sl = entry_price + (approx_liq - entry_price) * 0.85
+                clamped_sl = max(clamped_sl, entry_price + price_unit)
+                clamped_ticks = int(round((clamped_sl - entry_price) / price_unit))
+                max_liq_ticks = (approx_liq - entry_price) / price_unit
+                logger.warning(
+                    f"Liquidation Guard: Requested SL {sl_price:.{precision}f} was past liq price {approx_liq:.{precision}f} "
+                    f"(Total liq buffer is only ~{max_liq_ticks:.1f} ticks at {leverage}x). Clamped safely to {clamped_sl:.{precision}f} (~{clamped_ticks} ticks)."
+                )
+                sl_price = clamped_sl
 
         return round(sl_price, precision)
 
@@ -1342,17 +1348,24 @@ class MasterplanStrategy:
         self,
         direction: OrderDirection,
         current_price: float,
-        min_profit_tp_price: float
+        min_profit_tp_price: float,
+        entry_price: Optional[float] = None
     ) -> bool:
         """
-        Checks if current market price is already at or better than minimum profit TP:
-        - For Long:  current_price >= min_profit_tp_price
-        - For Short: current_price <= min_profit_tp_price
+        Checks if current market/executable price is already at or better than minimum profit TP:
+        - For Long:  current_price >= min_profit_tp_price (and strictly > entry_price if given)
+        - For Short: current_price <= min_profit_tp_price (and strictly < entry_price if given)
         """
         if direction == OrderDirection.LONG:
-            return current_price >= min_profit_tp_price
+            is_hit = current_price >= min_profit_tp_price
+            if entry_price is not None:
+                is_hit = is_hit and (current_price > entry_price)
+            return is_hit
         else:
-            return current_price <= min_profit_tp_price
+            is_hit = current_price <= min_profit_tp_price
+            if entry_price is not None:
+                is_hit = is_hit and (current_price < entry_price)
+            return is_hit
 
     def get_signal(self) -> Optional[TradeSignal]:
         """Polls active sub-strategy for next entry signal."""

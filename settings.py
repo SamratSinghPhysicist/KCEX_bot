@@ -136,12 +136,12 @@ SL_PRICE_PCT = 0.5
 # ⚠️ CRITICAL LEVERAGE & LIQUIDATION BUFFER CHEAT SHEET (TRUMP_USDT at 2.35 USDT):
 #   Leverage | Liq Distance | Safe SL Max | 10% ROE Move | Margin (1 contract)
 #   ---------+--------------+-------------+--------------+--------------------
-#     75x    |  7.8 ticks   |   5 ticks   |  3.1 ticks   | 0.0031 USDT (INR 0.30)
-#     50x    | 23.5 ticks   |  15 ticks   |  4.7 ticks   | 0.0047 USDT (INR 0.44)
-#     30x    | 54.8 ticks   |  35 ticks   |  7.8 ticks   | 0.0079 USDT (INR 0.75) [Recommended]
-#     20x    | 94.0 ticks   |  60 ticks   | 11.8 ticks   | 0.0118 USDT (INR 1.11)
+#     75x    |  11.0 ticks  |   6 ticks   |  3.1 ticks   | 0.0031 USDT (INR 0.30) [Extreme risk]
+#     50x    |  28.0 ticks  |  18 ticks   |  4.7 ticks   | 0.0047 USDT (INR 0.44)
+#     30x    |  53.0 ticks  |  35 ticks   |  7.8 ticks   | 0.0079 USDT (INR 0.75) [Recommended]
+#     20x    |  89.0 ticks  |  65 ticks   | 11.8 ticks   | 0.0118 USDT (INR 1.11)
 #     10x    | 211.5 ticks  | 150 ticks   | 23.5 ticks   | 0.0235 USDT (INR 2.22)
-LEVERAGE = 75
+LEVERAGE = 30
 
 # Margin mode: True for Isolated (openType=1), False for Cross (openType=2).
 # Isolated margin is strongly recommended to restrict risk strictly to position margin.

@@ -416,16 +416,14 @@ class TradeExecutionEngine:
         cs = contract.contract_size
         underlying_qty = vol_contracts * cs
 
-        self.logger.info("Submitting live MARKET order with attached TP & SL...")
+        self.logger.info("Submitting live MARKET order...")
         order_res = self.trader.create_order(
             symbol=symbol,
             side=side_str,
             vol_contracts=vol_contracts,
             order_type="MARKET",
             leverage=leverage,
-            is_isolated=self.config.is_isolated,
-            take_profit_price=est_tp,
-            stop_loss_price=est_sl
+            is_isolated=self.config.is_isolated
         )
 
         data = order_res.get("data", {})
@@ -472,14 +470,34 @@ class TradeExecutionEngine:
             f"Exact Min-Profit TP = {exact_tp:.{ps}f} USDT | Exact SL = {exact_sl:.{ps}f} USDT"
         )
 
-        # Check immediate profit close condition
-        ticker = self.market.get_ticker(symbol)
-        current_price = float(ticker.get("lastPrice", entry_price))
+        # Register server-side position TP/SL with exact prices
+        if position_id:
+            try:
+                self.trader.set_position_tp_sl(
+                    symbol=symbol,
+                    position_id=position_id,
+                    take_profit_price=exact_tp,
+                    stop_loss_price=exact_sl
+                )
+                self.logger.info(f"Server-side position TP/SL registered: TP {exact_tp:.{ps}f}, SL {exact_sl:.{ps}f}")
+            except Exception as e:
+                self.logger.warning("Note: Server-side stoporder registration: %s", e)
 
-        if self.strategy.is_better_than_min_profit(direction, current_price, exact_tp):
+        # Check immediate profit close condition using executable price (bid for LONG, ask for SHORT)
+        ticker = self.market.get_ticker(symbol)
+        last_p = float(ticker.get("lastPrice", entry_price))
+        bid1 = float(ticker.get("bid1", 0.0))
+        ask1 = float(ticker.get("ask1", 0.0))
+        exec_price = (bid1 if bid1 > 0 else last_p) if direction == OrderDirection.LONG else (ask1 if ask1 > 0 else last_p)
+
+        exit_price = last_p
+        exit_reason = ExitReason.UNKNOWN
+        close_order_id = None
+
+        if self.strategy.is_better_than_min_profit(direction, exec_price, exact_tp, entry_price=entry_price):
             op_sym = ">=" if direction == OrderDirection.LONG else "<="
             self.logger.info(
-                f"[IMMEDIATE PROFIT TRIGGER] Current price ({current_price:.{ps}f} USDT) is already {op_sym} "
+                f"[IMMEDIATE PROFIT TRIGGER] Executable price ({exec_price:.{ps}f} USDT) is already {op_sym} "
                 f"Min-Profit TP ({exact_tp:.{ps}f} USDT)! Closing immediately..."
             )
             close_res = self.trader.close_position(
@@ -490,26 +508,13 @@ class TradeExecutionEngine:
                 leverage=leverage,
                 is_isolated=self.config.is_isolated,
                 is_market=True,
-                price=current_price
+                price=exec_price
             )
             close_order_id = str(close_res.get("data", {}).get("orderId") or "")
-            exit_price = current_price
+            exit_price = exec_price
             exit_reason = ExitReason.IMMEDIATE_PROFIT_CLOSE
             time.sleep(0.5)
         else:
-            # If not immediately closed, verify or update the position TP/SL
-            if position_id and (abs(exact_tp - est_tp) > 1e-6 or abs(exact_sl - est_sl) > 1e-6):
-                try:
-                    self.trader.set_position_tp_sl(
-                        symbol=symbol,
-                        position_id=position_id,
-                        take_profit_price=exact_tp,
-                        stop_loss_price=exact_sl
-                    )
-                    self.logger.info(f"Updated server-side position TP/SL to exact: TP {exact_tp}, SL {exact_sl}")
-                except Exception as e:
-                    self.logger.warning("Note: Stoporder update skipped or already active: %s", e)
-
             # Active position monitoring loop
             self.logger.info("Entering active position monitoring loop...")
             exit_price, exit_reason, close_order_id = self._monitor_live_position(
@@ -520,7 +525,8 @@ class TradeExecutionEngine:
                 leverage=leverage,
                 exact_tp=exact_tp,
                 exact_sl=exact_sl,
-                precision=ps
+                precision=ps,
+                entry_price=entry_price
             )
 
         close_time = time.time()
@@ -536,7 +542,8 @@ class TradeExecutionEngine:
                 entry_price=entry_price,
                 pu=pu,
                 default_exit_price=exit_price,
-                initial_reason=exit_reason if exit_reason != ExitReason.UNKNOWN else None
+                initial_reason=exit_reason if exit_reason != ExitReason.UNKNOWN else None,
+                open_time=open_time
             )
         )
 
@@ -634,7 +641,8 @@ class TradeExecutionEngine:
         entry_price: float,
         pu: float,
         default_exit_price: float,
-        initial_reason: Optional[ExitReason] = None
+        initial_reason: Optional[ExitReason] = None,
+        open_time: Optional[float] = None
     ) -> tuple[float, float, ExitReason, Optional[str], Optional[int]]:
         """
         Queries KCEX history_orders and history_positions to reliably determine
@@ -650,6 +658,7 @@ class TradeExecutionEngine:
         reconciled_pos_id = position_id
 
         closing_side = 4 if direction == OrderDirection.LONG else 2
+        min_ts = int((open_time - 5.0) * 1000) if open_time else 0
 
         # 1. Query order history for the closing order
         try:
@@ -663,6 +672,9 @@ class TradeExecutionEngine:
 
             for o in orders:
                 if o.get("side") == closing_side and float(o.get("dealVol", 0)) > 0:
+                    order_time = int(o.get("createTime", 0) or o.get("updateTime", 0))
+                    if min_ts > 0 and order_time > 0 and order_time < min_ts:
+                        continue
                     close_order_id = str(o.get("orderId"))
                     deal_price = float(o.get("dealAvgPrice") or o.get("price") or 0.0)
                     if deal_price > 0:
@@ -672,13 +684,13 @@ class TradeExecutionEngine:
                         reconciled_pos_id = int(o.get("positionId"))
 
                     external_oid = str(o.get("externalOid") or "")
-                    if "TAKE_PROFIT" in external_oid:
-                        exit_reason = ExitReason.MIN_PROFIT_TP_HIT
-                    elif "STOP_LOSS" in external_oid:
-                        exit_reason = ExitReason.STOP_LOSS_HIT
-                    elif realized_pnl > 0:
+                    if realized_pnl > 0:
                         exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                     elif realized_pnl < 0:
+                        exit_reason = ExitReason.STOP_LOSS_HIT
+                    elif "TAKE_PROFIT" in external_oid:
+                        exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                    elif "STOP_LOSS" in external_oid:
                         exit_reason = ExitReason.STOP_LOSS_HIT
                     break
         except Exception as e:
@@ -735,11 +747,13 @@ class TradeExecutionEngine:
         leverage: int,
         exact_tp: float,
         exact_sl: float,
-        precision: int = 4
+        precision: int = 4,
+        entry_price: Optional[float] = None
     ) -> tuple[float, ExitReason, Optional[str]]:
         """
         Polls ticker and open positions until the position closes.
-        Triggers instant market close if price reaches Min-Profit TP.
+        Prioritizes server-side TP/SL stoporder execution, using executable bid/ask
+        for immediate local profit close safeguards.
         """
         side_str = "LONG" if direction == OrderDirection.LONG else "SHORT"
         close_order_id = None
@@ -748,20 +762,42 @@ class TradeExecutionEngine:
         while not self._shutdown_requested:
             time.sleep(self.config.poll_interval_seconds)
 
-            # 1. Fetch latest price
+            # 1. Fetch latest price & executable bid/ask prices
             try:
                 ticker = self.market.get_ticker(symbol)
                 current_price = float(ticker.get("lastPrice") or ticker.get("fairPrice", 0.0))
+                bid1 = float(ticker.get("bid1", 0.0))
+                ask1 = float(ticker.get("ask1", 0.0))
                 last_seen_price = current_price
             except Exception as e:
                 self.logger.debug("Ticker poll error: %s", e)
                 continue
 
-            # 2. Check if current price is at or better than Min-Profit TP
-            if self.strategy.is_better_than_min_profit(direction, current_price, exact_tp):
+            # 2. Check if position closed via server-side attached TP or SL first
+            try:
+                open_pos = self.trader.get_open_positions(symbol)
+                pos_still_open = False
+                for p in open_pos:
+                    if position_id and int(p.get("positionId", 0)) == int(position_id):
+                        if float(p.get("holdVol", 0)) > 0:
+                            pos_still_open = True
+                            break
+                    elif float(p.get("holdVol", 0)) > 0:
+                        pos_still_open = True
+                        break
+
+                if not pos_still_open:
+                    self.logger.info("Position closed on KCEX. Reconciling fill records...")
+                    return last_seen_price, ExitReason.UNKNOWN, None
+            except Exception as e:
+                self.logger.debug("Position check error: %s", e)
+
+            # 3. Check if executable price reached Min-Profit TP (bid for LONG, ask for SHORT)
+            exec_price = (bid1 if bid1 > 0 else current_price) if direction == OrderDirection.LONG else (ask1 if ask1 > 0 else current_price)
+            if self.strategy.is_better_than_min_profit(direction, exec_price, exact_tp, entry_price=entry_price):
                 op_sym = ">=" if direction == OrderDirection.LONG else "<="
                 self.logger.info(
-                    f"[IMMEDIATE PROFIT TRIGGER] Price reached Min-Profit TP: {current_price:.{precision}f} USDT {op_sym} {exact_tp:.{precision}f} USDT. "
+                    f"[IMMEDIATE PROFIT TRIGGER] Executable price ({exec_price:.{precision}f} USDT) reached Min-Profit TP: {op_sym} {exact_tp:.{precision}f} USDT. "
                     f"Executing market close..."
                 )
                 try:
@@ -773,10 +809,10 @@ class TradeExecutionEngine:
                         leverage=leverage,
                         is_isolated=self.config.is_isolated,
                         is_market=True,
-                        price=current_price
+                        price=exec_price
                     )
                     close_order_id = str(res.get("data", {}).get("orderId") or "")
-                    return current_price, ExitReason.IMMEDIATE_PROFIT_CLOSE, close_order_id
+                    return exec_price, ExitReason.IMMEDIATE_PROFIT_CLOSE, close_order_id
                 except Exception as e:
                     self.logger.warning("Market close error (position may already be closed by TP): %s", e)
 

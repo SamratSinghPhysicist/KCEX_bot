@@ -465,24 +465,66 @@ def prompt_user_settings():
 
     # 7. Leverage
     max_l = contract.max_leverage if contract else 75
+    mmr_ratio = contract.maintenance_margin_ratio if contract and contract.maintenance_margin_ratio > 0 else 0.01
+
     print(f"\n7. Position Leverage (Isolated Margin, Max allowed for {sym_val}: {max_l}x):")
     if contract and last_snap_price > 0 and pu_val > 0:
-        pct_30 = (1.0 / min(30, max_l)) * 100
+        pct_30 = max(0.001, (1.0 / min(30, max_l) - mmr_ratio)) * 100
         ticks_30 = int((last_snap_price * (pct_30 / 100)) / pu_val)
-        print("   ⚠️ Leverage & Liquidation Buffer Guide:")
+        print("   ⚠️ True Liquidation Buffer Guide (Including Maintenance Margin):")
         if max_l >= 75:
-            pct_75 = (1.0 / 75) * 100
+            pct_75 = max(0.001, (1.0 / 75 - mmr_ratio)) * 100
             ticks_75 = int((last_snap_price * (pct_75 / 100)) / pu_val)
-            print(f"      75x -> Liquidation is ~{ticks_75} ticks away (~{pct_75:.2f}% price move).")
-        print(f"      30x -> Liquidation is ~{ticks_30} ticks away (~{pct_30:.2f}% price move) [Recommended].")
+            print(f"      75x -> Liquidation is ONLY ~{ticks_75} ticks away (~{pct_75:.2f}% price move). Max safe SL: ~{int(ticks_75*0.8)} ticks. [EXTREME RISK]")
+        print(f"      30x -> Liquidation is ~{ticks_30} ticks away (~{pct_30:.2f}% price move). Max safe SL: ~{int(ticks_30*0.8)} ticks. [RECOMMENDED]")
     else:
-        print("   ⚠️ Leverage & Liquidation Buffer Guide:")
+        print("   ⚠️ True Liquidation Buffer Guide:")
         print("      30x -> Safe liquidation buffer (recommended).")
+
     lev_str = input(f"   Leverage Multiplier [default: {min(default_lev, max_l)}x]: ").strip()
     try:
         lev_val = int(lev_str) if lev_str else min(default_lev, max_l)
     except ValueError:
         lev_val = min(default_lev, max_l)
+
+    # Validate Stop Loss distance against chosen leverage
+    if last_snap_price > 0 and pu_val > 0:
+        cur_buf_pct = max(0.001, (1.0 / lev_val - mmr_ratio)) * 100
+        cur_buf_ticks = int((last_snap_price * (cur_buf_pct / 100)) / pu_val)
+        max_safe_sl_ticks = max(2, int(cur_buf_ticks * 0.80))
+
+        user_sl_ticks = None
+        if sl_mode_val == "TICKS" and sl_ticks_val:
+            user_sl_ticks = sl_ticks_val
+        elif sl_mode_val == "PRICE_PCT" and sl_price_val:
+            user_sl_ticks = int((last_snap_price * (sl_price_val / 100.0)) / pu_val)
+        elif sl_mode_val == "ROE" and sl_roe_val:
+            user_sl_ticks = int((last_snap_price * ((sl_roe_val / lev_val) / 100.0)) / pu_val)
+
+        if user_sl_ticks and user_sl_ticks >= cur_buf_ticks:
+            print(f"\n   ⚠️  CRITICAL CONFLICT: STOP LOSS BEYOND LIQUIDATION!")
+            print(f"   At {lev_val}x leverage, the total liquidation distance is only ~{cur_buf_ticks} ticks!")
+            print(f"   Your requested Stop Loss of {user_sl_ticks} ticks cannot be placed without being liquidated first.")
+            print(f"   Max safe Stop Loss at {lev_val}x leverage is {max_safe_sl_ticks} ticks.")
+
+            denom = (user_sl_ticks * pu_val / last_snap_price) / 0.80 + mmr_ratio
+            safe_lev_for_sl = max(1, min(max_l, int(1.0 / denom))) if denom > 0 else 20
+            rec_lev = min(30, max(1, safe_lev_for_sl))
+            print(f"   To keep your {user_sl_ticks}-tick Stop Loss, leverage must be reduced to <= {safe_lev_for_sl}x (e.g. {rec_lev}x).")
+
+            print("\n   Resolution Options:")
+            print(f"   [1] Reduce leverage to {rec_lev}x (keeps your full {user_sl_ticks}-tick SL) [Recommended]")
+            print(f"   [2] Keep {lev_val}x leverage and tighten SL to safe max ({max_safe_sl_ticks} ticks)")
+            res_choice = input(f"   Select option [default: 1]: ").strip()
+            if res_choice == "2":
+                sl_mode_val = "TICKS"
+                sl_ticks_val = max_safe_sl_ticks
+                sl_roe_val = None
+                sl_price_val = None
+                print(f"   ✓ Stop loss tightened to {max_safe_sl_ticks} ticks at {lev_val}x leverage.")
+            else:
+                lev_val = rec_lev
+                print(f"   ✓ Leverage set to {lev_val}x (retaining your {user_sl_ticks}-tick Stop Loss with safe buffer).")
 
     # 8. Cooldown
     print("\n8. Post-Trade Cooldown:")
