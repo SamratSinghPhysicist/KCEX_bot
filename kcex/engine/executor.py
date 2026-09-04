@@ -84,6 +84,7 @@ class TradeExecutionEngine:
         self.trade_counter: int = 0
         self._current_position_id: Optional[int] = None
         self._shutdown_requested: bool = False
+        self.simulated_balance_usdt: Optional[float] = None
 
     def stop(self) -> None:
         """Requests graceful engine stop."""
@@ -710,9 +711,20 @@ class TradeExecutionEngine:
         cs = contract.contract_size
         underlying_qty = vol_contracts * cs
 
-        # Live ticker entry
+        # 1. Realistic Entry Price from Orderbook Taker Fill:
+        # Long market orders execute against best ask (ask1).
+        # Short market orders execute against best bid (bid1).
         ticker = self.market.get_ticker(symbol)
-        entry_price = float(ticker.get("lastPrice", 2.377))
+        last_price = float(ticker.get("lastPrice", 0.0) or ticker.get("fairPrice", 1.0))
+        ask1 = float(ticker.get("ask1", 0.0) or last_price)
+        bid1 = float(ticker.get("bid1", 0.0) or last_price)
+
+        if direction == OrderDirection.LONG:
+            entry_price = ask1 if ask1 > 0 else last_price
+        else:
+            entry_price = bid1 if bid1 > 0 else last_price
+
+        entry_price = round(entry_price, contract.price_precision)
 
         exact_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
@@ -743,14 +755,93 @@ class TradeExecutionEngine:
             f"Min-Profit TP = {exact_tp:.4f} USDT (+{self.config.tp_ticks} pu) | SL = {exact_sl:.4f} USDT ({sl_desc})"
         )
 
-        # Simulate monitoring with live market tick or fast execution
-        # Check if immediate profit applies or simulate quick exit at min-profit TP
-        time.sleep(1.0)
-        exit_price = exact_tp
-        exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+        # 2. Check immediate profit condition at fill
+        if self.strategy.is_better_than_min_profit(direction, entry_price, exact_tp):
+            self.logger.info(
+                f"[DRY-RUN] Immediate profit condition met at fill: {entry_price:.4f} >= TP {exact_tp:.4f}"
+            )
+            exit_price = exact_tp
+            exit_reason = ExitReason.IMMEDIATE_PROFIT_CLOSE
+        else:
+            # 3. Active Real-Time Market Monitoring Loop
+            self.logger.info(
+                f"[DRY-RUN] Actively monitoring live market prices for TP ({exact_tp:.4f}) or SL ({exact_sl:.4f})..."
+            )
+            exit_price = entry_price
+            exit_reason = ExitReason.UNKNOWN
+            poll_count = 0
+
+            while not self._shutdown_requested:
+                time.sleep(self.config.poll_interval_seconds)
+                poll_count += 1
+
+                try:
+                    cur_ticker = self.market.get_ticker(symbol)
+                    cur_last = float(cur_ticker.get("lastPrice", 0.0) or cur_ticker.get("fairPrice", 0.0))
+                    cur_bid = float(cur_ticker.get("bid1", 0.0) or cur_last)
+                    cur_ask = float(cur_ticker.get("ask1", 0.0) or cur_last)
+                except Exception as e:
+                    self.logger.debug("Dry-run ticker fetch error: %s", e)
+                    continue
+
+                # For LONG: Close fills by selling at best bid (bid1) or last trade
+                if direction == OrderDirection.LONG:
+                    effective_close_price = cur_bid
+                    # TP check
+                    if effective_close_price >= exact_tp or cur_last >= exact_tp:
+                        exit_price = exact_tp
+                        exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                        self.logger.info(
+                            f"[DRY-RUN TARGET HIT] Market reached TP! Exit: {exit_price:.4f} USDT (Market Bid: {cur_bid:.4f}, Last: {cur_last:.4f})"
+                        )
+                        break
+                    # SL check
+                    elif effective_close_price <= exact_sl or cur_last <= exact_sl:
+                        exit_price = exact_sl
+                        exit_reason = ExitReason.STOP_LOSS_HIT
+                        self.logger.info(
+                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.4f} USDT (Market Bid: {cur_bid:.4f}, Last: {cur_last:.4f})"
+                        )
+                        break
+
+                # For SHORT: Close fills by buying back at best ask (ask1) or last trade
+                else:
+                    effective_close_price = cur_ask
+                    # TP check
+                    if effective_close_price <= exact_tp or cur_last <= exact_tp:
+                        exit_price = exact_tp
+                        exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                        self.logger.info(
+                            f"[DRY-RUN TARGET HIT] Market reached TP! Exit: {exit_price:.4f} USDT (Market Ask: {cur_ask:.4f}, Last: {cur_last:.4f})"
+                        )
+                        break
+                    # SL check
+                    elif effective_close_price >= exact_sl or cur_last >= exact_sl:
+                        exit_price = exact_sl
+                        exit_reason = ExitReason.STOP_LOSS_HIT
+                        self.logger.info(
+                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.4f} USDT (Market Ask: {cur_ask:.4f}, Last: {cur_last:.4f})"
+                        )
+                        break
+
+                # Periodic status report every ~4 seconds
+                poll_interval = max(0.1, self.config.poll_interval_seconds)
+                status_freq = int(max(1, 4.0 / poll_interval))
+                if poll_count % status_freq == 0:
+                    u_diff = (effective_close_price - entry_price) if direction == OrderDirection.LONG else (entry_price - effective_close_price)
+                    u_pnl = underlying_qty * u_diff
+                    self.logger.info(
+                        f"[DRY-RUN MONITOR] Price: {effective_close_price:.4f} USDT | TP: {exact_tp:.4f} | SL: {exact_sl:.4f} | "
+                        f"Unrealized PnL: {'+' if u_pnl >= 0 else ''}{u_pnl:.6f} USDT"
+                    )
+
+            if self._shutdown_requested and exit_reason == ExitReason.UNKNOWN:
+                exit_price = last_price
+                exit_reason = ExitReason.MANUAL_CLOSE
+                self.logger.warning("[DRY-RUN] Manual close requested during trade.")
 
         close_time = time.time()
-        duration = max(1.0, close_time - open_time)
+        duration = max(0.1, close_time - open_time)
 
         price_diff = (exit_price - entry_price) if direction == OrderDirection.LONG else (entry_price - exit_price)
         realized_pnl_usdt = underlying_qty * price_diff
@@ -764,19 +855,24 @@ class TradeExecutionEngine:
         roe_pct = (realized_pnl_usdt / margin_usdt) * 100.0 if margin_usdt > 0 else 0.0
         pnl_pct = (price_diff / entry_price) * 100.0 if entry_price > 0 else 0.0
 
-        # Check wallet balance if authenticated
-        balance_after_usdt = None
-        balance_after_inr = None
-        if self.client.config.is_authenticated:
-            try:
-                balances = self.trader.get_usdt_balance()
-                balance_after_usdt = balances.get("available_usdt", 0.0)
-                balance_after_inr = balances.get("available_inr", 0.0)
-                self.logger.info(
-                    f"[WALLET BALANCE] Available: {balance_after_usdt:.4f} USDT (INR {balance_after_inr:.2f})"
-                )
-            except Exception:
-                pass
+        # Virtual Simulated Balance Tracking:
+        # Tracks realistic balance progression across simulation cycles
+        if self.simulated_balance_usdt is None:
+            if self.client.config.is_authenticated:
+                try:
+                    balances = self.trader.get_usdt_balance()
+                    self.simulated_balance_usdt = float(balances.get("available_usdt", 10.0))
+                except Exception:
+                    self.simulated_balance_usdt = 10.0
+            else:
+                self.simulated_balance_usdt = 10.0
+
+        self.simulated_balance_usdt += realized_pnl_usdt
+        balance_after_usdt = self.simulated_balance_usdt
+        balance_after_inr = balance_after_usdt * inr_rate
+        self.logger.info(
+            f"[SIMULATED WALLET] Balance: {balance_after_usdt:.4f} USDT (INR {balance_after_inr:.2f})"
+        )
 
         return TradeOutcome(
             trade_id=trade_id,

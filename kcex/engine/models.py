@@ -123,8 +123,12 @@ class TradeOutcome:
         return self.realized_pnl_usdt > 0.0
 
     @property
+    def is_loss(self) -> bool:
+        return self.realized_pnl_usdt < -1e-8
+
+    @property
     def is_scratch(self) -> bool:
-        return abs(self.realized_pnl_usdt) < 1e-8
+        return abs(self.realized_pnl_usdt) <= 1e-8
 
 
 @dataclass

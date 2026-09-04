@@ -34,3 +34,39 @@ Traceback (most recent call last):
   File "E:\CODE_AREA\My_Bots\Trading\KCEX\test_engine.py", line 219, in test_logger_kwargs_and_exc_info
     raise ValueError("Test simulation error")
 ValueError: Test simulation error
+2026-09-04 12:35:15 [ERROR  ] Caught error: Test simulation error
+Traceback (most recent call last):
+  File "E:\CODE_AREA\My_Bots\Trading\KCEX\test_engine.py", line 219, in test_logger_kwargs_and_exc_info
+    raise ValueError("Test simulation error")
+ValueError: Test simulation error
+2026-09-04 12:35:15 [WARNING] Warning test: Test simulation error
+2026-09-04 12:35:15 [INFO   ] Info test: Test simulation error
+2026-09-04 12:35:15 [ERROR  ] Exception test: Test simulation error
+Traceback (most recent call last):
+  File "E:\CODE_AREA\My_Bots\Trading\KCEX\test_engine.py", line 219, in test_logger_kwargs_and_exc_info
+    raise ValueError("Test simulation error")
+ValueError: Test simulation error
+2026-09-04 12:36:03 [ERROR  ] Caught error: Test simulation error
+Traceback (most recent call last):
+  File "E:\CODE_AREA\My_Bots\Trading\KCEX\test_engine.py", line 219, in test_logger_kwargs_and_exc_info
+    raise ValueError("Test simulation error")
+ValueError: Test simulation error
+2026-09-04 12:36:03 [WARNING] Warning test: Test simulation error
+2026-09-04 12:36:03 [INFO   ] Info test: Test simulation error
+2026-09-04 12:36:03 [ERROR  ] Exception test: Test simulation error
+Traceback (most recent call last):
+  File "E:\CODE_AREA\My_Bots\Trading\KCEX\test_engine.py", line 219, in test_logger_kwargs_and_exc_info
+    raise ValueError("Test simulation error")
+ValueError: Test simulation error
+2026-09-04 12:36:32 [ERROR  ] Caught error: Test simulation error
+Traceback (most recent call last):
+  File "E:\CODE_AREA\My_Bots\Trading\KCEX\test_engine.py", line 219, in test_logger_kwargs_and_exc_info
+    raise ValueError("Test simulation error")
+ValueError: Test simulation error
+2026-09-04 12:36:32 [WARNING] Warning test: Test simulation error
+2026-09-04 12:36:32 [INFO   ] Info test: Test simulation error
+2026-09-04 12:36:32 [ERROR  ] Exception test: Test simulation error
+Traceback (most recent call last):
+  File "E:\CODE_AREA\My_Bots\Trading\KCEX\test_engine.py", line 219, in test_logger_kwargs_and_exc_info
+    raise ValueError("Test simulation error")
+ValueError: Test simulation error

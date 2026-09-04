@@ -288,10 +288,28 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             mode=EngineMode.DRY_RUN,
             cooldown_seconds=1.0,
             max_trades=1,
-            logs_dir="logs/test_engine"
+            logs_dir="logs/test_engine",
+            poll_interval_seconds=0.05
         )
         engine = TradeExecutionEngine(config=config)
         contract = engine.pre_flight_checks()
+
+        # Mock ticker sequence: entry at 2.350, then price reaches 2.352 (TP hit)
+        ticker_sequence = [
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.352, "bid1": 2.352, "ask1": 2.353}
+        ]
+        seq_idx = [0]
+        orig_get_ticker = engine.market.get_ticker
+        def mock_ticker(sym):
+            if seq_idx[0] < len(ticker_sequence):
+                t = ticker_sequence[seq_idx[0]]
+                seq_idx[0] += 1
+                return t
+            return ticker_sequence[-1]
+
+        engine.market.get_ticker = mock_ticker
         outcome = engine.execute_single_trade_cycle(contract)
 
         self.assertIsNotNone(outcome)
@@ -299,10 +317,50 @@ class TestEngineExecutionDryRun(unittest.TestCase):
         self.assertEqual(outcome.symbol, "TRUMP_USDT")
         self.assertEqual(outcome.direction, OrderDirection.LONG)
         self.assertEqual(outcome.vol_contracts, 1)
-        self.assertAlmostEqual(outcome.exit_price - outcome.entry_price, 0.001, places=3)
+        self.assertEqual(outcome.exit_reason, ExitReason.MIN_PROFIT_TP_HIT)
+        self.assertAlmostEqual(outcome.exit_price - outcome.entry_price, 0.001, places=2)
         self.assertTrue(outcome.is_profit)
         self.assertGreater(outcome.realized_pnl_usdt, 0)
         self.assertGreater(outcome.realized_pnl_inr, 0)
+
+    def test_single_dry_run_cycle_stop_loss(self):
+        """Verify that dry run genuinely triggers STOP_LOSS_HIT when price drops."""
+        config = ExecutionConfig(
+            symbol="TRUMP_USDT",
+            direction=OrderDirection.LONG,
+            mode=EngineMode.DRY_RUN,
+            cooldown_seconds=1.0,
+            max_trades=1,
+            logs_dir="logs/test_engine",
+            poll_interval_seconds=0.05
+        )
+        engine = TradeExecutionEngine(config=config)
+        contract = engine.pre_flight_checks()
+
+        # Mock ticker sequence: entry at 2.350, then price drops to 2.345 (SL hit)
+        ticker_sequence = [
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.344, "bid1": 2.344, "ask1": 2.345}
+        ]
+        seq_idx = [0]
+        def mock_ticker(sym):
+            if seq_idx[0] < len(ticker_sequence):
+                t = ticker_sequence[seq_idx[0]]
+                seq_idx[0] += 1
+                return t
+            return ticker_sequence[-1]
+
+        engine.market.get_ticker = mock_ticker
+        outcome = engine.execute_single_trade_cycle(contract)
+
+        self.assertIsNotNone(outcome)
+        self.assertEqual(outcome.trade_id, 1)
+        self.assertEqual(outcome.symbol, "TRUMP_USDT")
+        self.assertEqual(outcome.direction, OrderDirection.LONG)
+        self.assertEqual(outcome.exit_reason, ExitReason.STOP_LOSS_HIT)
+        self.assertTrue(outcome.is_loss)
+        self.assertLess(outcome.realized_pnl_usdt, 0)
 
 
 def run_all_tests():

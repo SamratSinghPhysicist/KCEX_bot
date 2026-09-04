@@ -253,3 +253,268 @@ Net Cumulative PnL : +0.000100 USDT (+INR 0.0094)
 Live USD/INR Rate  : INR 94.46 per USD
 ==============================================================================
 
+2026-09-04 12:35:15 [INFO   ] ============================================================================
+2026-09-04 12:35:15 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 12:35:15 [INFO   ] ============================================================================
+2026-09-04 12:35:15 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 12:35:16 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 12:35:16 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 12:35:16 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 12:35:16 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 12:35:16 [INFO   ] Sub-strategy: DirectionalCycle
+2026-09-04 12:35:16 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 12:35:16 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 12:35:16 [INFO   ] Stop Loss rule: -10.0% ROE on margin
+2026-09-04 12:35:16 [INFO   ] Post-trade cooldown: 1.0s
+2026-09-04 12:35:16 [INFO   ] ============================================================================
+2026-09-04 12:35:16 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 12:35:16 [INFO   ] ============================================================================
+2026-09-04 12:35:16 [INFO   ] ============================================================================
+2026-09-04 12:35:16 [INFO   ]    EXECUTING TRADE #1 [LONG] - TRUMP_USDT
+2026-09-04 12:35:16 [INFO   ] ============================================================================
+2026-09-04 12:35:16 [INFO   ] Pre-Trade Spec: Vol: 1 contract (0.1 coins) | Est Notional: +0.2350 USDT (+INR 22.19) | Est Margin: +0.0031 USDT (+INR 0.30)
+2026-09-04 12:35:16 [INFO   ] Reference Price: 2.3500 USDT | Attached Min-Profit TP: 2.3510 USDT (+1 pu) | Attached SL: 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:35:16 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.3500 USDT | Min-Profit TP = 2.3510 USDT (+1 pu) | SL = 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:35:16 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.3510) or SL (2.3470)...
+2026-09-04 12:35:17 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.3510 USDT (Market Bid: 2.3520, Last: 2.3520)
+2026-09-04 12:35:18 [INFO   ] [SIMULATED WALLET] Balance: 0.0751 USDT (INR 7.09)
+2026-09-04 12:35:18 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 12:35:17 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2350 USDT (INR 22.19)
+Margin Committed   : 0.0031 USDT (INR 0.30)
+Entry Price        : 2.3500 USDT (Opened: 2026-09-04 12:35:16)
+Exit Price         : 2.3510 USDT (Duration: 0.10s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3510 USDT (Offset: +1 pu / +0.0010 USDT)
+Stop Loss Level    : 2.3470 USDT (Offset: -3 pu / -0.0030 USDT | -0.128% price | -9.6% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0094)
+Return on Equity   : +3.19% (Price move: +0.043%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0751 USDT (INR 7.09)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0094)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 12:36:04 [INFO   ] ============================================================================
+2026-09-04 12:36:04 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 12:36:04 [INFO   ] ============================================================================
+2026-09-04 12:36:04 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 12:36:04 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 12:36:05 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 12:36:05 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 12:36:05 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 12:36:05 [INFO   ] Sub-strategy: DirectionalCycle
+2026-09-04 12:36:05 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 12:36:05 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 12:36:05 [INFO   ] Stop Loss rule: -10.0% ROE on margin
+2026-09-04 12:36:05 [INFO   ] Post-trade cooldown: 1.0s
+2026-09-04 12:36:05 [INFO   ] ============================================================================
+2026-09-04 12:36:05 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 12:36:05 [INFO   ] ============================================================================
+2026-09-04 12:36:05 [INFO   ] ============================================================================
+2026-09-04 12:36:05 [INFO   ]    EXECUTING TRADE #1 [LONG] - TRUMP_USDT
+2026-09-04 12:36:05 [INFO   ] ============================================================================
+2026-09-04 12:36:05 [INFO   ] Pre-Trade Spec: Vol: 1 contract (0.1 coins) | Est Notional: +0.2350 USDT (+INR 22.19) | Est Margin: +0.0031 USDT (+INR 0.30)
+2026-09-04 12:36:05 [INFO   ] Reference Price: 2.3500 USDT | Attached Min-Profit TP: 2.3510 USDT (+1 pu) | Attached SL: 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:05 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.3500 USDT | Min-Profit TP = 2.3510 USDT (+1 pu) | SL = 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:05 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.3510) or SL (2.3470)...
+2026-09-04 12:36:05 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.3510 USDT (Market Bid: 2.3520, Last: 2.3520)
+2026-09-04 12:36:06 [INFO   ] [SIMULATED WALLET] Balance: 0.0751 USDT (INR 7.09)
+2026-09-04 12:36:06 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 12:36:05 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2350 USDT (INR 22.19)
+Margin Committed   : 0.0031 USDT (INR 0.30)
+Entry Price        : 2.3500 USDT (Opened: 2026-09-04 12:36:05)
+Exit Price         : 2.3510 USDT (Duration: 0.14s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3510 USDT (Offset: +1 pu / +0.0010 USDT)
+Stop Loss Level    : 2.3470 USDT (Offset: -3 pu / -0.0030 USDT | -0.128% price | -9.6% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0094)
+Return on Equity   : +3.19% (Price move: +0.043%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0751 USDT (INR 7.09)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0094)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 12:36:06 [INFO   ] ============================================================================
+2026-09-04 12:36:06 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 12:36:06 [INFO   ] ============================================================================
+2026-09-04 12:36:06 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 12:36:06 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 12:36:07 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 12:36:07 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 12:36:07 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 12:36:07 [INFO   ] Sub-strategy: DirectionalCycle
+2026-09-04 12:36:07 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 12:36:07 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 12:36:07 [INFO   ] Stop Loss rule: -10.0% ROE on margin
+2026-09-04 12:36:07 [INFO   ] Post-trade cooldown: 1.0s
+2026-09-04 12:36:07 [INFO   ] ============================================================================
+2026-09-04 12:36:07 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 12:36:07 [INFO   ] ============================================================================
+2026-09-04 12:36:07 [INFO   ] ============================================================================
+2026-09-04 12:36:07 [INFO   ]    EXECUTING TRADE #1 [LONG] - TRUMP_USDT
+2026-09-04 12:36:07 [INFO   ] ============================================================================
+2026-09-04 12:36:07 [INFO   ] Pre-Trade Spec: Vol: 1 contract (0.1 coins) | Est Notional: +0.2350 USDT (+INR 22.19) | Est Margin: +0.0031 USDT (+INR 0.30)
+2026-09-04 12:36:07 [INFO   ] Reference Price: 2.3500 USDT | Attached Min-Profit TP: 2.3510 USDT (+1 pu) | Attached SL: 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:07 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.3500 USDT | Min-Profit TP = 2.3510 USDT (+1 pu) | SL = 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:07 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.3510) or SL (2.3470)...
+2026-09-04 12:36:07 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.3470 USDT (Market Bid: 2.3440, Last: 2.3440)
+2026-09-04 12:36:08 [INFO   ] [SIMULATED WALLET] Balance: 0.0747 USDT (INR 7.05)
+2026-09-04 12:36:08 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 12:36:07 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2350 USDT (INR 22.19)
+Margin Committed   : 0.0031 USDT (INR 0.30)
+Entry Price        : 2.3500 USDT (Opened: 2026-09-04 12:36:07)
+Exit Price         : 2.3470 USDT (Duration: 0.10s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3510 USDT (Offset: +1 pu / +0.0010 USDT)
+Stop Loss Level    : 2.3470 USDT (Offset: -3 pu / -0.0030 USDT | -0.128% price | -9.6% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.000300 USDT (INR -0.0283)
+Return on Equity   : -9.57% (Price move: -0.128%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0747 USDT (INR 7.05)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 1 | Scratch: 0
+Win Rate           : 0.0%
+Net Cumulative PnL : -0.000300 USDT (INR -0.0283)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 12:36:33 [INFO   ] ============================================================================
+2026-09-04 12:36:33 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 12:36:33 [INFO   ] ============================================================================
+2026-09-04 12:36:33 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 12:36:33 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 12:36:34 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 12:36:34 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 12:36:34 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 12:36:34 [INFO   ] Sub-strategy: DirectionalCycle
+2026-09-04 12:36:34 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 12:36:34 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 12:36:34 [INFO   ] Stop Loss rule: -10.0% ROE on margin
+2026-09-04 12:36:34 [INFO   ] Post-trade cooldown: 1.0s
+2026-09-04 12:36:34 [INFO   ] ============================================================================
+2026-09-04 12:36:34 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 12:36:34 [INFO   ] ============================================================================
+2026-09-04 12:36:34 [INFO   ] ============================================================================
+2026-09-04 12:36:34 [INFO   ]    EXECUTING TRADE #1 [LONG] - TRUMP_USDT
+2026-09-04 12:36:34 [INFO   ] ============================================================================
+2026-09-04 12:36:34 [INFO   ] Pre-Trade Spec: Vol: 1 contract (0.1 coins) | Est Notional: +0.2350 USDT (+INR 22.19) | Est Margin: +0.0031 USDT (+INR 0.30)
+2026-09-04 12:36:34 [INFO   ] Reference Price: 2.3500 USDT | Attached Min-Profit TP: 2.3510 USDT (+1 pu) | Attached SL: 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:34 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.3500 USDT | Min-Profit TP = 2.3510 USDT (+1 pu) | SL = 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:34 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.3510) or SL (2.3470)...
+2026-09-04 12:36:34 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.3510 USDT (Market Bid: 2.3520, Last: 2.3520)
+2026-09-04 12:36:35 [INFO   ] [SIMULATED WALLET] Balance: 0.0751 USDT (INR 7.09)
+2026-09-04 12:36:35 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 12:36:34 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2350 USDT (INR 22.19)
+Margin Committed   : 0.0031 USDT (INR 0.30)
+Entry Price        : 2.3500 USDT (Opened: 2026-09-04 12:36:34)
+Exit Price         : 2.3510 USDT (Duration: 0.10s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3510 USDT (Offset: +1 pu / +0.0010 USDT)
+Stop Loss Level    : 2.3470 USDT (Offset: -3 pu / -0.0030 USDT | -0.128% price | -9.6% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0094)
+Return on Equity   : +3.19% (Price move: +0.043%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0751 USDT (INR 7.09)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0094)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 12:36:35 [INFO   ] ============================================================================
+2026-09-04 12:36:35 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 12:36:35 [INFO   ] ============================================================================
+2026-09-04 12:36:35 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 12:36:36 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 12:36:36 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 12:36:36 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 12:36:36 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 12:36:36 [INFO   ] Sub-strategy: DirectionalCycle
+2026-09-04 12:36:36 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 12:36:36 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 12:36:36 [INFO   ] Stop Loss rule: -10.0% ROE on margin
+2026-09-04 12:36:36 [INFO   ] Post-trade cooldown: 1.0s
+2026-09-04 12:36:36 [INFO   ] ============================================================================
+2026-09-04 12:36:36 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 12:36:36 [INFO   ] ============================================================================
+2026-09-04 12:36:36 [INFO   ] ============================================================================
+2026-09-04 12:36:36 [INFO   ]    EXECUTING TRADE #1 [LONG] - TRUMP_USDT
+2026-09-04 12:36:36 [INFO   ] ============================================================================
+2026-09-04 12:36:36 [INFO   ] Pre-Trade Spec: Vol: 1 contract (0.1 coins) | Est Notional: +0.2350 USDT (+INR 22.19) | Est Margin: +0.0031 USDT (+INR 0.30)
+2026-09-04 12:36:36 [INFO   ] Reference Price: 2.3500 USDT | Attached Min-Profit TP: 2.3510 USDT (+1 pu) | Attached SL: 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:36 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.3500 USDT | Min-Profit TP = 2.3510 USDT (+1 pu) | SL = 2.3470 USDT (-10.0% ROE)
+2026-09-04 12:36:36 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.3510) or SL (2.3470)...
+2026-09-04 12:36:36 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.3470 USDT (Market Bid: 2.3440, Last: 2.3440)
+2026-09-04 12:36:37 [INFO   ] [SIMULATED WALLET] Balance: 0.0747 USDT (INR 7.05)
+2026-09-04 12:36:37 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 12:36:36 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2350 USDT (INR 22.19)
+Margin Committed   : 0.0031 USDT (INR 0.30)
+Entry Price        : 2.3500 USDT (Opened: 2026-09-04 12:36:36)
+Exit Price         : 2.3470 USDT (Duration: 0.10s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3510 USDT (Offset: +1 pu / +0.0010 USDT)
+Stop Loss Level    : 2.3470 USDT (Offset: -3 pu / -0.0030 USDT | -0.128% price | -9.6% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.000300 USDT (INR -0.0283)
+Return on Equity   : -9.57% (Price move: -0.128%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0747 USDT (INR 7.05)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 1 | Scratch: 0
+Win Rate           : 0.0%
+Net Cumulative PnL : -0.000300 USDT (INR -0.0283)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
