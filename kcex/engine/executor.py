@@ -35,7 +35,11 @@ from kcex.engine.models import (
     ExecutionConfig
 )
 from kcex.engine.logger import DualCurrencyLogger, TradeOutcomeLogger
-from kcex.engine.strategy import MasterplanStrategy, DirectionalCycleSubStrategy
+from kcex.engine.strategy import (
+    MasterplanStrategy,
+    DirectionalCycleSubStrategy,
+    MicrostructureSubStrategy
+)
 
 
 class TradeExecutionEngine:
@@ -70,15 +74,32 @@ class TradeExecutionEngine:
             jsonl_file=f"{self.config.logs_dir}/{self.config.outcomes_jsonl_file}"
         )
 
-        # Strategy
-        self.strategy = strategy or MasterplanStrategy(
-            market=self.market,
-            config=self.config,
-            sub_strategy=DirectionalCycleSubStrategy(
-                direction=self.config.direction,
-                cooldown_seconds=self.config.cooldown_seconds
+        # Strategy Selection
+        if strategy is not None:
+            self.strategy = strategy
+        else:
+            strat_mode = getattr(self.config, "strategy_mode", "MICROSTRUCTURE") or "MICROSTRUCTURE"
+            if str(strat_mode).upper() == "MICROSTRUCTURE":
+                pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
+                sub_strat = MicrostructureSubStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    preferred_direction=pref_dir,
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    tp_ticks=self.config.tp_ticks,
+                    dynamic_tp=getattr(self.config, "dynamic_tp", False)
+                )
+            else:
+                sub_strat = DirectionalCycleSubStrategy(
+                    direction=self.config.direction,
+                    cooldown_seconds=self.config.cooldown_seconds
+                )
+            self.strategy = MasterplanStrategy(
+                market=self.market,
+                config=self.config,
+                sub_strategy=sub_strat
             )
-        )
+
 
         self.running: bool = False
         self.trade_counter: int = 0
@@ -90,7 +111,12 @@ class TradeExecutionEngine:
         """Requests graceful engine stop."""
         self._shutdown_requested = True
         self.running = False
+        try:
+            self.strategy.stop()
+        except Exception:
+            pass
         self.logger.info("Graceful shutdown requested...")
+
 
     # =========================================================================
     # PRE-FLIGHT VERIFICATIONS
@@ -225,6 +251,26 @@ class TradeExecutionEngine:
 
         self.logger.section(f"EXECUTING TRADE #{trade_id} [{direction.value}] - {symbol}")
 
+        # Determine effective TP ticks:
+        # If dynamic_tp is enabled, use the signal's target_ticks (from confluence strength)
+        # Otherwise, strictly enforce the user's configured tp_ticks (e.g. 1 pu)
+        if getattr(self.config, "dynamic_tp", False) and "target_ticks" in signal.metadata:
+            target_tp_ticks = int(signal.metadata["target_ticks"])
+        else:
+            target_tp_ticks = int(self.config.tp_ticks)
+
+        if "agreeing_signals" in signal.metadata:
+            agreeing = signal.metadata.get("agreeing_signals", [])
+            obi_z = signal.metadata.get("obi_z", 0.0)
+            delta_z = signal.metadata.get("delta_z", 0.0)
+            vamp_z = signal.metadata.get("vamp_z", 0.0)
+            rec = signal.metadata.get("delta_recency", 0.0)
+            tp_desc = f"+{target_tp_ticks} pu ticks" if not getattr(self.config, "dynamic_tp", False) else f"+{target_tp_ticks} pu ticks (dynamic)"
+            self.logger.info(
+                f"[MICROSTRUCTURE TRIGGER] Confluence: {agreeing} | Target TP: {tp_desc} | "
+                f"OBI z={obi_z:+.2f} | Delta z={delta_z:+.2f} (rec={rec:.2f}) | VAMP z={vamp_z:+.2f}"
+            )
+
         # Get fresh market snapshot
         ticker = self.market.get_ticker(symbol)
         last_price = float(ticker.get("lastPrice", 0.0) or ticker.get("fairPrice", 1.0))
@@ -240,7 +286,7 @@ class TradeExecutionEngine:
             direction=direction,
             entry_price=ref_price,
             price_unit=pu,
-            tp_ticks=self.config.tp_ticks,
+            tp_ticks=target_tp_ticks,
             precision=ps
         )
         est_sl = self.strategy.calculate_stop_loss(
@@ -272,7 +318,7 @@ class TradeExecutionEngine:
         )
         self.logger.info(
             f"Reference Price: {ref_price:.{ps}f} USDT | "
-            f"Attached Min-Profit TP: {est_tp:.{ps}f} USDT (+{self.config.tp_ticks} pu) | "
+            f"Attached Min-Profit TP: {est_tp:.{ps}f} USDT (+{target_tp_ticks} pu) | "
             f"Attached SL: {est_sl:.{ps}f} USDT ({sl_desc})"
         )
 
@@ -301,8 +347,10 @@ class TradeExecutionEngine:
                 vol_contracts=vol_contracts,
                 leverage=leverage,
                 open_time=open_time,
-                sub_strategy_name=signal.sub_strategy_name
+                sub_strategy_name=signal.sub_strategy_name,
+                target_tp_ticks=target_tp_ticks
             )
+
 
         if outcome:
             # Output and record outcome
@@ -745,7 +793,8 @@ class TradeExecutionEngine:
         vol_contracts: int,
         leverage: int,
         open_time: float,
-        sub_strategy_name: str
+        sub_strategy_name: str,
+        target_tp_ticks: Optional[int] = None
     ) -> TradeOutcome:
         """
         High-fidelity DRY-RUN execution simulation using live market ticker data.
@@ -770,11 +819,12 @@ class TradeExecutionEngine:
 
         entry_price = round(entry_price, contract.price_precision)
 
+        effective_tp_ticks = target_tp_ticks if target_tp_ticks is not None else self.config.tp_ticks
         exact_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
             entry_price=entry_price,
             price_unit=pu,
-            tp_ticks=self.config.tp_ticks,
+            tp_ticks=effective_tp_ticks,
             precision=contract.price_precision
         )
         exact_sl = self.strategy.calculate_stop_loss(
@@ -799,8 +849,9 @@ class TradeExecutionEngine:
 
         self.logger.info(
             f"[DRY-RUN] Simulated Order Filled: Entry = {entry_price:.{ps}f} USDT | "
-            f"Min-Profit TP = {exact_tp:.{ps}f} USDT (+{self.config.tp_ticks} pu) | SL = {exact_sl:.{ps}f} USDT ({sl_desc})"
+            f"Min-Profit TP = {exact_tp:.{ps}f} USDT (+{effective_tp_ticks} pu) | SL = {exact_sl:.{ps}f} USDT ({sl_desc})"
         )
+
 
         # 2. Check immediate profit condition at fill
         if self.strategy.is_better_than_min_profit(direction, entry_price, exact_tp):
@@ -990,9 +1041,11 @@ class TradeExecutionEngine:
 
         contract = self.pre_flight_checks()
 
+        self.strategy.start()
         self.logger.info("Starting Masterplan Automated Execution Loop...")
         self.logger.info(f"Target Trades: {self.config.max_trades if self.config.max_trades > 0 else 'Unlimited'}")
 
+        last_diag_log = 0.0
         try:
             while self.running and not self._shutdown_requested:
                 # Check max trades
@@ -1006,7 +1059,7 @@ class TradeExecutionEngine:
                 if self._shutdown_requested:
                     break
 
-                # Post-trade Cooldown (default 30 seconds)
+                # Post-trade Cooldown
                 if outcome:
                     cooldown = self.config.cooldown_seconds
                     self.logger.info(f"Initiating {cooldown:.0f}s cooldown before next trade cycle...")
@@ -1016,14 +1069,34 @@ class TradeExecutionEngine:
                         if remaining > 0 and remaining % 10 == 0:
                             self.logger.info(f"Cooldown active: {remaining}s remaining...")
                         time.sleep(1.0)
+                else:
+                    # Log periodic microstructure diagnostics while hunting for entry signal
+                    now = time.time()
+                    if now - last_diag_log >= 4.0:
+                        last_diag_log = now
+                        diag = self.strategy.get_diagnostics()
+                        if diag and "obi_z" in diag:
+                            feed_info = diag.get("feed", {})
+                            ws_status = "LIVE WS" if feed_info.get("connected") else "CONNECTING"
+                            b_bid = f"{diag.get('best_bid'):.{contract.price_precision}f}" if diag.get('best_bid') else "N/A"
+                            b_ask = f"{diag.get('best_ask'):.{contract.price_precision}f}" if diag.get('best_ask') else "N/A"
+                            self.logger.info(
+                                f"[HUNTING ENTRY] {ws_status} | Bid/Ask: {b_bid} / {b_ask} (Spread: {diag.get('spread_ticks', 0):.1f} pu) | "
+                                f"OBI z={diag.get('obi_z', 0):+.2f} | Delta z={diag.get('delta_z', 0):+.2f} | VAMP z={diag.get('vamp_z', 0):+.2f}"
+                            )
 
-                time.sleep(0.5)
+                time.sleep(0.3)
 
         except Exception as e:
             self.logger.error("Unexpected error in execution loop: %s", e, exc_info=True)
         finally:
             self.running = False
+            try:
+                self.strategy.stop()
+            except Exception:
+                pass
             self.logger.section("ENGINE EXECUTION SESSION ENDED")
+
             stats = self.outcome_logger.cumulative
             self.logger.info(
                 f"Total Trades Completed: {stats.total_trades} | "

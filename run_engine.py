@@ -115,20 +115,8 @@ def prompt_user_settings():
     else:
         mode_val = EngineMode.LIVE if default_mode == "live" else EngineMode.DRY_RUN
 
-    # 2. Direction
-    print("\n2. Order Direction:")
-    print("   [1] LONG  -> Profit when price rises.")
-    print("   [2] SHORT -> Profit when price drops.")
-    dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
-    if dir_str == "2" or dir_str.upper() == "SHORT":
-        dir_val = OrderDirection.SHORT
-    elif dir_str == "1" or dir_str.upper() == "LONG":
-        dir_val = OrderDirection.LONG
-    else:
-        dir_val = OrderDirection.LONG if default_dir == "LONG" else OrderDirection.SHORT
-
-    # 3. Trading Pair
-    print("\n3. Trading Pair:")
+    # 2. Trading Pair
+    print("\n2. Trading Pair:")
     print("   Enter any KCEX futures pair (e.g. TRUMP_USDT, DOGE_USDT, BTC_USDT, ETH_USDT, SOL_USDT, etc.)")
     print("   Note: Pairs like TRUMP_USDT and DOGE_USDT enjoy 0% maker and 0% taker fees on KCEX.")
     sym_str = input(f"   Symbol [default: {default_sym}]: ").strip().upper()
@@ -151,6 +139,46 @@ def prompt_user_settings():
         print(f"      Tick Size (pu): {contract.price_unit} | Contract Size (cs): {contract.contract_size} {contract.base_coin} | Max Lev: {contract.max_leverage}x | Fees: {fee_label}")
     except Exception as e:
         print(f"   ℹ️  Note: Market preview skipped for {sym_val} ({e}).")
+
+    # 3. Strategy Engine Selection & Directional Flow
+    default_strat = get_setting("STRATEGY_MODE", "MICROSTRUCTURE").upper()
+    default_bi = get_setting("MICRO_BI_DIRECTIONAL", True)
+    default_dir = get_setting("DIRECTION", "LONG").upper()
+    print("\n3. Strategy & Signal Engine:")
+    print("   [1] MICROSTRUCTURE    -> Rapid HFT scalper (Order Book & Tape Imbalance) [Recommended]")
+    print("   [2] DIRECTIONAL CYCLE -> Classic fixed-interval single direction cycle")
+    strat_str = input(f"   Select Strategy [default: {'1 (MICROSTRUCTURE)' if default_strat == 'MICROSTRUCTURE' else '2 (CYCLE)'}]: ").strip()
+    if strat_str == "2" or strat_str.upper() == "CYCLE":
+        strat_mode_val = "CYCLE"
+        bi_directional_val = False
+        print("\n   Order Direction for Directional Cycle:")
+        print("   [1] LONG  -> Profit when price rises.")
+        print("   [2] SHORT -> Profit when price drops.")
+        dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
+        if dir_str == "2" or dir_str.upper() == "SHORT":
+            dir_val = OrderDirection.SHORT
+        else:
+            dir_val = OrderDirection.LONG
+    else:
+        strat_mode_val = "MICROSTRUCTURE"
+        print("\n   Microstructure Directional Flow:")
+        print("   [1] AUTONOMOUS BI-DIRECTIONAL -> Scalp both LONG & SHORT on market flow [Recommended]")
+        print("   [2] SINGLE DIRECTION ONLY     -> Scalp only one chosen direction")
+        bi_str = input(f"   Select Flow [default: {'1 (BI-DIRECTIONAL)' if default_bi else '2 (SINGLE)'}]: ").strip()
+        if bi_str == "2":
+            bi_directional_val = False
+            print("\n   Order Direction for Microstructure Scalps:")
+            print("   [1] LONG  -> Profit when price rises.")
+            print("   [2] SHORT -> Profit when price drops.")
+            dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
+            if dir_str == "2" or dir_str.upper() == "SHORT":
+                dir_val = OrderDirection.SHORT
+            else:
+                dir_val = OrderDirection.LONG
+        else:
+            bi_directional_val = True
+            dir_val = OrderDirection.LONG  # Default model direction; strategy autonomously signals LONG & SHORT
+            print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG and SHORT based on live order book flow).")
 
     # 4. Trade Quantity / Volume
     if default_vol_mode == "CONTRACTS":
@@ -215,6 +243,13 @@ def prompt_user_settings():
         tp_val = int(tp_str) if tp_str else default_tp
     except ValueError:
         tp_val = default_tp
+
+    default_dyn_tp = get_setting("DYNAMIC_TP", False)
+    print("   Take-Profit Sizing Mode:")
+    print(f"   [1] FIXED TP   -> Strictly exit at exactly {tp_val} pu tick(s) [Recommended]")
+    print(f"   [2] DYNAMIC TP -> Allow signal strength to dynamically scale TP (1 to 3 pu)")
+    tp_mode_str = input(f"   Select TP Mode [default: {'1 (FIXED)' if not default_dyn_tp else '2 (DYNAMIC)'}]: ").strip()
+    dynamic_tp_val = (tp_mode_str == "2") if tp_mode_str else default_dyn_tp
 
     # 6. Stop Loss
     if default_sl_mode == "TICKS" and default_sl_ticks:
@@ -331,17 +366,21 @@ def prompt_user_settings():
         volume_multiplier=vol_mult_val or 1.0,
         volume_contracts=vol_contracts_val,
         tp_ticks=tp_val,
+        dynamic_tp=dynamic_tp_val,
         sl_mode=sl_mode_val,
         sl_roe_pct=sl_roe_val,
         sl_ticks=sl_ticks_val,
         sl_price_pct=sl_price_val,
         max_trades=max_val,
+        strategy_mode=strat_mode_val,
+        bi_directional=bi_directional_val,
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
         outcomes_log_file=get_setting("OUTCOMES_LOG_FILE", "trade_outcomes.txt"),
         outcomes_jsonl_file=get_setting("OUTCOMES_JSONL_FILE", "trade_outcomes.jsonl")
     )
+
 
 
 def parse_args():
@@ -443,11 +482,41 @@ def parse_args():
         help="Live price polling interval in seconds (default: 0.3)"
     )
     parser.add_argument(
+        "--strategy",
+        type=str,
+        choices=["microstructure", "cycle", "MICROSTRUCTURE", "CYCLE"],
+        default=None,
+        help="Strategy type: 'microstructure' (HFT order book & tape imbalance) or 'cycle' (directional cycle)"
+    )
+    parser.add_argument(
+        "--bi-directional",
+        action="store_true",
+        default=None,
+        help="Enable autonomous bi-directional trading (LONG and SHORT) for microstructure strategy"
+    )
+    parser.add_argument(
+        "--single-direction",
+        action="store_true",
+        help="Restrict microstructure scalps strictly to --direction"
+    )
+    parser.add_argument(
+        "--dynamic-tp",
+        action="store_true",
+        default=None,
+        help="Enable dynamic Take-Profit scaling (1 to 3 pu ticks based on signal strength)"
+    )
+    parser.add_argument(
+        "--fixed-tp",
+        action="store_true",
+        help="Strictly lock Take-Profit to --tp-ticks (disable dynamic scaling)"
+    )
+    parser.add_argument(
         "--non-interactive",
         action="store_true",
         help="Bypass interactive wizard and use default settings immediately"
     )
     return parser.parse_args()
+
 
 
 def main():
@@ -474,7 +543,14 @@ def main():
         vol_mult = args.volume_multiplier if args.volume_multiplier is not None else get_setting("VOLUME_MULTIPLIER", 1.0)
         vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 1) if vol_mode == "CONTRACTS" else None)
 
-        tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 2)
+        tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 1)
+        if args.fixed_tp:
+            dynamic_tp = False
+        elif args.dynamic_tp:
+            dynamic_tp = True
+        else:
+            dynamic_tp = get_setting("DYNAMIC_TP", False)
+
         sl_mode = (args.sl_mode or get_setting("SL_MODE", "TICKS")).upper()
         sl_ticks = args.sl_ticks if args.sl_ticks is not None else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None)
         sl_price_pct = args.sl_price_pct if args.sl_price_pct is not None else (get_setting("SL_PRICE_PCT", 0.5) if sl_mode == "PRICE_PCT" else None)
@@ -484,6 +560,14 @@ def main():
         cooldown = args.cooldown if args.cooldown is not None else get_setting("COOLDOWN_SECONDS", 30.0)
         max_trades = args.max_trades if args.max_trades is not None else get_setting("MAX_TRADES", 3)
         poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.3)
+
+        strat_raw = (args.strategy or get_setting("STRATEGY_MODE", "MICROSTRUCTURE")).upper()
+        if args.single_direction:
+            bi_directional = False
+        elif args.bi_directional:
+            bi_directional = True
+        else:
+            bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
 
         config = ExecutionConfig(
             symbol=sym,
@@ -496,11 +580,14 @@ def main():
             volume_multiplier=vol_mult or 1.0,
             volume_contracts=vol_contracts,
             tp_ticks=tp_ticks,
+            dynamic_tp=dynamic_tp,
             sl_mode=sl_mode,
             sl_ticks=sl_ticks,
             sl_price_pct=sl_price_pct,
             sl_roe_pct=sl_roe,
             max_trades=max_trades,
+            strategy_mode=strat_raw,
+            bi_directional=bi_directional,
             poll_interval_seconds=poll_int,
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -544,18 +631,28 @@ def main():
         else f"{config.sl_price_pct}% coin price" if config.sl_price_pct
         else f"{config.sl_roe_pct}% ROE"
     )
+    strat_desc = (
+        f"Microstructure (Autonomous Bi-Directional: LONG & SHORT)" if config.strategy_mode == "MICROSTRUCTURE" and config.bi_directional
+        else f"Microstructure ({config.direction.value} only)" if config.strategy_mode == "MICROSTRUCTURE"
+        else f"Directional Cycle ({config.direction.value})"
+    )
+    bias_desc = "Autonomous (Bi-Directional)" if config.strategy_mode == "MICROSTRUCTURE" and config.bi_directional else config.direction.value
+    tp_mode_desc = "(Dynamic via signals: 1-3 pu)" if config.dynamic_tp else f"(Fixed: strictly {config.tp_ticks} pu)"
+
     print("==============================================================================")
     print("                      CONFIGURED ENGINE PARAMETERS")
     print("==============================================================================")
-    print(f"  • Symbol & Mode     : {config.symbol} | {config.mode.value.upper()} | Direction: {config.direction.value}")
+    print(f"  • Symbol & Mode     : {config.symbol} | {config.mode.value.upper()} | Direction: {bias_desc}")
+    print(f"  • Strategy Engine   : {strat_desc}")
     print(f"  • Target Leverage   : {config.leverage}x isolated")
     print(f"  • Trade Quantity    : {vol_desc}")
     print(f"    ⚠️  CRITICAL NOTE : Trade Quantity (Volume) != Margin!")
     print(f"                       Margin deducted = Trade Quantity / {config.leverage}x leverage")
-    print(f"  • Min-Profit TP     : +{config.tp_ticks} pu ticks")
+    print(f"  • Min-Profit TP     : +{config.tp_ticks} pu ticks {tp_mode_desc}")
     print(f"  • Stop Loss         : -{sl_desc}")
     print(f"  • Cooldown          : {config.cooldown_seconds}s | Max Trades: {'Unlimited' if config.max_trades == 0 else config.max_trades}")
     print("==============================================================================\n")
+
 
     engine = TradeExecutionEngine(config=config)
     engine.run()

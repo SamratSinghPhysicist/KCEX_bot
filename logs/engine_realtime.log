@@ -1876,3 +1876,1241 @@ Live USD/INR Rate  : INR 94.45 per USD
 2026-09-04 13:40:21 [INFO   ] ============================================================================
 2026-09-04 13:40:21 [INFO   ] Total Trades Completed: 3 | Wins: 0 | Losses: 3 | Win Rate: 0.0%
 2026-09-04 13:40:21 [INFO   ] Net Session PnL: -0.0036 USDT (INR -0.34)
+2026-09-04 13:46:38 [INFO   ] ============================================================================
+2026-09-04 13:46:39 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 13:46:39 [INFO   ] ============================================================================
+2026-09-04 13:46:39 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 13:46:39 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 13:46:40 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 13:46:40 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 13:46:40 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 13:46:40 [INFO   ] Sub-strategy: DirectionalCycle
+2026-09-04 13:46:40 [INFO   ] Position Sizing: 1x min quantity (1 min) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 13:46:40 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 13:46:40 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 2 pu (Tick Size)
+2026-09-04 13:46:40 [INFO   ] Stop Loss rule: -25.0% ROE on margin
+2026-09-04 13:46:40 [INFO   ] Post-trade cooldown: 1.0s
+2026-09-04 13:46:40 [INFO   ] ============================================================================
+2026-09-04 13:46:40 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 13:46:40 [INFO   ] ============================================================================
+2026-09-04 13:46:40 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 13:46:40 [INFO   ] Target Trades: 1
+2026-09-04 13:46:40 [INFO   ] ============================================================================
+2026-09-04 13:46:40 [INFO   ]    EXECUTING TRADE #1 [SHORT] - TRUMP_USDT
+2026-09-04 13:46:40 [INFO   ] ============================================================================
+2026-09-04 13:46:41 [INFO   ] Pre-Trade Spec: Vol: 1 contract(s) (1x min) (0.1 TRUMP) | Trade Qty (Notional): +0.2359 USDT (+INR 22.28) | Committed Margin (Qty/75x): +0.0031 USDT (+INR 0.30)
+2026-09-04 13:46:41 [INFO   ] Reference Price: 2.359 USDT | Attached Min-Profit TP: 2.357 USDT (+2 pu) | Attached SL: 2.365 USDT (-10 ticks)
+2026-09-04 13:46:41 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.359 USDT | Min-Profit TP = 2.357 USDT (+2 pu) | SL = 2.365 USDT (-10 ticks)
+2026-09-04 13:46:41 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.357) or SL (2.365)...
+2026-09-04 13:46:48 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:46:54 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:47:01 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:47:08 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:47:14 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:47:20 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:47:26 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:47:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:47:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:47:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:47:54 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:48:00 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:48:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:48:12 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:48:18 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:48:25 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:48:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:48:43 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:48:49 [INFO   ] ============================================================================
+2026-09-04 13:48:49 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 13:48:49 [INFO   ] ============================================================================
+2026-09-04 13:48:49 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 13:48:49 [INFO   ] [DRY-RUN MONITOR] Price: 2.360 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000100 USDT
+2026-09-04 13:48:49 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 13:48:50 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 13:48:50 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 13:48:50 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 13:48:50 [INFO   ] Sub-strategy: DirectionalCycle
+2026-09-04 13:48:50 [INFO   ] Position Sizing: 2 contract(s) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 13:48:50 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 13:48:50 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 13:48:50 [INFO   ] Stop Loss rule: -25.0% ROE on margin
+2026-09-04 13:48:50 [INFO   ] Post-trade cooldown: 5.0s
+2026-09-04 13:48:50 [INFO   ] ============================================================================
+2026-09-04 13:48:50 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 13:48:50 [INFO   ] ============================================================================
+2026-09-04 13:48:50 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 13:48:50 [INFO   ] Target Trades: 3
+2026-09-04 13:48:50 [INFO   ] ============================================================================
+2026-09-04 13:48:50 [INFO   ]    EXECUTING TRADE #1 [SHORT] - TRUMP_USDT
+2026-09-04 13:48:50 [INFO   ] ============================================================================
+2026-09-04 13:48:51 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4720 USDT (+INR 44.58) | Committed Margin (Qty/75x): +0.0063 USDT (+INR 0.59)
+2026-09-04 13:48:51 [INFO   ] Reference Price: 2.360 USDT | Attached Min-Profit TP: 2.359 USDT (+1 pu) | Attached SL: 2.366 USDT (-10 ticks)
+2026-09-04 13:48:51 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.360 USDT | Min-Profit TP = 2.359 USDT (+1 pu) | SL = 2.366 USDT (-10 ticks)
+2026-09-04 13:48:51 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.359) or SL (2.366)...
+2026-09-04 13:48:55 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:48:57 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:49:03 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:49:04 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:49:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:49:11 [INFO   ] [DRY-RUN MONITOR] Price: 2.364 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:49:15 [INFO   ] [DRY-RUN MONITOR] Price: 2.364 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000500 USDT
+2026-09-04 13:49:17 [INFO   ] [DRY-RUN MONITOR] Price: 2.364 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:49:22 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:49:24 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:49:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:49:30 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:49:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:49:36 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:49:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:49:42 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:49:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:49:48 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:49:52 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:49:54 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:49:58 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:00 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:50:04 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:07 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:50:10 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:50:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:16 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:50:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:22 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:50:27 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:50:33 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:50:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:50:39 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:50:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.361 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:50:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:47 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:50:52 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:53 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:50:58 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:50:59 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:51:05 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.362 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000300 USDT
+2026-09-04 13:51:12 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:51:12 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:18 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:51:18 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:24 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:24 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:51:30 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:31 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:51:36 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:36 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:51:43 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:51:45 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:52 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:51:55 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:51:59 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.357 | SL: 2.365 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:52:01 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.365 USDT (Market Ask: 2.365, Last: 2.363)
+2026-09-04 13:52:01 [INFO   ] [SIMULATED WALLET] Balance: 0.0744 USDT (INR 7.02)
+2026-09-04 13:52:01 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 13:52:01 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : DirectionalCycle(SHORT)
+Volume Executed    : 1 contract(s) (0.1 TRUMP)
+Trade Quantity     : 0.2359 USDT (INR 22.28) [Notional exposure]
+Margin Committed   : 0.0031 USDT (INR 0.30) [Trade Qty / 75x leverage]
+Entry Price        : 2.359 USDT (Opened: 2026-09-04 13:46:41)
+Exit Price         : 2.365 USDT (Duration: 319.98s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.357 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.365 USDT (Offset: -6 pu / -0.006 USDT | -0.254% price | -19.1% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.000600 USDT (INR -0.0567)
+Return on Equity   : -19.08% (Price move: -0.254%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0744 USDT (INR 7.02)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 1 | Scratch: 0
+Win Rate           : 0.0%
+Net Cumulative PnL : -0.000600 USDT (INR -0.0567)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 13:52:01 [INFO   ] Initiating 1s cooldown before next trade cycle...
+2026-09-04 13:52:02 [INFO   ] [DRY-RUN MONITOR] Price: 2.365 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.001000 USDT
+2026-09-04 13:52:03 [INFO   ] Reached configured maximum trades limit (1). Stopping.
+2026-09-04 13:52:03 [INFO   ] ============================================================================
+2026-09-04 13:52:03 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 13:52:03 [INFO   ] ============================================================================
+2026-09-04 13:52:03 [INFO   ] Total Trades Completed: 1 | Wins: 0 | Losses: 1 | Win Rate: 0.0%
+2026-09-04 13:52:03 [INFO   ] Net Session PnL: -0.0006 USDT (INR -0.06)
+2026-09-04 13:52:08 [INFO   ] [DRY-RUN MONITOR] Price: 2.365 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.001000 USDT
+2026-09-04 13:52:14 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:52:20 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:52:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.363 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:52:35 [INFO   ] [DRY-RUN MONITOR] Price: 2.364 USDT | TP: 2.359 | SL: 2.366 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:52:47 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.366 USDT (Market Ask: 2.368, Last: 2.367)
+2026-09-04 13:52:48 [INFO   ] [SIMULATED WALLET] Balance: 0.0738 USDT (INR 6.97)
+2026-09-04 13:52:48 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 13:52:47 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : DirectionalCycle(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4720 USDT (INR 44.58) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.59) [Trade Qty / 75x leverage]
+Entry Price        : 2.360 USDT (Opened: 2026-09-04 13:48:51)
+Exit Price         : 2.366 USDT (Duration: 236.06s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.359 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.366 USDT (Offset: -6 pu / -0.006 USDT | -0.254% price | -19.1% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1133)
+Return on Equity   : -19.07% (Price move: -0.254%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0738 USDT (INR 6.97)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 1 | Scratch: 0
+Win Rate           : 0.0%
+Net Cumulative PnL : -0.001200 USDT (INR -0.1133)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 13:52:48 [INFO   ] Initiating 5s cooldown before next trade cycle...
+2026-09-04 13:52:54 [INFO   ] ============================================================================
+2026-09-04 13:52:54 [INFO   ]    EXECUTING TRADE #2 [SHORT] - TRUMP_USDT
+2026-09-04 13:52:54 [INFO   ] ============================================================================
+2026-09-04 13:52:55 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4734 USDT (+INR 44.71) | Committed Margin (Qty/75x): +0.0063 USDT (+INR 0.60)
+2026-09-04 13:52:55 [INFO   ] Reference Price: 2.367 USDT | Attached Min-Profit TP: 2.366 USDT (+1 pu) | Attached SL: 2.373 USDT (-10 ticks)
+2026-09-04 13:52:55 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.367 USDT | Min-Profit TP = 2.366 USDT (+1 pu) | SL = 2.373 USDT (-10 ticks)
+2026-09-04 13:52:55 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.366) or SL (2.373)...
+2026-09-04 13:53:01 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:53:07 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000200 USDT
+2026-09-04 13:53:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:53:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:53:25 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:53:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:53:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:53:44 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:53:50 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:53:57 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:54:03 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:54:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:54:15 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:54:21 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:54:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:54:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:54:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:54:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:54:53 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:54:59 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:55:05 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.366 | SL: 2.373 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:55:08 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.366 USDT (Market Ask: 2.366, Last: 2.365)
+2026-09-04 13:55:08 [INFO   ] [SIMULATED WALLET] Balance: 0.0740 USDT (INR 6.99)
+2026-09-04 13:55:08 [INFO   ] 
+==============================================================================
+TRADE #2 OUTCOME JOURNAL | Closed at: 2026-09-04 13:55:08 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : DirectionalCycle(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4734 USDT (INR 44.71) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.367 USDT (Opened: 2026-09-04 13:52:55)
+Exit Price         : 2.366 USDT (Duration: 133.02s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.366 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.373 USDT (Offset: -6 pu / -0.006 USDT | -0.253% price | -19.0% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.17% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0740 USDT (INR 6.99)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 2 | Wins: 1 | Losses: 1 | Scratch: 0
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.001000 USDT (INR -0.0945)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 13:55:08 [INFO   ] Initiating 5s cooldown before next trade cycle...
+2026-09-04 13:55:13 [INFO   ] ============================================================================
+2026-09-04 13:55:13 [INFO   ]    EXECUTING TRADE #3 [SHORT] - TRUMP_USDT
+2026-09-04 13:55:13 [INFO   ] ============================================================================
+2026-09-04 13:55:14 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4730 USDT (+INR 44.68) | Committed Margin (Qty/75x): +0.0063 USDT (+INR 0.60)
+2026-09-04 13:55:14 [INFO   ] Reference Price: 2.365 USDT | Attached Min-Profit TP: 2.364 USDT (+1 pu) | Attached SL: 2.371 USDT (-10 ticks)
+2026-09-04 13:55:14 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.365 USDT | Min-Profit TP = 2.364 USDT (+1 pu) | SL = 2.371 USDT (-10 ticks)
+2026-09-04 13:55:14 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.364) or SL (2.371)...
+2026-09-04 13:55:20 [INFO   ] [DRY-RUN MONITOR] Price: 2.367 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:55:26 [INFO   ] [DRY-RUN MONITOR] Price: 2.367 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:55:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:55:41 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:55:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:55:53 [INFO   ] [DRY-RUN MONITOR] Price: 2.367 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:55:59 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:56:05 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:56:12 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:56:18 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:56:24 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:56:30 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:56:36 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:56:42 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:56:48 [INFO   ] [DRY-RUN MONITOR] Price: 2.367 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000400 USDT
+2026-09-04 13:56:58 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:57:05 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:57:11 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:57:17 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:57:24 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:57:30 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:57:36 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:57:42 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000600 USDT
+2026-09-04 13:57:49 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:57:55 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:58:01 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:58:07 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.000800 USDT
+2026-09-04 13:58:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.364 | SL: 2.371 | Unrealized PnL: -0.001000 USDT
+2026-09-04 13:58:17 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.371 USDT (Market Ask: 2.372, Last: 2.372)
+2026-09-04 13:58:18 [INFO   ] [SIMULATED WALLET] Balance: 0.0728 USDT (INR 6.87)
+2026-09-04 13:58:18 [INFO   ] 
+==============================================================================
+TRADE #3 OUTCOME JOURNAL | Closed at: 2026-09-04 13:58:17 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : DirectionalCycle(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4730 USDT (INR 44.68) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.365 USDT (Opened: 2026-09-04 13:55:14)
+Exit Price         : 2.371 USDT (Duration: 183.60s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.364 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.371 USDT (Offset: -6 pu / -0.006 USDT | -0.254% price | -19.0% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1133)
+Return on Equity   : -19.03% (Price move: -0.254%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0728 USDT (INR 6.87)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 3 | Wins: 1 | Losses: 2 | Scratch: 0
+Win Rate           : 33.3%
+Net Cumulative PnL : -0.002200 USDT (INR -0.2078)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 13:58:18 [INFO   ] Initiating 5s cooldown before next trade cycle...
+2026-09-04 13:58:23 [INFO   ] Reached configured maximum trades limit (3). Stopping.
+2026-09-04 13:58:23 [INFO   ] ============================================================================
+2026-09-04 13:58:23 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 13:58:23 [INFO   ] ============================================================================
+2026-09-04 13:58:23 [INFO   ] Total Trades Completed: 3 | Wins: 1 | Losses: 2 | Win Rate: 33.3%
+2026-09-04 13:58:23 [INFO   ] Net Session PnL: -0.0022 USDT (INR -0.21)
+2026-09-04 14:21:56 [INFO   ] ============================================================================
+2026-09-04 14:21:56 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 14:21:56 [INFO   ] ============================================================================
+2026-09-04 14:21:56 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 14:21:57 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 14:21:57 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 14:21:57 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 14:21:57 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 14:21:57 [INFO   ] Sub-strategy: Microstructure
+2026-09-04 14:21:57 [INFO   ] Position Sizing: 1x min quantity (1 min) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 14:21:57 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 14:21:57 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 2 pu (Tick Size)
+2026-09-04 14:21:57 [INFO   ] Stop Loss rule: -25.0% ROE on margin
+2026-09-04 14:21:57 [INFO   ] Post-trade cooldown: 10.0s
+2026-09-04 14:21:57 [INFO   ] ============================================================================
+2026-09-04 14:21:57 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 14:21:57 [INFO   ] ============================================================================
+2026-09-04 14:21:57 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 14:21:57 [INFO   ] Target Trades: 1
+2026-09-04 14:21:57 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.370 / 2.371 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:22:01 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.369 / 2.370 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:22:05 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.369 / 2.370 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:22:10 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.367 / 2.368 (Spread: 1.0 pu) | OBI z=+0.51 | Delta z=-2.12 | VAMP z=+0.81
+2026-09-04 14:22:14 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.366 / 2.367 (Spread: 1.0 pu) | OBI z=+0.94 | Delta z=-2.77 | VAMP z=+1.28
+2026-09-04 14:22:18 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.366 / 2.367 (Spread: 1.0 pu) | OBI z=+0.71 | Delta z=-0.98 | VAMP z=+0.95
+2026-09-04 14:22:22 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.366 / 2.367 (Spread: 1.0 pu) | OBI z=-0.93 | Delta z=+0.78 | VAMP z=-1.19
+2026-09-04 14:22:26 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.366 / 2.367 (Spread: 1.0 pu) | OBI z=-0.07 | Delta z=+0.72 | VAMP z=-0.09
+2026-09-04 14:22:31 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.366 / 2.367 (Spread: 1.0 pu) | OBI z=+0.08 | Delta z=+0.66 | VAMP z=+0.10
+2026-09-04 14:22:35 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.368 / 2.369 (Spread: 1.0 pu) | OBI z=-3.50 | Delta z=+2.70 | VAMP z=-1.31
+2026-09-04 14:22:39 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.368 / 2.369 (Spread: 1.0 pu) | OBI z=-0.58 | Delta z=+0.22 | VAMP z=-1.12
+2026-09-04 14:22:40 [INFO   ] ============================================================================
+2026-09-04 14:22:40 [INFO   ]    EXECUTING TRADE #1 [LONG] - TRUMP_USDT
+2026-09-04 14:22:40 [INFO   ] ============================================================================
+2026-09-04 14:22:40 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +1 pu ticks | OBI z=+1.75 | Delta z=-1.82 (rec=1.00) | VAMP z=+1.61
+2026-09-04 14:22:41 [INFO   ] Pre-Trade Spec: Vol: 1 contract(s) (1x min) (0.1 TRUMP) | Trade Qty (Notional): +0.2366 USDT (+INR 22.35) | Committed Margin (Qty/75x): +0.0032 USDT (+INR 0.30)
+2026-09-04 14:22:41 [INFO   ] Reference Price: 2.366 USDT | Attached Min-Profit TP: 2.367 USDT (+1 pu) | Attached SL: 2.360 USDT (-10 ticks)
+2026-09-04 14:22:41 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.369 USDT | Min-Profit TP = 2.370 USDT (+1 pu) | SL = 2.363 USDT (-10 ticks)
+2026-09-04 14:22:41 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.370) or SL (2.363)...
+2026-09-04 14:22:47 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.370 | SL: 2.363 | Unrealized PnL: -0.000100 USDT
+2026-09-04 14:22:54 [INFO   ] [DRY-RUN MONITOR] Price: 2.367 USDT | TP: 2.370 | SL: 2.363 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:23:03 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.370 | SL: 2.363 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:23:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.370 | SL: 2.363 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:23:16 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.370 | SL: 2.363 | Unrealized PnL: -0.000100 USDT
+2026-09-04 14:23:25 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.370 | SL: 2.363 | Unrealized PnL: -0.000100 USDT
+2026-09-04 14:23:31 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.370 USDT (Market Bid: 2.371, Last: 2.372)
+2026-09-04 14:23:33 [INFO   ] [SIMULATED WALLET] Balance: 0.0751 USDT (INR 7.09)
+2026-09-04 14:23:33 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 14:23:31 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 1 contract(s) (0.1 TRUMP)
+Trade Quantity     : 0.2369 USDT (INR 22.37) [Notional exposure]
+Margin Committed   : 0.0032 USDT (INR 0.30) [Trade Qty / 75x leverage]
+Entry Price        : 2.369 USDT (Opened: 2026-09-04 14:22:41)
+Exit Price         : 2.370 USDT (Duration: 50.28s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.370 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.363 USDT (Offset: -6 pu / -0.006 USDT | -0.253% price | -19.0% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0094)
+Return on Equity   : +3.17% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0751 USDT (INR 7.09)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0094)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 14:23:33 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:23:43 [INFO   ] Reached configured maximum trades limit (1). Stopping.
+2026-09-04 14:23:43 [INFO   ] ============================================================================
+2026-09-04 14:23:43 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 14:23:43 [INFO   ] ============================================================================
+2026-09-04 14:23:43 [INFO   ] Total Trades Completed: 1 | Wins: 1 | Losses: 0 | Win Rate: 100.0%
+2026-09-04 14:23:43 [INFO   ] Net Session PnL: +0.0001 USDT (+INR 0.01)
+2026-09-04 14:28:24 [INFO   ] ============================================================================
+2026-09-04 14:28:25 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 14:28:25 [INFO   ] ============================================================================
+2026-09-04 14:28:25 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 14:28:25 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 14:28:26 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 14:28:26 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 14:28:26 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 14:28:26 [INFO   ] Sub-strategy: Microstructure
+2026-09-04 14:28:26 [INFO   ] Position Sizing: 2 contract(s) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 14:28:26 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 14:28:26 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 14:28:26 [INFO   ] Stop Loss rule: -25.0% ROE on margin
+2026-09-04 14:28:26 [INFO   ] Post-trade cooldown: 10.0s
+2026-09-04 14:28:26 [INFO   ] ============================================================================
+2026-09-04 14:28:26 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 14:28:26 [INFO   ] ============================================================================
+2026-09-04 14:28:26 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 14:28:26 [INFO   ] Target Trades: 3
+2026-09-04 14:28:26 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.390 / 2.391 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:28:30 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.390 / 2.391 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:28:34 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:28:37 [INFO   ] ============================================================================
+2026-09-04 14:28:37 [INFO   ]    EXECUTING TRADE #1 [SHORT] - TRUMP_USDT
+2026-09-04 14:28:37 [INFO   ] ============================================================================
+2026-09-04 14:28:37 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +3 pu ticks | OBI z=-5.30 | Delta z=-0.91 (rec=1.00) | VAMP z=-3.43
+2026-09-04 14:28:38 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4784 USDT (+INR 45.18) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:28:38 [INFO   ] Reference Price: 2.392 USDT | Attached Min-Profit TP: 2.389 USDT (+3 pu) | Attached SL: 2.398 USDT (-10 ticks)
+2026-09-04 14:28:38 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.395 USDT | Min-Profit TP = 2.392 USDT (+3 pu) | SL = 2.401 USDT (-10 ticks)
+2026-09-04 14:28:38 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.392) or SL (2.401)...
+2026-09-04 14:28:39 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.392 USDT (Market Ask: 2.397, Last: 2.392)
+2026-09-04 14:28:40 [INFO   ] [SIMULATED WALLET] Balance: 0.0756 USDT (INR 7.14)
+2026-09-04 14:28:40 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 14:28:39 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4790 USDT (INR 45.24) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.395 USDT (Opened: 2026-09-04 14:28:38)
+Exit Price         : 2.392 USDT (Duration: 0.50s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.392 USDT (Offset: +3 pu / +0.003 USDT)
+Stop Loss Level    : 2.401 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000600 USDT (+INR 0.0567)
+Return on Equity   : +9.39% (Price move: +0.125%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0756 USDT (INR 7.14)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000600 USDT (+INR 0.0567)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 14:28:40 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:28:51 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.395 / 2.396 (Spread: 1.0 pu) | OBI z=-0.00 | Delta z=-0.27 | VAMP z=-0.41
+2026-09-04 14:28:55 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.395 / 2.396 (Spread: 1.0 pu) | OBI z=+0.51 | Delta z=-2.60 | VAMP z=+0.94
+2026-09-04 14:28:59 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.390 / 2.392 (Spread: 2.0 pu) | OBI z=+4.43 | Delta z=-0.04 | VAMP z=+8.54
+2026-09-04 14:29:03 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.390 / 2.391 (Spread: 1.0 pu) | OBI z=+0.46 | Delta z=+0.21 | VAMP z=+1.78
+2026-09-04 14:29:07 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.393 / 2.394 (Spread: 1.0 pu) | OBI z=+0.28 | Delta z=+0.20 | VAMP z=+0.41
+2026-09-04 14:29:12 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.394 / 2.396 (Spread: 2.0 pu) | OBI z=-1.39 | Delta z=+0.18 | VAMP z=-6.27
+2026-09-04 14:29:16 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.396 / 2.397 (Spread: 1.0 pu) | OBI z=-2.11 | Delta z=+0.18 | VAMP z=-0.42
+2026-09-04 14:29:20 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.397 / 2.399 (Spread: 2.0 pu) | OBI z=-0.78 | Delta z=-2.11 | VAMP z=-5.10
+2026-09-04 14:29:21 [INFO   ] ============================================================================
+2026-09-04 14:29:21 [INFO   ]    EXECUTING TRADE #2 [SHORT] - TRUMP_USDT
+2026-09-04 14:29:21 [INFO   ] ============================================================================
+2026-09-04 14:29:21 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'delta', 'vamp'] | Target TP: +3 pu ticks | OBI z=-2.77 | Delta z=-2.05 (rec=1.00) | VAMP z=-4.94
+2026-09-04 14:29:22 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4798 USDT (+INR 45.32) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:29:22 [INFO   ] Reference Price: 2.399 USDT | Attached Min-Profit TP: 2.396 USDT (+3 pu) | Attached SL: 2.405 USDT (-10 ticks)
+2026-09-04 14:29:22 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.397 USDT | Min-Profit TP = 2.394 USDT (+3 pu) | SL = 2.403 USDT (-10 ticks)
+2026-09-04 14:29:22 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.394) or SL (2.403)...
+2026-09-04 14:29:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.399 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:29:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.402 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:29:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.402 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:29:41 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.403 USDT (Market Ask: 2.402, Last: 2.403)
+2026-09-04 14:29:42 [INFO   ] [SIMULATED WALLET] Balance: 0.0744 USDT (INR 7.02)
+2026-09-04 14:29:42 [INFO   ] 
+==============================================================================
+TRADE #2 OUTCOME JOURNAL | Closed at: 2026-09-04 14:29:41 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4794 USDT (INR 45.28) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.397 USDT (Opened: 2026-09-04 14:29:22)
+Exit Price         : 2.403 USDT (Duration: 19.78s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.394 USDT (Offset: +3 pu / +0.003 USDT)
+Stop Loss Level    : 2.403 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1133)
+Return on Equity   : -18.77% (Price move: -0.250%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0744 USDT (INR 7.02)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 2 | Wins: 1 | Losses: 1 | Scratch: 0
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.000600 USDT (INR -0.0567)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+
+2026-09-04 14:29:42 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:29:52 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.401 / 2.402 (Spread: 1.0 pu) | OBI z=+2.50 | Delta z=-3.16 | VAMP z=+1.34
+2026-09-04 14:29:56 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.402 / 2.404 (Spread: 2.0 pu) | OBI z=-1.02 | Delta z=-7.76 | VAMP z=-5.19
+2026-09-04 14:30:00 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.397 / 2.399 (Spread: 2.0 pu) | OBI z=+3.58 | Delta z=-0.36 | VAMP z=+7.83
+2026-09-04 14:30:05 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.396 / 2.398 (Spread: 2.0 pu) | OBI z=+1.57 | Delta z=-4.87 | VAMP z=+6.16
+2026-09-04 14:30:09 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.395 / 2.396 (Spread: 1.0 pu) | OBI z=+0.52 | Delta z=-2.72 | VAMP z=-0.04
+2026-09-04 14:30:13 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.393 / 2.395 (Spread: 2.0 pu) | OBI z=+0.70 | Delta z=-1.12 | VAMP z=+3.81
+2026-09-04 14:30:17 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.392 / 2.394 (Spread: 2.0 pu) | OBI z=+1.68 | Delta z=+0.54 | VAMP z=+6.48
+2026-09-04 14:30:22 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.394 / 2.396 (Spread: 2.0 pu) | OBI z=-0.52 | Delta z=+0.25 | VAMP z=-1.61
+2026-09-04 14:30:26 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.394 / 2.395 (Spread: 1.0 pu) | OBI z=-0.10 | Delta z=+0.25 | VAMP z=+0.51
+2026-09-04 14:30:30 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.395 / 2.396 (Spread: 1.0 pu) | OBI z=-0.73 | Delta z=+0.28 | VAMP z=-0.95
+2026-09-04 14:30:34 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.393 / 2.397 (Spread: 4.0 pu) | OBI z=+0.33 | Delta z=-0.20 | VAMP z=+4.76
+2026-09-04 14:30:38 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.396 / 2.398 (Spread: 2.0 pu) | OBI z=-1.28 | Delta z=+0.41 | VAMP z=-7.75
+2026-09-04 14:30:43 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.395 / 2.396 (Spread: 1.0 pu) | OBI z=+0.06 | Delta z=-1.33 | VAMP z=+0.10
+2026-09-04 14:30:47 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.395 / 2.396 (Spread: 1.0 pu) | OBI z=-0.36 | Delta z=+0.38 | VAMP z=-1.15
+2026-09-04 14:30:51 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.393 / 2.394 (Spread: 1.0 pu) | OBI z=+1.52 | Delta z=+0.53 | VAMP z=+0.51
+2026-09-04 14:30:55 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.393 / 2.394 (Spread: 1.0 pu) | OBI z=+0.33 | Delta z=+0.45 | VAMP z=+1.18
+2026-09-04 14:30:59 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.393 (Spread: 2.0 pu) | OBI z=+1.07 | Delta z=+1.10 | VAMP z=+5.83
+2026-09-04 14:31:04 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.387 / 2.389 (Spread: 2.0 pu) | OBI z=+2.44 | Delta z=+0.43 | VAMP z=+7.59
+2026-09-04 14:31:06 [INFO   ] ============================================================================
+2026-09-04 14:31:06 [INFO   ]    EXECUTING TRADE #3 [SHORT] - TRUMP_USDT
+2026-09-04 14:31:06 [INFO   ] ============================================================================
+2026-09-04 14:31:06 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'delta'] | Target TP: +2 pu ticks | OBI z=-2.27 | Delta z=-3.09 (rec=1.00) | VAMP z=-0.88
+2026-09-04 14:31:07 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4786 USDT (+INR 45.21) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:31:07 [INFO   ] Reference Price: 2.393 USDT | Attached Min-Profit TP: 2.391 USDT (+2 pu) | Attached SL: 2.399 USDT (-10 ticks)
+2026-09-04 14:31:07 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.390 USDT | Min-Profit TP = 2.388 USDT (+2 pu) | SL = 2.396 USDT (-10 ticks)
+2026-09-04 14:31:07 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.388) or SL (2.396)...
+2026-09-04 14:31:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.392 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:31:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:31:25 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:31:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:31:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:31:44 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:31:51 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:31:57 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:32:03 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:32:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:32:15 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:32:21 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:32:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.393 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:32:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.393 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:32:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.394 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:32:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.394 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:32:52 [INFO   ] [DRY-RUN MONITOR] Price: 2.394 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:32:59 [INFO   ] [DRY-RUN MONITOR] Price: 2.395 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:33:07 [INFO   ] [DRY-RUN MONITOR] Price: 2.392 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:33:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.392 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:33:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:33:25 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:33:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:33:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:33:44 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:33:50 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:33:57 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:34:03 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:34:14 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:34:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:34:54 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:35:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.388 | SL: 2.396 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:35:11 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.388 USDT (Market Ask: 2.389, Last: 2.388)
+2026-09-04 14:35:13 [INFO   ] [SIMULATED WALLET] Balance: 0.0748 USDT (INR 7.06)
+2026-09-04 14:35:13 [INFO   ] 
+==============================================================================
+TRADE #3 OUTCOME JOURNAL | Closed at: 2026-09-04 14:35:11 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4780 USDT (INR 45.16) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.390 USDT (Opened: 2026-09-04 14:31:07)
+Exit Price         : 2.388 USDT (Duration: 244.07s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.388 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.396 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000400 USDT (+INR 0.0378)
+Return on Equity   : +6.28% (Price move: +0.084%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0748 USDT (INR 7.06)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 3 | Wins: 2 | Losses: 1 | Scratch: 0
+Win Rate           : 66.7%
+Net Cumulative PnL : -0.000200 USDT (INR -0.0189)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:35:13 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:35:23 [INFO   ] Reached configured maximum trades limit (3). Stopping.
+2026-09-04 14:35:24 [INFO   ] ============================================================================
+2026-09-04 14:35:24 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 14:35:24 [INFO   ] ============================================================================
+2026-09-04 14:35:24 [INFO   ] Total Trades Completed: 3 | Wins: 2 | Losses: 1 | Win Rate: 66.7%
+2026-09-04 14:35:24 [INFO   ] Net Session PnL: -0.0002 USDT (INR -0.02)
+2026-09-04 14:37:06 [INFO   ] ============================================================================
+2026-09-04 14:37:06 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 14:37:06 [INFO   ] ============================================================================
+2026-09-04 14:37:06 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 14:37:07 [INFO   ] Live USD/INR Exchange Rate: INR 94.47 per USD
+2026-09-04 14:37:07 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 14:37:07 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 14:37:07 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 14:37:07 [INFO   ] Sub-strategy: Microstructure
+2026-09-04 14:37:07 [INFO   ] Position Sizing: 2 contract(s) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 14:37:07 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 14:37:07 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 14:37:07 [INFO   ] Stop Loss rule: -25.0% ROE on margin
+2026-09-04 14:37:07 [INFO   ] Post-trade cooldown: 10.0s
+2026-09-04 14:37:07 [INFO   ] ============================================================================
+2026-09-04 14:37:07 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 14:37:07 [INFO   ] ============================================================================
+2026-09-04 14:37:07 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 14:37:07 [INFO   ] Target Trades: Unlimited
+2026-09-04 14:37:07 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.387 / 2.388 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:37:11 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.387 / 2.389 (Spread: 2.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:37:15 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.388 / 2.389 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:37:20 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.389 / 2.390 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:37:24 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.393 (Spread: 2.0 pu) | OBI z=-4.30 | Delta z=+2.99 | VAMP z=-16.24
+2026-09-04 14:37:26 [INFO   ] ============================================================================
+2026-09-04 14:37:26 [INFO   ]    EXECUTING TRADE #1 [SHORT] - TRUMP_USDT
+2026-09-04 14:37:26 [INFO   ] ============================================================================
+2026-09-04 14:37:26 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +2 pu ticks | OBI z=-3.55 | Delta z=+3.82 (rec=1.00) | VAMP z=-1.63
+2026-09-04 14:37:29 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4780 USDT (+INR 45.16) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:37:29 [INFO   ] Reference Price: 2.390 USDT | Attached Min-Profit TP: 2.388 USDT (+2 pu) | Attached SL: 2.396 USDT (-10 ticks)
+2026-09-04 14:37:29 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.391 USDT | Min-Profit TP = 2.389 USDT (+2 pu) | SL = 2.397 USDT (-10 ticks)
+2026-09-04 14:37:29 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.389) or SL (2.397)...
+2026-09-04 14:37:39 [INFO   ] [DRY-RUN MONITOR] Price: 2.393 USDT | TP: 2.389 | SL: 2.397 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:37:45 [INFO   ] [DRY-RUN MONITOR] Price: 2.393 USDT | TP: 2.389 | SL: 2.397 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:37:52 [INFO   ] [DRY-RUN MONITOR] Price: 2.393 USDT | TP: 2.389 | SL: 2.397 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:37:59 [INFO   ] [DRY-RUN MONITOR] Price: 2.394 USDT | TP: 2.389 | SL: 2.397 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:38:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.394 USDT | TP: 2.389 | SL: 2.397 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:38:08 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.397 USDT (Market Ask: 2.398, Last: 2.397)
+2026-09-04 14:38:09 [INFO   ] [SIMULATED WALLET] Balance: 0.0738 USDT (INR 6.97)
+2026-09-04 14:38:09 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 14:38:08 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4782 USDT (INR 45.18) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.391 USDT (Opened: 2026-09-04 14:37:29)
+Exit Price         : 2.397 USDT (Duration: 39.58s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.389 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.397 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.82% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0738 USDT (INR 6.97)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 1 | Scratch: 0
+Win Rate           : 0.0%
+Net Cumulative PnL : -0.001200 USDT (INR -0.1134)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:38:09 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:38:20 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.399 / 2.401 (Spread: 2.0 pu) | OBI z=-3.68 | Delta z=+20.21 | VAMP z=-12.30
+2026-09-04 14:38:24 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.399 / 2.400 (Spread: 1.0 pu) | OBI z=+0.38 | Delta z=+4.72 | VAMP z=-0.55
+2026-09-04 14:38:28 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.397 / 2.399 (Spread: 2.0 pu) | OBI z=+1.86 | Delta z=+4.28 | VAMP z=+8.72
+2026-09-04 14:38:29 [INFO   ] ============================================================================
+2026-09-04 14:38:29 [INFO   ]    EXECUTING TRADE #2 [SHORT] - TRUMP_USDT
+2026-09-04 14:38:29 [INFO   ] ============================================================================
+2026-09-04 14:38:29 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +2 pu ticks | OBI z=-3.44 | Delta z=+0.00 (rec=0.00) | VAMP z=-1.93
+2026-09-04 14:38:30 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4798 USDT (+INR 45.33) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:38:30 [INFO   ] Reference Price: 2.399 USDT | Attached Min-Profit TP: 2.397 USDT (+2 pu) | Attached SL: 2.405 USDT (-10 ticks)
+2026-09-04 14:38:30 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.400 USDT | Min-Profit TP = 2.398 USDT (+2 pu) | SL = 2.406 USDT (-10 ticks)
+2026-09-04 14:38:30 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.398) or SL (2.406)...
+2026-09-04 14:38:36 [INFO   ] [DRY-RUN MONITOR] Price: 2.401 USDT | TP: 2.398 | SL: 2.406 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:38:42 [INFO   ] [DRY-RUN MONITOR] Price: 2.399 USDT | TP: 2.398 | SL: 2.406 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:38:48 [INFO   ] [DRY-RUN MONITOR] Price: 2.399 USDT | TP: 2.398 | SL: 2.406 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:38:49 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.398 USDT (Market Ask: 2.397, Last: 2.396)
+2026-09-04 14:38:50 [INFO   ] [SIMULATED WALLET] Balance: 0.0742 USDT (INR 7.01)
+2026-09-04 14:38:50 [INFO   ] 
+==============================================================================
+TRADE #2 OUTCOME JOURNAL | Closed at: 2026-09-04 14:38:49 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4800 USDT (INR 45.35) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.400 USDT (Opened: 2026-09-04 14:38:30)
+Exit Price         : 2.398 USDT (Duration: 19.21s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.398 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.406 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000400 USDT (+INR 0.0378)
+Return on Equity   : +6.25% (Price move: +0.083%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0742 USDT (INR 7.01)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 2 | Wins: 1 | Losses: 1 | Scratch: 0
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.000800 USDT (INR -0.0756)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:38:50 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:39:00 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.393 (Spread: 2.0 pu) | OBI z=+6.59 | Delta z=-0.20 | VAMP z=+24.37
+2026-09-04 14:39:01 [INFO   ] ============================================================================
+2026-09-04 14:39:01 [INFO   ]    EXECUTING TRADE #3 [LONG] - TRUMP_USDT
+2026-09-04 14:39:01 [INFO   ] ============================================================================
+2026-09-04 14:39:01 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +3 pu ticks | OBI z=+4.40 | Delta z=+0.00 (rec=0.28) | VAMP z=+2.15
+2026-09-04 14:39:01 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4794 USDT (+INR 45.29) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:39:01 [INFO   ] Reference Price: 2.397 USDT | Attached Min-Profit TP: 2.400 USDT (+3 pu) | Attached SL: 2.391 USDT (-10 ticks)
+2026-09-04 14:39:02 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.397 USDT | Min-Profit TP = 2.400 USDT (+3 pu) | SL = 2.391 USDT (-10 ticks)
+2026-09-04 14:39:02 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.400) or SL (2.391)...
+2026-09-04 14:39:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.396 USDT | TP: 2.400 | SL: 2.391 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:39:11 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.391 USDT (Market Bid: 2.391, Last: 2.392)
+2026-09-04 14:39:12 [INFO   ] [SIMULATED WALLET] Balance: 0.0730 USDT (INR 6.89)
+2026-09-04 14:39:12 [INFO   ] 
+==============================================================================
+TRADE #3 OUTCOME JOURNAL | Closed at: 2026-09-04 14:39:11 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4794 USDT (INR 45.29) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.397 USDT (Opened: 2026-09-04 14:39:01)
+Exit Price         : 2.391 USDT (Duration: 9.76s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.400 USDT (Offset: +3 pu / +0.003 USDT)
+Stop Loss Level    : 2.391 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.77% (Price move: -0.250%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0730 USDT (INR 6.89)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 3 | Wins: 1 | Losses: 2 | Scratch: 0
+Win Rate           : 33.3%
+Net Cumulative PnL : -0.002000 USDT (INR -0.1889)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:39:12 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:39:22 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.390 / 2.392 (Spread: 2.0 pu) | OBI z=+1.65 | Delta z=+0.21 | VAMP z=+8.98
+2026-09-04 14:39:26 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=+0.14 | Delta z=-0.24 | VAMP z=+0.58
+2026-09-04 14:39:30 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=-0.08 | Delta z=-0.18 | VAMP z=-0.14
+2026-09-04 14:39:35 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=-0.27 | Delta z=-0.15 | VAMP z=-0.67
+2026-09-04 14:39:39 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=-0.23 | Delta z=-0.13 | VAMP z=-0.56
+2026-09-04 14:39:43 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=-0.37 | Delta z=-1.40 | VAMP z=-0.90
+2026-09-04 14:39:47 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=-0.05 | Delta z=-0.08 | VAMP z=-0.06
+2026-09-04 14:39:51 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=+0.32 | Delta z=-0.90 | VAMP z=+0.88
+2026-09-04 14:39:56 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.391 / 2.392 (Spread: 1.0 pu) | OBI z=+0.27 | Delta z=-0.22 | VAMP z=+0.73
+2026-09-04 14:40:00 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.387 / 2.389 (Spread: 2.0 pu) | OBI z=+4.03 | Delta z=+3.92 | VAMP z=+15.25
+2026-09-04 14:40:01 [INFO   ] ============================================================================
+2026-09-04 14:40:01 [INFO   ]    EXECUTING TRADE #4 [LONG] - TRUMP_USDT
+2026-09-04 14:40:01 [INFO   ] ============================================================================
+2026-09-04 14:40:01 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +2 pu ticks | OBI z=+2.61 | Delta z=+0.20 (rec=1.00) | VAMP z=+2.35
+2026-09-04 14:40:02 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4782 USDT (+INR 45.18) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:40:02 [INFO   ] Reference Price: 2.391 USDT | Attached Min-Profit TP: 2.393 USDT (+2 pu) | Attached SL: 2.385 USDT (-10 ticks)
+2026-09-04 14:40:02 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.392 USDT | Min-Profit TP = 2.394 USDT (+2 pu) | SL = 2.386 USDT (-10 ticks)
+2026-09-04 14:40:02 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.394) or SL (2.386)...
+2026-09-04 14:40:08 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:40:14 [INFO   ] [DRY-RUN MONITOR] Price: 2.387 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:40:20 [INFO   ] [DRY-RUN MONITOR] Price: 2.387 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:40:27 [INFO   ] [DRY-RUN MONITOR] Price: 2.388 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:40:33 [INFO   ] [DRY-RUN MONITOR] Price: 2.387 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:40:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.387 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:40:47 [INFO   ] [DRY-RUN MONITOR] Price: 2.387 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:40:54 [INFO   ] [DRY-RUN MONITOR] Price: 2.388 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:41:00 [INFO   ] [DRY-RUN MONITOR] Price: 2.388 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:41:08 [INFO   ] [DRY-RUN MONITOR] Price: 2.387 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:41:14 [INFO   ] [DRY-RUN MONITOR] Price: 2.388 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:41:21 [INFO   ] [DRY-RUN MONITOR] Price: 2.388 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:41:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:41:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:41:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:41:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:41:53 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:41:59 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:42:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:42:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.388 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:42:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.388 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000800 USDT
+2026-09-04 14:42:26 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:42:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:42:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:42:45 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:42:51 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:42:57 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:43:05 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:43:14 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:43:23 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:43:29 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:43:35 [INFO   ] [DRY-RUN MONITOR] Price: 2.387 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.001000 USDT
+2026-09-04 14:43:42 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:43:48 [INFO   ] [DRY-RUN MONITOR] Price: 2.391 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:43:54 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:44:00 [INFO   ] [DRY-RUN MONITOR] Price: 2.390 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:44:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:44:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:44:18 [INFO   ] [DRY-RUN MONITOR] Price: 2.389 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:44:25 [INFO   ] [DRY-RUN MONITOR] Price: 2.392 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:44:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.393 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:44:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.393 USDT | TP: 2.394 | SL: 2.386 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:44:41 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.394 USDT (Market Bid: 2.398, Last: 2.400)
+2026-09-04 14:44:42 [INFO   ] [SIMULATED WALLET] Balance: 0.0734 USDT (INR 6.93)
+2026-09-04 14:44:42 [INFO   ] 
+==============================================================================
+TRADE #4 OUTCOME JOURNAL | Closed at: 2026-09-04 14:44:41 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4784 USDT (INR 45.19) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.392 USDT (Opened: 2026-09-04 14:40:02)
+Exit Price         : 2.394 USDT (Duration: 279.55s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.394 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.386 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000400 USDT (+INR 0.0378)
+Return on Equity   : +6.27% (Price move: +0.084%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0734 USDT (INR 6.93)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 4 | Wins: 2 | Losses: 2 | Scratch: 0
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.001600 USDT (INR -0.1512)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:44:42 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:44:52 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.395 / 2.397 (Spread: 2.0 pu) | OBI z=+2.36 | Delta z=+0.69 | VAMP z=+10.15
+2026-09-04 14:44:56 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.396 / 2.397 (Spread: 1.0 pu) | OBI z=-0.64 | Delta z=+0.19 | VAMP z=-1.52
+2026-09-04 14:45:00 [INFO   ] ============================================================================
+2026-09-04 14:45:00 [INFO   ]    EXECUTING TRADE #5 [SHORT] - TRUMP_USDT
+2026-09-04 14:45:00 [INFO   ] ============================================================================
+2026-09-04 14:45:00 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +3 pu ticks | OBI z=-3.00 | Delta z=-0.49 (rec=1.00) | VAMP z=-2.58
+2026-09-04 14:45:01 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4794 USDT (+INR 45.29) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:45:01 [INFO   ] Reference Price: 2.397 USDT | Attached Min-Profit TP: 2.394 USDT (+3 pu) | Attached SL: 2.403 USDT (-10 ticks)
+2026-09-04 14:45:01 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.397 USDT | Min-Profit TP = 2.394 USDT (+3 pu) | SL = 2.403 USDT (-10 ticks)
+2026-09-04 14:45:01 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.394) or SL (2.403)...
+2026-09-04 14:45:07 [INFO   ] [DRY-RUN MONITOR] Price: 2.399 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:45:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.400 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:45:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.400 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:45:26 [INFO   ] [DRY-RUN MONITOR] Price: 2.399 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:45:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.398 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:45:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.398 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:45:44 [INFO   ] [DRY-RUN MONITOR] Price: 2.398 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:45:52 [INFO   ] [DRY-RUN MONITOR] Price: 2.397 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:45:58 [INFO   ] [DRY-RUN MONITOR] Price: 2.397 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:46:04 [INFO   ] [DRY-RUN MONITOR] Price: 2.398 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:46:10 [INFO   ] [DRY-RUN MONITOR] Price: 2.396 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:46:16 [INFO   ] [DRY-RUN MONITOR] Price: 2.396 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: +0.000200 USDT
+2026-09-04 14:46:24 [INFO   ] [DRY-RUN MONITOR] Price: 2.398 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:46:30 [INFO   ] [DRY-RUN MONITOR] Price: 2.400 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:46:37 [INFO   ] [DRY-RUN MONITOR] Price: 2.400 USDT | TP: 2.394 | SL: 2.403 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:46:41 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.403 USDT (Market Ask: 2.402, Last: 2.403)
+2026-09-04 14:46:41 [INFO   ] [SIMULATED WALLET] Balance: 0.0722 USDT (INR 6.82)
+2026-09-04 14:46:41 [INFO   ] 
+==============================================================================
+TRADE #5 OUTCOME JOURNAL | Closed at: 2026-09-04 14:46:41 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4794 USDT (INR 45.29) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.397 USDT (Opened: 2026-09-04 14:45:01)
+Exit Price         : 2.403 USDT (Duration: 99.43s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.394 USDT (Offset: +3 pu / +0.003 USDT)
+Stop Loss Level    : 2.403 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.77% (Price move: -0.250%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0722 USDT (INR 6.82)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 5 | Wins: 2 | Losses: 3 | Scratch: 0
+Win Rate           : 40.0%
+Net Cumulative PnL : -0.002800 USDT (INR -0.2645)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:46:41 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:46:51 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.399 / 2.401 (Spread: 2.0 pu) | OBI z=+3.14 | Delta z=-0.53 | VAMP z=+12.76
+2026-09-04 14:46:55 [INFO   ] ============================================================================
+2026-09-04 14:46:55 [INFO   ]    EXECUTING TRADE #6 [LONG] - TRUMP_USDT
+2026-09-04 14:46:55 [INFO   ] ============================================================================
+2026-09-04 14:46:55 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'delta'] | Target TP: +2 pu ticks | OBI z=+1.66 | Delta z=+2.63 (rec=0.98) | VAMP z=+1.00
+2026-09-04 14:46:56 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4804 USDT (+INR 45.38) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.61)
+2026-09-04 14:46:56 [INFO   ] Reference Price: 2.402 USDT | Attached Min-Profit TP: 2.404 USDT (+2 pu) | Attached SL: 2.396 USDT (-10 ticks)
+2026-09-04 14:46:56 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.401 USDT | Min-Profit TP = 2.403 USDT (+2 pu) | SL = 2.395 USDT (-10 ticks)
+2026-09-04 14:46:56 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.403) or SL (2.395)...
+2026-09-04 14:47:03 [INFO   ] [DRY-RUN MONITOR] Price: 2.399 USDT | TP: 2.403 | SL: 2.395 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:47:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.401 USDT | TP: 2.403 | SL: 2.395 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:47:15 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.403 USDT (Market Bid: 2.405, Last: 2.404)
+2026-09-04 14:47:16 [INFO   ] [SIMULATED WALLET] Balance: 0.0726 USDT (INR 6.86)
+2026-09-04 14:47:16 [INFO   ] 
+==============================================================================
+TRADE #6 OUTCOME JOURNAL | Closed at: 2026-09-04 14:47:15 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4802 USDT (INR 45.36) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.401 USDT (Opened: 2026-09-04 14:46:56)
+Exit Price         : 2.403 USDT (Duration: 18.98s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.403 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.395 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000400 USDT (+INR 0.0378)
+Return on Equity   : +6.25% (Price move: +0.083%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0726 USDT (INR 6.86)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 6 | Wins: 3 | Losses: 3 | Scratch: 0
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.002400 USDT (INR -0.2267)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:47:16 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:47:26 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.407 / 2.408 (Spread: 1.0 pu) | OBI z=+3.83 | Delta z=-7.77 | VAMP z=+0.94
+2026-09-04 14:47:30 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.402 / 2.404 (Spread: 2.0 pu) | OBI z=+6.07 | Delta z=+0.09 | VAMP z=+17.07
+2026-09-04 14:47:35 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.403 / 2.404 (Spread: 1.0 pu) | OBI z=-0.03 | Delta z=+0.15 | VAMP z=+0.81
+2026-09-04 14:47:39 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.403 / 2.404 (Spread: 1.0 pu) | OBI z=-0.47 | Delta z=+0.21 | VAMP z=-0.99
+2026-09-04 14:47:43 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.403 / 2.404 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.19 | VAMP z=+0.24
+2026-09-04 14:47:47 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.404 / 2.405 (Spread: 1.0 pu) | OBI z=-0.93 | Delta z=-0.38 | VAMP z=-1.37
+2026-09-04 14:47:49 [INFO   ] ============================================================================
+2026-09-04 14:47:49 [INFO   ]    EXECUTING TRADE #7 [LONG] - TRUMP_USDT
+2026-09-04 14:47:49 [INFO   ] ============================================================================
+2026-09-04 14:47:49 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +3 pu ticks | OBI z=+2.03 | Delta z=+0.26 (rec=1.00) | VAMP z=+4.07
+2026-09-04 14:47:50 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4808 USDT (+INR 45.42) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.61)
+2026-09-04 14:47:50 [INFO   ] Reference Price: 2.404 USDT | Attached Min-Profit TP: 2.407 USDT (+3 pu) | Attached SL: 2.398 USDT (-10 ticks)
+2026-09-04 14:47:50 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.404 USDT | Min-Profit TP = 2.407 USDT (+3 pu) | SL = 2.398 USDT (-10 ticks)
+2026-09-04 14:47:50 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.407) or SL (2.398)...
+2026-09-04 14:47:56 [INFO   ] [DRY-RUN MONITOR] Price: 2.403 USDT | TP: 2.407 | SL: 2.398 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:48:02 [INFO   ] [DRY-RUN MONITOR] Price: 2.404 USDT | TP: 2.407 | SL: 2.398 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:48:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.404 USDT | TP: 2.407 | SL: 2.398 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:48:15 [INFO   ] [DRY-RUN MONITOR] Price: 2.402 USDT | TP: 2.407 | SL: 2.398 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:48:19 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.407 USDT (Market Bid: 2.403, Last: 2.407)
+2026-09-04 14:48:19 [INFO   ] [SIMULATED WALLET] Balance: 0.0732 USDT (INR 6.91)
+2026-09-04 14:48:20 [INFO   ] 
+==============================================================================
+TRADE #7 OUTCOME JOURNAL | Closed at: 2026-09-04 14:48:19 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4808 USDT (INR 45.42) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.61) [Trade Qty / 75x leverage]
+Entry Price        : 2.404 USDT (Opened: 2026-09-04 14:47:50)
+Exit Price         : 2.407 USDT (Duration: 29.27s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.407 USDT (Offset: +3 pu / +0.003 USDT)
+Stop Loss Level    : 2.398 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000600 USDT (+INR 0.0567)
+Return on Equity   : +9.36% (Price move: +0.125%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0732 USDT (INR 6.91)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 7 | Wins: 4 | Losses: 3 | Scratch: 0
+Win Rate           : 57.1%
+Net Cumulative PnL : -0.001800 USDT (INR -0.1700)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:48:20 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:48:30 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.407 / 2.408 (Spread: 1.0 pu) | OBI z=+0.75 | Delta z=+0.06 | VAMP z=+1.23
+2026-09-04 14:48:34 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.412 / 2.414 (Spread: 2.0 pu) | OBI z=-8.32 | Delta z=-2.38 | VAMP z=-15.59
+2026-09-04 14:48:38 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.412 / 2.414 (Spread: 2.0 pu) | OBI z=-1.94 | Delta z=-0.97 | VAMP z=-11.83
+2026-09-04 14:48:42 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.411 / 2.412 (Spread: 1.0 pu) | OBI z=+0.29 | Delta z=-0.30 | VAMP z=+0.11
+2026-09-04 14:48:47 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.410 / 2.412 (Spread: 2.0 pu) | OBI z=-1.86 | Delta z=+0.68 | VAMP z=-7.35
+2026-09-04 14:48:51 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.409 / 2.410 (Spread: 1.0 pu) | OBI z=-0.15 | Delta z=-0.40 | VAMP z=+0.59
+2026-09-04 14:48:55 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.407 / 2.411 (Spread: 4.0 pu) | OBI z=+2.14 | Delta z=+0.27 | VAMP z=+10.97
+2026-09-04 14:48:59 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.407 / 2.409 (Spread: 2.0 pu) | OBI z=-1.63 | Delta z=-0.32 | VAMP z=-12.76
+2026-09-04 14:49:04 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.408 / 2.410 (Spread: 2.0 pu) | OBI z=-2.95 | Delta z=-0.81 | VAMP z=-8.60
+2026-09-04 14:49:08 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.406 / 2.408 (Spread: 2.0 pu) | OBI z=+0.73 | Delta z=-0.27 | VAMP z=+4.19
+2026-09-04 14:49:12 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.407 / 2.408 (Spread: 1.0 pu) | OBI z=-0.20 | Delta z=-0.48 | VAMP z=-0.20
+2026-09-04 14:49:16 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.407 / 2.409 (Spread: 2.0 pu) | OBI z=+1.25 | Delta z=+0.01 | VAMP z=+11.59
+2026-09-04 14:49:19 [INFO   ] ============================================================================
+2026-09-04 14:49:19 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 14:49:19 [INFO   ] ============================================================================
+2026-09-04 14:49:19 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 14:49:19 [INFO   ] Live USD/INR Exchange Rate: INR 94.47 per USD
+2026-09-04 14:49:20 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 14:49:20 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 14:49:20 [INFO   ] Engine Mode: DRY-RUN
+2026-09-04 14:49:20 [INFO   ] Sub-strategy: Microstructure
+2026-09-04 14:49:20 [INFO   ] Position Sizing: 1x min quantity (1 min) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 14:49:20 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 14:49:20 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 14:49:20 [INFO   ] Stop Loss rule: -25.0% ROE on margin
+2026-09-04 14:49:20 [INFO   ] Post-trade cooldown: 10.0s
+2026-09-04 14:49:20 [INFO   ] ============================================================================
+2026-09-04 14:49:20 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 14:49:20 [INFO   ] ============================================================================
+2026-09-04 14:49:20 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 14:49:20 [INFO   ] Target Trades: 1
+2026-09-04 14:49:20 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.408 / 2.409 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:49:20 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.408 / 2.409 (Spread: 1.0 pu) | OBI z=+1.17 | Delta z=+0.04 | VAMP z=+3.95
+2026-09-04 14:49:24 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.408 / 2.409 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:49:25 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.408 / 2.409 (Spread: 1.0 pu) | OBI z=-1.48 | Delta z=-0.26 | VAMP z=-0.47
+2026-09-04 14:49:28 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.408 / 2.409 (Spread: 1.0 pu) | OBI z=+0.00 | Delta z=+0.00 | VAMP z=+0.00
+2026-09-04 14:49:29 [INFO   ] [HUNTING ENTRY] CONNECTING | Bid/Ask: 2.408 / 2.409 (Spread: 1.0 pu) | OBI z=-0.01 | Delta z=+0.31 | VAMP z=+0.12
+2026-09-04 14:49:32 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.408 / 2.409 (Spread: 1.0 pu) | OBI z=-0.07 | Delta z=+0.13 | VAMP z=-0.75
+2026-09-04 14:49:33 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.409 / 2.411 (Spread: 2.0 pu) | OBI z=-2.57 | Delta z=+0.18 | VAMP z=-9.74
+2026-09-04 14:49:36 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.410 / 2.411 (Spread: 1.0 pu) | OBI z=-1.61 | Delta z=+0.37 | VAMP z=-0.26
+2026-09-04 14:49:38 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.410 / 2.411 (Spread: 1.0 pu) | OBI z=-1.54 | Delta z=+0.18 | VAMP z=-0.65
+2026-09-04 14:49:39 [INFO   ] ============================================================================
+2026-09-04 14:49:39 [INFO   ]    EXECUTING TRADE #8 [SHORT] - TRUMP_USDT
+2026-09-04 14:49:39 [INFO   ] ============================================================================
+2026-09-04 14:49:39 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +3 pu ticks | OBI z=-4.67 | Delta z=-0.13 (rec=1.00) | VAMP z=-2.86
+2026-09-04 14:49:40 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4820 USDT (+INR 45.53) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.61)
+2026-09-04 14:49:40 [INFO   ] Reference Price: 2.410 USDT | Attached Min-Profit TP: 2.407 USDT (+3 pu) | Attached SL: 2.416 USDT (-10 ticks)
+2026-09-04 14:49:40 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.410 USDT | Min-Profit TP = 2.407 USDT (+3 pu) | SL = 2.416 USDT (-10 ticks)
+2026-09-04 14:49:40 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.407) or SL (2.416)...
+2026-09-04 14:49:40 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.410 / 2.411 (Spread: 1.0 pu) | OBI z=+0.36 | Delta z=+0.08 | VAMP z=-0.23
+2026-09-04 14:49:42 [INFO   ] ============================================================================
+2026-09-04 14:49:42 [INFO   ]    EXECUTING TRADE #1 [SHORT] - TRUMP_USDT
+2026-09-04 14:49:42 [INFO   ] ============================================================================
+2026-09-04 14:49:42 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +1 pu ticks | OBI z=-2.84 | Delta z=+0.08 (rec=1.00) | VAMP z=-3.61
+2026-09-04 14:49:43 [INFO   ] Pre-Trade Spec: Vol: 1 contract(s) (1x min) (0.1 TRUMP) | Trade Qty (Notional): +0.2410 USDT (+INR 22.77) | Committed Margin (Qty/75x): +0.0032 USDT (+INR 0.30)
+2026-09-04 14:49:43 [INFO   ] Reference Price: 2.410 USDT | Attached Min-Profit TP: 2.409 USDT (+1 pu) | Attached SL: 2.416 USDT (-10 ticks)
+2026-09-04 14:49:43 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.410 USDT | Min-Profit TP = 2.409 USDT (+1 pu) | SL = 2.416 USDT (-10 ticks)
+2026-09-04 14:49:43 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.409) or SL (2.416)...
+2026-09-04 14:49:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.411 USDT | TP: 2.407 | SL: 2.416 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:49:49 [INFO   ] [DRY-RUN MONITOR] Price: 2.411 USDT | TP: 2.409 | SL: 2.416 | Unrealized PnL: -0.000100 USDT
+2026-09-04 14:49:53 [INFO   ] [DRY-RUN MONITOR] Price: 2.411 USDT | TP: 2.407 | SL: 2.416 | Unrealized PnL: -0.000200 USDT
+2026-09-04 14:49:55 [INFO   ] [DRY-RUN MONITOR] Price: 2.411 USDT | TP: 2.409 | SL: 2.416 | Unrealized PnL: -0.000100 USDT
+2026-09-04 14:50:00 [INFO   ] [DRY-RUN MONITOR] Price: 2.410 USDT | TP: 2.407 | SL: 2.416 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:50:02 [INFO   ] [DRY-RUN MONITOR] Price: 2.410 USDT | TP: 2.409 | SL: 2.416 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:50:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.410 USDT | TP: 2.407 | SL: 2.416 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:50:08 [INFO   ] [DRY-RUN MONITOR] Price: 2.410 USDT | TP: 2.409 | SL: 2.416 | Unrealized PnL: +0.000000 USDT
+2026-09-04 14:50:09 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.409 USDT (Market Ask: 2.408, Last: 2.408)
+2026-09-04 14:50:11 [INFO   ] [SIMULATED WALLET] Balance: 0.0751 USDT (INR 7.09)
+2026-09-04 14:50:11 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 14:50:09 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 1 contract(s) (0.1 TRUMP)
+Trade Quantity     : 0.2410 USDT (INR 22.77) [Notional exposure]
+Margin Committed   : 0.0032 USDT (INR 0.30) [Trade Qty / 75x leverage]
+Entry Price        : 2.410 USDT (Opened: 2026-09-04 14:49:43)
+Exit Price         : 2.409 USDT (Duration: 26.80s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.409 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.416 USDT (Offset: -6 pu / -0.006 USDT | -0.249% price | -18.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0094)
+Return on Equity   : +3.11% (Price move: +0.041%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0751 USDT (INR 7.09)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0094)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:50:11 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:50:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.408 USDT | TP: 2.407 | SL: 2.416 | Unrealized PnL: +0.000400 USDT
+2026-09-04 14:50:19 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.407 USDT (Market Ask: 2.409, Last: 2.407)
+2026-09-04 14:50:20 [INFO   ] [SIMULATED WALLET] Balance: 0.0738 USDT (INR 6.97)
+2026-09-04 14:50:20 [INFO   ] 
+==============================================================================
+TRADE #8 OUTCOME JOURNAL | Closed at: 2026-09-04 14:50:19 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4820 USDT (INR 45.53) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.61) [Trade Qty / 75x leverage]
+Entry Price        : 2.410 USDT (Opened: 2026-09-04 14:49:40)
+Exit Price         : 2.407 USDT (Duration: 39.23s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.407 USDT (Offset: +3 pu / +0.003 USDT)
+Stop Loss Level    : 2.416 USDT (Offset: -6 pu / -0.006 USDT | -0.249% price | -18.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000600 USDT (+INR 0.0567)
+Return on Equity   : +9.34% (Price move: +0.124%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0738 USDT (INR 6.97)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 8 | Wins: 5 | Losses: 3 | Scratch: 0
+Win Rate           : 62.5%
+Net Cumulative PnL : -0.001200 USDT (INR -0.1134)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:50:20 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:50:21 [INFO   ] Reached configured maximum trades limit (1). Stopping.
+2026-09-04 14:50:22 [INFO   ] ============================================================================
+2026-09-04 14:50:22 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 14:50:22 [INFO   ] ============================================================================
+2026-09-04 14:50:22 [INFO   ] Total Trades Completed: 1 | Wins: 1 | Losses: 0 | Win Rate: 100.0%
+2026-09-04 14:50:22 [INFO   ] Net Session PnL: +0.0001 USDT (+INR 0.01)
+2026-09-04 14:50:31 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.404 / 2.406 (Spread: 2.0 pu) | OBI z=+2.33 | Delta z=+0.30 | VAMP z=+10.34
+2026-09-04 14:50:34 [INFO   ] ============================================================================
+2026-09-04 14:50:34 [INFO   ]    EXECUTING TRADE #9 [LONG] - TRUMP_USDT
+2026-09-04 14:50:34 [INFO   ] ============================================================================
+2026-09-04 14:50:34 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'vamp'] | Target TP: +2 pu ticks | OBI z=+2.74 | Delta z=+0.53 (rec=0.69) | VAMP z=+1.92
+2026-09-04 14:50:35 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4812 USDT (+INR 45.46) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.61)
+2026-09-04 14:50:35 [INFO   ] Reference Price: 2.406 USDT | Attached Min-Profit TP: 2.408 USDT (+2 pu) | Attached SL: 2.400 USDT (-10 ticks)
+2026-09-04 14:50:35 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.406 USDT | Min-Profit TP = 2.408 USDT (+2 pu) | SL = 2.400 USDT (-10 ticks)
+2026-09-04 14:50:35 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.408) or SL (2.400)...
+2026-09-04 14:50:41 [INFO   ] [DRY-RUN MONITOR] Price: 2.404 USDT | TP: 2.408 | SL: 2.400 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:50:48 [INFO   ] [DRY-RUN MONITOR] Price: 2.403 USDT | TP: 2.408 | SL: 2.400 | Unrealized PnL: -0.000600 USDT
+2026-09-04 14:50:54 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.400 USDT (Market Bid: 2.399, Last: 2.399)
+2026-09-04 14:50:55 [INFO   ] [SIMULATED WALLET] Balance: 0.0726 USDT (INR 6.86)
+2026-09-04 14:50:55 [INFO   ] 
+==============================================================================
+TRADE #9 OUTCOME JOURNAL | Closed at: 2026-09-04 14:50:54 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4812 USDT (INR 45.46) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.61) [Trade Qty / 75x leverage]
+Entry Price        : 2.406 USDT (Opened: 2026-09-04 14:50:35)
+Exit Price         : 2.400 USDT (Duration: 19.32s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.408 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.400 USDT (Offset: -6 pu / -0.006 USDT | -0.249% price | -18.7% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.70% (Price move: -0.249%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0726 USDT (INR 6.86)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 9 | Wins: 5 | Losses: 4 | Scratch: 0
+Win Rate           : 55.6%
+Net Cumulative PnL : -0.002400 USDT (INR -0.2267)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:50:55 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 14:51:05 [INFO   ] [HUNTING ENTRY] LIVE WS | Bid/Ask: 2.396 / 2.397 (Spread: 1.0 pu) | OBI z=+1.05 | Delta z=+0.31 | VAMP z=+0.94
+2026-09-04 14:51:06 [INFO   ] ============================================================================
+2026-09-04 14:51:06 [INFO   ]    EXECUTING TRADE #10 [SHORT] - TRUMP_USDT
+2026-09-04 14:51:06 [INFO   ] ============================================================================
+2026-09-04 14:51:06 [INFO   ] [MICROSTRUCTURE TRIGGER] Confluence: ['obi', 'delta', 'vamp'] | Target TP: +3 pu ticks | OBI z=-1.95 | Delta z=-2.36 (rec=1.00) | VAMP z=-4.16
+2026-09-04 14:51:07 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4800 USDT (+INR 45.35) | Committed Margin (Qty/75x): +0.0064 USDT (+INR 0.60)
+2026-09-04 14:51:07 [INFO   ] Reference Price: 2.400 USDT | Attached Min-Profit TP: 2.397 USDT (+3 pu) | Attached SL: 2.406 USDT (-10 ticks)
+2026-09-04 14:51:07 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.395 USDT | Min-Profit TP = 2.392 USDT (+3 pu) | SL = 2.401 USDT (-10 ticks)
+2026-09-04 14:51:07 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.392) or SL (2.401)...
+2026-09-04 14:51:13 [WARNING] 
+[STOP] Caught SIGINT / Interrupt signal.
+2026-09-04 14:51:15 [INFO   ] Graceful shutdown requested...
+2026-09-04 14:51:15 [INFO   ] [DRY-RUN MONITOR] Price: 2.397 USDT | TP: 2.392 | SL: 2.401 | Unrealized PnL: -0.000400 USDT
+2026-09-04 14:51:15 [WARNING] [DRY-RUN] Manual close requested during trade.
+2026-09-04 14:51:15 [INFO   ] [SIMULATED WALLET] Balance: 0.0716 USDT (INR 6.76)
+2026-09-04 14:51:15 [INFO   ] 
+==============================================================================
+TRADE #10 OUTCOME JOURNAL | Closed at: 2026-09-04 14:51:15 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4790 USDT (INR 45.25) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.395 USDT (Opened: 2026-09-04 14:51:07)
+Exit Price         : 2.400 USDT (Duration: 7.79s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.392 USDT (Offset: +3 pu / +0.003 USDT)
+Stop Loss Level    : 2.401 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MANUAL_CLOSE
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001000 USDT (INR -0.0945)
+Return on Equity   : -15.66% (Price move: -0.209%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0716 USDT (INR 6.76)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 10 | Wins: 5 | Losses: 5 | Scratch: 0
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.003400 USDT (INR -0.3212)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 14:51:15 [INFO   ] ============================================================================
+2026-09-04 14:51:15 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 14:51:15 [INFO   ] ============================================================================
+2026-09-04 14:51:15 [INFO   ] Total Trades Completed: 10 | Wins: 5 | Losses: 5 | Win Rate: 50.0%
+2026-09-04 14:51:15 [INFO   ] Net Session PnL: -0.0034 USDT (INR -0.32)

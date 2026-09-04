@@ -13,7 +13,7 @@ Features:
 import time
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from kcex.market import KCEXMarket, ContractInfo
 from kcex.engine.models import (
     OrderDirection,
@@ -51,6 +51,19 @@ class BaseSubStrategy(ABC):
     def get_remaining_cooldown(self, current_time: float) -> float:
         """Returns remaining cooldown time in seconds."""
         pass
+
+
+    def start(self) -> None:
+        """Starts any background resources (e.g. WebSocket feeds)."""
+        pass
+
+    def stop(self) -> None:
+        """Stops any background resources."""
+        pass
+
+    def get_diagnostics(self) -> Dict[str, Any]:
+        """Returns real-time strategy diagnostics if available."""
+        return {}
 
 
 class DirectionalCycleSubStrategy(BaseSubStrategy):
@@ -113,6 +126,186 @@ class DirectionalCycleSubStrategy(BaseSubStrategy):
             outcome.trade_id,
             int(self.cooldown_seconds)
         )
+
+
+class MicrostructureSubStrategy(BaseSubStrategy):
+    """
+    Sub-strategy 2: High-Frequency Market Microstructure Entry Strategy.
+    Connects to live KCEX WebSocket depth and deal streams.
+    Fuses:
+    1. Decay-weighted, spoof-discounted Order Book Imbalance (OBI)
+    2. Trade Delta Bursts with fast/slow recency acceleration gating
+    3. Multi-level Micro-Price / VAMP deviation from naive mid
+    4. Confluence voting (>= 2 of 3) & adverse selection filters (iceberg veto, spread guard)
+
+    Emits instantaneous entry signals targeting 1 to 3 pu ticks.
+    """
+
+    def __init__(
+        self,
+        market: KCEXMarket,
+        symbol: str,
+        signal_config: Optional[Any] = None,
+        preferred_direction: Optional[OrderDirection] = None,
+        cooldown_seconds: float = 10.0,
+        auto_start_feed: bool = True,
+        tp_ticks: Optional[int] = None,
+        dynamic_tp: bool = False,
+        name: str = "Microstructure"
+    ):
+        super().__init__(name=name)
+        self.market = market
+        self.symbol = symbol.upper()
+        self.preferred_direction = preferred_direction
+        self.cooldown_seconds = cooldown_seconds
+        self.tp_ticks = tp_ticks
+        self.dynamic_tp = dynamic_tp
+
+        from kcex.engine.microstructure import (
+            SymbolMeta,
+            SignalConfig,
+            MicrostructureSignalGenerator
+        )
+        from kcex.feed import KCEXWebSocketFeed
+
+        # Look up contract metadata
+        contract = self.market.get_contract_detail(self.symbol)
+        meta = SymbolMeta(
+            symbol=self.symbol,
+            pu=contract.price_unit,
+            cs=contract.contract_size,
+            minV=contract.min_volume
+        )
+
+        if signal_config is None:
+            if not dynamic_tp and tp_ticks is not None:
+                cfg = SignalConfig(
+                    min_target_ticks=tp_ticks,
+                    max_target_ticks=tp_ticks,
+                    cooldown_s=1.5
+                )
+            else:
+                max_ticks = max(3, tp_ticks) if tp_ticks else 3
+                cfg = SignalConfig(
+                    min_target_ticks=1,
+                    max_target_ticks=max_ticks,
+                    cooldown_s=1.5
+                )
+        else:
+            cfg = signal_config
+
+        self.generator = MicrostructureSignalGenerator(meta=meta, config=cfg)
+
+        depth_step = contract.depth_steps[0] if contract.depth_steps else str(contract.price_unit)
+        self.feed = KCEXWebSocketFeed(
+            symbol=self.symbol,
+            depth_step=depth_step,
+            on_depth=self._on_depth,
+            on_deal=self._on_deal
+        )
+
+        self.last_trade_closed_at: Optional[float] = None
+        self.trade_in_progress: bool = False
+        self.completed_trades_count: int = 0
+
+        # Seed initial orderbook and trades from REST to warm up distributions
+        self._warmup_with_rest(depth_step)
+
+        if auto_start_feed:
+            self.start()
+
+    def _warmup_with_rest(self, step: str) -> None:
+        """Seeds initial distributions using REST snapshots."""
+        try:
+            book = self.market.get_order_book(self.symbol, step=step)
+            bids = [(float(b[0]), float(b[1])) for b in book.get("bids", [])]
+            asks = [(float(a[0]), float(a[1])) for a in book.get("asks", [])]
+            if bids or asks:
+                self.generator.on_depth(bids, asks)
+
+            deals = self.market.get_recent_trades(self.symbol)
+            for d in deals[:50]:
+                p = float(d.get("p", 0.0))
+                v = float(d.get("v", 0.0))
+                side = "buy" if d.get("T") == 1 else "sell"
+                ts = float(d.get("t", time.time() * 1000)) / 1000.0
+                if p > 0:
+                    self.generator.on_deal(p, v, side, ts)
+            logger.info("Microstructure strategy warmed up with %d book levels and %d trades.", len(bids) + len(asks), len(deals))
+        except Exception as e:
+            logger.warning("REST warm-up error for %s: %s", self.symbol, e)
+
+    def _on_depth(self, bids: List[Tuple[float, float]], asks: List[Tuple[float, float]], ts: float) -> None:
+        self.generator.on_depth(bids, asks, ts)
+
+    def _on_deal(self, price: float, volume: float, side: str, ts: float) -> None:
+        self.generator.on_deal(price, volume, side, ts)
+
+    def start(self) -> None:
+        if self.feed and not self.feed.is_connected:
+            self.feed.start()
+
+    def stop(self) -> None:
+        if self.feed:
+            self.feed.stop()
+
+    def should_generate_signal(self, current_time: float) -> bool:
+        if self.trade_in_progress:
+            return False
+        if self.last_trade_closed_at is None:
+            return True
+        elapsed = current_time - self.last_trade_closed_at
+        return elapsed >= self.cooldown_seconds
+
+    def get_remaining_cooldown(self, current_time: float) -> float:
+        if self.trade_in_progress or self.last_trade_closed_at is None:
+            return 0.0
+        elapsed = current_time - self.last_trade_closed_at
+        remaining = self.cooldown_seconds - elapsed
+        return max(0.0, remaining)
+
+    def generate_signal(self, symbol: str) -> Optional[TradeSignal]:
+        now = time.time()
+        if not self.should_generate_signal(now):
+            return None
+
+        result = self.generator.generate(ts=now)
+        if not result:
+            return None
+
+        dir_str, target_ticks, metadata = result
+        dir_enum = OrderDirection.LONG if dir_str == "LONG" else OrderDirection.SHORT
+
+        # If user explicitly preferred a single direction, discard opposite signals
+        if self.preferred_direction and dir_enum != self.preferred_direction:
+            return None
+
+        self.trade_in_progress = True
+        return TradeSignal(
+            symbol=self.symbol,
+            direction=dir_enum,
+            sub_strategy_name=f"{self.name}({dir_str})",
+            timestamp=now,
+            metadata=metadata
+        )
+
+    def on_trade_completed(self, outcome: TradeOutcome) -> None:
+        self.trade_in_progress = False
+        self.last_trade_closed_at = outcome.close_time or time.time()
+        self.completed_trades_count += 1
+        logger.info(
+            "Microstructure sub-strategy completed trade #%d. Cooldown %ds initiated.",
+            outcome.trade_id,
+            int(self.cooldown_seconds)
+        )
+
+    def get_diagnostics(self) -> Dict[str, Any]:
+        diag = self.generator.get_diagnostics()
+        diag["feed"] = self.feed.stats if self.feed else {}
+        diag["cooldown_remaining_s"] = round(self.get_remaining_cooldown(time.time()), 1)
+        diag["trade_in_progress"] = self.trade_in_progress
+        return diag
+
 
 
 class MasterplanStrategy:
@@ -313,3 +506,16 @@ class MasterplanStrategy:
     def on_trade_completed(self, outcome: TradeOutcome) -> None:
         """Notifies sub-strategy when trade completes."""
         self.sub_strategy.on_trade_completed(outcome)
+
+    def start(self) -> None:
+        """Starts sub-strategy resources (e.g. WebSocket feeds)."""
+        self.sub_strategy.start()
+
+    def stop(self) -> None:
+        """Stops sub-strategy resources."""
+        self.sub_strategy.stop()
+
+    def get_diagnostics(self) -> Dict[str, Any]:
+        """Returns live sub-strategy diagnostics."""
+        return self.sub_strategy.get_diagnostics()
+

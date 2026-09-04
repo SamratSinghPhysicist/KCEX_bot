@@ -39,9 +39,14 @@ from kcex import (
     TradeOutcome,
     MasterplanStrategy,
     DirectionalCycleSubStrategy,
+    MicrostructureSubStrategy,
+    MicrostructureSignalGenerator,
+    SignalConfig,
+    SymbolMeta,
     DualCurrencyLogger,
     TradeOutcomeLogger
 )
+
 
 
 class TestMasterplanStrategy(unittest.TestCase):
@@ -692,6 +697,140 @@ class TestGeneralizationMultiCoin(unittest.TestCase):
         self.assertNotIn("[Zero-Fee Pair]", card)
 
 
+class TestMicrostructureStrategy(unittest.TestCase):
+    """Tests Market Microstructure Signal Generator and Sub-Strategy."""
+
+    def test_rolling_z_and_ema(self):
+        from kcex.engine.microstructure import RollingZ, EMA
+        rz = RollingZ(maxlen=50, min_n=10)
+        for i in range(9):
+            rz.push(10.0)
+        self.assertEqual(rz.z(10.0), 0.0)  # under min_n
+
+        for i in range(20):
+            rz.push(10.0 + (i % 3))
+        self.assertGreater(rz.std(), 0.0)
+        self.assertAlmostEqual(rz.z(rz.mean()), 0.0, places=3)
+
+        ema = EMA(alpha=0.1, initial=10.0)
+        val = ema.update(20.0)
+        self.assertAlmostEqual(val, 11.0)
+
+    def test_obi_and_spoof_discount(self):
+        meta = SymbolMeta(symbol="TEST_USDT", pu=0.01, cs=1.0, minV=1.0)
+        gen = MicrostructureSignalGenerator(meta=meta)
+        t0 = 1000.0
+        # Add depth snapshot
+        gen.on_depth(
+            bids=[(10.00, 100.0)],
+            asks=[(10.01, 10.0)],
+            ts=t0
+        )
+        # Immediately at t0, level weight is 0
+        self.assertEqual(gen._level_weight("bid", 10.00, t0), 0.0)
+        # After 1.0s, level weight is 1.0
+        self.assertEqual(gen._level_weight("bid", 10.00, t0 + 1.0), 1.0)
+        obi = gen._compute_obi(t0 + 1.0)
+        self.assertGreater(obi, 0.5)
+
+    def test_trade_delta_and_recency_burst(self):
+        meta = SymbolMeta(symbol="TEST_USDT", pu=0.01, cs=1.0, minV=1.0)
+        gen = MicrostructureSignalGenerator(meta=meta)
+        t = 1000.0
+        gen.on_deal(10.00, 5.0, "buy", ts=t)
+        gen.on_deal(10.00, 5.0, "buy", ts=t + 1.6) # within 0.5s of t+2.0
+        slow_sum, recency = gen._compute_delta(t + 2.0)
+        self.assertEqual(slow_sum, 10.0)
+        self.assertGreaterEqual(recency, 0.4)
+
+    def test_vamp_deviation(self):
+        meta = SymbolMeta(symbol="TEST_USDT", pu=0.01, cs=1.0, minV=1.0)
+        gen = MicrostructureSignalGenerator(meta=meta)
+        gen.bids = [(10.00, 500.0)]
+        gen.asks = [(10.01, 10.0)]
+        vamp_dev = gen._compute_vamp_deviation()
+        self.assertGreater(vamp_dev, 0.0)
+
+    def test_confluence_signal_generation_and_iceberg_veto(self):
+        meta = SymbolMeta(symbol="TEST_USDT", pu=0.01, cs=1.0, minV=1.0)
+        cfg = SignalConfig(
+            stats_lookback=30,
+            obi_z_threshold=1.0,
+            delta_z_threshold=1.0,
+            vamp_z_threshold=1.0,
+            min_confluence=2,
+            cooldown_s=0.1
+        )
+        gen = MicrostructureSignalGenerator(meta=meta, config=cfg)
+        t = 1000.0
+        # Warmup with balanced data
+        for i in range(35):
+            t += 0.5
+            gen.on_depth([(10.00 - j * 0.01, 10.0) for j in range(5)],
+                         [(10.01 + j * 0.01, 10.0) for j in range(5)], ts=t)
+            gen.on_deal(10.01 if i % 2 == 0 else 10.00, 1.0, "buy" if i % 2 == 0 else "sell", ts=t)
+            gen.generate(ts=t)
+
+        # 1. Let warmup settle and establish solid bid wall, aging past 1.0s (not spoof discounted)
+        t += 3.0
+        gen.on_depth([(10.00, 300.0)], [(10.01, 20.0)], ts=t)
+        t += 1.5
+        gen.on_depth([(10.00, 300.0)], [(10.01, 20.0)], ts=t)
+
+        # 2. Aggressive buyer trades at ask (10.01), thinning ask from 20 to 5 (1 tick spread, genuine fill)
+        gen.on_deal(10.01, 15.0, "buy", ts=t)
+        gen.on_depth([(10.00, 300.0)], [(10.01, 5.0)], ts=t)
+
+        res = gen.generate(ts=t)
+        self.assertIsNotNone(res)
+        direction, target_ticks, metadata = res
+        self.assertEqual(direction, "LONG")
+        self.assertIn(target_ticks, [1, 2, 3])
+        self.assertIn("agreeing_signals", metadata)
+
+        # 3. Now test iceberg veto: if an iceberg defends the ask, LONG signals are vetoed
+        gen._defended["ask"].veto_until = t + 5.0
+        gen._last_signal_ts = 0.0  # reset cooldown
+        vetoed_res = gen.generate(ts=t)
+        self.assertIsNone(vetoed_res)  # Vetoed because ask is defended
+
+    def test_microstructure_sub_strategy_execution(self):
+        mock_market = MagicMock()
+        mock_market.get_contract_detail.return_value = ContractInfo(
+            symbol="TEST_USDT",
+            base_coin="TEST",
+            quote_coin="USDT",
+            contract_size=1.0,
+            price_unit=0.001,
+            volume_unit=1.0,
+            price_precision=3,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=1000.0,
+            min_leverage=1,
+            max_leverage=50,
+            maintenance_margin_ratio=0.01,
+            initial_margin_ratio=0.02,
+            maker_fee_rate=0.0,
+            taker_fee_rate=0.0,
+            depth_steps=["0.001"],
+            raw_data={}
+        )
+        mock_market.get_order_book.return_value = {"bids": [[1.000, 10]], "asks": [[1.001, 10]]}
+        mock_market.get_recent_trades.return_value = []
+
+        sub = MicrostructureSubStrategy(
+            market=mock_market,
+            symbol="TEST_USDT",
+            auto_start_feed=False,
+            cooldown_seconds=5.0
+        )
+        self.assertIsNotNone(sub.generator)
+        diag = sub.get_diagnostics()
+        self.assertIn("obi", diag)
+        sub.stop()
+
+
 def run_all_tests():
     print("=" * 70)
     print("      RUNNING KCEX EXECUTION ENGINE TEST SUITE")
@@ -702,7 +841,8 @@ def run_all_tests():
         "test_engine.TestDualCurrencyAndLogging",
         "test_engine.TestEngineExecutionDryRun",
         "test_engine.TestVolumeSizingAndExposure",
-        "test_engine.TestGeneralizationMultiCoin"
+        "test_engine.TestGeneralizationMultiCoin",
+        "test_engine.TestMicrostructureStrategy"
     ])
     runner = unittest.TextTestRunner(verbosity=2)
     res = runner.run(suite)
@@ -712,4 +852,5 @@ def run_all_tests():
 if __name__ == "__main__":
     success = run_all_tests()
     sys.exit(0 if success else 1)
+
 

@@ -95,7 +95,12 @@ VOLUME_CONTRACTS = 1
 # For TRUMP_USDT, 1 pu = 0.001 USDT.
 # TP_TICKS = 1 -> TP = Entry Price + 1 * pu (for Long) or Entry Price - 1 * pu (for Short)
 # TP_TICKS = 2 -> TP = Entry Price + 2 * pu (for Long) or Entry Price - 2 * pu (for Short)
-TP_TICKS = 2
+TP_TICKS = 1
+
+# Dynamic TP Scaling:
+# False (RECOMMENDED) -> Strictly locks Take Profit to TP_TICKS (e.g. 1 pu scalp is always closed at +1 pu).
+# True                -> Allows microstructure signals to scale TP dynamically (1 to 3 pu) on strong confluence.
+DYNAMIC_TP = False
 
 
 # =============================================================================
@@ -147,8 +152,7 @@ IS_ISOLATED = True
 # 6. CYCLE TIMING & SESSION LIMITS
 # =============================================================================
 # Cooldown period in seconds to wait after a trade closes before opening the next trade.
-# Allows the orderbook and ticker to stabilize after order closure.
-COOLDOWN_SECONDS = 30.0
+COOLDOWN_SECONDS = 10.0
 
 # Maximum number of trades to execute in this session.
 # Set to 0 for UNLIMITED / continuous 24/7 automated operation until stopped.
@@ -160,10 +164,33 @@ POLL_INTERVAL_SECONDS = 0.2
 
 
 # =============================================================================
-# 7. LOGGING DIRECTORIES & AUDIT FILES
+# 7. STRATEGY SELECTION & MICROSTRUCTURE SETTINGS
+# =============================================================================
+# Strategy mode selection:
+#   "MICROSTRUCTURE" -> High-Frequency Market Microstructure (Autonomous Order Book & Tape Imbalance) [Recommended]
+#   "CYCLE"          -> Directional Cycle (Classic fixed-direction Long/Short cycle)
+STRATEGY_MODE = "MICROSTRUCTURE"
+
+# Autonomous trading direction for Microstructure strategy:
+# True  -> Scalps BOTH Long and Short dynamically as market order flow tilts.
+# False -> Restricts scalps strictly to the DIRECTION specified in Section 1.
+MICRO_BI_DIRECTIONAL = True
+
+# Microstructure signal calibration (standard deviations in z-space):
+MICRO_OBI_Z = 1.6           # Order Book Imbalance z-score threshold
+MICRO_DELTA_Z = 1.8         # Trade Delta burst z-score threshold
+MICRO_VAMP_Z = 1.5          # Volume-Adjusted Midpoint (micro-price) z-score threshold
+MICRO_MIN_CONFLUENCE = 2    # Number of signals that must agree (>= 2 of 3)
+MICRO_BURST_RECENCY = 0.35  # Fraction of 2s volume concentrated in last 0.5s burst
+MICRO_MAX_SPREAD_TICKS = 1.5 # Max allowed spread in pu ticks before suppressing signals
+
+
+# =============================================================================
+# 8. LOGGING DIRECTORIES & AUDIT FILES
 # =============================================================================
 LOGS_DIR = "logs"
 REALTIME_LOG_FILE = "engine_realtime.log"     # Live stream of all engine events & price polls
 OUTCOMES_LOG_FILE = "trade_outcomes.txt"      # Human-readable visual trade outcome journal cards
 OUTCOMES_JSONL_FILE = "trade_outcomes.jsonl"  # Machine-readable JSONL audit trail of every trade
+
 
