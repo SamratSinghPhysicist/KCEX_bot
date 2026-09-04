@@ -215,6 +215,9 @@ class TradeExecutionEngine:
             entry_price=ref_price,
             leverage=leverage,
             sl_roe_pct=self.config.sl_roe_pct,
+            sl_ticks=self.config.sl_ticks,
+            sl_price_pct=self.config.sl_price_pct,
+            price_unit=pu,
             precision=contract.price_precision
         )
 
@@ -223,6 +226,12 @@ class TradeExecutionEngine:
         margin_est_usdt = notional_est_usdt / leverage
         margin_est_inr = margin_est_usdt * inr_rate
 
+        sl_desc = (
+            f"-{self.config.sl_ticks} ticks" if self.config.sl_ticks
+            else f"-{self.config.sl_price_pct}% price" if self.config.sl_price_pct
+            else f"-{self.config.sl_roe_pct}% ROE"
+        )
+
         self.logger.info(
             f"Pre-Trade Spec: Vol: {vol_contracts} contract ({underlying_qty} coins) | "
             f"Est Notional: {self.logger.format_dual(notional_est_usdt)} | "
@@ -230,8 +239,8 @@ class TradeExecutionEngine:
         )
         self.logger.info(
             f"Reference Price: {ref_price:.4f} USDT | "
-            f"Attached Min-Profit TP: {est_tp:.4f} USDT (+1 pu) | "
-            f"Attached SL: {est_sl:.4f} USDT (-{self.config.sl_roe_pct}% ROE)"
+            f"Attached Min-Profit TP: {est_tp:.4f} USDT (+{self.config.tp_ticks} pu) | "
+            f"Attached SL: {est_sl:.4f} USDT ({sl_desc})"
         )
 
         open_time = time.time()
@@ -336,6 +345,9 @@ class TradeExecutionEngine:
             entry_price=entry_price,
             leverage=leverage,
             sl_roe_pct=self.config.sl_roe_pct,
+            sl_ticks=self.config.sl_ticks,
+            sl_price_pct=self.config.sl_price_pct,
+            price_unit=pu,
             precision=contract.price_precision
         )
 
@@ -714,12 +726,21 @@ class TradeExecutionEngine:
             entry_price=entry_price,
             leverage=leverage,
             sl_roe_pct=self.config.sl_roe_pct,
+            sl_ticks=self.config.sl_ticks,
+            sl_price_pct=self.config.sl_price_pct,
+            price_unit=pu,
             precision=contract.price_precision
+        )
+
+        sl_desc = (
+            f"-{self.config.sl_ticks} ticks" if self.config.sl_ticks
+            else f"-{self.config.sl_price_pct}% price" if self.config.sl_price_pct
+            else f"-{self.config.sl_roe_pct}% ROE"
         )
 
         self.logger.info(
             f"[DRY-RUN] Simulated Order Filled: Entry = {entry_price:.4f} USDT | "
-            f"Min-Profit TP = {exact_tp:.4f} USDT (+1 pu) | SL = {exact_sl:.4f} USDT (-{self.config.sl_roe_pct}% ROE)"
+            f"Min-Profit TP = {exact_tp:.4f} USDT (+{self.config.tp_ticks} pu) | SL = {exact_sl:.4f} USDT ({sl_desc})"
         )
 
         # Simulate monitoring with live market tick or fast execution

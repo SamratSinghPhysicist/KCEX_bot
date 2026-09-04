@@ -51,7 +51,10 @@ class ExecutionConfig:
     is_isolated: bool = True
     cooldown_seconds: float = 30.0
     tp_ticks: int = 1               # Number of pu (tick size) away from entry
+    sl_mode: str = "ROE"            # "ROE", "TICKS", or "PRICE_PCT"
     sl_roe_pct: float = 10.0        # -10% ROE (Return on Equity/Margin)
+    sl_ticks: Optional[int] = None  # Number of pu ticks away from entry
+    sl_price_pct: Optional[float] = None # Price move percentage away from entry
     max_trades: int = 0             # 0 = unlimited
     poll_interval_seconds: float = 0.5
     logs_dir: str = "logs"

@@ -86,18 +86,25 @@ def prompt_user_settings():
     default_mode = get_setting("MODE", "live").lower()
     default_dir = get_setting("DIRECTION", "LONG").upper()
     default_sym = get_setting("SYMBOL", "TRUMP_USDT").upper()
-    default_tp = get_setting("TP_TICKS", 1)
-    default_sl = get_setting("SL_ROE_PCT", 10.0)
-    default_lev = get_setting("LEVERAGE", 75)
+    default_tp = get_setting("TP_TICKS", 2)
+    default_sl_mode = get_setting("SL_MODE", "TICKS").upper()
+    default_sl_ticks = get_setting("SL_TICKS", 10)
+    default_sl_roe = get_setting("SL_ROE_PCT", 25.0)
+    default_sl_price = get_setting("SL_PRICE_PCT", 0.5)
+    default_lev = get_setting("LEVERAGE", 30)
     default_cool = get_setting("COOLDOWN_SECONDS", 30.0)
-    default_max = get_setting("MAX_TRADES", 0)
+    default_max = get_setting("MAX_TRADES", 3)
 
     print("\n" + "=" * 78)
     print("           INTERACTIVE SETUP WIZARD (Press [Enter] to keep defaults)")
     print("=" * 78)
+    print("💡 Tip: Press [Enter] on any prompt to accept the default from settings.py.\n")
 
     # 1. Mode
-    mode_str = input(f"1. Execution Mode ([1] LIVE Trading, [2] SIMULATED Dry-Run) [default: {'1 (LIVE)' if default_mode == 'live' else '2 (SIMULATED)'}]: ").strip()
+    print("1. Execution Mode:")
+    print("   [1] LIVE TRADING    -> Real orders submitted to KCEX using wallet balance.")
+    print("   [2] SIMULATED (Dry) -> Virtual orders with real-time live ticker data (0 risk).")
+    mode_str = input(f"   Select Mode [default: {'1 (LIVE)' if default_mode == 'live' else '2 (SIMULATED)'}]: ").strip()
     if mode_str == "2":
         mode_val = EngineMode.DRY_RUN
     elif mode_str == "1":
@@ -106,7 +113,10 @@ def prompt_user_settings():
         mode_val = EngineMode.LIVE if default_mode == "live" else EngineMode.DRY_RUN
 
     # 2. Direction
-    dir_str = input(f"2. Order Direction ([1] LONG, [2] SHORT) [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
+    print("\n2. Order Direction:")
+    print("   [1] LONG  -> Profit when price rises.")
+    print("   [2] SHORT -> Profit when price drops.")
+    dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
     if dir_str == "2" or dir_str.upper() == "SHORT":
         dir_val = OrderDirection.SHORT
     elif dir_str == "1" or dir_str.upper() == "LONG":
@@ -115,39 +125,109 @@ def prompt_user_settings():
         dir_val = OrderDirection.LONG if default_dir == "LONG" else OrderDirection.SHORT
 
     # 3. Trading Pair
-    sym_str = input(f"3. Trading Pair [default: {default_sym}]: ").strip().upper()
+    print("\n3. Trading Pair (Zero-Fee):")
+    print("   TRUMP_USDT has confirmed 0% maker and 0% taker fees on KCEX.")
+    sym_str = input(f"   Symbol [default: {default_sym}]: ").strip().upper()
     sym_val = sym_str if sym_str else default_sym
 
     # 4. Take-Profit rule (pu ticks)
-    tp_str = input(f"4. Min-Profit TP distance in ticks (pu) [default: {default_tp} pu]: ").strip()
+    print("\n4. Guaranteed Min-Profit Take-Profit (TP):")
+    print("   Distance in price units (pu). For TRUMP_USDT, 1 pu = 0.0010 USDT.")
+    print("   2 pu = +0.0020 USDT profit (+0.085% price move).")
+    tp_str = input(f"   TP Ticks [default: {default_tp} pu]: ").strip()
     try:
         tp_val = int(tp_str) if tp_str else default_tp
     except ValueError:
         tp_val = default_tp
 
-    # 5. Stop Loss ROE %
-    sl_str = input(f"5. Stop Loss -ROE % [default: {default_sl}%]: ").strip()
-    try:
-        sl_val = float(sl_str) if sl_str else default_sl
-    except ValueError:
-        sl_val = default_sl
+    # 5. Stop Loss
+    if default_sl_mode == "TICKS" and default_sl_ticks:
+        default_sl_hint = f"{default_sl_ticks} ticks ({default_sl_ticks * 0.001:.4f} USDT)"
+    elif default_sl_mode == "PRICE_PCT" and default_sl_price:
+        default_sl_hint = f"{default_sl_price}% price"
+    else:
+        default_sl_hint = f"{default_sl_roe}% ROE"
+
+    print("\n5. Stop Loss (SL) Configuration:")
+    print("   Format options:")
+    print("     - By Ticks : Enter '10' or '10t' (e.g. 10 ticks = 0.0100 USDT) [Recommended]")
+    print("     - By ROE % : Enter '25%' or '50roe' (percentage loss on margin)")
+    print("     - By Price%: Enter '0.5p' or '0.5%' (percentage move of coin price)")
+    sl_str = input(f"   Stop Loss [default: {default_sl_hint}]: ").strip()
+    
+    sl_mode_val = default_sl_mode
+    sl_ticks_val = default_sl_ticks if default_sl_mode == "TICKS" else None
+    sl_roe_val = default_sl_roe if default_sl_mode == "ROE" else 25.0
+    sl_price_val = default_sl_price if default_sl_mode == "PRICE_PCT" else None
+
+    if sl_str:
+        s_clean = sl_str.lower().strip()
+        if "%" in s_clean or "roe" in s_clean:
+            sl_mode_val = "ROE"
+            try:
+                sl_roe_val = float(s_clean.replace("%", "").replace("roe", "").strip())
+            except ValueError:
+                sl_roe_val = default_sl_roe
+            sl_ticks_val = None
+            sl_price_val = None
+        elif "p" in s_clean or "price" in s_clean:
+            sl_mode_val = "PRICE_PCT"
+            try:
+                sl_price_val = float(s_clean.replace("p", "").replace("price", "").strip())
+            except ValueError:
+                sl_price_val = default_sl_price
+            sl_ticks_val = None
+            sl_roe_val = None
+        elif "t" in s_clean or "tick" in s_clean:
+            sl_mode_val = "TICKS"
+            try:
+                sl_ticks_val = int(s_clean.replace("ticks", "").replace("tick", "").replace("t", "").strip())
+            except ValueError:
+                sl_ticks_val = default_sl_ticks
+            sl_roe_val = None
+            sl_price_val = None
+        else:
+            try:
+                num = float(s_clean)
+                if num >= 1.0 and num.is_integer():
+                    # Integer >= 1: treat as ticks
+                    sl_mode_val = "TICKS"
+                    sl_ticks_val = int(num)
+                    sl_roe_val = None
+                    sl_price_val = None
+                else:
+                    sl_mode_val = "PRICE_PCT"
+                    sl_price_val = num
+                    sl_ticks_val = None
+                    sl_roe_val = None
+            except ValueError:
+                pass
 
     # 6. Leverage
-    lev_str = input(f"6. Leverage multiplier [default: {default_lev}x]: ").strip()
+    print("\n6. Position Leverage (Isolated Margin):")
+    print("   ⚠️ Leverage & Liquidation Buffer Guide:")
+    print("      75x -> Liquidation is ~8 ticks away (SL must be <= 5 ticks).")
+    print("      30x -> Liquidation is ~55 ticks away (safe room for 10-35 tick stops) [Recommended].")
+    print("      20x -> Liquidation is ~94 ticks away (safe room for 10-60 tick stops).")
+    lev_str = input(f"   Leverage Multiplier [default: {default_lev}x]: ").strip()
     try:
         lev_val = int(lev_str) if lev_str else default_lev
     except ValueError:
         lev_val = default_lev
 
     # 7. Cooldown
-    cool_str = input(f"7. Cooldown between trades in seconds [default: {default_cool:.0f}s]: ").strip()
+    print("\n7. Post-Trade Cooldown:")
+    print("   Seconds to pause after position closes before executing the next trade cycle.")
+    cool_str = input(f"   Cooldown Seconds [default: {default_cool:.0f}s]: ").strip()
     try:
         cool_val = float(cool_str) if cool_str else default_cool
     except ValueError:
         cool_val = default_cool
 
     # 8. Max trades
-    max_str = input(f"8. Max trades to execute (0 = unlimited) [default: {default_max}]: ").strip()
+    print("\n8. Session Trade Target:")
+    print("   Total number of trades to execute before engine automatically stops (0 = unlimited).")
+    max_str = input(f"   Max Trades [default: {default_max}]: ").strip()
     try:
         max_val = int(max_str) if max_str else default_max
     except ValueError:
@@ -163,9 +243,12 @@ def prompt_user_settings():
         is_isolated=True,
         cooldown_seconds=cool_val,
         tp_ticks=tp_val,
-        sl_roe_pct=sl_val,
+        sl_mode=sl_mode_val,
+        sl_roe_pct=sl_roe_val,
+        sl_ticks=sl_ticks_val,
+        sl_price_pct=sl_price_val,
         max_trades=max_val,
-        poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.5),
+        poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
         outcomes_log_file=get_setting("OUTCOMES_LOG_FILE", "trade_outcomes.txt"),
@@ -213,25 +296,44 @@ def parse_args():
         "--tp-ticks",
         type=int,
         default=None,
-        help="Take profit distance in price unit (pu) ticks (default: 1)"
+        help="Take profit distance in price unit (pu) ticks (default: 2)"
+    )
+    parser.add_argument(
+        "--sl-ticks",
+        type=int,
+        default=None,
+        help="Stop loss distance in price unit ticks (e.g. 10)"
+    )
+    parser.add_argument(
+        "--sl-price-pct",
+        type=float,
+        default=None,
+        help="Stop loss distance by price percentage move (e.g. 0.5)"
     )
     parser.add_argument(
         "--sl-roe",
         type=float,
         default=None,
-        help="Stop loss ROE percentage (default: 10.0)"
+        help="Stop loss ROE percentage on margin (default: 25.0)"
+    )
+    parser.add_argument(
+        "--sl-mode",
+        type=str,
+        choices=["TICKS", "ROE", "PRICE_PCT", "ticks", "roe", "price_pct"],
+        default=None,
+        help="Stop loss mode: TICKS, ROE, or PRICE_PCT"
     )
     parser.add_argument(
         "--leverage",
         type=int,
         default=None,
-        help="Position leverage (default: 75)"
+        help="Position leverage (default from settings.py: 30)"
     )
     parser.add_argument(
         "--poll-interval",
         type=float,
         default=None,
-        help="Live price polling interval in seconds (default: 0.5)"
+        help="Live price polling interval in seconds (default: 0.3)"
     )
     parser.add_argument(
         "--non-interactive",
@@ -261,12 +363,16 @@ def main():
         dir_enum = OrderDirection.LONG if dir_raw == "LONG" else OrderDirection.SHORT
         mode_enum = EngineMode.LIVE if mode_raw == "live" else EngineMode.DRY_RUN
 
-        tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 1)
-        sl_roe = args.sl_roe if args.sl_roe is not None else get_setting("SL_ROE_PCT", 10.0)
-        lev = args.leverage if args.leverage is not None else get_setting("LEVERAGE", 75)
+        tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 2)
+        sl_mode = (args.sl_mode or get_setting("SL_MODE", "TICKS")).upper()
+        sl_ticks = args.sl_ticks if args.sl_ticks is not None else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None)
+        sl_price_pct = args.sl_price_pct if args.sl_price_pct is not None else (get_setting("SL_PRICE_PCT", 0.5) if sl_mode == "PRICE_PCT" else None)
+        sl_roe = args.sl_roe if args.sl_roe is not None else get_setting("SL_ROE_PCT", 25.0)
+
+        lev = args.leverage if args.leverage is not None else get_setting("LEVERAGE", 30)
         cooldown = args.cooldown if args.cooldown is not None else get_setting("COOLDOWN_SECONDS", 30.0)
-        max_trades = args.max_trades if args.max_trades is not None else get_setting("MAX_TRADES", 0)
-        poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.5)
+        max_trades = args.max_trades if args.max_trades is not None else get_setting("MAX_TRADES", 3)
+        poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.3)
 
         config = ExecutionConfig(
             symbol=sym,
@@ -276,6 +382,9 @@ def main():
             is_isolated=get_setting("IS_ISOLATED", True),
             cooldown_seconds=cooldown,
             tp_ticks=tp_ticks,
+            sl_mode=sl_mode,
+            sl_ticks=sl_ticks,
+            sl_price_pct=sl_price_pct,
             sl_roe_pct=sl_roe,
             max_trades=max_trades,
             poll_interval_seconds=poll_int,

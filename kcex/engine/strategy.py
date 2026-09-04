@@ -215,21 +215,65 @@ class MasterplanStrategy:
         direction: OrderDirection,
         entry_price: float,
         leverage: int,
-        sl_roe_pct: float = 10.0,
+        sl_roe_pct: Optional[float] = None,
+        sl_ticks: Optional[int] = None,
+        sl_price_pct: Optional[float] = None,
+        price_unit: float = 0.001,
         precision: int = 4
     ) -> float:
         """
-        Calculates Stop Loss price at desired negative ROE (-10% by default).
-        Since ROE% = PriceChangePct * Leverage:
-            PriceChangePct = sl_roe_pct / (100 * Leverage)
-        For Long:  SL = Entry Price * (1 - PriceChangePct)
-        For Short: SL = Entry Price * (1 + PriceChangePct)
+        Calculates Stop Loss price supporting multiple modes:
+        1. sl_ticks: Stop loss offset by integer price units (e.g. 10 ticks = 10 * pu).
+        2. sl_price_pct: Stop loss by pure price change % (e.g. 0.5% = 0.005 * entry_price).
+        3. sl_roe_pct (default): Stop loss by ROE % (e.g. 10.0% ROE -> price move = ROE / (100 * leverage)).
+        Includes liquidation guard to ensure SL is never placed beyond liquidation price.
         """
-        price_drop_fraction = (sl_roe_pct / 100.0) / float(leverage)
-        if direction == OrderDirection.LONG:
-            sl_price = entry_price * (1.0 - price_drop_fraction)
+        # 1. Determine price offset
+        if sl_ticks is not None and sl_ticks > 0:
+            price_offset = sl_ticks * price_unit
+        elif sl_price_pct is not None and sl_price_pct > 0:
+            price_offset = entry_price * (sl_price_pct / 100.0)
         else:
-            sl_price = entry_price * (1.0 + price_drop_fraction)
+            effective_roe = sl_roe_pct if sl_roe_pct is not None else 10.0
+            price_drop_fraction = (effective_roe / 100.0) / float(max(1, leverage))
+            price_offset = entry_price * price_drop_fraction
+
+        # Get MMR (Maintenance Margin Ratio) from market or default 0.01 (1.0%)
+        mmr = 0.01
+        try:
+            contract = self.market.get_contract_detail(self.config.symbol)
+            if contract and contract.maintenance_margin_ratio > 0:
+                mmr = contract.maintenance_margin_ratio
+        except Exception:
+            pass
+
+        if direction == OrderDirection.LONG:
+            sl_price = entry_price - price_offset
+            # Liquidation price for Long: Entry * (1 - 1/leverage + mmr)
+            approx_liq = entry_price * (1.0 - (1.0 / float(max(1, leverage))) + mmr)
+            if sl_price <= approx_liq:
+                clamped_sl = approx_liq + (2 * price_unit)
+                # Ensure clamped SL is below entry
+                if clamped_sl < entry_price:
+                    logger.warning(
+                        "Liquidation Guard: Requested SL %.4f was at/past liq price %.4f. Clamped to %.4f.",
+                        sl_price, approx_liq, clamped_sl
+                    )
+                    sl_price = clamped_sl
+        else:
+            sl_price = entry_price + price_offset
+            # Liquidation price for Short: Entry * (1 + 1/leverage - mmr)
+            approx_liq = entry_price * (1.0 + (1.0 / float(max(1, leverage))) - mmr)
+            if sl_price >= approx_liq:
+                clamped_sl = approx_liq - (2 * price_unit)
+                # Ensure clamped SL is above entry
+                if clamped_sl > entry_price:
+                    logger.warning(
+                        "Liquidation Guard: Requested SL %.4f was at/past liq price %.4f. Clamped to %.4f.",
+                        sl_price, approx_liq, clamped_sl
+                    )
+                    sl_price = clamped_sl
+
         return round(sl_price, precision)
 
     def is_better_than_min_profit(

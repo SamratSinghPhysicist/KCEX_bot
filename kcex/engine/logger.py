@@ -140,6 +140,14 @@ class TradeOutcomeLogger:
 
         mode_badge = "[🔴 LIVE TRADING]" if outcome.mode.value == "live" else "[🟢 SIMULATED / DRY-RUN]"
 
+        tp_offset = abs(outcome.min_profit_tp_price - outcome.entry_price)
+        tp_ticks = round(tp_offset / outcome.price_unit) if outcome.price_unit > 0 else 1
+        sl_offset = abs(outcome.stop_loss_price - outcome.entry_price)
+
+        sl_ticks = round(sl_offset / outcome.price_unit) if outcome.price_unit > 0 else 0
+        sl_pct = (sl_offset / outcome.entry_price * 100.0) if outcome.entry_price > 0 else 0.0
+        sl_roe = sl_pct * outcome.leverage
+
         card_lines = [
             "=" * 78,
             f"TRADE #{outcome.trade_id} OUTCOME JOURNAL | Closed at: {timestamp_str} | {mode_badge}",
@@ -153,8 +161,8 @@ class TradeOutcomeLogger:
             f"Entry Price        : {outcome.entry_price:.4f} USDT (Opened: {open_time_str})",
             f"Exit Price         : {outcome.exit_price:.4f} USDT (Duration: {outcome.duration_seconds:.2f}s)",
             f"Tick Size (pu)     : {outcome.price_unit:.4f} USDT",
-            f"Min-Profit TP Target: {outcome.min_profit_tp_price:.4f} USDT (Offset: 1 pu)",
-            f"Stop Loss Level    : {outcome.stop_loss_price:.4f} USDT (-10% ROE)",
+            f"Min-Profit TP Target: {outcome.min_profit_tp_price:.4f} USDT (Offset: +{tp_ticks} pu / +{tp_offset:.4f} USDT)",
+            f"Stop Loss Level    : {outcome.stop_loss_price:.4f} USDT (Offset: -{sl_ticks} pu / -{sl_offset:.4f} USDT | -{sl_pct:.3f}% price | -{sl_roe:.1f}% ROE)",
             f"Exit Reason        : {outcome.exit_reason.value}",
             "------------------------------------------------------------------------------",
             f"REALIZED PnL       : {pnl_sign}{outcome.realized_pnl_usdt:.6f} USDT ({pnl_sign}INR {outcome.realized_pnl_inr:.4f})",
