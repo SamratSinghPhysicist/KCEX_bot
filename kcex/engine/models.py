@@ -63,13 +63,24 @@ class ExecutionConfig:
     volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 5)
     max_trades: int = 0                   # 0 = unlimited
     # Strategy selection
-    strategy_mode: str = "CYCLE"          # "EMA_CROSSOVER", "MICROSTRUCTURE", or "CYCLE" (default for bare config is CYCLE)
+    strategy_mode: str = "CYCLE"          # "EMA_CROSSOVER", "STOCH_RSI", "MICROSTRUCTURE", or "CYCLE" (default for bare config is CYCLE)
     bi_directional: bool = True           # True for autonomous Long/Short, False for fixed direction
     ema_preset: str = "5/13"              # "5/13", "9/21", "3/8", or "custom"
     ema_fast: int = 5                     # Fast EMA length
     ema_slow: int = 13                    # Slow EMA length
     ema_interval: str = "Min1"            # Candle timeframe e.g. "Min1", "Min5"
     ema_require_closed_candle: bool = True # Confirm cross on closed candle (prevents false whipsaw repainting)
+    # Stochastic RSI Configuration
+    stoch_preset: str = "FAST_SCALP"      # "FAST_SCALP", "STANDARD", "MICRO_BURST", "custom"
+    stoch_rsi_period: int = 9             # RSI calculation period
+    stoch_period: int = 9                 # Stochastic period over RSI
+    stoch_k_period: int = 3               # %K smoothing period
+    stoch_d_period: int = 3               # %D smoothing period
+    stoch_oversold: float = 20.0          # Oversold threshold
+    stoch_overbought: float = 80.0        # Overbought threshold
+    stoch_interval: str = "Min1"          # Candle timeframe
+    stoch_zone_filter: bool = True        # Gate crossovers to extreme zones
+    stoch_require_closed_candle: bool = True # Confirm cross on closed candle
     poll_interval_seconds: float = 0.5
     logs_dir: str = "logs"
     realtime_log_file: str = "engine_realtime.log"

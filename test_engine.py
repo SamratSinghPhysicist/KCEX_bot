@@ -43,6 +43,10 @@ from kcex import (
     EMACrossoverSubStrategy,
     EMA_PRESETS,
     compute_ema_series,
+    StochasticRSISubStrategy,
+    STOCH_RSI_PRESETS,
+    compute_stoch_rsi,
+    compute_rsi_series,
     MicrostructureSignalGenerator,
     SignalConfig,
     SymbolMeta,
@@ -1052,6 +1056,254 @@ class TestEMACrossoverStrategy(unittest.TestCase):
                 pass
 
 
+class TestStochasticRSIStrategy(unittest.TestCase):
+    """Tests Stochastic RSI computation, zone filtering, presets, and dry-run execution."""
+
+    def _generate_synthetic_candles(self, prices: list, start_ts: int = 1700000000) -> list:
+        candles = []
+        for i, p in enumerate(prices):
+            candles.append({
+                "timestamp": start_ts + i * 60,
+                "open": p,
+                "high": p + 0.01,
+                "low": p - 0.01,
+                "close": p,
+                "volume": 100.0,
+                "amount": 100.0 * p
+            })
+        return candles
+
+    def test_presets_initialization(self):
+        """Verify predefined presets load correct periods and thresholds."""
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = []
+
+        sub_fast = StochasticRSISubStrategy(mock_market, "TEST_USDT", stoch_preset="FAST_SCALP")
+        self.assertEqual(sub_fast.rsi_period, 9)
+        self.assertEqual(sub_fast.stoch_period, 9)
+        self.assertEqual(sub_fast.k_period, 3)
+        self.assertEqual(sub_fast.d_period, 3)
+        self.assertEqual(sub_fast.oversold, 20.0)
+        self.assertEqual(sub_fast.overbought, 80.0)
+
+        sub_std = StochasticRSISubStrategy(mock_market, "TEST_USDT", stoch_preset="STANDARD")
+        self.assertEqual(sub_std.rsi_period, 14)
+        self.assertEqual(sub_std.stoch_period, 14)
+        self.assertEqual(sub_std.oversold, 20.0)
+        self.assertEqual(sub_std.overbought, 80.0)
+
+        sub_micro = StochasticRSISubStrategy(mock_market, "TEST_USDT", stoch_preset="MICRO_BURST")
+        self.assertEqual(sub_micro.rsi_period, 7)
+        self.assertEqual(sub_micro.stoch_period, 7)
+        self.assertEqual(sub_micro.oversold, 15.0)
+        self.assertEqual(sub_micro.overbought, 85.0)
+
+    def test_stoch_rsi_math_computation(self):
+        """Verify RSI and StochRSI mathematical bounds and output lengths."""
+        import math
+        prices = [100.0 + 5.0 * math.sin(i * 0.2) for i in range(50)]
+        rsi = compute_rsi_series(prices, period=14)
+        self.assertEqual(len(rsi), len(prices))
+        for r in rsi:
+            self.assertTrue(0.0 <= r <= 100.0)
+
+        k, d = compute_stoch_rsi(prices, rsi_period=9, stoch_period=9, k_period=3, d_period=3)
+        self.assertEqual(len(k), len(prices))
+        self.assertEqual(len(d), len(prices))
+        for val_k, val_d in zip(k, d):
+            self.assertTrue(0.0 <= val_k <= 100.0)
+            self.assertTrue(0.0 <= val_d <= 100.0)
+
+    def test_bullish_oversold_crossover_signal(self):
+        """Bullish cross (%K crosses above %D in oversold zone) emits LONG signal."""
+        import math
+        prices = [100.0 + 3.0 * math.sin(i * 0.5) for i in range(20)]
+        prices += [98.0, 96.0, 94.0, 92.0, 90.0, 89.0, 88.5, 88.0, 88.2, 88.8]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = StochasticRSISubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            stoch_preset="MICRO_BURST",
+            require_closed_candle=True,
+            lookback_bars=2
+        )
+
+        sig = sub.generate_signal("BTC_USDT")
+        self.assertIsNotNone(sig)
+        self.assertEqual(sig.direction, OrderDirection.LONG)
+        self.assertEqual(sig.metadata.get("crossover_type"), "BULLISH_STOCH_CROSS")
+        self.assertIn("StochasticRSI", sig.sub_strategy_name)
+
+    def test_bearish_overbought_crossover_signal(self):
+        """Bearish cross (%K crosses below %D in overbought zone) emits SHORT signal."""
+        import math
+        prices = [100.0 - 3.0 * math.sin(i * 0.5) for i in range(20)]
+        prices += [102.0, 104.0, 106.0, 108.0, 110.0, 111.0, 111.5, 112.0, 111.8, 111.2]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = StochasticRSISubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            stoch_preset="MICRO_BURST",
+            require_closed_candle=True,
+            lookback_bars=2
+        )
+
+        sig = sub.generate_signal("BTC_USDT")
+        self.assertIsNotNone(sig)
+        self.assertEqual(sig.direction, OrderDirection.SHORT)
+        self.assertEqual(sig.metadata.get("crossover_type"), "BEARISH_STOCH_CROSS")
+        self.assertIn("StochasticRSI", sig.sub_strategy_name)
+
+    def test_neutral_zone_filtering(self):
+        """When crossover occurs in neutral zone (not oversold/overbought), zone filter suppresses it."""
+        from unittest.mock import patch
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = self._generate_synthetic_candles([100.0] * 30)
+
+        sub_filtered = StochasticRSISubStrategy(mock_market, "BTC_USDT", zone_filter=True)
+        sub_unfiltered = StochasticRSISubStrategy(mock_market, "BTC_USDT", zone_filter=False)
+
+        # Cross happens at k=55, d=52 (neutral zone)
+        k_mock = [50.0] * 27 + [45.0, 55.0, 56.0]
+        d_mock = [50.0] * 27 + [48.0, 52.0, 53.0]
+
+        with patch("kcex.engine.strategy.compute_stoch_rsi", return_value=(k_mock, d_mock)):
+            sig_filtered = sub_filtered.generate_signal("BTC_USDT")
+            sig_unfiltered = sub_unfiltered.generate_signal("BTC_USDT")
+
+        self.assertIsNone(sig_filtered)
+        self.assertIsNotNone(sig_unfiltered)
+        self.assertEqual(sig_unfiltered.direction, OrderDirection.LONG)
+
+    def test_deduplication_on_same_bar(self):
+        """Signal should only fire once per closed candle."""
+        import math
+        prices = [100.0 + 3.0 * math.sin(i * 0.5) for i in range(20)]
+        prices += [98.0, 96.0, 94.0, 92.0, 90.0, 89.0, 88.5, 88.0, 88.2, 88.8]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = StochasticRSISubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            stoch_preset="MICRO_BURST",
+            require_closed_candle=True
+        )
+
+        sig1 = sub.generate_signal("BTC_USDT")
+        self.assertIsNotNone(sig1)
+
+        sig2 = sub.generate_signal("BTC_USDT")
+        self.assertIsNone(sig2)
+
+    def test_direction_filtering(self):
+        """If preferred_direction is LONG, bearish overbought cross is suppressed."""
+        import math
+        prices = [100.0 - 3.0 * math.sin(i * 0.5) for i in range(20)]
+        prices += [102.0, 104.0, 106.0, 108.0, 110.0, 111.0, 111.5, 112.0, 111.8, 111.2]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = StochasticRSISubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            stoch_preset="MICRO_BURST",
+            preferred_direction=OrderDirection.LONG,
+            require_closed_candle=True
+        )
+
+        sig = sub.generate_signal("BTC_USDT")
+        self.assertIsNone(sig)
+
+    def test_diagnostics_structure(self):
+        """Diagnostics should return StochRSI metrics (%K, %D, zone, trend)."""
+        import math
+        prices = [100.0 + math.sin(i * 0.3) for i in range(30)]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = StochasticRSISubStrategy(mock_market, "TRUMP_USDT", stoch_preset="FAST_SCALP")
+        diag = sub.get_diagnostics()
+        self.assertEqual(diag["strategy"], "STOCHASTIC_RSI")
+        self.assertEqual(diag["preset"], "FAST_SCALP")
+        self.assertIn("k", diag)
+        self.assertIn("d", diag)
+        self.assertIn("diff", diag)
+        self.assertIn("zone", diag)
+        self.assertIn("trend", diag)
+        self.assertIn("time_to_bar_close_s", diag)
+
+    def test_stoch_rsi_dry_run_cycle(self):
+        """End-to-end dry-run trade execution with StochasticRSISubStrategy."""
+        import math
+        temp_dir = tempfile.TemporaryDirectory()
+        try:
+            config = ExecutionConfig(
+                symbol="TRUMP_USDT",
+                mode=EngineMode.DRY_RUN,
+                strategy_mode="STOCH_RSI",
+                stoch_preset="MICRO_BURST",
+                cooldown_seconds=1.0,
+                max_trades=1,
+                logs_dir=temp_dir.name,
+                poll_interval_seconds=0.05
+            )
+
+            prices = [100.0 + 3.0 * math.sin(i * 0.5) for i in range(20)]
+            prices += [98.0, 96.0, 94.0, 92.0, 90.0, 89.0, 88.5, 88.0, 88.2, 88.8]
+            candles = self._generate_synthetic_candles(prices)
+
+            mock_market = KCEXMarket()
+            mock_market.get_klines = MagicMock(return_value=candles)
+
+            engine = TradeExecutionEngine(config=config, market=mock_market)
+            contract = engine.pre_flight_checks()
+
+            ticker_sequence = [
+                {"symbol": "TRUMP_USDT", "lastPrice": 88.20, "bid1": 88.20, "ask1": 88.20},
+                {"symbol": "TRUMP_USDT", "lastPrice": 88.20, "bid1": 88.20, "ask1": 88.20},
+                {"symbol": "TRUMP_USDT", "lastPrice": 88.25, "bid1": 88.25, "ask1": 88.26}
+            ]
+            seq_idx = [0]
+            def mock_ticker(sym):
+                if seq_idx[0] < len(ticker_sequence):
+                    t = ticker_sequence[seq_idx[0]]
+                    seq_idx[0] += 1
+                    return t
+                return ticker_sequence[-1]
+
+            engine.market.get_ticker = mock_ticker
+            outcome = engine.execute_single_trade_cycle(contract)
+
+            self.assertIsNotNone(outcome)
+            self.assertEqual(outcome.trade_id, 1)
+            self.assertEqual(outcome.symbol, "TRUMP_USDT")
+            self.assertEqual(outcome.direction, OrderDirection.LONG)
+            self.assertIn("StochasticRSI", outcome.sub_strategy_name)
+            self.assertEqual(outcome.exit_reason, ExitReason.MIN_PROFIT_TP_HIT)
+            self.assertTrue(outcome.is_profit)
+        finally:
+            logging.shutdown()
+            try:
+                temp_dir.cleanup()
+            except Exception:
+                pass
+
+
 def run_all_tests():
     print("=" * 70)
     print("      RUNNING KCEX EXECUTION ENGINE TEST SUITE")
@@ -1064,7 +1316,8 @@ def run_all_tests():
         "test_engine.TestVolumeSizingAndExposure",
         "test_engine.TestGeneralizationMultiCoin",
         "test_engine.TestMicrostructureStrategy",
-        "test_engine.TestEMACrossoverStrategy"
+        "test_engine.TestEMACrossoverStrategy",
+        "test_engine.TestStochasticRSIStrategy"
     ])
     runner = unittest.TextTestRunner(verbosity=2)
     res = runner.run(suite)
@@ -1074,5 +1327,6 @@ def run_all_tests():
 if __name__ == "__main__":
     success = run_all_tests()
     sys.exit(0 if success else 1)
+
 
 

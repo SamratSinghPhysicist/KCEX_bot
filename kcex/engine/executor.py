@@ -39,7 +39,8 @@ from kcex.engine.strategy import (
     MasterplanStrategy,
     DirectionalCycleSubStrategy,
     MicrostructureSubStrategy,
-    EMACrossoverSubStrategy
+    EMACrossoverSubStrategy,
+    StochasticRSISubStrategy
 )
 
 
@@ -93,6 +94,24 @@ class TradeExecutionEngine:
                     preferred_direction=pref_dir,
                     cooldown_seconds=self.config.cooldown_seconds,
                     require_closed_candle=getattr(self.config, "ema_require_closed_candle", True)
+                )
+            elif strat_upper in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH"):
+                pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
+                sub_strat = StochasticRSISubStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    stoch_preset=getattr(self.config, "stoch_preset", "FAST_SCALP"),
+                    rsi_period=getattr(self.config, "stoch_rsi_period", 9),
+                    stoch_period=getattr(self.config, "stoch_period", 9),
+                    k_period=getattr(self.config, "stoch_k_period", 3),
+                    d_period=getattr(self.config, "stoch_d_period", 3),
+                    oversold=getattr(self.config, "stoch_oversold", 20.0),
+                    overbought=getattr(self.config, "stoch_overbought", 80.0),
+                    interval=getattr(self.config, "stoch_interval", "Min1"),
+                    zone_filter=getattr(self.config, "stoch_zone_filter", True),
+                    preferred_direction=pref_dir,
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    require_closed_candle=getattr(self.config, "stoch_require_closed_candle", True)
                 )
             elif strat_upper == "MICROSTRUCTURE":
                 pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
@@ -1101,6 +1120,18 @@ class TradeExecutionEngine:
                                 f"Fast: {c_f:.{prec}f} | Slow: {c_s:.{prec}f} | "
                                 f"Diff: {diff:+.{prec}f} ({diff_pct:+.2f}%) | "
                                 f"Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
+                            )
+                        elif diag and (diag.get("strategy") == "STOCHASTIC_RSI" or ("k" in diag and "d" in diag)):
+                            k_val = diag.get('k', 50.0)
+                            d_val = diag.get('d', 50.0)
+                            diff_kd = diag.get('diff', 0.0)
+                            zone = diag.get('zone', 'NEUTRAL')
+                            preset = diag.get('preset', 'FAST_SCALP')
+                            inv = diag.get('interval', 'Min1')
+                            self.logger.info(
+                                f"[HUNTING ENTRY] StochRSI({preset}) {inv} | "
+                                f"%K: {k_val:.1f} | %D: {d_val:.1f} | Diff: {diff_kd:+.1f} | "
+                                f"Zone: {zone} | Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
                             )
                         elif diag and "obi_z" in diag:
                             feed_info = diag.get("feed", {})

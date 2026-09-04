@@ -26,6 +26,10 @@ from kcex.engine.strategy import (
     EMACrossoverSubStrategy,
     EMA_PRESETS,
     compute_ema_series,
+    StochasticRSISubStrategy,
+    STOCH_RSI_PRESETS,
+    compute_stoch_rsi,
+    compute_rsi_series,
     MasterplanStrategy
 )
 from kcex.engine.microstructure import (
@@ -53,6 +57,10 @@ __all__ = [
     "EMACrossoverSubStrategy",
     "EMA_PRESETS",
     "compute_ema_series",
+    "StochasticRSISubStrategy",
+    "STOCH_RSI_PRESETS",
+    "compute_stoch_rsi",
+    "compute_rsi_series",
     "MicrostructureSignalGenerator",
     "SignalConfig",
     "SymbolMeta",

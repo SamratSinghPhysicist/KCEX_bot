@@ -147,19 +147,32 @@ def prompt_user_settings():
     default_ema_slow = get_setting("EMA_SLOW", 13)
     default_ema_interval = get_setting("EMA_INTERVAL", "Min1")
     default_ema_bi = get_setting("EMA_BI_DIRECTIONAL", True)
+    default_stoch_preset = get_setting("STOCH_PRESET", "FAST_SCALP")
+    default_stoch_rsi_p = get_setting("STOCH_RSI_PERIOD", 9)
+    default_stoch_p = get_setting("STOCH_PERIOD", 9)
+    default_stoch_k = get_setting("STOCH_K_PERIOD", 3)
+    default_stoch_d = get_setting("STOCH_D_PERIOD", 3)
+    default_stoch_os = get_setting("STOCH_OVERSOLD", 20.0)
+    default_stoch_ob = get_setting("STOCH_OVERBOUGHT", 80.0)
+    default_stoch_interval = get_setting("STOCH_INTERVAL", "Min1")
+    default_stoch_bi = get_setting("STOCH_BI_DIRECTIONAL", True)
+    default_stoch_zone = get_setting("STOCH_ZONE_FILTER", True)
     default_micro_bi = get_setting("MICRO_BI_DIRECTIONAL", True)
     default_dir = get_setting("DIRECTION", "LONG").upper()
 
     print("\n3. Strategy & Signal Engine:")
     print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8) [Default / Recommended]")
-    print("   [2] MICROSTRUCTURE    -> Rapid HFT scalper (Order Book & Tape Imbalance)")
-    print("   [3] DIRECTIONAL CYCLE -> Classic fixed-interval single direction cycle")
+    print("   [2] STOCHASTIC RSI    -> Fast Scalp & Mean Reversion (%K/%D cross in Oversold/Overbought zones) [2nd Option]")
+    print("   [3] MICROSTRUCTURE    -> Rapid HFT scalper (Order Book & Tape Imbalance)")
+    print("   [4] DIRECTIONAL CYCLE -> Classic fixed-interval single direction cycle")
 
     default_strat_choice = "1"
-    if default_strat == "MICROSTRUCTURE":
+    if default_strat in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH"):
         default_strat_choice = "2"
-    elif default_strat == "CYCLE":
+    elif default_strat == "MICROSTRUCTURE":
         default_strat_choice = "3"
+    elif default_strat in ("CYCLE", "DIRECTIONAL_CYCLE"):
+        default_strat_choice = "4"
 
     strat_str = input(f"   Select Strategy [default: {default_strat_choice} ({default_strat})]: ").strip()
     if not strat_str:
@@ -169,6 +182,16 @@ def prompt_user_settings():
     ema_fast_val = default_ema_fast
     ema_slow_val = default_ema_slow
     ema_interval_val = default_ema_interval
+
+    stoch_preset_val = default_stoch_preset
+    stoch_rsi_p_val = default_stoch_rsi_p
+    stoch_p_val = default_stoch_p
+    stoch_k_val = default_stoch_k
+    stoch_d_val = default_stoch_d
+    stoch_os_val = default_stoch_os
+    stoch_ob_val = default_stoch_ob
+    stoch_interval_val = default_stoch_interval
+    stoch_zone_val = default_stoch_zone
 
     if strat_str in ("1", "EMA", "EMA_CROSSOVER", "CROSSOVER", "ema", "ema_crossover"):
         strat_mode_val = "EMA_CROSSOVER"
@@ -220,7 +243,61 @@ def prompt_user_settings():
             dir_val = OrderDirection.LONG
             print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG on Golden Cross and SHORT on Death Cross).")
 
-    elif strat_str in ("3", "CYCLE", "cycle"):
+    elif strat_str in ("2", "STOCH_RSI", "STOCHASTIC_RSI", "STOCH", "stoch_rsi", "stochastic_rsi", "stoch"):
+        strat_mode_val = "STOCH_RSI"
+        print("\n   Stochastic RSI Preset:")
+        print("   [1] FAST_SCALP   -> 9/9/3/3 (OS: 20, OB: 80) [Default / Recommended for HFT]")
+        print("   [2] STANDARD     -> 14/14/3/3 (OS: 20, OB: 80) [Balanced Trend/Momentum]")
+        print("   [3] MICRO_BURST  -> 7/7/3/3 (OS: 15, OB: 85) [Ultra-Responsive Scalp]")
+        print("   [4] CUSTOM       -> Specify custom periods & zones")
+        preset_choice = input(f"   Select Preset [default: 1 ({default_stoch_preset})]: ").strip()
+        if preset_choice == "2":
+            stoch_preset_val = "STANDARD"
+            stoch_rsi_p_val, stoch_p_val, stoch_k_val, stoch_d_val = 14, 14, 3, 3
+            stoch_os_val, stoch_ob_val = 20.0, 80.0
+        elif preset_choice == "3":
+            stoch_preset_val = "MICRO_BURST"
+            stoch_rsi_p_val, stoch_p_val, stoch_k_val, stoch_d_val = 7, 7, 3, 3
+            stoch_os_val, stoch_ob_val = 15.0, 85.0
+        elif preset_choice == "4":
+            stoch_preset_val = "custom"
+            try:
+                stoch_rsi_p_val = int(input("      RSI Period [default 9]: ").strip() or "9")
+                stoch_p_val = int(input("      Stoch Lookback [default 9]: ").strip() or "9")
+                stoch_k_val = int(input("      %K Smoothing [default 3]: ").strip() or "3")
+                stoch_d_val = int(input("      %D Smoothing [default 3]: ").strip() or "3")
+                stoch_os_val = float(input("      Oversold Threshold [default 20.0]: ").strip() or "20.0")
+                stoch_ob_val = float(input("      Overbought Threshold [default 80.0]: ").strip() or "80.0")
+            except ValueError:
+                stoch_rsi_p_val, stoch_p_val, stoch_k_val, stoch_d_val = 9, 9, 3, 3
+                stoch_os_val, stoch_ob_val = 20.0, 80.0
+        else:
+            stoch_preset_val = "FAST_SCALP"
+            stoch_rsi_p_val, stoch_p_val, stoch_k_val, stoch_d_val = 9, 9, 3, 3
+            stoch_os_val, stoch_ob_val = 20.0, 80.0
+
+        print(f"   ✅ Active StochRSI Config: Preset={stoch_preset_val} (RSI={stoch_rsi_p_val}, Stoch={stoch_p_val}, %K={stoch_k_val}, %D={stoch_d_val}, OS={stoch_os_val}, OB={stoch_ob_val})")
+
+        print("\n   Stochastic RSI Directional Flow:")
+        print("   [1] AUTONOMOUS BI-DIRECTIONAL -> Scalp both LONG (Oversold Bullish Cross) & SHORT (Overbought Bearish Cross) [Recommended]")
+        print("   [2] SINGLE DIRECTION ONLY     -> Scalp only one chosen direction")
+        bi_str = input(f"   Select Flow [default: {'1 (BI-DIRECTIONAL)' if default_stoch_bi else '2 (SINGLE)'}]: ").strip()
+        if bi_str == "2":
+            bi_directional_val = False
+            print("\n   Order Direction for StochRSI Scalps:")
+            print("   [1] LONG  -> Profit when price rises (Oversold Bullish Cross).")
+            print("   [2] SHORT -> Profit when price drops (Overbought Bearish Cross).")
+            dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
+            if dir_str == "2" or dir_str.upper() == "SHORT":
+                dir_val = OrderDirection.SHORT
+            else:
+                dir_val = OrderDirection.LONG
+        else:
+            bi_directional_val = True
+            dir_val = OrderDirection.LONG
+            print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG on oversold cross and SHORT on overbought cross).")
+
+    elif strat_str in ("4", "CYCLE", "cycle"):
         strat_mode_val = "CYCLE"
         bi_directional_val = False
         print("\n   Order Direction for Directional Cycle:")
@@ -451,6 +528,16 @@ def prompt_user_settings():
         ema_slow=ema_slow_val,
         ema_interval=ema_interval_val,
         ema_require_closed_candle=get_setting("EMA_REQUIRE_CLOSED_CANDLE", True),
+        stoch_preset=stoch_preset_val,
+        stoch_rsi_period=stoch_rsi_p_val,
+        stoch_period=stoch_p_val,
+        stoch_k_period=stoch_k_val,
+        stoch_d_period=stoch_d_val,
+        stoch_oversold=stoch_os_val,
+        stoch_overbought=stoch_ob_val,
+        stoch_interval=stoch_interval_val,
+        stoch_zone_filter=stoch_zone_val,
+        stoch_require_closed_candle=get_setting("STOCH_REQUIRE_CLOSED_CANDLE", True),
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -563,10 +650,11 @@ def parse_args():
         type=str,
         choices=[
             "ema", "ema_crossover", "EMA", "EMA_CROSSOVER",
+            "stoch_rsi", "stochastic_rsi", "STOCH_RSI", "STOCHASTIC_RSI", "stoch", "STOCH",
             "microstructure", "cycle", "MICROSTRUCTURE", "CYCLE"
         ],
         default=None,
-        help="Strategy type: 'ema_crossover' (Fast/Slow EMA cross), 'microstructure' (HFT order book/tape), or 'cycle' (directional cycle)"
+        help="Strategy type: 'ema_crossover' [1], 'stoch_rsi' [2], 'microstructure' [3], or 'cycle' [4]"
     )
     parser.add_argument(
         "--ema-preset",
@@ -592,6 +680,60 @@ def parse_args():
         type=str,
         default=None,
         help="Candle timeframe for EMA: 'Min1' (default), 'Min5', 'Min15', etc."
+    )
+    parser.add_argument(
+        "--stoch-preset",
+        type=str,
+        choices=["FAST_SCALP", "STANDARD", "MICRO_BURST", "custom", "fast_scalp", "standard", "micro_burst"],
+        default=None,
+        help="Stochastic RSI Preset: 'FAST_SCALP' (9/9/3/3, default), 'STANDARD' (14/14/3/3), or 'MICRO_BURST' (7/7/3/3)"
+    )
+    parser.add_argument(
+        "--stoch-rsi-period",
+        type=int,
+        default=None,
+        help="Stochastic RSI - RSI calculation period (default: 9)"
+    )
+    parser.add_argument(
+        "--stoch-period",
+        type=int,
+        default=None,
+        help="Stochastic RSI - Stochastic lookback period (default: 9)"
+    )
+    parser.add_argument(
+        "--stoch-k",
+        type=int,
+        default=None,
+        help="Stochastic RSI - %%K smoothing period (default: 3)"
+    )
+    parser.add_argument(
+        "--stoch-d",
+        type=int,
+        default=None,
+        help="Stochastic RSI - %%D smoothing period (default: 3)"
+    )
+    parser.add_argument(
+        "--stoch-oversold",
+        type=float,
+        default=None,
+        help="Stochastic RSI - Oversold zone threshold (default: 20.0)"
+    )
+    parser.add_argument(
+        "--stoch-overbought",
+        type=float,
+        default=None,
+        help="Stochastic RSI - Overbought zone threshold (default: 80.0)"
+    )
+    parser.add_argument(
+        "--stoch-interval",
+        type=str,
+        default=None,
+        help="Candle timeframe for StochRSI: 'Min1' (default), 'Min5', 'Min15', etc."
+    )
+    parser.add_argument(
+        "--no-stoch-zone-filter",
+        action="store_true",
+        help="Disable StochRSI oversold/overbought zone filter (trade all crossovers)"
     )
     parser.add_argument(
         "--intra-bar-ema",
@@ -685,6 +827,8 @@ def main():
         else:
             if strat_raw in ("EMA", "EMA_CROSSOVER"):
                 bi_directional = get_setting("EMA_BI_DIRECTIONAL", True)
+            elif strat_raw in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH"):
+                bi_directional = get_setting("STOCH_BI_DIRECTIONAL", True)
             else:
                 bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
 
@@ -706,6 +850,26 @@ def main():
             ema_closed = True
         else:
             ema_closed = get_setting("EMA_REQUIRE_CLOSED_CANDLE", True)
+
+        stoch_preset = (args.stoch_preset or get_setting("STOCH_PRESET", "FAST_SCALP")).upper()
+        if stoch_preset == "STANDARD":
+            def_rsi, def_stoch, def_k, def_d = 14, 14, 3, 3
+            def_os, def_ob = 20.0, 80.0
+        elif stoch_preset == "MICRO_BURST":
+            def_rsi, def_stoch, def_k, def_d = 7, 7, 3, 3
+            def_os, def_ob = 15.0, 85.0
+        else:
+            def_rsi, def_stoch, def_k, def_d = 9, 9, 3, 3
+            def_os, def_ob = 20.0, 80.0
+
+        stoch_rsi_period = args.stoch_rsi_period if args.stoch_rsi_period is not None else get_setting("STOCH_RSI_PERIOD", def_rsi)
+        stoch_period = args.stoch_period if args.stoch_period is not None else get_setting("STOCH_PERIOD", def_stoch)
+        stoch_k_period = args.stoch_k if args.stoch_k is not None else get_setting("STOCH_K_PERIOD", def_k)
+        stoch_d_period = args.stoch_d if args.stoch_d is not None else get_setting("STOCH_D_PERIOD", def_d)
+        stoch_oversold = args.stoch_oversold if args.stoch_oversold is not None else get_setting("STOCH_OVERSOLD", def_os)
+        stoch_overbought = args.stoch_overbought if args.stoch_overbought is not None else get_setting("STOCH_OVERBOUGHT", def_ob)
+        stoch_interval = args.stoch_interval or get_setting("STOCH_INTERVAL", "Min1")
+        stoch_zone = False if args.no_stoch_zone_filter else get_setting("STOCH_ZONE_FILTER", True)
 
         config = ExecutionConfig(
             symbol=sym,
@@ -731,6 +895,16 @@ def main():
             ema_slow=ema_slow,
             ema_interval=ema_interval,
             ema_require_closed_candle=ema_closed,
+            stoch_preset=stoch_preset,
+            stoch_rsi_period=stoch_rsi_period,
+            stoch_period=stoch_period,
+            stoch_k_period=stoch_k_period,
+            stoch_d_period=stoch_d_period,
+            stoch_oversold=stoch_oversold,
+            stoch_overbought=stoch_overbought,
+            stoch_interval=stoch_interval,
+            stoch_zone_filter=stoch_zone,
+            stoch_require_closed_candle=get_setting("STOCH_REQUIRE_CLOSED_CANDLE", True),
             poll_interval_seconds=poll_int,
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -775,6 +949,7 @@ def main():
         else f"{config.sl_roe_pct}% ROE"
     )
     is_ema = config.strategy_mode in ("EMA", "EMA_CROSSOVER")
+    is_stoch = config.strategy_mode in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH")
     is_micro = config.strategy_mode == "MICROSTRUCTURE"
 
     if is_ema:
@@ -785,6 +960,16 @@ def main():
             bias_desc = "Autonomous (Bi-Directional)"
         else:
             strat_desc = f"EMA Crossover ({preset_info}, {interval_info}) [{config.direction.value} only]"
+            bias_desc = config.direction.value
+    elif is_stoch:
+        preset_info = getattr(config, "stoch_preset", "FAST_SCALP")
+        interval_info = getattr(config, "stoch_interval", "Min1")
+        os_ob = f"OS:{getattr(config, 'stoch_oversold', 20.0):.0f}/OB:{getattr(config, 'stoch_overbought', 80.0):.0f}"
+        if config.bi_directional:
+            strat_desc = f"Stochastic RSI ({preset_info}, {interval_info}, {os_ob}) [Autonomous Bi-Directional: LONG & SHORT]"
+            bias_desc = "Autonomous (Bi-Directional)"
+        else:
+            strat_desc = f"Stochastic RSI ({preset_info}, {interval_info}, {os_ob}) [{config.direction.value} only]"
             bias_desc = config.direction.value
     elif is_micro:
         if config.bi_directional:

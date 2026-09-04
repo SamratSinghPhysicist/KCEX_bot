@@ -168,6 +168,7 @@ POLL_INTERVAL_SECONDS = 0.2
 # =============================================================================
 # Strategy mode selection:
 #   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8) [Default / Recommended]
+#   "STOCH_RSI"      -> Stochastic RSI Momentum & Reversal Strategy (Option 2)
 #   "MICROSTRUCTURE" -> High-Frequency Market Microstructure (Autonomous Order Book & Tape Imbalance)
 #   "CYCLE"          -> Directional Cycle (Classic fixed-direction Long/Short cycle)
 STRATEGY_MODE = "EMA_CROSSOVER"
@@ -196,6 +197,38 @@ EMA_REQUIRE_CLOSED_CANDLE = True
 # True  -> Scalps BOTH Long (Golden Cross) and Short (Death Cross) dynamically.
 # False -> Restricts scalps strictly to the DIRECTION specified in Section 1.
 EMA_BI_DIRECTIONAL = True
+
+# -----------------------------------------------------------------------------
+# Stochastic RSI Strategy Configuration (Option 2)
+# -----------------------------------------------------------------------------
+# Presets:
+#   "FAST_SCALP"  -> RSI 9, Stoch 9, %K 3, %D 3, Oversold 20, Overbought 80 [Recommended for HFT]
+#   "STANDARD"    -> RSI 14, Stoch 14, %K 3, %D 3, Oversold 20, Overbought 80 [Classic]
+#   "MICRO_BURST" -> RSI 7, Stoch 7, %K 3, %D 3, Oversold 15, Overbought 85 [Extreme Reversals]
+#   "custom"      -> Uses individual parameters below
+STOCH_PRESET = "FAST_SCALP"
+STOCH_RSI_PERIOD = 9
+STOCH_PERIOD = 9
+STOCH_K_PERIOD = 3
+STOCH_D_PERIOD = 3
+STOCH_OVERSOLD = 20.0
+STOCH_OVERBOUGHT = 80.0
+
+# Candle timeframe for StochRSI: "Min1" (1-minute), "Min5", "Min15"
+STOCH_INTERVAL = "Min1"
+
+# Zone Gating:
+# True (RECOMMENDED) -> Only triggers %K/%D crossover in or exiting from extreme zones (<=20 / >=80).
+# False              -> Triggers crossovers anywhere across the 0-100 oscillator spectrum.
+STOCH_ZONE_FILTER = True
+
+# Confirmation on completed candle close:
+STOCH_REQUIRE_CLOSED_CANDLE = True
+
+# Autonomous trading direction for StochRSI strategy:
+# True  -> Scalps BOTH Long (Oversold bounce) and Short (Overbought rejection) dynamically.
+# False -> Restricts scalps strictly to the DIRECTION specified in Section 1.
+STOCH_BI_DIRECTIONAL = True
 
 # -----------------------------------------------------------------------------
 # Microstructure Strategy Configuration
