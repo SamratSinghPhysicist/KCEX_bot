@@ -2,16 +2,16 @@
 KCEX Automated Trade Execution Engine
 =====================================
 The core orchestrator that continuously runs the Masterplan strategy:
-1. Connects to KCEX and validates zero-fee pair status (TRUMP_USDT).
+1. Connects to KCEX and validates pair specifications and fee status.
 2. Generates signals via the active sub-strategy.
-3. Sizes orders to the absolute minimum allowed volume (1 contract = minV).
+3. Sizes orders based on user configuration (multiplier, contracts, or minimum volume).
 4. Submits market order with attached TP/SL in a single request.
 5. Immediately reconciles fill:
    - If market price is already at or better than Min-Profit TP (entry + pu), closes immediately!
-   - Otherwise, verifies/adjusts server-side TP to exact entry + pu and SL to -10% ROE.
+   - Otherwise, verifies/adjusts server-side TP to exact entry + pu and SL to requested risk limit.
 6. Actively monitors the position until closed.
 7. Logs detailed execution and outcome metrics in both USDT and INR.
-8. Enforces a 30-second cooldown before the next trade cycle.
+8. Enforces configured cooldown before the next trade cycle.
 9. Supports DRY-RUN (safe simulation) and LIVE execution modes.
 """
 
@@ -197,6 +197,11 @@ class TradeExecutionEngine:
         is_long = (direction == OrderDirection.LONG)
         pu = contract.price_unit
         cs = contract.contract_size
+        if self.config.leverage > contract.max_leverage:
+            self.logger.warning(
+                f"Notice: Configured leverage {self.config.leverage}x exceeds {symbol} max allowed ({contract.max_leverage}x). "
+                f"Clamped to {contract.max_leverage}x."
+            )
         leverage = min(self.config.leverage, contract.max_leverage)
 
         # Determine trade quantity (volume in contracts)
@@ -228,12 +233,15 @@ class TradeExecutionEngine:
         self.logger.set_inr_rate(inr_rate)
 
         # Calculate estimated TP & SL prices
+        ps = contract.price_precision
+        base_coin = contract.base_coin or symbol.split('_')[0]
+
         est_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
             entry_price=ref_price,
             price_unit=pu,
             tp_ticks=self.config.tp_ticks,
-            precision=contract.price_precision
+            precision=ps
         )
         est_sl = self.strategy.calculate_stop_loss(
             direction=direction,
@@ -243,7 +251,7 @@ class TradeExecutionEngine:
             sl_ticks=self.config.sl_ticks,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
-            precision=contract.price_precision
+            precision=ps
         )
 
         notional_est_usdt = underlying_qty * ref_price
@@ -258,14 +266,14 @@ class TradeExecutionEngine:
         )
 
         self.logger.info(
-            f"Pre-Trade Spec: Vol: {vol_spec_desc} ({underlying_qty:.4f} coins) | "
+            f"Pre-Trade Spec: Vol: {vol_spec_desc} ({underlying_qty:g} {base_coin}) | "
             f"Trade Qty (Notional): {self.logger.format_dual(notional_est_usdt)} | "
             f"Committed Margin (Qty/{leverage}x): {self.logger.format_dual(margin_est_usdt)}"
         )
         self.logger.info(
-            f"Reference Price: {ref_price:.4f} USDT | "
-            f"Attached Min-Profit TP: {est_tp:.4f} USDT (+{self.config.tp_ticks} pu) | "
-            f"Attached SL: {est_sl:.4f} USDT ({sl_desc})"
+            f"Reference Price: {ref_price:.{ps}f} USDT | "
+            f"Attached Min-Profit TP: {est_tp:.{ps}f} USDT (+{self.config.tp_ticks} pu) | "
+            f"Attached SL: {est_sl:.{ps}f} USDT ({sl_desc})"
         )
 
         open_time = time.time()
@@ -376,9 +384,10 @@ class TradeExecutionEngine:
             precision=contract.price_precision
         )
 
+        ps = contract.price_precision
         self.logger.info(
-            f"Position Filled: Entry Price = {entry_price:.4f} USDT | "
-            f"Exact Min-Profit TP = {exact_tp:.4f} USDT | Exact SL = {exact_sl:.4f} USDT"
+            f"Position Filled: Entry Price = {entry_price:.{ps}f} USDT | "
+            f"Exact Min-Profit TP = {exact_tp:.{ps}f} USDT | Exact SL = {exact_sl:.{ps}f} USDT"
         )
 
         # Check immediate profit close condition
@@ -386,9 +395,10 @@ class TradeExecutionEngine:
         current_price = float(ticker.get("lastPrice", entry_price))
 
         if self.strategy.is_better_than_min_profit(direction, current_price, exact_tp):
+            op_sym = ">=" if direction == OrderDirection.LONG else "<="
             self.logger.info(
-                f"[IMMEDIATE PROFIT TRIGGER] Current price ({current_price:.4f} USDT) is already >= "
-                f"Min-Profit TP ({exact_tp:.4f} USDT)! Closing immediately..."
+                f"[IMMEDIATE PROFIT TRIGGER] Current price ({current_price:.{ps}f} USDT) is already {op_sym} "
+                f"Min-Profit TP ({exact_tp:.{ps}f} USDT)! Closing immediately..."
             )
             close_res = self.trader.close_position(
                 position_id=position_id or 0,
@@ -427,7 +437,8 @@ class TradeExecutionEngine:
                 vol_contracts=vol_contracts,
                 leverage=leverage,
                 exact_tp=exact_tp,
-                exact_sl=exact_sl
+                exact_sl=exact_sl,
+                precision=ps
             )
 
         close_time = time.time()
@@ -486,6 +497,11 @@ class TradeExecutionEngine:
         except Exception as e:
             self.logger.debug("Could not fetch balance after trade: %s", e)
 
+        fee_open_usdt = notional_usdt * contract.taker_fee_rate
+        fee_close_usdt = (underlying_qty * exit_price) * contract.taker_fee_rate
+        fee_total_usdt = fee_open_usdt + fee_close_usdt
+        fee_total_inr = fee_total_usdt * inr_rate
+
         return TradeOutcome(
             trade_id=trade_id,
             symbol=symbol,
@@ -496,11 +512,13 @@ class TradeExecutionEngine:
             vol_contracts=vol_contracts,
             contract_size=cs,
             underlying_quantity=underlying_qty,
+            base_coin=contract.base_coin or symbol.split('_')[0],
             entry_price=entry_price,
             exit_price=exit_price,
             min_profit_tp_price=exact_tp,
             stop_loss_price=exact_sl,
             price_unit=pu,
+            price_precision=contract.price_precision,
             open_time=open_time,
             close_time=close_time,
             duration_seconds=duration,
@@ -512,10 +530,10 @@ class TradeExecutionEngine:
             realized_pnl_inr=realized_pnl_inr,
             pnl_percentage=pnl_pct,
             roe_percentage=roe_pct,
-            fee_open_usdt=0.0,
-            fee_close_usdt=0.0,
-            fee_total_usdt=0.0,
-            fee_total_inr=0.0,
+            fee_open_usdt=fee_open_usdt,
+            fee_close_usdt=fee_close_usdt,
+            fee_total_usdt=fee_total_usdt,
+            fee_total_inr=fee_total_inr,
             inr_rate=inr_rate,
             exit_reason=exit_reason,
             balance_after_trade_usdt=balance_after_usdt,
@@ -634,7 +652,8 @@ class TradeExecutionEngine:
         vol_contracts: int,
         leverage: int,
         exact_tp: float,
-        exact_sl: float
+        exact_sl: float,
+        precision: int = 4
     ) -> tuple[float, ExitReason, Optional[str]]:
         """
         Polls ticker and open positions until the position closes.
@@ -658,8 +677,9 @@ class TradeExecutionEngine:
 
             # 2. Check if current price is at or better than Min-Profit TP
             if self.strategy.is_better_than_min_profit(direction, current_price, exact_tp):
+                op_sym = ">=" if direction == OrderDirection.LONG else "<="
                 self.logger.info(
-                    f"[IMMEDIATE PROFIT TRIGGER] Price reached Min-Profit TP: {current_price:.4f} USDT >= {exact_tp:.4f} USDT. "
+                    f"[IMMEDIATE PROFIT TRIGGER] Price reached Min-Profit TP: {current_price:.{precision}f} USDT {op_sym} {exact_tp:.{precision}f} USDT. "
                     f"Executing market close..."
                 )
                 try:
@@ -774,22 +794,26 @@ class TradeExecutionEngine:
             else f"-{self.config.sl_roe_pct}% ROE"
         )
 
+        ps = contract.price_precision
+        base_coin = contract.base_coin or symbol.split('_')[0]
+
         self.logger.info(
-            f"[DRY-RUN] Simulated Order Filled: Entry = {entry_price:.4f} USDT | "
-            f"Min-Profit TP = {exact_tp:.4f} USDT (+{self.config.tp_ticks} pu) | SL = {exact_sl:.4f} USDT ({sl_desc})"
+            f"[DRY-RUN] Simulated Order Filled: Entry = {entry_price:.{ps}f} USDT | "
+            f"Min-Profit TP = {exact_tp:.{ps}f} USDT (+{self.config.tp_ticks} pu) | SL = {exact_sl:.{ps}f} USDT ({sl_desc})"
         )
 
         # 2. Check immediate profit condition at fill
         if self.strategy.is_better_than_min_profit(direction, entry_price, exact_tp):
+            op_sym = ">=" if direction == OrderDirection.LONG else "<="
             self.logger.info(
-                f"[DRY-RUN] Immediate profit condition met at fill: {entry_price:.4f} >= TP {exact_tp:.4f}"
+                f"[DRY-RUN] Immediate profit condition met at fill: {entry_price:.{ps}f} {op_sym} TP {exact_tp:.{ps}f}"
             )
             exit_price = exact_tp
             exit_reason = ExitReason.IMMEDIATE_PROFIT_CLOSE
         else:
             # 3. Active Real-Time Market Monitoring Loop
             self.logger.info(
-                f"[DRY-RUN] Actively monitoring live market prices for TP ({exact_tp:.4f}) or SL ({exact_sl:.4f})..."
+                f"[DRY-RUN] Actively monitoring live market prices for TP ({exact_tp:.{ps}f}) or SL ({exact_sl:.{ps}f})..."
             )
             exit_price = entry_price
             exit_reason = ExitReason.UNKNOWN
@@ -816,7 +840,7 @@ class TradeExecutionEngine:
                         exit_price = exact_tp
                         exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                         self.logger.info(
-                            f"[DRY-RUN TARGET HIT] Market reached TP! Exit: {exit_price:.4f} USDT (Market Bid: {cur_bid:.4f}, Last: {cur_last:.4f})"
+                            f"[DRY-RUN TARGET HIT] Market reached TP! Exit: {exit_price:.{ps}f} USDT (Market Bid: {cur_bid:.{ps}f}, Last: {cur_last:.{ps}f})"
                         )
                         break
                     # SL check
@@ -824,7 +848,7 @@ class TradeExecutionEngine:
                         exit_price = exact_sl
                         exit_reason = ExitReason.STOP_LOSS_HIT
                         self.logger.info(
-                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.4f} USDT (Market Bid: {cur_bid:.4f}, Last: {cur_last:.4f})"
+                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.{ps}f} USDT (Market Bid: {cur_bid:.{ps}f}, Last: {cur_last:.{ps}f})"
                         )
                         break
 
@@ -836,7 +860,7 @@ class TradeExecutionEngine:
                         exit_price = exact_tp
                         exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                         self.logger.info(
-                            f"[DRY-RUN TARGET HIT] Market reached TP! Exit: {exit_price:.4f} USDT (Market Ask: {cur_ask:.4f}, Last: {cur_last:.4f})"
+                            f"[DRY-RUN TARGET HIT] Market reached TP! Exit: {exit_price:.{ps}f} USDT (Market Ask: {cur_ask:.{ps}f}, Last: {cur_last:.{ps}f})"
                         )
                         break
                     # SL check
@@ -844,7 +868,7 @@ class TradeExecutionEngine:
                         exit_price = exact_sl
                         exit_reason = ExitReason.STOP_LOSS_HIT
                         self.logger.info(
-                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.4f} USDT (Market Ask: {cur_ask:.4f}, Last: {cur_last:.4f})"
+                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.{ps}f} USDT (Market Ask: {cur_ask:.{ps}f}, Last: {cur_last:.{ps}f})"
                         )
                         break
 
@@ -855,7 +879,7 @@ class TradeExecutionEngine:
                     u_diff = (effective_close_price - entry_price) if direction == OrderDirection.LONG else (entry_price - effective_close_price)
                     u_pnl = underlying_qty * u_diff
                     self.logger.info(
-                        f"[DRY-RUN MONITOR] Price: {effective_close_price:.4f} USDT | TP: {exact_tp:.4f} | SL: {exact_sl:.4f} | "
+                        f"[DRY-RUN MONITOR] Price: {effective_close_price:.{ps}f} USDT | TP: {exact_tp:.{ps}f} | SL: {exact_sl:.{ps}f} | "
                         f"Unrealized PnL: {'+' if u_pnl >= 0 else ''}{u_pnl:.6f} USDT"
                     )
 
@@ -868,13 +892,19 @@ class TradeExecutionEngine:
         duration = max(0.1, close_time - open_time)
 
         price_diff = (exit_price - entry_price) if direction == OrderDirection.LONG else (entry_price - exit_price)
-        realized_pnl_usdt = underlying_qty * price_diff
 
         inr_rate = self.market.get_inr_rate()
         notional_usdt = underlying_qty * entry_price
         notional_inr = notional_usdt * inr_rate
         margin_usdt = notional_usdt / leverage
         margin_inr = margin_usdt * inr_rate
+
+        fee_open_usdt = notional_usdt * contract.taker_fee_rate
+        fee_close_usdt = (underlying_qty * exit_price) * contract.taker_fee_rate
+        fee_total_usdt = fee_open_usdt + fee_close_usdt
+        fee_total_inr = fee_total_usdt * inr_rate
+
+        realized_pnl_usdt = (underlying_qty * price_diff) - fee_total_usdt
         realized_pnl_inr = realized_pnl_usdt * inr_rate
         roe_pct = (realized_pnl_usdt / margin_usdt) * 100.0 if margin_usdt > 0 else 0.0
         pnl_pct = (price_diff / entry_price) * 100.0 if entry_price > 0 else 0.0
@@ -908,11 +938,13 @@ class TradeExecutionEngine:
             vol_contracts=vol_contracts,
             contract_size=cs,
             underlying_quantity=underlying_qty,
+            base_coin=base_coin,
             entry_price=entry_price,
             exit_price=exit_price,
             min_profit_tp_price=exact_tp,
             stop_loss_price=exact_sl,
             price_unit=pu,
+            price_precision=ps,
             open_time=open_time,
             close_time=close_time,
             duration_seconds=duration,
@@ -924,10 +956,10 @@ class TradeExecutionEngine:
             realized_pnl_inr=realized_pnl_inr,
             pnl_percentage=pnl_pct,
             roe_percentage=roe_pct,
-            fee_open_usdt=0.0,
-            fee_close_usdt=0.0,
-            fee_total_usdt=0.0,
-            fee_total_inr=0.0,
+            fee_open_usdt=fee_open_usdt,
+            fee_close_usdt=fee_close_usdt,
+            fee_total_usdt=fee_total_usdt,
+            fee_total_inr=fee_total_inr,
             inr_rate=inr_rate,
             exit_reason=exit_reason,
             balance_after_trade_usdt=balance_after_usdt,

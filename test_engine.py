@@ -12,7 +12,9 @@ import time
 import json
 import logging
 import tempfile
+import shutil
 import unittest
+from unittest.mock import MagicMock
 
 # Ensure utf-8 output encoding on Windows consoles
 if hasattr(sys.stdout, 'reconfigure'):
@@ -23,6 +25,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from kcex.market import ContractInfo
 from kcex import (
     KCEXClient,
     KCEXMarket,
@@ -385,6 +388,84 @@ class TestEngineExecutionDryRun(unittest.TestCase):
         self.assertTrue(outcome.is_loss)
         self.assertLess(outcome.realized_pnl_usdt, 0)
 
+    def test_single_dry_run_cycle_short_take_profit(self):
+        """Verify that dry run correctly triggers MIN_PROFIT_TP_HIT for SHORT when price drops."""
+        config = ExecutionConfig(
+            symbol="TRUMP_USDT",
+            direction=OrderDirection.SHORT,
+            mode=EngineMode.DRY_RUN,
+            cooldown_seconds=1.0,
+            max_trades=1,
+            logs_dir=self.test_log_dir,
+            poll_interval_seconds=0.05
+        )
+        engine = TradeExecutionEngine(config=config)
+        contract = engine.pre_flight_checks()
+
+        # For SHORT: Entry at bid1 = 2.350. TP is 2.349 (1 pu = 0.001).
+        # Price must NOT exit immediately when cur_ask=2.350, but exit when price drops to 2.348 (<= TP 2.349).
+        ticker_sequence = [
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.348, "bid1": 2.348, "ask1": 2.349}
+        ]
+        seq_idx = [0]
+        def mock_ticker(sym):
+            if seq_idx[0] < len(ticker_sequence):
+                t = ticker_sequence[seq_idx[0]]
+                seq_idx[0] += 1
+                return t
+            return ticker_sequence[-1]
+
+        engine.market.get_ticker = mock_ticker
+        outcome = engine.execute_single_trade_cycle(contract)
+
+        self.assertIsNotNone(outcome)
+        self.assertEqual(outcome.trade_id, 1)
+        self.assertEqual(outcome.direction, OrderDirection.SHORT)
+        self.assertEqual(outcome.exit_reason, ExitReason.MIN_PROFIT_TP_HIT)
+        self.assertFalse(outcome.is_loss)
+        self.assertGreater(outcome.realized_pnl_usdt, 0)
+
+    def test_single_dry_run_cycle_short_stop_loss(self):
+        """Verify that dry run genuinely triggers STOP_LOSS_HIT for SHORT when price rises."""
+        config = ExecutionConfig(
+            symbol="TRUMP_USDT",
+            direction=OrderDirection.SHORT,
+            mode=EngineMode.DRY_RUN,
+            cooldown_seconds=1.0,
+            max_trades=1,
+            logs_dir=self.test_log_dir,
+            poll_interval_seconds=0.05
+        )
+        engine = TradeExecutionEngine(config=config)
+        contract = engine.pre_flight_checks()
+
+        # For SHORT: Entry at bid1 = 2.350. SL is ~2.353 (3 pu away with 10% ROE on 75x).
+        # Ticker stays below SL at 2.351 (should NOT trigger SL), then jumps past SL to 2.355.
+        ticker_sequence = [
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.351, "bid1": 2.351, "ask1": 2.351},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.355, "bid1": 2.354, "ask1": 2.355}
+        ]
+        seq_idx = [0]
+        def mock_ticker(sym):
+            if seq_idx[0] < len(ticker_sequence):
+                t = ticker_sequence[seq_idx[0]]
+                seq_idx[0] += 1
+                return t
+            return ticker_sequence[-1]
+
+        engine.market.get_ticker = mock_ticker
+        outcome = engine.execute_single_trade_cycle(contract)
+
+        self.assertIsNotNone(outcome)
+        self.assertEqual(outcome.trade_id, 1)
+        self.assertEqual(outcome.direction, OrderDirection.SHORT)
+        self.assertEqual(outcome.exit_reason, ExitReason.STOP_LOSS_HIT)
+        self.assertTrue(outcome.is_loss)
+        self.assertLess(outcome.realized_pnl_usdt, 0)
+
 
 class TestVolumeSizingAndExposure(unittest.TestCase):
     """
@@ -473,6 +554,144 @@ class TestVolumeSizingAndExposure(unittest.TestCase):
         self.assertAlmostEqual(outcome.margin_used_usdt, expected_margin, places=4)
 
 
+class TestGeneralizationMultiCoin(unittest.TestCase):
+    """Verifies that the bot dynamically adapts to any coin (BTC, DOGE, PEPE, etc.)."""
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_high_precision_coin_doge(self):
+        """Test DOGE_USDT with 5 decimal precision (pu=0.00001, ps=5)."""
+        doge_contract = ContractInfo(
+            symbol="DOGE_USDT",
+            base_coin="DOGE",
+            quote_coin="USDT",
+            contract_size=10.0,
+            price_unit=0.00001,
+            volume_unit=1.0,
+            price_precision=5,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=100000.0,
+            min_leverage=1,
+            max_leverage=75,
+            maintenance_margin_ratio=0.0067,
+            initial_margin_ratio=0.0133,
+            maker_fee_rate=0.0,
+            taker_fee_rate=0.0,
+            depth_steps=["0.00001"],
+            raw_data={}
+        )
+        strat = MasterplanStrategy(market=MagicMock())
+        strat.config.symbol = "DOGE_USDT"
+        strat.market.get_contract_detail.return_value = doge_contract
+
+        # Entry = 0.12345, TP 2 pu -> 0.12347
+        tp = strat.calculate_min_profit_tp(OrderDirection.LONG, 0.12345, doge_contract.price_unit, tp_ticks=2, precision=doge_contract.price_precision)
+        self.assertEqual(tp, 0.12347)
+
+        # SL 10 ticks -> 0.12345 - 0.00010 = 0.12335
+        sl = strat.calculate_stop_loss(OrderDirection.LONG, 0.12345, 30, sl_ticks=10, price_unit=doge_contract.price_unit, precision=doge_contract.price_precision)
+        self.assertEqual(sl, 0.12335)
+
+    def test_low_precision_coin_btc(self):
+        """Test BTC_USDT with 1 decimal precision (pu=0.1, ps=1)."""
+        btc_contract = ContractInfo(
+            symbol="BTC_USDT",
+            base_coin="BTC",
+            quote_coin="USDT",
+            contract_size=0.0001,
+            price_unit=0.1,
+            volume_unit=1.0,
+            price_precision=1,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=1000.0,
+            min_leverage=1,
+            max_leverage=125,
+            maintenance_margin_ratio=0.004,
+            initial_margin_ratio=0.008,
+            maker_fee_rate=0.0,
+            taker_fee_rate=0.0001,
+            depth_steps=["0.1"],
+            raw_data={}
+        )
+        strat = MasterplanStrategy(market=MagicMock())
+        strat.config.symbol = "BTC_USDT"
+        strat.market.get_contract_detail.return_value = btc_contract
+
+        # Entry = 64000.0, TP 2 pu -> 64000.2
+        tp = strat.calculate_min_profit_tp(OrderDirection.LONG, 64000.0, btc_contract.price_unit, tp_ticks=2, precision=btc_contract.price_precision)
+        self.assertEqual(tp, 64000.2)
+
+        # SL 10 ticks -> 64000.0 - 1.0 = 63999.0
+        sl = strat.calculate_stop_loss(OrderDirection.LONG, 64000.0, 30, sl_ticks=10, price_unit=btc_contract.price_unit, precision=btc_contract.price_precision)
+        self.assertEqual(sl, 63999.0)
+
+    def test_non_zero_fee_simulation_and_badge(self):
+        """Test pair with non-zero taker fees in dry run."""
+        btc_contract = ContractInfo(
+            symbol="BTC_USDT",
+            base_coin="BTC",
+            quote_coin="USDT",
+            contract_size=0.0001,
+            price_unit=0.1,
+            volume_unit=1.0,
+            price_precision=1,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=1000.0,
+            min_leverage=1,
+            max_leverage=125,
+            maintenance_margin_ratio=0.004,
+            initial_margin_ratio=0.008,
+            maker_fee_rate=0.0000,
+            taker_fee_rate=0.0001,
+            depth_steps=["0.1"],
+            raw_data={}
+        )
+        cfg = ExecutionConfig(
+            symbol="BTC_USDT",
+            mode=EngineMode.DRY_RUN,
+            logs_dir=self.tmp_dir,
+            tp_ticks=2,
+            leverage=50,
+            poll_interval_seconds=0.1
+        )
+        engine = TradeExecutionEngine(config=cfg)
+        engine.market.ping = MagicMock(return_value=True)
+        engine.market.get_contract_detail = MagicMock(return_value=btc_contract)
+        engine.market.get_inr_rate = MagicMock(return_value=90.0)
+        engine.trader.client.config.auth_token = ""
+
+        ticks = [
+            {"symbol": "BTC_USDT", "lastPrice": 60000.0, "bid1": 60000.0, "ask1": 60000.0},
+            {"symbol": "BTC_USDT", "lastPrice": 60000.0, "bid1": 60000.0, "ask1": 60000.0},
+            {"symbol": "BTC_USDT", "lastPrice": 60000.5, "bid1": 60000.5, "ask1": 60000.6}
+        ]
+        call_idx = [0]
+        def mock_ticker(sym):
+            i = min(call_idx[0], len(ticks) - 1)
+            call_idx[0] += 1
+            return ticks[i]
+        engine.market.get_ticker = mock_ticker
+
+        outcome = engine.execute_single_trade_cycle(btc_contract)
+        self.assertIsNotNone(outcome)
+        self.assertEqual(outcome.symbol, "BTC_USDT")
+        self.assertEqual(outcome.base_coin, "BTC")
+        self.assertEqual(outcome.price_precision, 1)
+        self.assertGreater(outcome.fee_total_usdt, 0.0)
+
+        # Check outcome card contains [Trading Fees: ... ] badge and not [Zero-Fee Pair]
+        card = engine.outcome_logger.log_outcome(outcome)
+        self.assertIn("[Trading Fees:", card)
+        self.assertNotIn("[Zero-Fee Pair]", card)
+
+
 def run_all_tests():
     print("=" * 70)
     print("      RUNNING KCEX EXECUTION ENGINE TEST SUITE")
@@ -482,7 +701,8 @@ def run_all_tests():
         "test_engine.TestSubStrategyCycle",
         "test_engine.TestDualCurrencyAndLogging",
         "test_engine.TestEngineExecutionDryRun",
-        "test_engine.TestVolumeSizingAndExposure"
+        "test_engine.TestVolumeSizingAndExposure",
+        "test_engine.TestGeneralizationMultiCoin"
     ])
     runner = unittest.TextTestRunner(verbosity=2)
     res = runner.run(suite)

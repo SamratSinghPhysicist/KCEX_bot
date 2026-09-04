@@ -31,12 +31,16 @@ Key Concepts:
 =============================================================================
 """
 
+import os
+
 # =============================================================================
 # 1. TRADING PAIR & ASSET CONFIGURATION
 # =============================================================================
-# Select a zero-fee trading pair. Currently, TRUMP_USDT has 0% maker and 0% taker fees.
-# Other pairs can be specified here if KCEX enables zero-fee promotions on them.
-SYMBOL = "TRUMP_USDT"
+# Select any KCEX futures pair (e.g. TRUMP_USDT, DOGE_USDT, BTC_USDT, ETH_USDT, SOL_USDT, PEPE_USDT).
+# Pairs like TRUMP_USDT and DOGE_USDT enjoy 0% maker and 0% taker fees.
+# Other pairs operate under standard exchange fee tiers (e.g. 0.01% taker).
+# Can also be overridden via the KCEX_SYMBOL environment variable.
+SYMBOL = os.getenv("KCEX_SYMBOL", "TRUMP_USDT")
 
 # Default order direction: "LONG" or "SHORT"
 # The engine's directional cycle sub-strategy will execute trades in this direction.

@@ -52,7 +52,7 @@ def print_banner(mode: EngineMode):
  | |  | |/ ____ \___) |  | |  | |____| | \ \| |    | |/ ____ \  | |\  |
  |_|  |_/_/    \_\_____/  |_|  |______|_|  \_\_|    |_/_/    \_\_|_| \_|
                                                                         
-       AUTOMATED TRADE EXECUTION ENGINE - KCEX ZERO-FEE FUTURES
+       AUTOMATED TRADE EXECUTION ENGINE - KCEX FUTURES
 =============================================================================="""
     print(banner_art)
 
@@ -128,10 +128,29 @@ def prompt_user_settings():
         dir_val = OrderDirection.LONG if default_dir == "LONG" else OrderDirection.SHORT
 
     # 3. Trading Pair
-    print("\n3. Trading Pair (Zero-Fee):")
-    print("   TRUMP_USDT has confirmed 0% maker and 0% taker fees on KCEX.")
+    print("\n3. Trading Pair:")
+    print("   Enter any KCEX futures pair (e.g. TRUMP_USDT, DOGE_USDT, BTC_USDT, ETH_USDT, SOL_USDT, etc.)")
+    print("   Note: Pairs like TRUMP_USDT and DOGE_USDT enjoy 0% maker and 0% taker fees on KCEX.")
     sym_str = input(f"   Symbol [default: {default_sym}]: ").strip().upper()
     sym_val = sym_str if sym_str else default_sym
+
+    # Attempt to dynamically inspect chosen pair
+    contract = None
+    last_snap_price = 0.0
+    pu_val = 0.001
+    ps_val = 4
+    try:
+        market_obj = KCEXMarket()
+        contract = market_obj.get_contract_detail(sym_val)
+        pu_val = contract.price_unit
+        ps_val = contract.price_precision
+        ticker_snap = market_obj.get_ticker(sym_val)
+        last_snap_price = float(ticker_snap.get("lastPrice", 0.0) or ticker_snap.get("fairPrice", 1.0))
+        fee_label = "0% (Zero-Fee Pair)" if (contract.maker_fee_rate == 0 and contract.taker_fee_rate == 0) else f"Maker {contract.maker_fee_rate*100:.2f}%, Taker {contract.taker_fee_rate*100:.2f}%"
+        print(f"   ✅ Contract Verified: {contract.symbol} | Price: {last_snap_price:.{ps_val}f} USDT")
+        print(f"      Tick Size (pu): {contract.price_unit} | Contract Size (cs): {contract.contract_size} {contract.base_coin} | Max Lev: {contract.max_leverage}x | Fees: {fee_label}")
+    except Exception as e:
+        print(f"   ℹ️  Note: Market preview skipped for {sym_val} ({e}).")
 
     # 4. Trade Quantity / Volume
     if default_vol_mode == "CONTRACTS":
@@ -145,7 +164,16 @@ def prompt_user_settings():
     print("   ⚠️ CRITICAL NOTE: Trade Quantity (Volume) is NOT the same as Margin!")
     print("      • Trade Quantity = Contracts * Contract Size * Price (total market exposure)")
     print("      • Margin Deducted = Trade Quantity / Leverage (actual cash deducted from wallet)")
-    print("      Example for TRUMP (at 75x lev): 1 contract = ~0.24 USDT exposure, but only costs ~0.0032 USDT margin!")
+    if contract and last_snap_price > 0:
+        cs = contract.contract_size
+        bcoin = contract.base_coin
+        min_v = int(contract.min_volume)
+        lev = min(default_lev, contract.max_leverage)
+        min_notional = min_v * cs * last_snap_price
+        min_margin = min_notional / lev
+        print(f"      Example for {contract.symbol} (at {lev}x lev): {min_v} contract(s) ({min_v * cs:g} {bcoin}) = ~{min_notional:.4f} USDT exposure (~{min_margin:.4f} USDT margin)")
+    else:
+        print("      Example: 1 contract = (1 * contract_size * price) USDT exposure, margin = exposure / leverage")
     print("   Input Options:")
     print("      - Multiplier of min: Enter '1x', '2x', '5x' (times the minimum contract quantity)")
     print("      - Exact contracts  : Enter integer like '1', '2', '5' (absolute contracts)")
@@ -180,8 +208,8 @@ def prompt_user_settings():
 
     # 5. Take-Profit rule (pu ticks)
     print("\n5. Guaranteed Min-Profit Take-Profit (TP):")
-    print("   Distance in price units (pu). For TRUMP_USDT, 1 pu = 0.0010 USDT.")
-    print("   2 pu = +0.0020 USDT profit (+0.085% price move).")
+    print(f"   Distance in price units (pu). For {sym_val}, 1 pu = {pu_val:.{ps_val}f} USDT.")
+    print(f"   {default_tp} pu = +{default_tp * pu_val:.{ps_val}f} USDT target offset.")
     tp_str = input(f"   TP Ticks [default: {default_tp} pu]: ").strip()
     try:
         tp_val = int(tp_str) if tp_str else default_tp
@@ -190,7 +218,7 @@ def prompt_user_settings():
 
     # 6. Stop Loss
     if default_sl_mode == "TICKS" and default_sl_ticks:
-        default_sl_hint = f"{default_sl_ticks} ticks ({default_sl_ticks * 0.001:.4f} USDT)"
+        default_sl_hint = f"{default_sl_ticks} ticks ({default_sl_ticks * pu_val:.{ps_val}f} USDT)"
     elif default_sl_mode == "PRICE_PCT" and default_sl_price:
         default_sl_hint = f"{default_sl_price}% price"
     else:
@@ -198,7 +226,7 @@ def prompt_user_settings():
 
     print("\n6. Stop Loss (SL) Configuration:")
     print("   Format options:")
-    print("     - By Ticks : Enter '10' or '10t' (e.g. 10 ticks = 0.0100 USDT) [Recommended]")
+    print(f"     - By Ticks : Enter '10' or '10t' (e.g. 10 ticks = {10 * pu_val:.{ps_val}f} USDT) [Recommended]")
     print("     - By ROE % : Enter '25%' or '50roe' (percentage loss on margin)")
     print("     - By Price%: Enter '0.5p' or '0.5%' (percentage move of coin price)")
     sl_str = input(f"   Stop Loss [default: {default_sl_hint}]: ").strip()
@@ -252,16 +280,25 @@ def prompt_user_settings():
                 pass
 
     # 7. Leverage
-    print("\n7. Position Leverage (Isolated Margin):")
-    print("   ⚠️ Leverage & Liquidation Buffer Guide:")
-    print("      75x -> Liquidation is ~8 ticks away (SL must be <= 5 ticks).")
-    print("      30x -> Liquidation is ~55 ticks away (safe room for 10-35 tick stops) [Recommended].")
-    print("      20x -> Liquidation is ~94 ticks away (safe room for 10-60 tick stops).")
-    lev_str = input(f"   Leverage Multiplier [default: {default_lev}x]: ").strip()
+    max_l = contract.max_leverage if contract else 75
+    print(f"\n7. Position Leverage (Isolated Margin, Max allowed for {sym_val}: {max_l}x):")
+    if contract and last_snap_price > 0 and pu_val > 0:
+        pct_30 = (1.0 / min(30, max_l)) * 100
+        ticks_30 = int((last_snap_price * (pct_30 / 100)) / pu_val)
+        print("   ⚠️ Leverage & Liquidation Buffer Guide:")
+        if max_l >= 75:
+            pct_75 = (1.0 / 75) * 100
+            ticks_75 = int((last_snap_price * (pct_75 / 100)) / pu_val)
+            print(f"      75x -> Liquidation is ~{ticks_75} ticks away (~{pct_75:.2f}% price move).")
+        print(f"      30x -> Liquidation is ~{ticks_30} ticks away (~{pct_30:.2f}% price move) [Recommended].")
+    else:
+        print("   ⚠️ Leverage & Liquidation Buffer Guide:")
+        print("      30x -> Safe liquidation buffer (recommended).")
+    lev_str = input(f"   Leverage Multiplier [default: {min(default_lev, max_l)}x]: ").strip()
     try:
-        lev_val = int(lev_str) if lev_str else default_lev
+        lev_val = int(lev_str) if lev_str else min(default_lev, max_l)
     except ValueError:
-        lev_val = default_lev
+        lev_val = min(default_lev, max_l)
 
     # 8. Cooldown
     print("\n8. Post-Trade Cooldown:")
@@ -315,7 +352,7 @@ def parse_args():
         "--symbol",
         type=str,
         default=None,
-        help="Trading pair symbol (default from settings.py: TRUMP_USDT)"
+        help="Trading pair symbol (e.g. BTC_USDT, DOGE_USDT, TRUMP_USDT, default from settings.py)"
     )
     parser.add_argument(
         "--direction",

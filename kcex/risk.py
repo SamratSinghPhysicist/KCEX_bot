@@ -49,19 +49,22 @@ class RiskAnalysisReport:
     sl_roe_pct: Optional[float] = None
     risk_reward_ratio: Optional[float] = None
     inr_rate: float = 94.45
+    price_precision: int = 4
 
     def format_summary(self) -> str:
         """Generates a clean human-readable risk summary table."""
+        ps = getattr(self, "price_precision", 4) or 4
+        base_coin = self.symbol.split('_')[0]
         dir_label = "[LONG]" if self.direction.upper() == "LONG" else "[SHORT]"
         lines = [
             f"=== RISK & PRE-TRADE REPORT: {self.symbol} {dir_label} ({self.leverage}x) ===",
-            f"Entry Price          : {self.entry_price:.4f} USDT",
-            f"Contract Size (cs)   : {self.contract_size} {self.symbol.split('_')[0]}/contract",
+            f"Entry Price          : {self.entry_price:.{ps}f} USDT",
+            f"Contract Size (cs)   : {self.contract_size} {base_coin}/contract",
             f"Volume (Contracts)   : {self.vol_contracts} contract(s)",
-            f"Underlying Quantity  : {self.underlying_quantity:.4f} {self.symbol.split('_')[0]}",
+            f"Underlying Quantity  : {self.underlying_quantity:g} {base_coin}",
             f"Position Exposure    : {self.notional_value_usdt:.4f} USDT  |  INR {self.notional_value_inr:.2f}",
             f"Initial Margin Req   : {self.initial_margin_usdt:.4f} USDT  |  INR {self.initial_margin_inr:.2f}",
-            f"Liquidation Price    : {self.liquidation_price:.4f} USDT ({self.distance_to_liquidation_pct:.2f}% distance)",
+            f"Liquidation Price    : {self.liquidation_price:.{ps}f} USDT ({self.distance_to_liquidation_pct:.2f}% distance)",
             f"Estimated Fees (R/T) : {self.fee_total_usdt:.4f} USDT  |  INR {self.fee_total_inr:.2f}",
             f"Live USD/INR Rate    : INR {self.inr_rate:.2f} per USD",
             "----------------------------------------------------------------------"
@@ -69,12 +72,12 @@ class RiskAnalysisReport:
 
         if self.take_profit_price:
             lines.append(
-                f"Take Profit (TP)     : {self.take_profit_price:.4f} USDT -> Profit: +{self.tp_profit_usdt:.4f} USDT "
+                f"Take Profit (TP)     : {self.take_profit_price:.{ps}f} USDT -> Profit: +{self.tp_profit_usdt:.4f} USDT "
                 f"(+INR {self.tp_profit_inr:.2f}) | ROE: +{self.tp_roe_pct:.2f}%"
             )
         if self.stop_loss_price:
             lines.append(
-                f"Stop Loss (SL)       : {self.stop_loss_price:.4f} USDT -> Loss: -{self.sl_loss_usdt:.4f} USDT "
+                f"Stop Loss (SL)       : {self.stop_loss_price:.{ps}f} USDT -> Loss: -{self.sl_loss_usdt:.4f} USDT "
                 f"(-INR {self.sl_loss_inr:.2f}) | ROE: -{self.sl_roe_pct:.2f}%"
             )
         if self.risk_reward_ratio is not None:
@@ -396,5 +399,6 @@ class KCEXRiskCalculator:
             sl_loss_inr=sl_loss_inr,
             sl_roe_pct=sl_roe,
             risk_reward_ratio=rrr,
-            inr_rate=inr_rate
+            inr_rate=inr_rate,
+            price_precision=contract.price_precision
         )

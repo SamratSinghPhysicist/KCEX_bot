@@ -148,6 +148,10 @@ class TradeOutcomeLogger:
         sl_pct = (sl_offset / outcome.entry_price * 100.0) if outcome.entry_price > 0 else 0.0
         sl_roe = sl_pct * outcome.leverage
 
+        ps = getattr(outcome, "price_precision", 4) or 4
+        base_coin = getattr(outcome, "base_coin", "") or outcome.symbol.split("_")[0]
+        fee_badge = "[Zero-Fee Pair]" if outcome.fee_total_usdt <= 1e-8 else f"[Trading Fees: {outcome.fee_total_usdt:.6f} USDT]"
+
         card_lines = [
             "=" * 78,
             f"TRADE #{outcome.trade_id} OUTCOME JOURNAL | Closed at: {timestamp_str} | {mode_badge}",
@@ -155,19 +159,19 @@ class TradeOutcomeLogger:
             f"Execution Mode     : {mode_badge}",
             f"Symbol & Direction : {outcome.symbol} [{outcome.direction.value}] ({outcome.leverage}x isolated)",
             f"Strategy Name      : {outcome.sub_strategy_name}",
-            f"Volume Executed    : {outcome.vol_contracts} contract(s) ({outcome.underlying_quantity:.4f} coins)",
+            f"Volume Executed    : {outcome.vol_contracts} contract(s) ({outcome.underlying_quantity:g} {base_coin})",
             f"Trade Quantity     : {outcome.notional_value_usdt:.4f} USDT (INR {outcome.notional_value_inr:.2f}) [Notional exposure]",
             f"Margin Committed   : {outcome.margin_used_usdt:.4f} USDT (INR {outcome.margin_used_inr:.2f}) [Trade Qty / {outcome.leverage}x leverage]",
-            f"Entry Price        : {outcome.entry_price:.4f} USDT (Opened: {open_time_str})",
-            f"Exit Price         : {outcome.exit_price:.4f} USDT (Duration: {outcome.duration_seconds:.2f}s)",
-            f"Tick Size (pu)     : {outcome.price_unit:.4f} USDT",
-            f"Min-Profit TP Target: {outcome.min_profit_tp_price:.4f} USDT (Offset: +{tp_ticks} pu / +{tp_offset:.4f} USDT)",
-            f"Stop Loss Level    : {outcome.stop_loss_price:.4f} USDT (Offset: -{sl_ticks} pu / -{sl_offset:.4f} USDT | -{sl_pct:.3f}% price | -{sl_roe:.1f}% ROE)",
+            f"Entry Price        : {outcome.entry_price:.{ps}f} USDT (Opened: {open_time_str})",
+            f"Exit Price         : {outcome.exit_price:.{ps}f} USDT (Duration: {outcome.duration_seconds:.2f}s)",
+            f"Tick Size (pu)     : {outcome.price_unit:.{ps}f} USDT",
+            f"Min-Profit TP Target: {outcome.min_profit_tp_price:.{ps}f} USDT (Offset: +{tp_ticks} pu / +{tp_offset:.{ps}f} USDT)",
+            f"Stop Loss Level    : {outcome.stop_loss_price:.{ps}f} USDT (Offset: -{sl_ticks} pu / -{sl_offset:.{ps}f} USDT | -{sl_pct:.3f}% price | -{sl_roe:.1f}% ROE)",
             f"Exit Reason        : {outcome.exit_reason.value}",
             "------------------------------------------------------------------------------",
             f"REALIZED PnL       : {pnl_sign}{outcome.realized_pnl_usdt:.6f} USDT ({pnl_sign}INR {outcome.realized_pnl_inr:.4f})",
             f"Return on Equity   : {roe_sign}{outcome.roe_percentage:.2f}% (Price move: {pnl_sign}{outcome.pnl_percentage:.3f}%)",
-            f"Trading Fees       : {outcome.fee_total_usdt:.6f} USDT (INR {outcome.fee_total_inr:.4f}) [Zero-Fee Pair]",
+            f"Trading Fees       : {outcome.fee_total_usdt:.6f} USDT (INR {outcome.fee_total_inr:.4f}) {fee_badge}",
         ]
 
         if outcome.balance_after_trade_usdt is not None:
@@ -201,6 +205,7 @@ class TradeOutcomeLogger:
                 "close_time": outcome.close_time,
                 "timestamp_str": timestamp_str,
                 "symbol": outcome.symbol,
+                "base_coin": base_coin,
                 "direction": outcome.direction.value,
                 "sub_strategy": outcome.sub_strategy_name,
                 "mode": outcome.mode.value,
@@ -211,6 +216,7 @@ class TradeOutcomeLogger:
                 "min_profit_tp_price": outcome.min_profit_tp_price,
                 "stop_loss_price": outcome.stop_loss_price,
                 "price_unit": outcome.price_unit,
+                "price_precision": ps,
                 "duration_seconds": outcome.duration_seconds,
                 "notional_value_usdt": outcome.notional_value_usdt,
                 "notional_value_inr": outcome.notional_value_inr,

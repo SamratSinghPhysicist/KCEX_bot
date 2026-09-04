@@ -3,7 +3,7 @@ KCEX "Masterplan" Strategy & Sub-Strategy Framework
 ===================================================
 Implements the Masterplan Strategy and its sub-strategy architecture.
 Features:
-- Zero-fee pair validation (defaults to TRUMP_USDT)
+- Pair fee & contract validation (supports zero-fee and standard pairs)
 - Guaranteed Min-Profit TP: Entry Price + pu (Long) / Entry Price - pu (Short)
 - Stop Loss: -10% Return on Equity (ROE / Margin)
 - Immediate Profit Closing evaluation
@@ -120,13 +120,13 @@ class MasterplanStrategy:
     Masterplan Trading Strategy.
     
     Responsibilities:
-    1. Validates zero-fee trading pair configuration (TRUMP_USDT).
+    1. Validates trading pair fee and contract configuration.
     2. Coordinates sub-strategies to generate entry signals.
     3. Calculates exact Min-Profit Take Profit price:
        - Long: Entry Price + pu
        - Short: Entry Price - pu
        where pu is the contract's tick size (price_unit).
-    4. Calculates Stop Loss at -10% ROE.
+    4. Calculates Stop Loss (by ROE, ticks, or price %).
     5. Evaluates immediate-profit conditions: if current market price is already
        better than or equal to min-profit, triggers instant market close.
     """
@@ -147,8 +147,8 @@ class MasterplanStrategy:
 
     def validate_zero_fee_pair(self, symbol: str) -> Dict[str, Any]:
         """
-        Validates that the selected symbol offers zero maker and taker fees.
-        Raises ValueError if fees are non-zero unless user accepts.
+        Checks whether the selected symbol offers zero maker and taker fees,
+        or operates under standard exchange fee tiers.
         """
         symbol_upper = symbol.upper()
         contract = self.market.get_contract_detail(symbol_upper)
@@ -196,13 +196,20 @@ class MasterplanStrategy:
         entry_price: float,
         price_unit: float,
         tp_ticks: int = 1,
-        precision: int = 4
+        precision: Optional[int] = None
     ) -> float:
         """
         Calculates the Guaranteed Min-Profit TP Price.
         For Long:  TP = Entry Price + (tp_ticks * pu)
         For Short: TP = Entry Price - (tp_ticks * pu)
         """
+        if precision is None:
+            try:
+                contract = self.market.get_contract_detail(self.config.symbol)
+                precision = contract.price_precision
+            except Exception:
+                precision = 4
+
         tick_offset = tp_ticks * price_unit
         if direction == OrderDirection.LONG:
             tp_price = entry_price + tick_offset
@@ -218,8 +225,8 @@ class MasterplanStrategy:
         sl_roe_pct: Optional[float] = None,
         sl_ticks: Optional[int] = None,
         sl_price_pct: Optional[float] = None,
-        price_unit: float = 0.001,
-        precision: int = 4
+        price_unit: Optional[float] = None,
+        precision: Optional[int] = None
     ) -> float:
         """
         Calculates Stop Loss price supporting multiple modes:
@@ -228,6 +235,24 @@ class MasterplanStrategy:
         3. sl_roe_pct (default): Stop loss by ROE % (e.g. 10.0% ROE -> price move = ROE / (100 * leverage)).
         Includes liquidation guard to ensure SL is never placed beyond liquidation price.
         """
+        mmr = 0.01
+        try:
+            contract = self.market.get_contract_detail(self.config.symbol)
+            if contract:
+                if price_unit is None:
+                    price_unit = contract.price_unit
+                if precision is None:
+                    precision = contract.price_precision
+                if contract.maintenance_margin_ratio > 0:
+                    mmr = contract.maintenance_margin_ratio
+        except Exception:
+            pass
+
+        if price_unit is None:
+            price_unit = 0.001
+        if precision is None:
+            precision = 4
+
         # 1. Determine price offset
         if sl_ticks is not None and sl_ticks > 0:
             price_offset = sl_ticks * price_unit
@@ -238,15 +263,6 @@ class MasterplanStrategy:
             price_drop_fraction = (effective_roe / 100.0) / float(max(1, leverage))
             price_offset = entry_price * price_drop_fraction
 
-        # Get MMR (Maintenance Margin Ratio) from market or default 0.01 (1.0%)
-        mmr = 0.01
-        try:
-            contract = self.market.get_contract_detail(self.config.symbol)
-            if contract and contract.maintenance_margin_ratio > 0:
-                mmr = contract.maintenance_margin_ratio
-        except Exception:
-            pass
-
         if direction == OrderDirection.LONG:
             sl_price = entry_price - price_offset
             # Liquidation price for Long: Entry * (1 - 1/leverage + mmr)
@@ -256,8 +272,7 @@ class MasterplanStrategy:
                 # Ensure clamped SL is below entry
                 if clamped_sl < entry_price:
                     logger.warning(
-                        "Liquidation Guard: Requested SL %.4f was at/past liq price %.4f. Clamped to %.4f.",
-                        sl_price, approx_liq, clamped_sl
+                        f"Liquidation Guard: Requested SL {sl_price:.{precision}f} was at/past liq price {approx_liq:.{precision}f}. Clamped to {clamped_sl:.{precision}f}."
                     )
                     sl_price = clamped_sl
         else:
@@ -269,8 +284,7 @@ class MasterplanStrategy:
                 # Ensure clamped SL is above entry
                 if clamped_sl > entry_price:
                     logger.warning(
-                        "Liquidation Guard: Requested SL %.4f was at/past liq price %.4f. Clamped to %.4f.",
-                        sl_price, approx_liq, clamped_sl
+                        f"Liquidation Guard: Requested SL {sl_price:.{precision}f} was at/past liq price {approx_liq:.{precision}f}. Clamped to {clamped_sl:.{precision}f}."
                     )
                     sl_price = clamped_sl
 

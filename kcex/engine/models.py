@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
 from enum import Enum
 import time
+import os
 
 
 class OrderDirection(str, Enum):
@@ -44,7 +45,7 @@ class TradeSignal:
 @dataclass
 class ExecutionConfig:
     """Execution parameters for the automated engine."""
-    symbol: str = "TRUMP_USDT"
+    symbol: str = field(default_factory=lambda: os.getenv("KCEX_SYMBOL", "TRUMP_USDT"))
     direction: OrderDirection = OrderDirection.LONG
     mode: EngineMode = EngineMode.DRY_RUN
     leverage: int = 75
@@ -104,6 +105,9 @@ class TradeOutcome:
     realized_pnl_inr: float
     pnl_percentage: float          # Price move %
     roe_percentage: float          # ROE % on margin
+    
+    base_coin: str = ""
+    price_precision: int = 4
     
     fee_open_usdt: float = 0.0
     fee_close_usdt: float = 0.0
