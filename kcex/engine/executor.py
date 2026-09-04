@@ -155,6 +155,15 @@ class TradeExecutionEngine:
 
         self.logger.info(f"Engine Mode: {self.config.mode.value.upper()}")
         self.logger.info(f"Sub-strategy: {self.strategy.sub_strategy.name}")
+        vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
+        if vol_mode == "CONTRACTS" and getattr(self.config, "volume_contracts", None):
+            vol_summary = f"{self.config.volume_contracts} contract(s)"
+        elif vol_mode == "MULTIPLIER" and getattr(self.config, "volume_multiplier", None):
+            vol_summary = f"{self.config.volume_multiplier:g}x min quantity ({int(contract.min_volume)} min)"
+        else:
+            vol_summary = f"1x min quantity ({int(contract.min_volume)} min)"
+
+        self.logger.info(f"Position Sizing: {vol_summary} [Trade Qty != Margin; Committed Margin = Trade Qty / {self.config.leverage}x leverage]")
         self.logger.info(f"Target Leverage: {self.config.leverage}x isolated")
         self.logger.info(f"Min-Profit Take Profit rule: Entry Price +/- {self.config.tp_ticks} pu (Tick Size)")
         self.logger.info(f"Stop Loss rule: -{self.config.sl_roe_pct}% ROE on margin")
@@ -190,8 +199,23 @@ class TradeExecutionEngine:
         cs = contract.contract_size
         leverage = min(self.config.leverage, contract.max_leverage)
 
-        # Minimum possible volume
-        vol_contracts = int(contract.min_volume)
+        # Determine trade quantity (volume in contracts)
+        # Note: Trade Quantity (Notional Value) is NOT the same as Margin!
+        # Trade Quantity = Contracts * Contract Size * Price
+        # Committed Margin = Trade Quantity / Leverage
+        min_vol = int(contract.min_volume)
+        vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
+        if vol_mode == "CONTRACTS" and getattr(self.config, "volume_contracts", None):
+            vol_contracts = max(min_vol, int(self.config.volume_contracts))
+            vol_spec_desc = f"{vol_contracts} contract(s)"
+        elif vol_mode == "MULTIPLIER" and getattr(self.config, "volume_multiplier", None):
+            mult = float(self.config.volume_multiplier)
+            vol_contracts = max(min_vol, int(round(min_vol * mult)))
+            vol_spec_desc = f"{vol_contracts} contract(s) ({mult:g}x min)"
+        else:
+            vol_contracts = min_vol
+            vol_spec_desc = f"{vol_contracts} contract(s) (1x min)"
+
         underlying_qty = vol_contracts * cs
 
         self.logger.section(f"EXECUTING TRADE #{trade_id} [{direction.value}] - {symbol}")
@@ -234,9 +258,9 @@ class TradeExecutionEngine:
         )
 
         self.logger.info(
-            f"Pre-Trade Spec: Vol: {vol_contracts} contract ({underlying_qty} coins) | "
-            f"Est Notional: {self.logger.format_dual(notional_est_usdt)} | "
-            f"Est Margin: {self.logger.format_dual(margin_est_usdt)}"
+            f"Pre-Trade Spec: Vol: {vol_spec_desc} ({underlying_qty:.4f} coins) | "
+            f"Trade Qty (Notional): {self.logger.format_dual(notional_est_usdt)} | "
+            f"Committed Margin (Qty/{leverage}x): {self.logger.format_dual(margin_est_usdt)}"
         )
         self.logger.info(
             f"Reference Price: {ref_price:.4f} USDT | "

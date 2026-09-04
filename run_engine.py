@@ -87,6 +87,9 @@ def prompt_user_settings():
     default_dir = get_setting("DIRECTION", "LONG").upper()
     default_sym = get_setting("SYMBOL", "TRUMP_USDT").upper()
     default_tp = get_setting("TP_TICKS", 2)
+    default_vol_mode = get_setting("VOLUME_MODE", "MULTIPLIER").upper()
+    default_vol_mult = get_setting("VOLUME_MULTIPLIER", 1.0)
+    default_vol_contracts = get_setting("VOLUME_CONTRACTS", 1)
     default_sl_mode = get_setting("SL_MODE", "TICKS").upper()
     default_sl_ticks = get_setting("SL_TICKS", 10)
     default_sl_roe = get_setting("SL_ROE_PCT", 25.0)
@@ -130,8 +133,53 @@ def prompt_user_settings():
     sym_str = input(f"   Symbol [default: {default_sym}]: ").strip().upper()
     sym_val = sym_str if sym_str else default_sym
 
-    # 4. Take-Profit rule (pu ticks)
-    print("\n4. Guaranteed Min-Profit Take-Profit (TP):")
+    # 4. Trade Quantity / Volume
+    if default_vol_mode == "CONTRACTS":
+        default_vol_hint = f"{default_vol_contracts} contract(s)"
+    elif default_vol_mode == "MULTIPLIER":
+        default_vol_hint = f"{default_vol_mult:g}x min quantity"
+    else:
+        default_vol_hint = "1x min quantity"
+
+    print("\n4. Trade Quantity / Volume (Position Sizing):")
+    print("   ⚠️ CRITICAL NOTE: Trade Quantity (Volume) is NOT the same as Margin!")
+    print("      • Trade Quantity = Contracts * Contract Size * Price (total market exposure)")
+    print("      • Margin Deducted = Trade Quantity / Leverage (actual cash deducted from wallet)")
+    print("      Example for TRUMP (at 75x lev): 1 contract = ~0.24 USDT exposure, but only costs ~0.0032 USDT margin!")
+    print("   Input Options:")
+    print("      - Multiplier of min: Enter '1x', '2x', '5x' (times the minimum contract quantity)")
+    print("      - Exact contracts  : Enter integer like '1', '2', '5' (absolute contracts)")
+    vol_str = input(f"   Trade Quantity [default: {default_vol_hint}]: ").strip()
+
+    vol_mode_val = default_vol_mode
+    vol_mult_val = default_vol_mult if default_vol_mode == "MULTIPLIER" else 1.0
+    vol_contracts_val = default_vol_contracts if default_vol_mode == "CONTRACTS" else None
+
+    if vol_str:
+        s_clean = vol_str.lower().strip()
+        if "x" in s_clean:
+            vol_mode_val = "MULTIPLIER"
+            try:
+                vol_mult_val = float(s_clean.replace("x", "").strip())
+            except ValueError:
+                vol_mult_val = default_vol_mult
+            vol_contracts_val = None
+        else:
+            try:
+                num = float(s_clean)
+                if num.is_integer() and int(num) >= 1:
+                    vol_mode_val = "CONTRACTS"
+                    vol_contracts_val = int(num)
+                    vol_mult_val = None
+                else:
+                    vol_mode_val = "MULTIPLIER"
+                    vol_mult_val = num
+                    vol_contracts_val = None
+            except ValueError:
+                pass
+
+    # 5. Take-Profit rule (pu ticks)
+    print("\n5. Guaranteed Min-Profit Take-Profit (TP):")
     print("   Distance in price units (pu). For TRUMP_USDT, 1 pu = 0.0010 USDT.")
     print("   2 pu = +0.0020 USDT profit (+0.085% price move).")
     tp_str = input(f"   TP Ticks [default: {default_tp} pu]: ").strip()
@@ -140,7 +188,7 @@ def prompt_user_settings():
     except ValueError:
         tp_val = default_tp
 
-    # 5. Stop Loss
+    # 6. Stop Loss
     if default_sl_mode == "TICKS" and default_sl_ticks:
         default_sl_hint = f"{default_sl_ticks} ticks ({default_sl_ticks * 0.001:.4f} USDT)"
     elif default_sl_mode == "PRICE_PCT" and default_sl_price:
@@ -148,7 +196,7 @@ def prompt_user_settings():
     else:
         default_sl_hint = f"{default_sl_roe}% ROE"
 
-    print("\n5. Stop Loss (SL) Configuration:")
+    print("\n6. Stop Loss (SL) Configuration:")
     print("   Format options:")
     print("     - By Ticks : Enter '10' or '10t' (e.g. 10 ticks = 0.0100 USDT) [Recommended]")
     print("     - By ROE % : Enter '25%' or '50roe' (percentage loss on margin)")
@@ -203,8 +251,8 @@ def prompt_user_settings():
             except ValueError:
                 pass
 
-    # 6. Leverage
-    print("\n6. Position Leverage (Isolated Margin):")
+    # 7. Leverage
+    print("\n7. Position Leverage (Isolated Margin):")
     print("   ⚠️ Leverage & Liquidation Buffer Guide:")
     print("      75x -> Liquidation is ~8 ticks away (SL must be <= 5 ticks).")
     print("      30x -> Liquidation is ~55 ticks away (safe room for 10-35 tick stops) [Recommended].")
@@ -215,8 +263,8 @@ def prompt_user_settings():
     except ValueError:
         lev_val = default_lev
 
-    # 7. Cooldown
-    print("\n7. Post-Trade Cooldown:")
+    # 8. Cooldown
+    print("\n8. Post-Trade Cooldown:")
     print("   Seconds to pause after position closes before executing the next trade cycle.")
     cool_str = input(f"   Cooldown Seconds [default: {default_cool:.0f}s]: ").strip()
     try:
@@ -224,8 +272,8 @@ def prompt_user_settings():
     except ValueError:
         cool_val = default_cool
 
-    # 8. Max trades
-    print("\n8. Session Trade Target:")
+    # 9. Max trades
+    print("\n9. Session Trade Target:")
     print("   Total number of trades to execute before engine automatically stops (0 = unlimited).")
     max_str = input(f"   Max Trades [default: {default_max}]: ").strip()
     try:
@@ -242,6 +290,9 @@ def prompt_user_settings():
         leverage=lev_val,
         is_isolated=True,
         cooldown_seconds=cool_val,
+        volume_mode=vol_mode_val,
+        volume_multiplier=vol_mult_val or 1.0,
+        volume_contracts=vol_contracts_val,
         tp_ticks=tp_val,
         sl_mode=sl_mode_val,
         sl_roe_pct=sl_roe_val,
@@ -279,6 +330,25 @@ def parse_args():
         choices=["dry-run", "live"],
         default=None,
         help="Execution mode: 'dry-run' or 'live' (default from settings.py)"
+    )
+    parser.add_argument(
+        "--volume-contracts", "--vol",
+        type=int,
+        default=None,
+        help="Trade volume in exact number of contracts (e.g. 1, 2, 5)"
+    )
+    parser.add_argument(
+        "--volume-multiplier", "--vol-mult",
+        type=float,
+        default=None,
+        help="Trade volume multiplier of minimum volume (e.g. 1.0, 2.0, 5.0)"
+    )
+    parser.add_argument(
+        "--volume-mode",
+        type=str,
+        choices=["MIN", "MULTIPLIER", "CONTRACTS", "min", "multiplier", "contracts"],
+        default=None,
+        help="Volume mode: 'MIN', 'MULTIPLIER', or 'CONTRACTS'"
     )
     parser.add_argument(
         "--cooldown",
@@ -363,6 +433,10 @@ def main():
         dir_enum = OrderDirection.LONG if dir_raw == "LONG" else OrderDirection.SHORT
         mode_enum = EngineMode.LIVE if mode_raw == "live" else EngineMode.DRY_RUN
 
+        vol_mode = (args.volume_mode or get_setting("VOLUME_MODE", "MULTIPLIER")).upper()
+        vol_mult = args.volume_multiplier if args.volume_multiplier is not None else get_setting("VOLUME_MULTIPLIER", 1.0)
+        vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 1) if vol_mode == "CONTRACTS" else None)
+
         tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 2)
         sl_mode = (args.sl_mode or get_setting("SL_MODE", "TICKS")).upper()
         sl_ticks = args.sl_ticks if args.sl_ticks is not None else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None)
@@ -381,6 +455,9 @@ def main():
             leverage=lev,
             is_isolated=get_setting("IS_ISOLATED", True),
             cooldown_seconds=cooldown,
+            volume_mode=vol_mode,
+            volume_multiplier=vol_mult or 1.0,
+            volume_contracts=vol_contracts,
             tp_ticks=tp_ticks,
             sl_mode=sl_mode,
             sl_ticks=sl_ticks,
@@ -420,6 +497,28 @@ def main():
             print("------------------------------------------------------------------------------\n")
     except Exception as e:
         print(f"[Notice] Balance check skipped: {e}\n")
+
+    vol_desc = (
+        f"{config.volume_contracts} contract(s)" if config.volume_mode == "CONTRACTS" and config.volume_contracts
+        else f"{config.volume_multiplier:g}x min quantity"
+    )
+    sl_desc = (
+        f"{config.sl_ticks} ticks" if config.sl_ticks
+        else f"{config.sl_price_pct}% coin price" if config.sl_price_pct
+        else f"{config.sl_roe_pct}% ROE"
+    )
+    print("==============================================================================")
+    print("                      CONFIGURED ENGINE PARAMETERS")
+    print("==============================================================================")
+    print(f"  • Symbol & Mode     : {config.symbol} | {config.mode.value.upper()} | Direction: {config.direction.value}")
+    print(f"  • Target Leverage   : {config.leverage}x isolated")
+    print(f"  • Trade Quantity    : {vol_desc}")
+    print(f"    ⚠️  CRITICAL NOTE : Trade Quantity (Volume) != Margin!")
+    print(f"                       Margin deducted = Trade Quantity / {config.leverage}x leverage")
+    print(f"  • Min-Profit TP     : +{config.tp_ticks} pu ticks")
+    print(f"  • Stop Loss         : -{sl_desc}")
+    print(f"  • Cooldown          : {config.cooldown_seconds}s | Max Trades: {'Unlimited' if config.max_trades == 0 else config.max_trades}")
+    print("==============================================================================\n")
 
     engine = TradeExecutionEngine(config=config)
     engine.run()

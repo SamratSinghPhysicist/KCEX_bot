@@ -49,7 +49,43 @@ MODE = "live"
 
 
 # =============================================================================
-# 2. TAKE-PROFIT (TP) RULES
+# 2. TRADE QUANTITY / VOLUME CONFIGURATION (POSITION SIZING)
+# =============================================================================
+# ⚠️ CRITICAL DISTINCTION: TRADE QUANTITY (VOLUME) IS NOT THE SAME AS MARGIN!
+#
+# • Trade Quantity (Notional Value):
+#     The total market value/exposure of your position in USDT.
+#     Formula: Trade Quantity = Volume (contracts) * Contract Size * Entry Price
+#     Example (TRUMP_USDT at 2.35 USDT, Contract Size = 0.1 TRUMP coins):
+#       - 1 contract  = 0.1 coins = ~0.235 USDT Trade Quantity
+#       - 2 contracts = 0.2 coins = ~0.470 USDT Trade Quantity
+#       - 5 contracts = 0.5 coins = ~1.175 USDT Trade Quantity
+#
+# • Committed Margin (Cash from Wallet):
+#     The actual collateral deducted from your KCEX wallet balance to hold the trade.
+#     Formula: Margin Required = Trade Quantity / Leverage
+#     Example (at 75x leverage):
+#       - 1 contract  margin = 0.235 USDT / 75 = ~0.0031 USDT (INR ~0.30)
+#       - 2 contracts margin = 0.470 USDT / 75 = ~0.0063 USDT (INR ~0.60)
+#       - 5 contracts margin = 1.175 USDT / 75 = ~0.0157 USDT (INR ~1.48)
+#
+# Configuration Modes:
+#   "MIN"        -> Always execute exactly minimum possible quantity (1x min_volume).
+#   "MULTIPLIER" -> Execute x times the contract's minimum volume (e.g. 1.0, 2.0, 5.0).
+#   "CONTRACTS"  -> Execute an exact integer number of contracts (e.g. 1, 2, 5).
+VOLUME_MODE = "MULTIPLIER"  # "MIN", "MULTIPLIER", or "CONTRACTS"
+
+# If VOLUME_MODE == "MULTIPLIER":
+# Multiplier of min_volume (e.g. 1.0 = 1x min, 2.0 = 2x min, 5.0 = 5x min quantity)
+VOLUME_MULTIPLIER = 1.0
+
+# If VOLUME_MODE == "CONTRACTS":
+# Exact number of contracts (must be >= contract min_volume, which is 1 for TRUMP)
+VOLUME_CONTRACTS = 1
+
+
+# =============================================================================
+# 3. TAKE-PROFIT (TP) RULES
 # =============================================================================
 # Minimum Take-Profit rule: Number of pu (Price Unit / Tick Size) away from entry price.
 # For TRUMP_USDT, 1 pu = 0.001 USDT.
@@ -59,7 +95,7 @@ TP_TICKS = 2
 
 
 # =============================================================================
-# 3. STOP-LOSS (SL) RULES & MODES
+# 4. STOP-LOSS (SL) RULES & MODES
 # =============================================================================
 # Choose how the Stop Loss distance is determined:
 #   "TICKS"     -> Fixed number of price units / ticks away from entry (RECOMMENDED)
@@ -84,7 +120,7 @@ SL_PRICE_PCT = 0.5
 
 
 # =============================================================================
-# 4. LEVERAGE & MARGIN SETTINGS
+# 5. LEVERAGE & MARGIN SETTINGS
 # =============================================================================
 # Position leverage multiplier.
 #
@@ -104,7 +140,7 @@ IS_ISOLATED = True
 
 
 # =============================================================================
-# 5. CYCLE TIMING & SESSION LIMITS
+# 6. CYCLE TIMING & SESSION LIMITS
 # =============================================================================
 # Cooldown period in seconds to wait after a trade closes before opening the next trade.
 # Allows the orderbook and ticker to stabilize after order closure.
@@ -120,7 +156,7 @@ POLL_INTERVAL_SECONDS = 0.2
 
 
 # =============================================================================
-# 6. LOGGING DIRECTORIES & AUDIT FILES
+# 7. LOGGING DIRECTORIES & AUDIT FILES
 # =============================================================================
 LOGS_DIR = "logs"
 REALTIME_LOG_FILE = "engine_realtime.log"     # Live stream of all engine events & price polls

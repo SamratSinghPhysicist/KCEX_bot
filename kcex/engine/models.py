@@ -55,7 +55,11 @@ class ExecutionConfig:
     sl_roe_pct: float = 10.0        # -10% ROE (Return on Equity/Margin)
     sl_ticks: Optional[int] = None  # Number of pu ticks away from entry
     sl_price_pct: Optional[float] = None # Price move percentage away from entry
-    max_trades: int = 0             # 0 = unlimited
+    # Trade Quantity / Volume settings (Note: Trade Quantity is NOT margin. Margin = Trade Quantity / Leverage)
+    volume_mode: str = "MULTIPLIER"       # "MIN", "MULTIPLIER", or "CONTRACTS"
+    volume_multiplier: float = 1.0        # x times min_volume (e.g. 1.0 = 1x, 2.0 = 2x)
+    volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 5)
+    max_trades: int = 0                   # 0 = unlimited
     poll_interval_seconds: float = 0.5
     logs_dir: str = "logs"
     realtime_log_file: str = "engine_realtime.log"

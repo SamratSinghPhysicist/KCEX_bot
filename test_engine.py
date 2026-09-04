@@ -10,6 +10,8 @@ import os
 import sys
 import time
 import json
+import logging
+import tempfile
 import unittest
 
 # Ensure utf-8 output encoding on Windows consoles
@@ -196,16 +198,26 @@ class TestDualCurrencyAndLogging(unittest.TestCase):
     """Tests dual-currency formatters and trade journal generation."""
 
     def setUp(self):
-        self.test_log_dir = "logs/test"
-        os.makedirs(self.test_log_dir, exist_ok=True)
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_log_dir = self.temp_dir.name
         self.dual_logger = DualCurrencyLogger(
-            log_file=f"{self.test_log_dir}/test_realtime.log",
+            log_file=os.path.join(self.test_log_dir, "test_realtime.log"),
             inr_rate=94.50
         )
         self.outcome_logger = TradeOutcomeLogger(
-            txt_file=f"{self.test_log_dir}/test_outcomes.txt",
-            jsonl_file=f"{self.test_log_dir}/test_outcomes.jsonl"
+            txt_file=os.path.join(self.test_log_dir, "test_outcomes.txt"),
+            jsonl_file=os.path.join(self.test_log_dir, "test_outcomes.jsonl")
         )
+
+    def tearDown(self):
+        for h in list(self.dual_logger.logger.handlers):
+            h.close()
+            self.dual_logger.logger.removeHandler(h)
+        logging.shutdown()
+        try:
+            self.temp_dir.cleanup()
+        except Exception:
+            pass
 
     def test_dual_formatting(self):
         formatted = self.dual_logger.format_dual(0.001, precision=4)
@@ -281,6 +293,17 @@ class TestDualCurrencyAndLogging(unittest.TestCase):
 class TestEngineExecutionDryRun(unittest.TestCase):
     """Tests complete dry-run engine cycle execution."""
 
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_log_dir = self.temp_dir.name
+
+    def tearDown(self):
+        logging.shutdown()
+        try:
+            self.temp_dir.cleanup()
+        except Exception:
+            pass
+
     def test_single_dry_run_cycle(self):
         config = ExecutionConfig(
             symbol="TRUMP_USDT",
@@ -288,7 +311,7 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             mode=EngineMode.DRY_RUN,
             cooldown_seconds=1.0,
             max_trades=1,
-            logs_dir="logs/test_engine",
+            logs_dir=self.test_log_dir,
             poll_interval_seconds=0.05
         )
         engine = TradeExecutionEngine(config=config)
@@ -331,7 +354,7 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             mode=EngineMode.DRY_RUN,
             cooldown_seconds=1.0,
             max_trades=1,
-            logs_dir="logs/test_engine",
+            logs_dir=self.test_log_dir,
             poll_interval_seconds=0.05
         )
         engine = TradeExecutionEngine(config=config)
@@ -363,6 +386,93 @@ class TestEngineExecutionDryRun(unittest.TestCase):
         self.assertLess(outcome.realized_pnl_usdt, 0)
 
 
+class TestVolumeSizingAndExposure(unittest.TestCase):
+    """
+    Tests volume sizing configurations (multiplier, absolute contracts)
+    and verifies that Trade Quantity (Volume) != Margin.
+    Margin = Trade Quantity / Leverage.
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_log_dir = self.temp_dir.name
+
+    def tearDown(self):
+        logging.shutdown()
+        try:
+            self.temp_dir.cleanup()
+        except Exception:
+            pass
+
+    def test_volume_multiplier_execution(self):
+        config = ExecutionConfig(
+            symbol="TRUMP_USDT",
+            direction=OrderDirection.LONG,
+            mode=EngineMode.DRY_RUN,
+            volume_mode="MULTIPLIER",
+            volume_multiplier=3.0,  # 3x minimum volume
+            logs_dir=self.test_log_dir,
+            poll_interval_seconds=0.05
+        )
+        engine = TradeExecutionEngine(config=config)
+        contract = engine.pre_flight_checks()
+
+        ticks = [
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.500, "bid1": 2.500, "ask1": 2.500},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.500, "bid1": 2.500, "ask1": 2.500},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.520, "bid1": 2.520, "ask1": 2.521}
+        ]
+        tick_call = [0]
+        def mock_ticker(sym):
+            idx = min(tick_call[0], len(ticks) - 1)
+            tick_call[0] += 1
+            return ticks[idx]
+        engine.market.get_ticker = mock_ticker
+
+        outcome = engine.execute_single_trade_cycle(contract)
+        self.assertIsNotNone(outcome)
+        # TRUMP min_volume is 1 contract. 3x multiplier -> 3 contracts
+        self.assertEqual(outcome.vol_contracts, 3)
+        self.assertAlmostEqual(outcome.underlying_quantity, 3 * contract.contract_size)
+        # Verify Trade Quantity (Notional) != Margin
+        self.assertNotEqual(outcome.notional_value_usdt, outcome.margin_used_usdt)
+        # Margin = Trade Quantity / Leverage
+        expected_margin = outcome.notional_value_usdt / outcome.leverage
+        self.assertAlmostEqual(outcome.margin_used_usdt, expected_margin, places=4)
+
+    def test_volume_absolute_contracts_execution(self):
+        config = ExecutionConfig(
+            symbol="TRUMP_USDT",
+            direction=OrderDirection.LONG,
+            mode=EngineMode.DRY_RUN,
+            volume_mode="CONTRACTS",
+            volume_contracts=5,  # Exactly 5 contracts
+            logs_dir=self.test_log_dir,
+            poll_interval_seconds=0.05
+        )
+        engine = TradeExecutionEngine(config=config)
+        contract = engine.pre_flight_checks()
+
+        ticks = [
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.500, "bid1": 2.500, "ask1": 2.500},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.500, "bid1": 2.500, "ask1": 2.500},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.520, "bid1": 2.520, "ask1": 2.521}
+        ]
+        tick_call = [0]
+        def mock_ticker(sym):
+            idx = min(tick_call[0], len(ticks) - 1)
+            tick_call[0] += 1
+            return ticks[idx]
+        engine.market.get_ticker = mock_ticker
+
+        outcome = engine.execute_single_trade_cycle(contract)
+        self.assertIsNotNone(outcome)
+        self.assertEqual(outcome.vol_contracts, 5)
+        self.assertAlmostEqual(outcome.underlying_quantity, 5 * contract.contract_size)
+        expected_margin = outcome.notional_value_usdt / outcome.leverage
+        self.assertAlmostEqual(outcome.margin_used_usdt, expected_margin, places=4)
+
+
 def run_all_tests():
     print("=" * 70)
     print("      RUNNING KCEX EXECUTION ENGINE TEST SUITE")
@@ -371,7 +481,8 @@ def run_all_tests():
         "test_engine.TestMasterplanStrategy",
         "test_engine.TestSubStrategyCycle",
         "test_engine.TestDualCurrencyAndLogging",
-        "test_engine.TestEngineExecutionDryRun"
+        "test_engine.TestEngineExecutionDryRun",
+        "test_engine.TestVolumeSizingAndExposure"
     ])
     runner = unittest.TextTestRunner(verbosity=2)
     res = runner.run(suite)
@@ -381,3 +492,4 @@ def run_all_tests():
 if __name__ == "__main__":
     success = run_all_tests()
     sys.exit(0 if success else 1)
+

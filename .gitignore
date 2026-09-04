@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# KCEX Engine Logs & Run Artifacts
+logs/test/
+logs/test_engine/
+logs/*.log
+logs/*.txt
+logs/*.jsonl
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing & Coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
