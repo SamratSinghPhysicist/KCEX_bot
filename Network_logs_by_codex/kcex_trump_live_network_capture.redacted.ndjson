@@ -1,0 +1,15 @@
+{"record_type":"capture_metadata","captured_at_local":"2026-09-04 Asia/Kolkata","tab":"TRUMP_USDT futures","source":"Edge CDP Network events after clean reload and Position History click","redaction":"Authorization, Content-Sign, Content-time, User-Device, cookies, WebSocket login payloads, mhash, analytics bodies and large compressed frames omitted","completeness":"Trading-relevant events observed in this live segment; CDP event buffers can evict older events and this is not a credential-bearing HAR."}
+{"sequence":2297,"method":"GET","url":"https://www.kcex.com/fapi/v1/private/position/list/history_positions?page_num=1&page_size=20","status":200,"auth":"authenticated; headers redacted","purpose":"Position History read after the live TRUMP position closed."}
+{"sequence":3021,"method":"GET","url":"https://www.kcex.com/fapi/v1/contract/ping","status":200,"auth":"public","purpose":"Futures connectivity keepalive."}
+{"sequence":2295,"websocket":"out","payload":"{\"method\":\"sub.tick.list\",\"compress\":true,\"param\":{\"timezone\":\"24H\"}}"}
+{"sequence":2306,"websocket":"in","channel":"push.depth.step","symbol":"TRUMP_USDT","fields":["ct","asks","bids","version","askMarketLevelPrice","bidMarketLevelPrice"],"payload_policy":"sample payload observed; depth snapshots may be large"}
+{"sequence":2320,"websocket":"in","channel":"push.index.price","symbol":"TRUMP_USDT","sample":{"price":2.318}}
+{"sequence":2321,"websocket":"in","channel":"push.fair.price","symbol":"TRUMP_USDT","sample":{"price":2.318}}
+{"sequence":2325,"websocket":"in","channel":"push.funding.rate","symbol":"TRUMP_USDT","sample":{"rate":0.00005,"nextSettleTime":1788494400000}}
+{"sequence":2326,"websocket":"in","channel":"push.deal","symbol":"TRUMP_USDT","sample":{"p":2.317,"v":56153,"T":1,"O":3,"M":1}}
+{"sequence":2328,"websocket":"in","channel":"push.kline","symbol":"TRUMP_USDT","sample":{"interval":"Min1","o":2.324,"c":2.32,"h":2.325,"l":2.319,"a":1041331.0357,"q":4486304}}
+{"sequence":2341,"websocket":"in","channel":"push.ticker","symbol":"TRUMP_USDT","sample":{"lastPrice":2.32,"fairPrice":2.318,"indexPrice":2.318,"bid1":2.317,"ask1":2.318,"holdVol":5031311,"fundingRate":0.00005}}
+{"sequence":2363,"websocket":"out","payload":"{\"method\":\"ping\"}"}
+{"sequence":2364,"websocket":"in","payload":"{\"id\":0,\"code\":0,\"msg\":\"PONG\"}"}
+{"sequence":3027,"websocket":"in","payload":"{\"id\":0,\"code\":0,\"msg\":\"PONG\"}"}
+{"record_type":"execution_reconciliation","position_history":{"direction":"Long","status":"Liquidated","avg_entry_price":2.342,"liq_price":2.326,"avg_close_price":2.310,"realized_pnl":"0.00 USDT","yield":"-100%","closing_qty":"0.46 USDT","open_time":"2026-09-04 06:25:33","close_time":"2026-09-04 06:32:21"},"linked_fills":[{"direction":"Liquidation","filled_qty":"0.46","filled_price":2.310,"fee":"0.00"},{"direction":"Open Long","filled_qty":"0.46","filled_price":2.342,"fee":"0.00"}]}

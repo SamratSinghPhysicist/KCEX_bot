@@ -1,0 +1,41 @@
+{
+  "capture_scope": "Final KCEX TRUMP/USDT run: isolated 75x market long, post-open TP/SL add and amend, 50% partial close, 100% final close",
+  "redaction": "Secret authorization/signature/cookie/device values omitted",
+  "result": "Position closed; Open Position(0), Open Order(0)",
+  "current_run_ui_reconciliation": {
+    "open_long": {"time":"2026-09-04 07:59:34","avg_filled_price":2.363,"filled_qty_usdt":0.47,"status":"Filled"},
+    "partial_close": {"time":"2026-09-04 08:10:18","avg_filled_price":2.365,"filled_qty_usdt":0.23,"status":"Filled"},
+    "final_close": {"time":"2026-09-04 08:10:59","filled_price":2.366,"filled_qty_usdt":0.23,"fee_usdt":0,"role":"Maker","status":"Filled"}
+  },
+  "route_families": {
+    "open_or_market_close": "POST https://www.kcex.com/fapi/v1/private/order/create",
+    "position_tp_sl_place": "POST https://www.kcex.com/fapi/v1/private/stoporder/place/v2",
+    "tp_sl_amendment_candidates": ["POST /fapi/v1/private/stoporder/change_plan_order", "POST /fapi/v1/private/stoporder/change_plan_price"],
+    "partial_or_trigger_close_candidate": "POST /fapi/v1/private/planorder/place/v2"
+  },
+  "current_run_raw_bodies": {
+    "tp_sl_add": null,
+    "tp_sl_modify": null,
+    "partial_close": null,
+    "final_close": null,
+    "reason": "Finite browser CDP event buffer evicted the request records before export; UI history is retained and reported without inventing JSON."
+  },
+  "previously_retained_exact_market_close_schema": {
+    "method": "POST",
+    "url": "https://www.kcex.com/fapi/v1/private/order/create",
+    "payload": {"symbol":"TRUMP_USDT","openType":1,"positionId":86111367,"leverage":75,"type":1,"vol":1,"side":4,"flashClose":false,"price":"2.341","priceProtect":"0"},
+    "response": {"success":true,"code":0,"data":{"orderId":"850678462910268416","ts":1788487950408}}
+  },
+  "read_endpoints": [
+    "GET /fapi/v1/contract/ticker?symbol=TRUMP_USDT",
+    "GET /fapi/v1/contract/depth_step/TRUMP_USDT?step=0.001",
+    "GET /fapi/v1/contract/deals/TRUMP_USDT",
+    "GET /fapi/v1/contract/detailV2?client=web",
+    "GET /fapi/v1/private/account/assets",
+    "GET /fapi/v1/private/position/open_positions?...",
+    "GET /fapi/v1/private/position/list/history_positions?page_num=1&page_size=20",
+    "GET /fapi/v1/private/order/list/order_deals?...&symbol=TRUMP_USDT",
+    "GET /fapi/v1/private/order/list/history_orders?...&symbol=TRUMP_USDT",
+    "GET /api/platform/common/currency/exchange/rate"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "source": "KCEX web-futures frontend v3.7.91 plus observed read-only network traffic",
+    "base_url": "https://www.kcex.com/fapi/v1",
+    "confidence_rules": "observed means browser request captured; frontend_inferred means string/call-site inspected but no live request was sent; candidate_fields are not a contract."
+  },
+  "authentication": {
+    "private_request_headers_observed": ["Authorization", "Content-Sign", "Content-time", "User-Device"],
+    "notes": ["Values are dynamic and must not be replayed from a saved log.", "Frontend also attaches fingerprint/device data and may append mhash to some write routes.", "Do not treat browser-session signing as a supported API."]
+  },
+  "writes": [
+    {"operation":"create_order","method":"POST","path":"/private/order/create","confidence":"frontend_inferred","candidate_fields":["symbol","side","type","openType","vol","leverage","positionMode","marketCeiling","priceProtect"],"notes":"Observed source has a fast-market caller with type 5. Exact valid schema must be captured from a user-confirmed test order."},
+    {"operation":"modify_order_price","method":"POST","path":"/private/order/change_order_price","confidence":"frontend_inferred"},
+    {"operation":"modify_limit_order","method":"POST","path":"/private/order/change_limit_order_v1","confidence":"frontend_inferred"},
+    {"operation":"chase_limit_order","method":"POST","path":"/private/order/chase_limit_order","confidence":"frontend_inferred"},
+    {"operation":"cancel_order","method":"POST","path":"/private/order/cancel","confidence":"frontend_inferred"},
+    {"operation":"cancel_all_orders","method":"POST","path":"/private/order/cancel_all","confidence":"frontend_inferred"},
+    {"operation":"set_position_tp_sl","method":"POST","path":"/private/stoporder/place/v2","confidence":"frontend_inferred","candidate_fields":["takeProfitPrice","takeProfitVol","stopLossPrice","stopLossVol","volType","takeProfitReverse","stopLossReverse","priceProtect"],"notes":"UI distinguishes POSITION_VOL and BATCH_VOL. Exact payload and behavior require a controlled live capture."},
+    {"operation":"edit_stop_order","method":"POST","path":"/private/stoporder/change_plan_order","confidence":"frontend_inferred"},
+    {"operation":"edit_stop_trigger","method":"POST","path":"/private/stoporder/change_plan_price","confidence":"frontend_inferred"},
+    {"operation":"edit_stop_price","method":"POST","path":"/private/stoporder/change_price","confidence":"frontend_inferred"},
+    {"operation":"place_plan_close","method":"POST","path":"/private/planorder/place/v2","confidence":"frontend_inferred","candidate_fields":["triggerPrice","vol","positionMode","price","orderType"],"notes":"Source indicates market plan orders can use type 5 and non-market type 1; verify before automation."},
+    {"operation":"edit_plan_order","method":"POST","path":"/private/planorder/change_stop_order","confidence":"frontend_inferred"},
+    {"operation":"edit_plan_price","method":"POST","path":"/private/planorder/change_price","confidence":"frontend_inferred"},
+    {"operation":"cancel_plan_order","method":"POST","path":"/private/planorder/cancel","confidence":"frontend_inferred"},
+    {"operation":"cancel_all_plan_orders","method":"POST","path":"/private/planorder/cancel_all","confidence":"frontend_inferred"},
+    {"operation":"close_all_positions","method":"POST","path":"/private/position/close_all","confidence":"frontend_inferred","candidate_body":{},"risk":"Account-wide; do not use as a pair-specific close."},
+    {"operation":"reverse_position","method":"POST","path":"/private/position/reverse","confidence":"frontend_inferred"},
+    {"operation":"change_leverage","method":"POST","path":"/private/position/change_leverage","confidence":"frontend_inferred"},
+    {"operation":"change_margin","method":"POST","path":"/private/position/change_margin","confidence":"frontend_inferred","candidate_fields":["positionId","amount","type"]}
+  ],
+  "market_data": [
+    {"method":"GET","path":"/contract/detail?type=all","purpose":"Contract metadata; inspect precision, limits, and fee-related fields."},
+    {"method":"GET","path":"/contract/ticker?symbol=DOGE_USDT","purpose":"Ticker snapshot."},
+    {"method":"GET","path":"/contract/deals/DOGE_USDT","purpose":"Recent trades."},
+    {"method":"GET","path":"/contract/depth_step/DOGE_USDT?step=<step>","purpose":"Order-book snapshot."},
+    {"method":"GET","path":"/contract/kline/DOGE_USDT?interval=Min1&start=<epoch_s>&end=<epoch_s>","purpose":"Candles."},
+    {"method":"GET","path":"/contract/funding_rate/DOGE_USDT","purpose":"Funding rate."}
+  ],
+  "account_and_fees": [
+    {"method":"GET","path":"/private/account/assets","purpose":"Balance/assets."},
+    {"method":"GET","path":"/private/account/tiered_fee_rate","purpose":"Authenticated fee tier; use this rather than marketing text."},
+    {"method":"GET","path":"/private/position/open_positions","purpose":"Open positions."},
+    {"method":"GET","path":"/private/order/list/open_orders?page_size=200","purpose":"Open orders."},
+    {"method":"GET","path":"/private/stoporder/open_orders","purpose":"Open stop orders."}
+  ]
+}

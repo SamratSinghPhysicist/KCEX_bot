@@ -1,0 +1,55 @@
+{
+  "capture_scope": "Second controlled run: minimum TRUMP_USDT isolated 75x long, TP/SL added after open, attempted 50% partial close, final 100% market close",
+  "redaction": "Secret authorization/signature/cookie/device values omitted",
+  "observed_action_requests": {
+    "open_minimum_market_long": {
+      "method": "POST",
+      "url": "https://www.kcex.com/fapi/v1/private/order/create",
+      "payload": null,
+      "payload_status": "not_retained_in_rolling_CDP_buffer",
+      "result": {"positionId":86111367,"orderId":"850677236655164416","vol":1,"leverage":75,"openType":1,"avgEntryPrice":2.344},
+      "note": "The UI action was successful; only the post-close history record remained available for exact reconciliation."
+    },
+    "tp_sl_add_or_modify": {
+      "method": "POST",
+      "url": "https://www.kcex.com/fapi/v1/private/stoporder/place/v2",
+      "payload": null,
+      "payload_status": "not_retained_in_rolling_CDP_buffer",
+      "ui_values": {"symbol":"TRUMP_USDT","positionId":86111367,"takeProfitPrice":2.4,"stopLossPrice":2.335},
+      "note": "The write succeeded; the exact body cannot be responsibly reconstructed from UI state. Frontend route family is recorded only as a route clue."
+    },
+    "partial_close_50_percent": {
+      "method": null,
+      "url": null,
+      "payload": null,
+      "result": "No HTTP mutation sent",
+      "reason": "Client/venue validation rejected 0.12 USDT because minimum order quantity is 0.24 USDT"
+    },
+    "final_close_100_percent": {
+      "method": "POST",
+      "url": "https://www.kcex.com/fapi/v1/private/order/create",
+      "payload": {"symbol":"TRUMP_USDT","openType":1,"positionId":86111367,"leverage":75,"type":1,"vol":1,"side":4,"flashClose":false,"price":"2.341","priceProtect":"0"},
+      "response": {"success":true,"code":0,"data":{"orderId":"850678462910268416","ts":1788487950408}},
+      "header_names_redacted": ["Authorization","Content-Sign","Content-time","User-Device","Content-Type","Language","Platform","Version","Version-tag"]
+    }
+  },
+  "reconciliation": {
+    "position_id": 86111367,
+    "open_order_id": "850677236655164416",
+    "close_order_id": "850678462910268416",
+    "open_avg_price": 2.344,
+    "close_avg_price": 2.343,
+    "close_profit_loss_usdt": -0.0001,
+    "fee_usdt": 0,
+    "state": "CLOSED"
+  },
+  "related_read_endpoints": [
+    "GET /fapi/v1/private/position/list/history_positions?page_num=1&page_size=20",
+    "GET /fapi/v1/private/order/list/order_deals?...&symbol=TRUMP_USDT",
+    "GET /fapi/v1/private/order/list/history_orders?...&symbol=TRUMP_USDT",
+    "GET /fapi/v1/private/account/assets",
+    "GET /fapi/v1/contract/ticker?symbol=TRUMP_USDT",
+    "GET /fapi/v1/contract/depth_step/TRUMP_USDT?step=0.001"
+  ],
+  "partial_close_test_design": "To test a valid 50% close, open at least 2 x the pair minimum (0.48 USDT if the minimum is 0.24 USDT), then close 0.24 USDT. This was not done because it would be a new, larger financial action."
+}
