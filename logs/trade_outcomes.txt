@@ -128,3 +128,133 @@ Win Rate           : 80.0%
 Net Cumulative PnL : -0.000400 USDT (INR -0.0378)
 Live USD/INR Rate  : INR 94.47 per USD
 ==============================================================================
+==============================================================================
+TRADE #6 OUTCOME JOURNAL | Closed at: 2026-09-04 16:23:51 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4732 USDT (INR 44.71) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.366 USDT (Opened: 2026-09-04 16:21:01)
+Exit Price         : 2.372 USDT (Duration: 169.58s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.365 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.372 USDT (Offset: -6 pu / -0.006 USDT | -0.254% price | -19.0% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -19.02% (Price move: -0.254%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0734 USDT (INR 6.93)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 6 | Wins: 4 | Losses: 2 | Scratch: 0
+Win Rate           : 66.7%
+Net Cumulative PnL : -0.001600 USDT (INR -0.1512)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #7 OUTCOME JOURNAL | Closed at: 2026-09-04 16:25:08 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4748 USDT (INR 44.86) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.374 USDT (Opened: 2026-09-04 16:25:02)
+Exit Price         : 2.373 USDT (Duration: 6.63s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.375 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.368 USDT (Offset: -6 pu / -0.006 USDT | -0.253% price | -19.0% ROE)
+Exit Reason        : MANUAL_CLOSE
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.000200 USDT (INR -0.0189)
+Return on Equity   : -3.16% (Price move: -0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0732 USDT (INR 6.91)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 7 | Wins: 4 | Losses: 3 | Scratch: 0
+Win Rate           : 57.1%
+Net Cumulative PnL : -0.001800 USDT (INR -0.1701)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 17:11:10 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDC [SHORT] (25x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4774 USDT (INR 45.11) [Notional exposure]
+Margin Committed   : 0.0191 USDT (INR 1.80) [Trade Qty / 25x leverage]
+Entry Price        : 2.387 USDT (Opened: 2026-09-04 16:58:03)
+Exit Price         : 2.387 USDT (Duration: 787.44s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.386 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.433 USDT (Offset: -46 pu / -0.046 USDT | -1.927% price | -48.2% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : 0.000000 USDT (INR 0.0000)
+Return on Equity   : 0.00% (Price move: 0.000%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0746 USDT (INR 7.05)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 0 | Scratch: 1
+Win Rate           : 0.0%
+Net Cumulative PnL : +0.000000 USDT (+INR 0.0000)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================
+==============================================================================
+TRADE #2 OUTCOME JOURNAL | Closed at: 2026-09-04 17:38:10 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDC [LONG] (25x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4764 USDT (INR 45.00) [Notional exposure]
+Margin Committed   : 0.0191 USDT (INR 1.80) [Trade Qty / 25x leverage]
+Entry Price        : 2.382 USDT (Opened: 2026-09-04 17:38:01)
+Exit Price         : 2.382 USDT (Duration: 8.75s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.383 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.336 USDT (Offset: -46 pu / -0.046 USDT | -1.931% price | -48.3% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : 0.000000 USDT (INR 0.0000)
+Return on Equity   : 0.00% (Price move: 0.000%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0738 USDT (INR 6.97)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 2 | Wins: 0 | Losses: 0 | Scratch: 2
+Win Rate           : 0.0%
+Net Cumulative PnL : +0.000000 USDT (+INR 0.0000)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 18:01:10 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 3 contract(s) (0.3 TRUMP)
+Trade Quantity     : 0.6708 USDT (INR 63.34) [Notional exposure]
+Margin Committed   : 0.0089 USDT (INR 0.84) [Trade Qty / 75x leverage]
+Entry Price        : 2.236 USDT (Opened: 2026-09-04 18:01:01)
+Exit Price         : 2.228 USDT (Duration: 9.19s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.235 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.241 USDT (Offset: -5 pu / -0.005 USDT | -0.224% price | -16.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.002400 USDT (+INR 0.2266)
+Return on Equity   : +26.83% (Price move: +0.358%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0756 USDT (INR 7.14)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.002400 USDT (+INR 0.2266)
+Live USD/INR Rate  : INR 94.42 per USD
+==============================================================================

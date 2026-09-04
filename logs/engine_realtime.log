@@ -641,3 +641,1447 @@ Live USD/INR Rate  : INR 94.47 per USD
 2026-09-04 16:17:24 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 25.8 | %D: 24.6 | Diff: +1.2 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 35s
 2026-09-04 16:17:26 [INFO   ] [DRY-RUN MONITOR] Price: 2.373 USDT | TP: 2.368 | SL: 2.375 | Unrealized PnL: -0.000800 USDT
 2026-09-04 16:17:28 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 25.8 | %D: 24.6 | Diff: +1.2 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:17:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.368 | SL: 2.375 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:17:41 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.368 | SL: 2.375 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:17:48 [INFO   ] [DRY-RUN MONITOR] Price: 2.371 USDT | TP: 2.368 | SL: 2.375 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:17:52 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.375 USDT (Market Ask: 2.374, Last: 2.375)
+2026-09-04 16:17:53 [INFO   ] [SIMULATED WALLET] Balance: 0.0744 USDT (INR 7.03)
+2026-09-04 16:17:53 [INFO   ] 
+==============================================================================
+TRADE #4 OUTCOME JOURNAL | Closed at: 2026-09-04 16:17:52 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4738 USDT (INR 44.76) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.369 USDT (Opened: 2026-09-04 16:13:01)
+Exit Price         : 2.375 USDT (Duration: 290.97s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.368 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.375 USDT (Offset: -6 pu / -0.006 USDT | -0.253% price | -19.0% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -19.00% (Price move: -0.253%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0744 USDT (INR 7.03)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 4 | Wins: 3 | Losses: 1 | Scratch: 0
+Win Rate           : 75.0%
+Net Cumulative PnL : -0.000600 USDT (INR -0.0567)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 16:17:53 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 16:18:03 [INFO   ] ============================================================================
+2026-09-04 16:18:03 [INFO   ]    EXECUTING TRADE #5 [LONG] - TRUMP_USDT
+2026-09-04 16:18:03 [INFO   ] ============================================================================
+2026-09-04 16:18:04 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4748 USDT (+INR 44.86) | Committed Margin (Qty/75x): +0.0063 USDT (+INR 0.60)
+2026-09-04 16:18:04 [INFO   ] Reference Price: 2.374 USDT | Attached Min-Profit TP: 2.375 USDT (+1 pu) | Attached SL: 2.368 USDT (-10 ticks)
+2026-09-04 16:18:04 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.374 USDT | Min-Profit TP = 2.375 USDT (+1 pu) | SL = 2.368 USDT (-10 ticks)
+2026-09-04 16:18:04 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.375) or SL (2.368)...
+2026-09-04 16:18:10 [INFO   ] [DRY-RUN MONITOR] Price: 2.373 USDT | TP: 2.375 | SL: 2.368 | Unrealized PnL: -0.000200 USDT
+2026-09-04 16:18:17 [INFO   ] [DRY-RUN MONITOR] Price: 2.373 USDT | TP: 2.375 | SL: 2.368 | Unrealized PnL: -0.000200 USDT
+2026-09-04 16:18:23 [INFO   ] [DRY-RUN MONITOR] Price: 2.373 USDT | TP: 2.375 | SL: 2.368 | Unrealized PnL: -0.000200 USDT
+2026-09-04 16:18:29 [INFO   ] [DRY-RUN MONITOR] Price: 2.374 USDT | TP: 2.375 | SL: 2.368 | Unrealized PnL: +0.000000 USDT
+2026-09-04 16:18:34 [INFO   ] [DRY-RUN TARGET HIT] Market reached TP! Exit: 2.375 USDT (Market Bid: 2.374, Last: 2.375)
+2026-09-04 16:18:35 [INFO   ] [SIMULATED WALLET] Balance: 0.0746 USDT (INR 7.04)
+2026-09-04 16:18:35 [INFO   ] 
+==============================================================================
+TRADE #5 OUTCOME JOURNAL | Closed at: 2026-09-04 16:18:34 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4748 USDT (INR 44.86) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.374 USDT (Opened: 2026-09-04 16:18:04)
+Exit Price         : 2.375 USDT (Duration: 29.92s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.375 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.368 USDT (Offset: -6 pu / -0.006 USDT | -0.253% price | -19.0% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.16% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0746 USDT (INR 7.04)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 5 | Wins: 4 | Losses: 1 | Scratch: 0
+Win Rate           : 80.0%
+Net Cumulative PnL : -0.000400 USDT (INR -0.0378)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 16:18:35 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 16:18:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:18:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 16:18:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:18:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:19:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 16:19:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 52s
+2026-09-04 16:19:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 16:19:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:19:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 16:19:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 16:19:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 16:19:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:19:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 16:19:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 16:19:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:19:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:19:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 16:19:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 16:20:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.373 | Slow: 2.373 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 58s
+2026-09-04 16:20:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.373 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 16:20:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 16:20:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 16:20:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 40s
+2026-09-04 16:20:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 16:20:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 32s
+2026-09-04 16:20:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 28s
+2026-09-04 16:20:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 24s
+2026-09-04 16:20:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 16:20:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 15s
+2026-09-04 16:20:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 11s
+2026-09-04 16:20:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.372 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 16:20:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.372 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 16:21:00 [INFO   ] ============================================================================
+2026-09-04 16:21:00 [INFO   ]    EXECUTING TRADE #6 [SHORT] - TRUMP_USDT
+2026-09-04 16:21:00 [INFO   ] ============================================================================
+2026-09-04 16:21:01 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4734 USDT (+INR 44.72) | Committed Margin (Qty/75x): +0.0063 USDT (+INR 0.60)
+2026-09-04 16:21:01 [INFO   ] Reference Price: 2.367 USDT | Attached Min-Profit TP: 2.366 USDT (+1 pu) | Attached SL: 2.373 USDT (-10 ticks)
+2026-09-04 16:21:01 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.366 USDT | Min-Profit TP = 2.365 USDT (+1 pu) | SL = 2.372 USDT (-10 ticks)
+2026-09-04 16:21:01 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.365) or SL (2.372)...
+2026-09-04 16:21:07 [INFO   ] [DRY-RUN MONITOR] Price: 2.367 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000200 USDT
+2026-09-04 16:21:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:21:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:21:25 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:21:32 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:21:38 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:21:44 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000600 USDT
+2026-09-04 16:21:50 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:21:56 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:22:03 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:22:09 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:22:16 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:22:22 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:22:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.368 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000400 USDT
+2026-09-04 16:22:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000600 USDT
+2026-09-04 16:22:41 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000600 USDT
+2026-09-04 16:22:47 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000600 USDT
+2026-09-04 16:22:53 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000600 USDT
+2026-09-04 16:23:00 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000800 USDT
+2026-09-04 16:23:06 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000800 USDT
+2026-09-04 16:23:13 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000800 USDT
+2026-09-04 16:23:19 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000800 USDT
+2026-09-04 16:23:28 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000800 USDT
+2026-09-04 16:23:34 [INFO   ] [DRY-RUN MONITOR] Price: 2.370 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000800 USDT
+2026-09-04 16:23:40 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000600 USDT
+2026-09-04 16:23:46 [INFO   ] [DRY-RUN MONITOR] Price: 2.369 USDT | TP: 2.365 | SL: 2.372 | Unrealized PnL: -0.000600 USDT
+2026-09-04 16:23:51 [INFO   ] [DRY-RUN STOP LOSS HIT] Market reached SL! Exit: 2.372 USDT (Market Ask: 2.374, Last: 2.374)
+2026-09-04 16:23:51 [INFO   ] [SIMULATED WALLET] Balance: 0.0734 USDT (INR 6.93)
+2026-09-04 16:23:51 [INFO   ] 
+==============================================================================
+TRADE #6 OUTCOME JOURNAL | Closed at: 2026-09-04 16:23:51 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4732 USDT (INR 44.71) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.366 USDT (Opened: 2026-09-04 16:21:01)
+Exit Price         : 2.372 USDT (Duration: 169.58s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.365 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.372 USDT (Offset: -6 pu / -0.006 USDT | -0.254% price | -19.0% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -19.02% (Price move: -0.254%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0734 USDT (INR 6.93)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 6 | Wins: 4 | Losses: 2 | Scratch: 0
+Win Rate           : 66.7%
+Net Cumulative PnL : -0.001600 USDT (INR -0.1512)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 16:23:51 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 16:24:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 16:24:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 16:24:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 50s
+2026-09-04 16:24:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 46s
+2026-09-04 16:24:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 16:24:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 37s
+2026-09-04 16:24:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 16:24:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 29s
+2026-09-04 16:24:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 25s
+2026-09-04 16:24:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 16:24:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 16s
+2026-09-04 16:24:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.371 | Slow: 2.371 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 16:24:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:24:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 16:25:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.372 | Slow: 2.372 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:25:01 [INFO   ] ============================================================================
+2026-09-04 16:25:01 [INFO   ]    EXECUTING TRADE #7 [LONG] - TRUMP_USDT
+2026-09-04 16:25:01 [INFO   ] ============================================================================
+2026-09-04 16:25:02 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4746 USDT (+INR 44.84) | Committed Margin (Qty/75x): +0.0063 USDT (+INR 0.60)
+2026-09-04 16:25:02 [INFO   ] Reference Price: 2.373 USDT | Attached Min-Profit TP: 2.374 USDT (+1 pu) | Attached SL: 2.367 USDT (-10 ticks)
+2026-09-04 16:25:02 [INFO   ] [DRY-RUN] Simulated Order Filled: Entry = 2.374 USDT | Min-Profit TP = 2.375 USDT (+1 pu) | SL = 2.368 USDT (-10 ticks)
+2026-09-04 16:25:02 [INFO   ] [DRY-RUN] Actively monitoring live market prices for TP (2.375) or SL (2.368)...
+2026-09-04 16:25:08 [INFO   ] [DRY-RUN MONITOR] Price: 2.373 USDT | TP: 2.375 | SL: 2.368 | Unrealized PnL: -0.000200 USDT
+2026-09-04 16:25:08 [WARNING] 
+[STOP] Caught SIGINT / Interrupt signal.
+2026-09-04 16:25:08 [INFO   ] Graceful shutdown requested...
+2026-09-04 16:25:08 [WARNING] [DRY-RUN] Manual close requested during trade.
+2026-09-04 16:25:09 [INFO   ] [SIMULATED WALLET] Balance: 0.0732 USDT (INR 6.91)
+2026-09-04 16:25:09 [INFO   ] 
+==============================================================================
+TRADE #7 OUTCOME JOURNAL | Closed at: 2026-09-04 16:25:08 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4748 USDT (INR 44.86) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.374 USDT (Opened: 2026-09-04 16:25:02)
+Exit Price         : 2.373 USDT (Duration: 6.63s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.375 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.368 USDT (Offset: -6 pu / -0.006 USDT | -0.253% price | -19.0% ROE)
+Exit Reason        : MANUAL_CLOSE
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.000200 USDT (INR -0.0189)
+Return on Equity   : -3.16% (Price move: -0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0732 USDT (INR 6.91)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 7 | Wins: 4 | Losses: 3 | Scratch: 0
+Win Rate           : 57.1%
+Net Cumulative PnL : -0.001800 USDT (INR -0.1701)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+
+2026-09-04 16:25:09 [INFO   ] ============================================================================
+2026-09-04 16:25:09 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 16:25:09 [INFO   ] ============================================================================
+2026-09-04 16:25:09 [INFO   ] Total Trades Completed: 7 | Wins: 4 | Losses: 3 | Win Rate: 57.1%
+2026-09-04 16:25:09 [INFO   ] Net Session PnL: -0.0018 USDT (INR -0.17)
+2026-09-04 16:27:40 [INFO   ] ============================================================================
+2026-09-04 16:27:40 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 16:27:40 [INFO   ] ============================================================================
+2026-09-04 16:27:40 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 16:27:40 [INFO   ] Live USD/INR Exchange Rate: INR 94.47 per USD
+2026-09-04 16:27:41 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 16:27:41 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 16:27:43 [INFO   ] Futures Wallet Available: 0.0750 USDT (INR 7.08)
+2026-09-04 16:27:43 [INFO   ] Engine Mode: LIVE
+2026-09-04 16:27:43 [INFO   ] Sub-strategy: EMACrossover
+2026-09-04 16:27:43 [INFO   ] Position Sizing: 2 contract(s) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 16:27:43 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 16:27:43 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 16:27:43 [INFO   ] Stop Loss rule: -50.0% ROE on margin
+2026-09-04 16:27:43 [INFO   ] Post-trade cooldown: 10.0s
+2026-09-04 16:27:43 [INFO   ] ============================================================================
+2026-09-04 16:27:43 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 16:27:43 [INFO   ] ============================================================================
+2026-09-04 16:27:43 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 16:27:43 [INFO   ] Target Trades: Unlimited
+2026-09-04 16:27:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:27:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:27:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:27:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 16:28:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 59s
+2026-09-04 16:28:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 55s
+2026-09-04 16:28:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 16:28:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:28:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.373 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 16:28:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.373 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:28:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 16:28:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 16:28:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 16:28:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.373 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 16:28:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.373 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:28:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.373 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:28:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.373 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:28:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.373 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 16:29:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 59s
+2026-09-04 16:29:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 55s
+2026-09-04 16:29:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 16:29:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:29:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 16:29:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:29:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:29:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 16:29:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 16:29:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 16:29:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 16:29:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 16:29:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 16:29:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:29:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.373 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:30:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:30:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 52s
+2026-09-04 16:30:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:30:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:30:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:30:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 16:30:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:30:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:30:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:30:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:30:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 16:30:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 16:30:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:30:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:31:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 16:31:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 16:31:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 16:31:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:31:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 16:31:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 16:31:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:31:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:31:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:31:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:31:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:31:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:31:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 16:31:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 16:32:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 16:32:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 16:32:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 49s
+2026-09-04 16:32:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:32:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 16:32:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 16:32:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 16:32:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 16:32:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 16:32:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.374 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 16:32:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 16:32:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.374 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 16:32:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 16:32:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 16:33:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 58s
+2026-09-04 16:33:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.374 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 16:33:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 16:33:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:33:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 16:33:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.374 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 16:33:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 16:33:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 16:33:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 16:33:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 16:33:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.374 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:33:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:33:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.374 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:33:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.374 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:34:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.374 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:34:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:34:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:34:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:34:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:34:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.375 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:34:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:34:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 16:34:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 16:34:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.375 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 16:34:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.375 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:34:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.375 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:34:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.375 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:34:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.375 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 16:35:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.375 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:35:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.376 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 16:35:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.376 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 16:35:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.377 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:35:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.377 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 16:35:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.377 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 16:35:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.377 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 16:35:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.377 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 16:35:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.377 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 16:35:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.377 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 16:35:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.377 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:35:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.377 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:35:52 [WARNING] 
+[STOP] Caught SIGINT / Interrupt signal.
+2026-09-04 16:35:52 [INFO   ] Graceful shutdown requested...
+2026-09-04 16:35:52 [INFO   ] ============================================================================
+2026-09-04 16:35:52 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 16:35:52 [INFO   ] ============================================================================
+2026-09-04 16:35:52 [INFO   ] Total Trades Completed: 0 | Wins: 0 | Losses: 0 | Win Rate: 0.0%
+2026-09-04 16:35:52 [INFO   ] Net Session PnL: 0.0000 USDT (INR 0.00)
+2026-09-04 16:37:25 [INFO   ] ============================================================================
+2026-09-04 16:37:25 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-04 16:37:25 [INFO   ] ============================================================================
+2026-09-04 16:37:25 [INFO   ] Testing connectivity to KCEX API...
+2026-09-04 16:37:25 [INFO   ] Live USD/INR Exchange Rate: INR 94.45 per USD
+2026-09-04 16:37:27 [INFO   ] Trading Pair: TRUMP_USDC | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-04 16:37:27 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-04 16:37:28 [INFO   ] Futures Wallet Available: 0.0750 USDT (INR 7.08)
+2026-09-04 16:37:28 [INFO   ] Engine Mode: LIVE
+2026-09-04 16:37:28 [INFO   ] Sub-strategy: EMACrossover
+2026-09-04 16:37:28 [INFO   ] Position Sizing: 2 contract(s) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-04 16:37:28 [INFO   ] Target Leverage: 75x isolated
+2026-09-04 16:37:28 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 1 pu (Tick Size)
+2026-09-04 16:37:28 [INFO   ] Stop Loss rule: -50.0% ROE on margin
+2026-09-04 16:37:28 [INFO   ] Post-trade cooldown: 10.0s
+2026-09-04 16:37:28 [INFO   ] ============================================================================
+2026-09-04 16:37:28 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-04 16:37:28 [INFO   ] ============================================================================
+2026-09-04 16:37:28 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-04 16:37:28 [INFO   ] Target Trades: Unlimited
+2026-09-04 16:37:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.379 | Diff: +0.005 (+0.21%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:37:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.379 | Diff: +0.005 (+0.21%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:37:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.380 | Diff: +0.005 (+0.22%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:37:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.380 | Diff: +0.005 (+0.23%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:37:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.380 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:37:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.380 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:37:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.380 | Diff: +0.006 (+0.26%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 16:37:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.381 | Diff: +0.007 (+0.28%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:38:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.383 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 16:38:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.383 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 16:38:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.383 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 16:38:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.383 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:38:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.383 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 16:38:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.383 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 16:38:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.383 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:38:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.383 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:38:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.383 | Diff: +0.008 (+0.32%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 16:38:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.383 | Diff: +0.008 (+0.32%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 16:38:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.383 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:38:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.383 | Diff: +0.007 (+0.30%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:38:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.383 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:38:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.383 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:39:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.385 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:39:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.385 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 52s
+2026-09-04 16:39:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.385 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 16:39:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.385 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:39:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.385 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:39:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.385 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 16:39:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.385 | Diff: +0.008 (+0.33%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:39:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.385 | Diff: +0.008 (+0.32%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:39:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.384 | Diff: +0.007 (+0.28%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:39:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.384 | Diff: +0.007 (+0.28%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:39:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.384 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:39:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.385 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:39:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.385 | Diff: +0.007 (+0.31%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:40:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.385 | Diff: +0.007 (+0.30%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:40:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.386 | Diff: +0.006 (+0.27%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:40:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.386 | Diff: +0.006 (+0.27%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:40:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:40:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 16:40:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:40:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 16:40:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 16:40:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 16:40:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 16:40:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.29%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 16:40:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.386 | Diff: +0.006 (+0.27%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:40:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.386 | Diff: +0.006 (+0.27%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:40:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.386 | Diff: +0.007 (+0.28%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:41:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.26%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:41:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.26%) | Trend: BULLISH | Bar Close In: 52s
+2026-09-04 16:41:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:41:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.26%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:41:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:41:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 16:41:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 16:41:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:41:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:41:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 16:41:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 16:41:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 16:41:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.25%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:41:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.24%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:42:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.387 | Diff: +0.006 (+0.24%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:42:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.388 | Diff: +0.005 (+0.21%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:42:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.388 | Diff: +0.005 (+0.22%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:42:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.388 | Diff: +0.005 (+0.22%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:42:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.388 | Diff: +0.005 (+0.22%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:42:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.388 | Diff: +0.005 (+0.22%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:42:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.388 | Diff: +0.005 (+0.22%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 16:42:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 16:42:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.388 | Diff: +0.005 (+0.21%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 16:42:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:42:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.387 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 16:42:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 16:42:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 16:43:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:43:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:43:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:43:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:43:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:43:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:43:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:43:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:43:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:43:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:43:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:43:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 16:43:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:44:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:44:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:44:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 52s
+2026-09-04 16:44:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:44:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:44:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:44:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:44:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 16:44:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 16:44:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 16:44:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 16:44:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 16:44:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 16:44:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:45:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.388 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:45:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:45:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.388 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:45:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.388 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:45:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:45:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 16:45:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:45:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:45:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:45:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:45:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:45:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:45:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:46:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:46:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:46:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:46:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:46:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:46:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:46:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 16:46:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:46:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 16:46:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 16:46:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:46:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:46:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:47:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:47:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:47:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:47:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:47:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:47:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:47:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:47:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 16:47:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:47:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 16:47:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 16:47:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 16:47:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 16:47:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:47:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.391 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:48:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 55s
+2026-09-04 16:48:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:48:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 16:48:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:48:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:48:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:48:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 16:48:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:48:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:48:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.392 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:48:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:48:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:48:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:48:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:49:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:49:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:49:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.392 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:49:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:49:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 16:49:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 16:49:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:49:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.393 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:49:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.393 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 16:49:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.393 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 16:49:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 16:49:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:49:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 16:49:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:50:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:50:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.394 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:50:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 16:50:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:50:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:50:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 16:50:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.19%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:50:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.19%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:50:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.19%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:50:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.19%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:50:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.19%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:50:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.19%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:50:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.19%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 16:50:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.399 | Slow: 2.395 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 16:51:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.394 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 16:51:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.394 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 16:51:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.394 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 49s
+2026-09-04 16:51:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.394 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 45s
+2026-09-04 16:51:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 16:51:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 16:51:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 16:51:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 16:51:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 16:51:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.394 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 16:51:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.394 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 16:51:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.394 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 16:51:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.394 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 16:51:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 16:52:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 58s
+2026-09-04 16:52:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 16:52:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 16:52:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:52:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 16:52:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 16:52:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 16:52:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 16:52:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 16:52:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 16:52:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:52:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:52:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:52:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:53:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:53:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.398 | Slow: 2.395 | Diff: +0.002 (+0.10%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:53:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 16:53:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:53:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 16:53:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:53:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:53:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 16:53:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 16:53:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 16:53:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 16:53:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 16:53:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:53:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 16:53:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:54:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 16:54:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 52s
+2026-09-04 16:54:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 16:54:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 16:54:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 16:54:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 16:54:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 16:54:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:54:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:54:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:54:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 16:54:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:54:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 16:54:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 16:55:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:55:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.395 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:55:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 16:55:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 16:55:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 16:55:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 16:55:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 16:55:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 16:55:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 16:55:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 16:55:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 16:55:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 16:55:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 16:55:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 16:56:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:56:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.395 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:56:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.396 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 16:56:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 16:56:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 16:56:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 16:56:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 16:56:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.396 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 16:56:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.396 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 16:56:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.396 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 16:56:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 16:56:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 16:56:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 16:56:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 16:57:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:57:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:57:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:57:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 16:57:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 16:57:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 16:57:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.397 | Slow: 2.396 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 16:57:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.396 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 16:57:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.396 | Slow: 2.396 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 16:57:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.395 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 16:57:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.395 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 16:57:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.395 | Slow: 2.395 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 13s
+2026-09-04 16:57:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.395 | Diff: -0.001 (-0.02%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 16:57:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.395 | Diff: -0.001 (-0.02%) | Trend: BEARISH | Bar Close In: 3s
+2026-09-04 16:58:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.395 | Diff: -0.001 (-0.02%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 16:58:02 [WARNING] Notice: Configured leverage 75x exceeds TRUMP_USDC max allowed (25x). Clamped to 25x.
+2026-09-04 16:58:02 [INFO   ] ============================================================================
+2026-09-04 16:58:02 [INFO   ]    EXECUTING TRADE #1 [SHORT] - TRUMP_USDC
+2026-09-04 16:58:02 [INFO   ] ============================================================================
+2026-09-04 16:58:03 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4778 USDT (+INR 45.13) | Committed Margin (Qty/25x): +0.0191 USDT (+INR 1.81)
+2026-09-04 16:58:03 [INFO   ] Reference Price: 2.389 USDT | Attached Min-Profit TP: 2.388 USDT (+1 pu) | Attached SL: 2.435 USDT (-50.0% ROE)
+2026-09-04 16:58:03 [INFO   ] Submitting live MARKET order with attached TP & SL...
+2026-09-04 16:58:03 [INFO   ] Live order accepted by KCEX. Order ID: 850818284532231232
+2026-09-04 16:58:04 [INFO   ] Position Filled: Entry Price = 2.387 USDT | Exact Min-Profit TP = 2.386 USDT | Exact SL = 2.433 USDT
+2026-09-04 16:58:05 [INFO   ] Updated server-side position TP/SL to exact: TP 2.386, SL 2.433
+2026-09-04 16:58:05 [INFO   ] Entering active position monitoring loop...
+2026-09-04 17:11:10 [INFO   ] Position closed on KCEX. Reconciling fill records...
+2026-09-04 17:11:12 [INFO   ] [BALANCE AFTER TRADE #1] Available: 0.0746 USDT (INR 7.05) | Equity: 0.0746 USDT (INR 7.05)
+2026-09-04 17:11:13 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 17:11:10 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDC [SHORT] (25x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4774 USDT (INR 45.11) [Notional exposure]
+Margin Committed   : 0.0191 USDT (INR 1.80) [Trade Qty / 25x leverage]
+Entry Price        : 2.387 USDT (Opened: 2026-09-04 16:58:03)
+Exit Price         : 2.387 USDT (Duration: 787.44s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.386 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.433 USDT (Offset: -46 pu / -0.046 USDT | -1.927% price | -48.2% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : 0.000000 USDT (INR 0.0000)
+Return on Equity   : 0.00% (Price move: 0.000%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0746 USDT (INR 7.05)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 0 | Scratch: 1
+Win Rate           : 0.0%
+Net Cumulative PnL : +0.000000 USDT (+INR 0.0000)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================
+
+2026-09-04 17:11:13 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 17:11:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:11:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 32s
+2026-09-04 17:11:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:11:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:11:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 17s
+2026-09-04 17:11:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 13s
+2026-09-04 17:11:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 17:11:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 5s
+2026-09-04 17:11:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.392 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:12:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 56s
+2026-09-04 17:12:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 52s
+2026-09-04 17:12:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 17:12:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 17:12:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 39s
+2026-09-04 17:12:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 35s
+2026-09-04 17:12:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:12:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:12:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:12:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:12:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:12:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:12:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 5s
+2026-09-04 17:12:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:13:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:13:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.06%) | Trend: BEARISH | Bar Close In: 53s
+2026-09-04 17:13:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.391 | Diff: -0.002 (-0.06%) | Trend: BEARISH | Bar Close In: 49s
+2026-09-04 17:13:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 45s
+2026-09-04 17:13:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 17:13:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:13:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:13:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:13:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 23s
+2026-09-04 17:13:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 19s
+2026-09-04 17:13:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:13:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:13:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:13:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.389 | Slow: 2.391 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:14:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 57s
+2026-09-04 17:14:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 52s
+2026-09-04 17:14:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 17:14:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 17:14:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 40s
+2026-09-04 17:14:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:14:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:14:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:14:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:14:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:14:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:14:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:14:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:14:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:15:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.390 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:15:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 53s
+2026-09-04 17:15:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 17:15:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 17:15:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 40s
+2026-09-04 17:15:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 35s
+2026-09-04 17:15:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:15:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:15:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 23s
+2026-09-04 17:15:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:15:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:15:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 17:15:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 5s
+2026-09-04 17:15:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:16:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:16:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:16:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:16:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 17:16:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 40s
+2026-09-04 17:16:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:16:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:16:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:16:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:16:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 17s
+2026-09-04 17:16:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 13s
+2026-09-04 17:16:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.389 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 17:16:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 5s
+2026-09-04 17:16:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:17:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.389 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 56s
+2026-09-04 17:17:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.389 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 52s
+2026-09-04 17:17:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.389 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 17:17:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.389 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 17:17:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.389 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 40s
+2026-09-04 17:17:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:17:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:17:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 26s
+2026-09-04 17:17:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:17:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.389 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:17:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 13s
+2026-09-04 17:17:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 17:17:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 5s
+2026-09-04 17:17:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:18:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:18:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.388 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 53s
+2026-09-04 17:18:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.388 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 17:18:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 17:18:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.08%) | Trend: BEARISH | Bar Close In: 40s
+2026-09-04 17:18:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:18:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:18:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:18:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 23s
+2026-09-04 17:18:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 19s
+2026-09-04 17:18:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 15s
+2026-09-04 17:18:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.388 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:18:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.388 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:18:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.388 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 17:19:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 17:19:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 17:19:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 49s
+2026-09-04 17:19:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 45s
+2026-09-04 17:19:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 17:19:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 37s
+2026-09-04 17:19:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 17:19:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 29s
+2026-09-04 17:19:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 24s
+2026-09-04 17:19:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 17:19:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 16s
+2026-09-04 17:19:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 17:19:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 8s
+2026-09-04 17:19:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 3s
+2026-09-04 17:20:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 59s
+2026-09-04 17:20:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 55s
+2026-09-04 17:20:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 50s
+2026-09-04 17:20:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 46s
+2026-09-04 17:20:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.387 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 42s
+2026-09-04 17:20:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 38s
+2026-09-04 17:20:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.387 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 17:20:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 29s
+2026-09-04 17:20:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 25s
+2026-09-04 17:20:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 21s
+2026-09-04 17:20:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 17s
+2026-09-04 17:20:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 17:20:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 8s
+2026-09-04 17:20:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 4s
+2026-09-04 17:21:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.386 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:21:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.386 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 55s
+2026-09-04 17:21:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 51s
+2026-09-04 17:21:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 47s
+2026-09-04 17:21:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 43s
+2026-09-04 17:21:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 39s
+2026-09-04 17:21:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 35s
+2026-09-04 17:21:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.385 | Diff: -0.004 (-0.15%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:21:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.385 | Diff: -0.004 (-0.15%) | Trend: BEARISH | Bar Close In: 26s
+2026-09-04 17:21:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:21:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 17s
+2026-09-04 17:21:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 13s
+2026-09-04 17:21:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 17:21:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 5s
+2026-09-04 17:21:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:22:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:22:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:22:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.385 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:22:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.384 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 44s
+2026-09-04 17:22:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.384 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 40s
+2026-09-04 17:22:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.384 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 35s
+2026-09-04 17:22:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.384 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:22:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.384 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:22:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.384 | Diff: -0.004 (-0.15%) | Trend: BEARISH | Bar Close In: 23s
+2026-09-04 17:22:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.384 | Diff: -0.004 (-0.15%) | Trend: BEARISH | Bar Close In: 19s
+2026-09-04 17:22:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.384 | Diff: -0.004 (-0.15%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:22:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.384 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:22:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.384 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:22:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.384 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 17:23:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.15%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 17:23:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.16%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 17:23:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.16%) | Trend: BEARISH | Bar Close In: 49s
+2026-09-04 17:23:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 45s
+2026-09-04 17:23:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 17:23:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 37s
+2026-09-04 17:23:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 17:23:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 29s
+2026-09-04 17:23:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 24s
+2026-09-04 17:23:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 17:23:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 16s
+2026-09-04 17:23:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 17:23:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 7s
+2026-09-04 17:23:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 3s
+2026-09-04 17:24:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.383 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:24:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.16%) | Trend: BEARISH | Bar Close In: 55s
+2026-09-04 17:24:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.16%) | Trend: BEARISH | Bar Close In: 50s
+2026-09-04 17:24:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.16%) | Trend: BEARISH | Bar Close In: 46s
+2026-09-04 17:24:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 42s
+2026-09-04 17:24:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 38s
+2026-09-04 17:24:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 34s
+2026-09-04 17:24:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 30s
+2026-09-04 17:24:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 25s
+2026-09-04 17:24:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 21s
+2026-09-04 17:24:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 15s
+2026-09-04 17:24:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:24:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:24:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 17:25:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:25:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:25:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:25:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:25:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:25:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.382 | Diff: -0.004 (-0.17%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:25:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.004 (-0.15%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 17:25:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 29s
+2026-09-04 17:25:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 25s
+2026-09-04 17:25:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 21s
+2026-09-04 17:25:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 16s
+2026-09-04 17:25:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 17:25:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 8s
+2026-09-04 17:25:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 4s
+2026-09-04 17:26:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:26:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:26:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:26:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:26:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:26:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:26:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:26:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 30s
+2026-09-04 17:26:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 26s
+2026-09-04 17:26:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:26:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:26:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 13s
+2026-09-04 17:26:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 17:26:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 5s
+2026-09-04 17:26:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 1s
+2026-09-04 17:27:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.381 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:27:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.380 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 52s
+2026-09-04 17:27:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.380 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 17:27:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 43s
+2026-09-04 17:27:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 39s
+2026-09-04 17:27:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 35s
+2026-09-04 17:27:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 30s
+2026-09-04 17:27:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 26s
+2026-09-04 17:27:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:27:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:27:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:27:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:27:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:27:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.380 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 17:28:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 17:28:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 53s
+2026-09-04 17:28:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 49s
+2026-09-04 17:28:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 45s
+2026-09-04 17:28:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.379 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 17:28:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:28:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 32s
+2026-09-04 17:28:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 28s
+2026-09-04 17:28:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.379 | Diff: -0.003 (-0.14%) | Trend: BEARISH | Bar Close In: 24s
+2026-09-04 17:28:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 19s
+2026-09-04 17:28:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 15s
+2026-09-04 17:28:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.13%) | Trend: BEARISH | Bar Close In: 11s
+2026-09-04 17:28:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 7s
+2026-09-04 17:28:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 17:29:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 17:29:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 17:29:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 50s
+2026-09-04 17:29:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 46s
+2026-09-04 17:29:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 42s
+2026-09-04 17:29:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 37s
+2026-09-04 17:29:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 17:29:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 29s
+2026-09-04 17:29:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 25s
+2026-09-04 17:29:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 17:29:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 16s
+2026-09-04 17:29:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 17:29:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 8s
+2026-09-04 17:29:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 4s
+2026-09-04 17:30:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:30:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.379 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:30:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 52s
+2026-09-04 17:30:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 47s
+2026-09-04 17:30:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 43s
+2026-09-04 17:30:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 39s
+2026-09-04 17:30:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 35s
+2026-09-04 17:30:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.378 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:30:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.378 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 26s
+2026-09-04 17:30:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.378 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:30:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.378 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:30:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.378 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:30:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.379 | Diff: -0.002 (-0.09%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:30:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.378 | Diff: -0.002 (-0.10%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:30:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.378 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 17:31:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 17:31:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 53s
+2026-09-04 17:31:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 49s
+2026-09-04 17:31:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 45s
+2026-09-04 17:31:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 17:31:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 36s
+2026-09-04 17:31:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 32s
+2026-09-04 17:31:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 28s
+2026-09-04 17:31:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 24s
+2026-09-04 17:31:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 17:31:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 15s
+2026-09-04 17:31:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 11s
+2026-09-04 17:31:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 7s
+2026-09-04 17:31:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 3s
+2026-09-04 17:32:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:32:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 17:32:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 50s
+2026-09-04 17:32:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 46s
+2026-09-04 17:32:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 17:32:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 37s
+2026-09-04 17:32:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 17:32:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 28s
+2026-09-04 17:32:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 24s
+2026-09-04 17:32:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 17:32:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 16s
+2026-09-04 17:32:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.12%) | Trend: BEARISH | Bar Close In: 11s
+2026-09-04 17:32:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 7s
+2026-09-04 17:32:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.374 | Slow: 2.377 | Diff: -0.003 (-0.11%) | Trend: BEARISH | Bar Close In: 3s
+2026-09-04 17:33:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 17:33:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 17:33:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 50s
+2026-09-04 17:33:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 46s
+2026-09-04 17:33:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 42s
+2026-09-04 17:33:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 38s
+2026-09-04 17:33:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 34s
+2026-09-04 17:33:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 29s
+2026-09-04 17:33:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.002 (-0.07%) | Trend: BEARISH | Bar Close In: 25s
+2026-09-04 17:33:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 21s
+2026-09-04 17:33:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 17s
+2026-09-04 17:33:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 17:33:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 8s
+2026-09-04 17:33:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 4s
+2026-09-04 17:34:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:34:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:34:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.378 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 51s
+2026-09-04 17:34:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.02%) | Trend: BEARISH | Bar Close In: 47s
+2026-09-04 17:34:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 43s
+2026-09-04 17:34:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 39s
+2026-09-04 17:34:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 34s
+2026-09-04 17:34:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 30s
+2026-09-04 17:34:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 26s
+2026-09-04 17:34:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:34:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 17s
+2026-09-04 17:34:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 13s
+2026-09-04 17:34:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.375 | Slow: 2.377 | Diff: -0.001 (-0.06%) | Trend: BEARISH | Bar Close In: 9s
+2026-09-04 17:34:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 4s
+2026-09-04 17:34:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.05%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:35:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 56s
+2026-09-04 17:35:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 52s
+2026-09-04 17:35:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 48s
+2026-09-04 17:35:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 43s
+2026-09-04 17:35:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 39s
+2026-09-04 17:35:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 35s
+2026-09-04 17:35:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 31s
+2026-09-04 17:35:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 27s
+2026-09-04 17:35:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 22s
+2026-09-04 17:35:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 18s
+2026-09-04 17:35:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 14s
+2026-09-04 17:35:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 10s
+2026-09-04 17:35:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 6s
+2026-09-04 17:35:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 2s
+2026-09-04 17:36:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 58s
+2026-09-04 17:36:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.04%) | Trend: BEARISH | Bar Close In: 54s
+2026-09-04 17:36:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 50s
+2026-09-04 17:36:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 46s
+2026-09-04 17:36:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.03%) | Trend: BEARISH | Bar Close In: 41s
+2026-09-04 17:36:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.02%) | Trend: BEARISH | Bar Close In: 37s
+2026-09-04 17:36:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.02%) | Trend: BEARISH | Bar Close In: 33s
+2026-09-04 17:36:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.376 | Slow: 2.377 | Diff: -0.001 (-0.02%) | Trend: BEARISH | Bar Close In: 28s
+2026-09-04 17:36:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 24s
+2026-09-04 17:36:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 20s
+2026-09-04 17:36:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 16s
+2026-09-04 17:36:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 12s
+2026-09-04 17:36:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 8s
+2026-09-04 17:36:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 3s
+2026-09-04 17:37:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.377 | Slow: 2.377 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 0s
+2026-09-04 17:37:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 17:37:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 17:37:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 17:37:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 17:37:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.377 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 17:37:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.377 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 17:37:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.377 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 17:37:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 17:37:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 17:37:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 17:37:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 17:37:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.378 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 17:37:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.378 | Slow: 2.377 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 17:38:01 [WARNING] Notice: Configured leverage 75x exceeds TRUMP_USDC max allowed (25x). Clamped to 25x.
+2026-09-04 17:38:01 [INFO   ] ============================================================================
+2026-09-04 17:38:01 [INFO   ]    EXECUTING TRADE #2 [LONG] - TRUMP_USDC
+2026-09-04 17:38:01 [INFO   ] ============================================================================
+2026-09-04 17:38:01 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4758 USDT (+INR 44.95) | Committed Margin (Qty/25x): +0.0190 USDT (+INR 1.80)
+2026-09-04 17:38:01 [INFO   ] Reference Price: 2.379 USDT | Attached Min-Profit TP: 2.380 USDT (+1 pu) | Attached SL: 2.333 USDT (-50.0% ROE)
+2026-09-04 17:38:01 [INFO   ] Submitting live MARKET order with attached TP & SL...
+2026-09-04 17:38:02 [INFO   ] Live order accepted by KCEX. Order ID: 850828344356463680
+2026-09-04 17:38:02 [INFO   ] Position Filled: Entry Price = 2.382 USDT | Exact Min-Profit TP = 2.383 USDT | Exact SL = 2.336 USDT
+2026-09-04 17:38:03 [INFO   ] Updated server-side position TP/SL to exact: TP 2.383, SL 2.336
+2026-09-04 17:38:03 [INFO   ] Entering active position monitoring loop...
+2026-09-04 17:38:10 [INFO   ] Position closed on KCEX. Reconciling fill records...
+2026-09-04 17:38:12 [INFO   ] [BALANCE AFTER TRADE #2] Available: 0.0738 USDT (INR 6.97) | Equity: 0.0738 USDT (INR 6.97)
+2026-09-04 17:38:12 [INFO   ] 
+==============================================================================
+TRADE #2 OUTCOME JOURNAL | Closed at: 2026-09-04 17:38:10 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDC [LONG] (25x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4764 USDT (INR 45.00) [Notional exposure]
+Margin Committed   : 0.0191 USDT (INR 1.80) [Trade Qty / 25x leverage]
+Entry Price        : 2.382 USDT (Opened: 2026-09-04 17:38:01)
+Exit Price         : 2.382 USDT (Duration: 8.75s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.383 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.336 USDT (Offset: -46 pu / -0.046 USDT | -1.931% price | -48.3% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : 0.000000 USDT (INR 0.0000)
+Return on Equity   : 0.00% (Price move: 0.000%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0738 USDT (INR 6.97)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 2 | Wins: 0 | Losses: 0 | Scratch: 2
+Win Rate           : 0.0%
+Net Cumulative PnL : +0.000000 USDT (+INR 0.0000)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+
+2026-09-04 17:38:12 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-04 17:38:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 17:38:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.378 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 17:38:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:38:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 17:38:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 17:38:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 17:38:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 17:38:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 17:38:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 17:39:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.378 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:39:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 17:39:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 17:39:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 17:39:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 17:39:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 17:39:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 17:39:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:39:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 17:39:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 17:39:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 17:39:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 17:39:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 17:39:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 17:40:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:40:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 17:40:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 17:40:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 17:40:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 17:40:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 17:40:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 17:40:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 17:40:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 17:40:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.379 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 17:40:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 17:40:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 17:40:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 17:40:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 17:41:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:41:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 56s
+2026-09-04 17:41:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 52s
+2026-09-04 17:41:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 17:41:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 17:41:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 17:41:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 17:41:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 17:41:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 17:41:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 17:41:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 17:41:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 17:41:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:41:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 17:41:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 17:42:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:42:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:42:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 17:42:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 17:42:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 17:42:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 17:42:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 17:42:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 17:42:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 17:42:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 17:42:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 17:42:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:42:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 17:42:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 17:43:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:43:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:43:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:43:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:43:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:43:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:43:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.02%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 17:43:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:43:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 17:43:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 17:43:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 17:43:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 17:43:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 17:43:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 17:44:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 58s
+2026-09-04 17:44:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.379 | Diff: +0.001 (+0.03%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 17:44:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 49s
+2026-09-04 17:44:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 45s
+2026-09-04 17:44:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 17:44:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 17:44:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 17:44:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:44:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 17:44:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 17:44:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 17:44:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 17:44:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 17:44:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 17:45:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 58s
+2026-09-04 17:45:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 17:45:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 49s
+2026-09-04 17:45:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 45s
+2026-09-04 17:45:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 17:45:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 17:45:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.380 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 17:45:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:45:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 17:45:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 17:45:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 17:45:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 17:45:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 17:45:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 17:46:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:46:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:46:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:46:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.04%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:46:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 17:46:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 17:46:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 17:46:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 17:46:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 17:46:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.381 | Slow: 2.380 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 17:46:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 17:46:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 17:46:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 17:46:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 17:47:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:47:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 56s
+2026-09-04 17:47:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 51s
+2026-09-04 17:47:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 47s
+2026-09-04 17:47:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 43s
+2026-09-04 17:47:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: -0.000 (-0.00%) | Trend: BEARISH | Bar Close In: 38s
+2026-09-04 17:47:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 17:47:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 17:47:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 17:47:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 17:47:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 17:47:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 17:47:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:47:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 17:47:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:48:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:48:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.02%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:48:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 17:48:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 17:48:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 17:48:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 17:48:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 17:48:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 17:48:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 17:48:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 17:48:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 17:48:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 17:48:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 17:49:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:49:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 17:49:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 17:49:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 45s
+2026-09-04 17:49:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 17:49:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.379 | Slow: 2.379 | Diff: -0.000 (-0.01%) | Trend: BEARISH | Bar Close In: 37s
+2026-09-04 17:49:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 17:49:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 17:49:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 17:49:39 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 17:49:43 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 17:49:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.00%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 17:49:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 17:49:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 17:50:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.380 | Slow: 2.380 | Diff: +0.000 (+0.01%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:50:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.381 | Diff: +0.001 (+0.05%) | Trend: BULLISH | Bar Close In: 55s
+2026-09-04 17:50:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.382 | Slow: 2.381 | Diff: +0.001 (+0.06%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 17:50:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 17:50:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.06%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 17:50:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 17:50:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.07%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 17:50:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.384 | Slow: 2.381 | Diff: +0.002 (+0.09%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 17:50:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 17:50:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 17:50:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 17:50:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 17:50:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:50:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 17:50:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:51:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:51:08 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.383 | Slow: 2.381 | Diff: +0.002 (+0.08%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:51:12 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.382 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 17:51:16 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.382 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 17:51:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.382 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 17:51:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.385 | Slow: 2.382 | Diff: +0.003 (+0.11%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 17:51:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.386 | Slow: 2.383 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 17:51:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.383 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 17:51:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.383 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 17:51:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.383 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 17:51:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.383 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 17:51:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.387 | Slow: 2.383 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:51:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.384 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 17:51:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.388 | Slow: 2.384 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 17:52:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.385 | Diff: +0.005 (+0.22%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 17:52:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 17:52:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 49s
+2026-09-04 17:52:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 17:52:20 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 17:52:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 17:52:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 31s
+2026-09-04 17:52:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 27s
+2026-09-04 17:52:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.19%) | Trend: BULLISH | Bar Close In: 23s
+2026-09-04 17:52:41 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 17:52:45 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 17:52:49 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 10s
+2026-09-04 17:52:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 6s
+2026-09-04 17:52:58 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.385 | Diff: +0.005 (+0.20%) | Trend: BULLISH | Bar Close In: 2s
+2026-09-04 17:53:02 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 17:53:06 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 17:53:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.18%) | Trend: BULLISH | Bar Close In: 49s
+2026-09-04 17:53:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 45s
+2026-09-04 17:53:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 41s
+2026-09-04 17:53:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 37s
+2026-09-04 17:53:27 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 17:53:31 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:53:35 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 17:53:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 17:53:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 17:53:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 17:53:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 17:53:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 17:54:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 59s
+2026-09-04 17:54:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 55s
+2026-09-04 17:54:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 17:54:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 17:54:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.17%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 17:54:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 17:54:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 34s
+2026-09-04 17:54:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 17:54:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 17:54:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 17:54:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 17:54:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 17:54:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:54:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 17:54:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.386 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 17:55:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 17:55:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 17:55:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 17:55:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 17:55:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 17:55:24 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 17:55:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 17:55:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.390 | Slow: 2.387 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:55:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 17:55:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 19s
+2026-09-04 17:55:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.15%) | Trend: BULLISH | Bar Close In: 15s
+2026-09-04 17:55:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 11s
+2026-09-04 17:55:53 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 7s
+2026-09-04 17:55:57 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 3s
+2026-09-04 17:56:01 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.387 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 0s
+2026-09-04 17:56:05 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 54s
+2026-09-04 17:56:10 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 50s
+2026-09-04 17:56:14 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 46s
+2026-09-04 17:56:18 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 42s
+2026-09-04 17:56:22 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.388 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 38s
+2026-09-04 17:56:26 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 33s
+2026-09-04 17:56:30 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 29s
+2026-09-04 17:56:34 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 25s
+2026-09-04 17:56:38 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 21s
+2026-09-04 17:56:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 17s
+2026-09-04 17:56:47 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 13s
+2026-09-04 17:56:51 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:56:55 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 17:56:59 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 1s
+2026-09-04 17:57:03 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 57s
+2026-09-04 17:57:07 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 53s
+2026-09-04 17:57:11 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 48s
+2026-09-04 17:57:15 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 44s
+2026-09-04 17:57:19 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 40s
+2026-09-04 17:57:23 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 36s
+2026-09-04 17:57:28 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 32s
+2026-09-04 17:57:32 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 28s
+2026-09-04 17:57:36 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 24s
+2026-09-04 17:57:40 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 20s
+2026-09-04 17:57:44 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 16s
+2026-09-04 17:57:48 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 12s
+2026-09-04 17:57:52 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 8s
+2026-09-04 17:57:56 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.391 | Slow: 2.388 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 4s
+2026-09-04 17:58:00 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 59s
+2026-09-04 17:58:04 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.390 | Diff: +0.003 (+0.14%) | Trend: BULLISH | Bar Close In: 55s
+2026-09-04 17:58:09 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 51s
+2026-09-04 17:58:13 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 47s
+2026-09-04 17:58:17 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 43s
+2026-09-04 17:58:21 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 39s
+2026-09-04 17:58:25 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 35s
+2026-09-04 17:58:29 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.394 | Slow: 2.390 | Diff: +0.004 (+0.16%) | Trend: BULLISH | Bar Close In: 30s
+2026-09-04 17:58:33 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 26s
+2026-09-04 17:58:37 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 22s
+2026-09-04 17:58:42 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 18s
+2026-09-04 17:58:46 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.393 | Slow: 2.389 | Diff: +0.003 (+0.13%) | Trend: BULLISH | Bar Close In: 14s
+2026-09-04 17:58:50 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 9s
+2026-09-04 17:58:54 [INFO   ] [HUNTING ENTRY] EMA(5/13) Min1 | Fast: 2.392 | Slow: 2.389 | Diff: +0.003 (+0.12%) | Trend: BULLISH | Bar Close In: 5s
+2026-09-04 17:58:56 [WARNING] 
+[STOP] Caught SIGINT / Interrupt signal.
+2026-09-04 17:58:56 [INFO   ] Graceful shutdown requested...
+2026-09-04 17:58:56 [INFO   ] ============================================================================
+2026-09-04 17:58:56 [INFO   ]    ENGINE EXECUTION SESSION ENDED
+2026-09-04 17:58:56 [INFO   ] ============================================================================
+2026-09-04 17:58:56 [INFO   ] Total Trades Completed: 2 | Wins: 0 | Losses: 0 | Win Rate: 0.0%
+2026-09-04 17:58:56 [INFO   ] Net Session PnL: 0.0000 USDT (INR 0.00)

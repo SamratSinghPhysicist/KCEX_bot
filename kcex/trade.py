@@ -93,8 +93,17 @@ class KCEXTrader:
         res = self.client.get_private(KCEXConfig.ENDPOINT_OPEN_POSITIONS, params=params)
         data = res.get("data", [])
         if isinstance(data, dict):
-            # Sometimes wrapped in {"list": [...]}
             data = data.get("list", [])
+        if not data and symbol:
+            # Fallback: query without symbol filter to prevent API query-param glitches
+            try:
+                res_all = self.client.get_private(KCEXConfig.ENDPOINT_OPEN_POSITIONS)
+                data_all = res_all.get("data", [])
+                if isinstance(data_all, dict):
+                    data_all = data_all.get("list", [])
+                data = [p for p in data_all if p.get("symbol") == symbol.upper()]
+            except Exception:
+                pass
         return data
 
     def get_position_history(self, page_num: int = 1, page_size: int = 20) -> List[Dict[str, Any]]:
@@ -289,16 +298,27 @@ class KCEXTrader:
             ticker = self.market.get_ticker(symbol_upper)
             price = float(ticker.get("lastPrice", 1.0))
 
+        # For market close: aggressively cross the order book to ensure instant taker execution
+        final_price = price
+        if is_market:
+            pu = contract.price_unit
+            if is_closing_long:
+                # Sell into the bids: price below market crosses bid queue
+                final_price = min(price * 0.985, price - 10 * pu)
+            else:
+                # Buy from the asks: price above market crosses ask queue
+                final_price = max(price * 1.015, price + 10 * pu)
+
         payload = {
             "symbol": symbol_upper,
             "openType": 1 if is_isolated else 2,
             "positionId": int(position_id),
             "leverage": int(leverage),
-            "type": 1,  # 1 is used in KCEX market-close dialog
+            "type": 5 if is_market else 1,  # 5 for Market order, 1 for Limit order
             "vol": int(vol_contracts),
             "side": close_side,
             "flashClose": False,
-            "price": str(round(price, contract.price_precision)),
+            "price": str(round(final_price, contract.price_precision)),
             "priceProtect": "0"
         }
 
