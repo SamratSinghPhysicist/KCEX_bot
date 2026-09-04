@@ -1,0 +1,75 @@
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 11:43:13 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2377 USDT (INR 22.46)
+Margin Committed   : 0.0032 USDT (INR 0.30)
+Entry Price        : 2.3770 USDT (Opened: 2026-09-04 11:43:10)
+Exit Price         : 2.3780 USDT (Duration: 2.50s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3780 USDT (Offset: 1 pu)
+Stop Loss Level    : 2.3738 USDT (-10% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0095)
+Return on Equity   : +3.15% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0095)
+Live USD/INR Rate  : INR 94.50 per USD
+==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 11:44:32 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2377 USDT (INR 22.46)
+Margin Committed   : 0.0032 USDT (INR 0.30)
+Entry Price        : 2.3770 USDT (Opened: 2026-09-04 11:44:29)
+Exit Price         : 2.3780 USDT (Duration: 2.50s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3780 USDT (Offset: 1 pu)
+Stop Loss Level    : 2.3738 USDT (-10% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0095)
+Return on Equity   : +3.15% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0095)
+Live USD/INR Rate  : INR 94.50 per USD
+==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 11:45:03 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : DirectionalCycle(LONG)
+Volume Executed    : 1 contract(s) (0.1000 coins)
+Notional Value     : 0.2377 USDT (INR 22.46)
+Margin Committed   : 0.0032 USDT (INR 0.30)
+Entry Price        : 2.3770 USDT (Opened: 2026-09-04 11:45:00)
+Exit Price         : 2.3780 USDT (Duration: 2.50s)
+Tick Size (pu)     : 0.0010 USDT
+Min-Profit TP Target: 2.3780 USDT (Offset: 1 pu)
+Stop Loss Level    : 2.3738 USDT (-10% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0095)
+Return on Equity   : +3.15% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0095)
+Live USD/INR Rate  : INR 94.50 per USD
+==============================================================================

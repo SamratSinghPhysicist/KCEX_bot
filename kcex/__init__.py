@@ -18,8 +18,22 @@ from kcex.client import KCEXClient, KCEXAPIError
 from kcex.market import KCEXMarket, ContractInfo
 from kcex.risk import KCEXRiskCalculator, RiskAnalysisReport
 from kcex.trade import KCEXTrader
+from kcex.engine import (
+    TradeExecutionEngine,
+    ExecutionConfig,
+    OrderDirection,
+    EngineMode,
+    ExitReason,
+    TradeSignal,
+    TradeOutcome,
+    CumulativeStats,
+    MasterplanStrategy,
+    DirectionalCycleSubStrategy,
+    DualCurrencyLogger,
+    TradeOutcomeLogger
+)
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     "KCEXConfig",
     "KCEXSigner",
@@ -30,4 +44,16 @@ __all__ = [
     "KCEXRiskCalculator",
     "RiskAnalysisReport",
     "KCEXTrader",
+    "TradeExecutionEngine",
+    "ExecutionConfig",
+    "OrderDirection",
+    "EngineMode",
+    "ExitReason",
+    "TradeSignal",
+    "TradeOutcome",
+    "CumulativeStats",
+    "MasterplanStrategy",
+    "DirectionalCycleSubStrategy",
+    "DualCurrencyLogger",
+    "TradeOutcomeLogger",
 ]
