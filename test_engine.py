@@ -40,6 +40,9 @@ from kcex import (
     MasterplanStrategy,
     DirectionalCycleSubStrategy,
     MicrostructureSubStrategy,
+    EMACrossoverSubStrategy,
+    EMA_PRESETS,
+    compute_ema_series,
     MicrostructureSignalGenerator,
     SignalConfig,
     SymbolMeta,
@@ -831,6 +834,224 @@ class TestMicrostructureStrategy(unittest.TestCase):
         sub.stop()
 
 
+class TestEMACrossoverStrategy(unittest.TestCase):
+    """Tests for the EMA Crossover Sub-Strategy (5/13, 9/21, 3/8)."""
+
+    def test_compute_ema_series_math(self):
+        """Verify EMA formula calculation against exact mathematical values."""
+        # Flat series
+        flat = [10.0] * 20
+        ema_flat = compute_ema_series(flat, 5)
+        self.assertEqual(len(ema_flat), 20)
+        self.assertAlmostEqual(ema_flat[-1], 10.0, places=5)
+
+        # Rising series
+        prices = [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
+        # For period 3: alpha = 2 / (3 + 1) = 0.5
+        # SMA(10, 11, 12) = 11.0 at index 2
+        # Index 3: 13.0 * 0.5 + 11.0 * 0.5 = 12.0
+        # Index 4: 14.0 * 0.5 + 12.0 * 0.5 = 13.0
+        # Index 5: 15.0 * 0.5 + 13.0 * 0.5 = 14.0
+        ema3 = compute_ema_series(prices, 3)
+        self.assertEqual(len(ema3), len(prices))
+        self.assertAlmostEqual(ema3[2], 11.0, places=5)
+        self.assertAlmostEqual(ema3[3], 12.0, places=5)
+        self.assertAlmostEqual(ema3[4], 13.0, places=5)
+        self.assertAlmostEqual(ema3[5], 14.0, places=5)
+
+    def test_preset_period_mappings(self):
+        """Verify default presets 5/13, 9/21, 3/8 resolve properly."""
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = []
+
+        sub_5_13 = EMACrossoverSubStrategy(mock_market, "TEST_USDT", ema_preset="5/13")
+        self.assertEqual(sub_5_13.fast_period, 5)
+        self.assertEqual(sub_5_13.slow_period, 13)
+
+        sub_9_21 = EMACrossoverSubStrategy(mock_market, "TEST_USDT", ema_preset="9/21")
+        self.assertEqual(sub_9_21.fast_period, 9)
+        self.assertEqual(sub_9_21.slow_period, 21)
+
+        sub_3_8 = EMACrossoverSubStrategy(mock_market, "TEST_USDT", ema_preset="3/8")
+        self.assertEqual(sub_3_8.fast_period, 3)
+        self.assertEqual(sub_3_8.slow_period, 8)
+
+    def _generate_synthetic_candles(self, prices: list, start_ts: int = 1700000000) -> list:
+        candles = []
+        for i, p in enumerate(prices):
+            candles.append({
+                "timestamp": start_ts + i * 60,
+                "open": p,
+                "high": p + 0.01,
+                "low": p - 0.01,
+                "close": p,
+                "volume": 100.0,
+                "amount": 100.0 * p
+            })
+        return candles
+
+    def test_golden_cross_long_signal(self):
+        """Bullish cross (Fast crosses above Slow) emits LONG signal."""
+        prices = [20.0 - i * 0.2 for i in range(15)] + [17.5, 18.2, 19.5, 21.0, 22.0]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = EMACrossoverSubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            ema_preset="3/8",
+            require_closed_candle=True,
+            lookback_bars=2
+        )
+
+        sig = sub.generate_signal("BTC_USDT")
+        self.assertIsNotNone(sig)
+        self.assertEqual(sig.direction, OrderDirection.LONG)
+        self.assertIn("GOLDEN_CROSS", sig.metadata.get("crossover_type", ""))
+        self.assertEqual(sig.symbol, "BTC_USDT")
+
+    def test_death_cross_short_signal(self):
+        """Bearish cross (Fast crosses below Slow) emits SHORT signal."""
+        prices = [10.0 + i * 0.3 for i in range(15)] + [14.0, 13.8, 12.0, 10.0, 8.0]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = EMACrossoverSubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            ema_preset="3/8",
+            require_closed_candle=True,
+            lookback_bars=2
+        )
+
+        sig = sub.generate_signal("BTC_USDT")
+        self.assertIsNotNone(sig)
+        self.assertEqual(sig.direction, OrderDirection.SHORT)
+        self.assertIn("DEATH_CROSS", sig.metadata.get("crossover_type", ""))
+
+    def test_deduplication_same_crossover(self):
+        """Signal should not re-trigger repeatedly on the same crossover candle."""
+        prices = [20.0 - i * 0.2 for i in range(15)] + [17.5, 18.2, 19.5, 21.0, 22.0]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = EMACrossoverSubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            ema_preset="3/8",
+            require_closed_candle=True,
+            lookback_bars=2
+        )
+
+        sig1 = sub.generate_signal("BTC_USDT")
+        self.assertIsNotNone(sig1)
+
+        # Second poll before new candle forms
+        sig2 = sub.generate_signal("BTC_USDT")
+        self.assertIsNone(sig2)
+
+    def test_direction_filtering(self):
+        """If preferred_direction is LONG, DEATH_CROSS is suppressed."""
+        prices = [10.0 + i * 0.3 for i in range(15)] + [14.0, 13.8, 12.0, 10.0, 8.0]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = EMACrossoverSubStrategy(
+            market=mock_market,
+            symbol="BTC_USDT",
+            ema_preset="3/8",
+            preferred_direction=OrderDirection.LONG,
+            require_closed_candle=True,
+            lookback_bars=2
+        )
+
+        sig = sub.generate_signal("BTC_USDT")
+        self.assertIsNone(sig)
+
+    def test_diagnostics_structure(self):
+        """Diagnostics should return live EMA metrics and trend."""
+        prices = [10.0 + i * 0.1 for i in range(25)]
+        candles = self._generate_synthetic_candles(prices)
+
+        mock_market = MagicMock()
+        mock_market.get_klines.return_value = candles
+
+        sub = EMACrossoverSubStrategy(mock_market, "TRUMP_USDT", ema_preset="5/13")
+        diag = sub.get_diagnostics()
+        self.assertEqual(diag["strategy"], "EMA_CROSSOVER")
+        self.assertEqual(diag["preset"], "5/13")
+        self.assertEqual(diag["fast_period"], 5)
+        self.assertEqual(diag["slow_period"], 13)
+        self.assertIn("fast_ema", diag)
+        self.assertIn("slow_ema", diag)
+        self.assertIn("trend", diag)
+        self.assertIn("time_to_bar_close_s", diag)
+
+    def test_ema_crossover_dry_run_cycle(self):
+        """End-to-end dry-run trade execution with EMACrossoverSubStrategy."""
+        temp_dir = tempfile.TemporaryDirectory()
+        try:
+            config = ExecutionConfig(
+                symbol="TRUMP_USDT",
+                mode=EngineMode.DRY_RUN,
+                strategy_mode="EMA_CROSSOVER",
+                ema_preset="3/8",
+                cooldown_seconds=1.0,
+                max_trades=1,
+                logs_dir=temp_dir.name,
+                poll_interval_seconds=0.05
+            )
+
+            # Synthesize golden cross on the last closed candle (index 17 out of 19)
+            prices = [2.0 - i * 0.01 for i in range(15)] + [1.88, 1.92, 2.05, 2.10]
+            candles = self._generate_synthetic_candles(prices)
+
+            mock_market = KCEXMarket()
+            mock_market.get_klines = MagicMock(return_value=candles)
+
+            engine = TradeExecutionEngine(config=config, market=mock_market)
+            contract = engine.pre_flight_checks()
+
+            # Mock ticker sequence: entry at 2.05, then price reaches 2.052 (TP hit)
+            ticker_sequence = [
+                {"symbol": "TRUMP_USDT", "lastPrice": 2.050, "bid1": 2.050, "ask1": 2.050},
+                {"symbol": "TRUMP_USDT", "lastPrice": 2.050, "bid1": 2.050, "ask1": 2.050},
+                {"symbol": "TRUMP_USDT", "lastPrice": 2.052, "bid1": 2.052, "ask1": 2.053}
+            ]
+            seq_idx = [0]
+            def mock_ticker(sym):
+                if seq_idx[0] < len(ticker_sequence):
+                    t = ticker_sequence[seq_idx[0]]
+                    seq_idx[0] += 1
+                    return t
+                return ticker_sequence[-1]
+
+            engine.market.get_ticker = mock_ticker
+            outcome = engine.execute_single_trade_cycle(contract)
+
+            self.assertIsNotNone(outcome)
+            self.assertEqual(outcome.trade_id, 1)
+            self.assertEqual(outcome.symbol, "TRUMP_USDT")
+            self.assertEqual(outcome.direction, OrderDirection.LONG)
+            self.assertIn("EMACrossover", outcome.sub_strategy_name)
+            self.assertEqual(outcome.exit_reason, ExitReason.MIN_PROFIT_TP_HIT)
+            self.assertTrue(outcome.is_profit)
+        finally:
+            logging.shutdown()
+            try:
+                temp_dir.cleanup()
+            except Exception:
+                pass
+
+
 def run_all_tests():
     print("=" * 70)
     print("      RUNNING KCEX EXECUTION ENGINE TEST SUITE")
@@ -842,7 +1063,8 @@ def run_all_tests():
         "test_engine.TestEngineExecutionDryRun",
         "test_engine.TestVolumeSizingAndExposure",
         "test_engine.TestGeneralizationMultiCoin",
-        "test_engine.TestMicrostructureStrategy"
+        "test_engine.TestMicrostructureStrategy",
+        "test_engine.TestEMACrossoverStrategy"
     ])
     runner = unittest.TextTestRunner(verbosity=2)
     res = runner.run(suite)

@@ -38,7 +38,8 @@ from kcex.engine.logger import DualCurrencyLogger, TradeOutcomeLogger
 from kcex.engine.strategy import (
     MasterplanStrategy,
     DirectionalCycleSubStrategy,
-    MicrostructureSubStrategy
+    MicrostructureSubStrategy,
+    EMACrossoverSubStrategy
 )
 
 
@@ -78,8 +79,22 @@ class TradeExecutionEngine:
         if strategy is not None:
             self.strategy = strategy
         else:
-            strat_mode = getattr(self.config, "strategy_mode", "MICROSTRUCTURE") or "MICROSTRUCTURE"
-            if str(strat_mode).upper() == "MICROSTRUCTURE":
+            strat_mode = getattr(self.config, "strategy_mode", "EMA_CROSSOVER") or "EMA_CROSSOVER"
+            strat_upper = str(strat_mode).upper()
+            if strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
+                pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
+                sub_strat = EMACrossoverSubStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    fast_period=getattr(self.config, "ema_fast", 5),
+                    slow_period=getattr(self.config, "ema_slow", 13),
+                    ema_preset=getattr(self.config, "ema_preset", "5/13"),
+                    interval=getattr(self.config, "ema_interval", "Min1"),
+                    preferred_direction=pref_dir,
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    require_closed_candle=getattr(self.config, "ema_require_closed_candle", True)
+                )
+            elif strat_upper == "MICROSTRUCTURE":
                 pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
                 sub_strat = MicrostructureSubStrategy(
                     market=self.market,
@@ -1070,12 +1085,24 @@ class TradeExecutionEngine:
                             self.logger.info(f"Cooldown active: {remaining}s remaining...")
                         time.sleep(1.0)
                 else:
-                    # Log periodic microstructure diagnostics while hunting for entry signal
+                    # Log periodic diagnostics while hunting for entry signal
                     now = time.time()
                     if now - last_diag_log >= 4.0:
                         last_diag_log = now
                         diag = self.strategy.get_diagnostics()
-                        if diag and "obi_z" in diag:
+                        if diag and "fast_ema" in diag:
+                            c_f = diag.get('fast_ema', 0.0)
+                            c_s = diag.get('slow_ema', 0.0)
+                            diff = diag.get('diff', 0.0)
+                            diff_pct = diag.get('diff_pct', 0.0)
+                            prec = contract.price_precision
+                            self.logger.info(
+                                f"[HUNTING ENTRY] EMA({diag.get('preset', '5/13')}) {diag.get('interval', 'Min1')} | "
+                                f"Fast: {c_f:.{prec}f} | Slow: {c_s:.{prec}f} | "
+                                f"Diff: {diff:+.{prec}f} ({diff_pct:+.2f}%) | "
+                                f"Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
+                            )
+                        elif diag and "obi_z" in diag:
                             feed_info = diag.get("feed", {})
                             ws_status = "LIVE WS" if feed_info.get("connected") else "CONNECTING"
                             b_bid = f"{diag.get('best_bid'):.{contract.price_precision}f}" if diag.get('best_bid') else "N/A"

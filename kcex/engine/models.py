@@ -63,8 +63,13 @@ class ExecutionConfig:
     volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 5)
     max_trades: int = 0                   # 0 = unlimited
     # Strategy selection
-    strategy_mode: str = "CYCLE"          # "MICROSTRUCTURE" or "CYCLE" (default for bare config is CYCLE)
+    strategy_mode: str = "CYCLE"          # "EMA_CROSSOVER", "MICROSTRUCTURE", or "CYCLE" (default for bare config is CYCLE)
     bi_directional: bool = True           # True for autonomous Long/Short, False for fixed direction
+    ema_preset: str = "5/13"              # "5/13", "9/21", "3/8", or "custom"
+    ema_fast: int = 5                     # Fast EMA length
+    ema_slow: int = 13                    # Slow EMA length
+    ema_interval: str = "Min1"            # Candle timeframe e.g. "Min1", "Min5"
+    ema_require_closed_candle: bool = True # Confirm cross on closed candle (prevents false whipsaw repainting)
     poll_interval_seconds: float = 0.5
     logs_dir: str = "logs"
     realtime_log_file: str = "engine_realtime.log"

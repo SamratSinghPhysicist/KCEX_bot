@@ -31,6 +31,9 @@ from kcex.engine import (
     MasterplanStrategy,
     DirectionalCycleSubStrategy,
     MicrostructureSubStrategy,
+    EMACrossoverSubStrategy,
+    EMA_PRESETS,
+    compute_ema_series,
     MicrostructureSignalGenerator,
     SignalConfig,
     SymbolMeta,
@@ -38,7 +41,7 @@ from kcex.engine import (
     TradeOutcomeLogger
 )
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __all__ = [
     "KCEXConfig",
     "KCEXSigner",
@@ -61,6 +64,9 @@ __all__ = [
     "MasterplanStrategy",
     "DirectionalCycleSubStrategy",
     "MicrostructureSubStrategy",
+    "EMACrossoverSubStrategy",
+    "EMA_PRESETS",
+    "compute_ema_series",
     "MicrostructureSignalGenerator",
     "SignalConfig",
     "SymbolMeta",

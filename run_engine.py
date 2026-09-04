@@ -141,14 +141,86 @@ def prompt_user_settings():
         print(f"   ℹ️  Note: Market preview skipped for {sym_val} ({e}).")
 
     # 3. Strategy Engine Selection & Directional Flow
-    default_strat = get_setting("STRATEGY_MODE", "MICROSTRUCTURE").upper()
-    default_bi = get_setting("MICRO_BI_DIRECTIONAL", True)
+    default_strat = get_setting("STRATEGY_MODE", "EMA_CROSSOVER").upper()
+    default_ema_preset = get_setting("EMA_PRESET", "5/13")
+    default_ema_fast = get_setting("EMA_FAST", 5)
+    default_ema_slow = get_setting("EMA_SLOW", 13)
+    default_ema_interval = get_setting("EMA_INTERVAL", "Min1")
+    default_ema_bi = get_setting("EMA_BI_DIRECTIONAL", True)
+    default_micro_bi = get_setting("MICRO_BI_DIRECTIONAL", True)
     default_dir = get_setting("DIRECTION", "LONG").upper()
+
     print("\n3. Strategy & Signal Engine:")
-    print("   [1] MICROSTRUCTURE    -> Rapid HFT scalper (Order Book & Tape Imbalance) [Recommended]")
-    print("   [2] DIRECTIONAL CYCLE -> Classic fixed-interval single direction cycle")
-    strat_str = input(f"   Select Strategy [default: {'1 (MICROSTRUCTURE)' if default_strat == 'MICROSTRUCTURE' else '2 (CYCLE)'}]: ").strip()
-    if strat_str == "2" or strat_str.upper() == "CYCLE":
+    print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8) [Default / Recommended]")
+    print("   [2] MICROSTRUCTURE    -> Rapid HFT scalper (Order Book & Tape Imbalance)")
+    print("   [3] DIRECTIONAL CYCLE -> Classic fixed-interval single direction cycle")
+
+    default_strat_choice = "1"
+    if default_strat == "MICROSTRUCTURE":
+        default_strat_choice = "2"
+    elif default_strat == "CYCLE":
+        default_strat_choice = "3"
+
+    strat_str = input(f"   Select Strategy [default: {default_strat_choice} ({default_strat})]: ").strip()
+    if not strat_str:
+        strat_str = default_strat_choice
+
+    ema_preset_val = default_ema_preset
+    ema_fast_val = default_ema_fast
+    ema_slow_val = default_ema_slow
+    ema_interval_val = default_ema_interval
+
+    if strat_str in ("1", "EMA", "EMA_CROSSOVER", "CROSSOVER", "ema", "ema_crossover"):
+        strat_mode_val = "EMA_CROSSOVER"
+        print("\n   EMA Crossover Preset:")
+        print("   [1] 5 / 13  -> Fibonacci Scalp (Fast: 5, Slow: 13) [Default / Recommended]")
+        print("   [2] 9 / 21  -> Momentum / Intraday Trend Scalp (Fast: 9, Slow: 21)")
+        print("   [3] 3 / 8   -> Ultra-Fast Micro-Scalp (Fast: 3, Slow: 8)")
+        print("   [4] CUSTOM  -> Specify custom fast and slow periods")
+        preset_choice = input(f"   Select Preset [default: 1 ({default_ema_preset})]: ").strip()
+        if preset_choice == "2":
+            ema_preset_val = "9/21"
+            ema_fast_val = 9
+            ema_slow_val = 21
+        elif preset_choice == "3":
+            ema_preset_val = "3/8"
+            ema_fast_val = 3
+            ema_slow_val = 8
+        elif preset_choice == "4":
+            ema_preset_val = "custom"
+            try:
+                ema_fast_val = int(input("      Fast EMA Period: ").strip() or "5")
+                ema_slow_val = int(input("      Slow EMA Period: ").strip() or "13")
+            except ValueError:
+                ema_fast_val = 5
+                ema_slow_val = 13
+        else:
+            ema_preset_val = "5/13"
+            ema_fast_val = 5
+            ema_slow_val = 13
+
+        print(f"   ✅ Active EMA Config: Fast={ema_fast_val}, Slow={ema_slow_val} (Preset: {ema_preset_val})")
+
+        print("\n   EMA Directional Flow:")
+        print("   [1] AUTONOMOUS BI-DIRECTIONAL -> Scalp both LONG (Golden Cross) & SHORT (Death Cross) [Recommended]")
+        print("   [2] SINGLE DIRECTION ONLY     -> Scalp only one chosen direction")
+        bi_str = input(f"   Select Flow [default: {'1 (BI-DIRECTIONAL)' if default_ema_bi else '2 (SINGLE)'}]: ").strip()
+        if bi_str == "2":
+            bi_directional_val = False
+            print("\n   Order Direction for EMA Scalps:")
+            print("   [1] LONG  -> Profit when price rises.")
+            print("   [2] SHORT -> Profit when price drops.")
+            dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
+            if dir_str == "2" or dir_str.upper() == "SHORT":
+                dir_val = OrderDirection.SHORT
+            else:
+                dir_val = OrderDirection.LONG
+        else:
+            bi_directional_val = True
+            dir_val = OrderDirection.LONG
+            print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG on Golden Cross and SHORT on Death Cross).")
+
+    elif strat_str in ("3", "CYCLE", "cycle"):
         strat_mode_val = "CYCLE"
         bi_directional_val = False
         print("\n   Order Direction for Directional Cycle:")
@@ -164,7 +236,7 @@ def prompt_user_settings():
         print("\n   Microstructure Directional Flow:")
         print("   [1] AUTONOMOUS BI-DIRECTIONAL -> Scalp both LONG & SHORT on market flow [Recommended]")
         print("   [2] SINGLE DIRECTION ONLY     -> Scalp only one chosen direction")
-        bi_str = input(f"   Select Flow [default: {'1 (BI-DIRECTIONAL)' if default_bi else '2 (SINGLE)'}]: ").strip()
+        bi_str = input(f"   Select Flow [default: {'1 (BI-DIRECTIONAL)' if default_micro_bi else '2 (SINGLE)'}]: ").strip()
         if bi_str == "2":
             bi_directional_val = False
             print("\n   Order Direction for Microstructure Scalps:")
@@ -374,6 +446,11 @@ def prompt_user_settings():
         max_trades=max_val,
         strategy_mode=strat_mode_val,
         bi_directional=bi_directional_val,
+        ema_preset=ema_preset_val,
+        ema_fast=ema_fast_val,
+        ema_slow=ema_slow_val,
+        ema_interval=ema_interval_val,
+        ema_require_closed_candle=get_setting("EMA_REQUIRE_CLOSED_CANDLE", True),
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -484,20 +561,59 @@ def parse_args():
     parser.add_argument(
         "--strategy",
         type=str,
-        choices=["microstructure", "cycle", "MICROSTRUCTURE", "CYCLE"],
+        choices=[
+            "ema", "ema_crossover", "EMA", "EMA_CROSSOVER",
+            "microstructure", "cycle", "MICROSTRUCTURE", "CYCLE"
+        ],
         default=None,
-        help="Strategy type: 'microstructure' (HFT order book & tape imbalance) or 'cycle' (directional cycle)"
+        help="Strategy type: 'ema_crossover' (Fast/Slow EMA cross), 'microstructure' (HFT order book/tape), or 'cycle' (directional cycle)"
+    )
+    parser.add_argument(
+        "--ema-preset",
+        type=str,
+        choices=["5/13", "9/21", "3/8", "custom"],
+        default=None,
+        help="EMA Crossover Preset: '5/13' (Fibonacci scalp, default), '9/21' (momentum/trend), or '3/8' (ultra-fast micro-scalp)"
+    )
+    parser.add_argument(
+        "--ema-fast",
+        type=int,
+        default=None,
+        help="Fast EMA period length (default: 5 or derived from --ema-preset)"
+    )
+    parser.add_argument(
+        "--ema-slow",
+        type=int,
+        default=None,
+        help="Slow EMA period length (default: 13 or derived from --ema-preset)"
+    )
+    parser.add_argument(
+        "--ema-interval",
+        type=str,
+        default=None,
+        help="Candle timeframe for EMA: 'Min1' (default), 'Min5', 'Min15', etc."
+    )
+    parser.add_argument(
+        "--intra-bar-ema",
+        action="store_true",
+        help="Evaluate EMA crossover in real-time mid-bar instead of requiring closed candle confirmation"
+    )
+    parser.add_argument(
+        "--require-closed-candle",
+        action="store_true",
+        default=None,
+        help="Strictly confirm EMA crossover on closed candle (prevents false whipsaw repainting, default: True)"
     )
     parser.add_argument(
         "--bi-directional",
         action="store_true",
         default=None,
-        help="Enable autonomous bi-directional trading (LONG and SHORT) for microstructure strategy"
+        help="Enable autonomous bi-directional trading (LONG and SHORT) for EMA or microstructure strategy"
     )
     parser.add_argument(
         "--single-direction",
         action="store_true",
-        help="Restrict microstructure scalps strictly to --direction"
+        help="Restrict trading strictly to --direction"
     )
     parser.add_argument(
         "--dynamic-tp",
@@ -561,13 +677,35 @@ def main():
         max_trades = args.max_trades if args.max_trades is not None else get_setting("MAX_TRADES", 3)
         poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.3)
 
-        strat_raw = (args.strategy or get_setting("STRATEGY_MODE", "MICROSTRUCTURE")).upper()
+        strat_raw = (args.strategy or get_setting("STRATEGY_MODE", "EMA_CROSSOVER")).upper()
         if args.single_direction:
             bi_directional = False
         elif args.bi_directional:
             bi_directional = True
         else:
-            bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
+            if strat_raw in ("EMA", "EMA_CROSSOVER"):
+                bi_directional = get_setting("EMA_BI_DIRECTIONAL", True)
+            else:
+                bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
+
+        ema_preset = args.ema_preset or get_setting("EMA_PRESET", "5/13")
+        if ema_preset == "9/21":
+            def_fast, def_slow = 9, 21
+        elif ema_preset == "3/8":
+            def_fast, def_slow = 3, 8
+        else:
+            def_fast, def_slow = 5, 13
+
+        ema_fast = args.ema_fast if args.ema_fast is not None else get_setting("EMA_FAST", def_fast)
+        ema_slow = args.ema_slow if args.ema_slow is not None else get_setting("EMA_SLOW", def_slow)
+        ema_interval = args.ema_interval or get_setting("EMA_INTERVAL", "Min1")
+
+        if args.intra_bar_ema:
+            ema_closed = False
+        elif args.require_closed_candle:
+            ema_closed = True
+        else:
+            ema_closed = get_setting("EMA_REQUIRE_CLOSED_CANDLE", True)
 
         config = ExecutionConfig(
             symbol=sym,
@@ -588,6 +726,11 @@ def main():
             max_trades=max_trades,
             strategy_mode=strat_raw,
             bi_directional=bi_directional,
+            ema_preset=ema_preset,
+            ema_fast=ema_fast,
+            ema_slow=ema_slow,
+            ema_interval=ema_interval,
+            ema_require_closed_candle=ema_closed,
             poll_interval_seconds=poll_int,
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -631,12 +774,29 @@ def main():
         else f"{config.sl_price_pct}% coin price" if config.sl_price_pct
         else f"{config.sl_roe_pct}% ROE"
     )
-    strat_desc = (
-        f"Microstructure (Autonomous Bi-Directional: LONG & SHORT)" if config.strategy_mode == "MICROSTRUCTURE" and config.bi_directional
-        else f"Microstructure ({config.direction.value} only)" if config.strategy_mode == "MICROSTRUCTURE"
-        else f"Directional Cycle ({config.direction.value})"
-    )
-    bias_desc = "Autonomous (Bi-Directional)" if config.strategy_mode == "MICROSTRUCTURE" and config.bi_directional else config.direction.value
+    is_ema = config.strategy_mode in ("EMA", "EMA_CROSSOVER")
+    is_micro = config.strategy_mode == "MICROSTRUCTURE"
+
+    if is_ema:
+        preset_info = getattr(config, "ema_preset", "5/13")
+        interval_info = getattr(config, "ema_interval", "Min1")
+        if config.bi_directional:
+            strat_desc = f"EMA Crossover ({preset_info}, {interval_info}) [Autonomous Bi-Directional: LONG & SHORT]"
+            bias_desc = "Autonomous (Bi-Directional)"
+        else:
+            strat_desc = f"EMA Crossover ({preset_info}, {interval_info}) [{config.direction.value} only]"
+            bias_desc = config.direction.value
+    elif is_micro:
+        if config.bi_directional:
+            strat_desc = "Microstructure (Autonomous Bi-Directional: LONG & SHORT)"
+            bias_desc = "Autonomous (Bi-Directional)"
+        else:
+            strat_desc = f"Microstructure ({config.direction.value} only)"
+            bias_desc = config.direction.value
+    else:
+        strat_desc = f"Directional Cycle ({config.direction.value})"
+        bias_desc = config.direction.value
+
     tp_mode_desc = "(Dynamic via signals: 1-3 pu)" if config.dynamic_tp else f"(Fixed: strictly {config.tp_ticks} pu)"
 
     print("==============================================================================")

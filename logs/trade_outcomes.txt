@@ -1584,3 +1584,653 @@ Win Rate           : 75.0%
 Net Cumulative PnL : -0.000600 USDT (INR -0.0567)
 Live USD/INR Rate  : INR 94.47 per USD
 ==============================================================================
+==============================================================================
+TRADE #5 OUTCOME JOURNAL | Closed at: 2026-09-04 15:00:57 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4786 USDT (INR 45.21) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.393 USDT (Opened: 2026-09-04 14:58:18)
+Exit Price         : 2.387 USDT (Duration: 159.09s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.394 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.387 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.80% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0732 USDT (INR 6.91)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 5 | Wins: 3 | Losses: 2 | Scratch: 0
+Win Rate           : 60.0%
+Net Cumulative PnL : -0.001800 USDT (INR -0.1700)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #6 OUTCOME JOURNAL | Closed at: 2026-09-04 15:01:48 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4772 USDT (INR 45.08) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.386 USDT (Opened: 2026-09-04 15:01:18)
+Exit Price         : 2.387 USDT (Duration: 30.20s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.387 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.380 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0734 USDT (INR 6.93)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 6 | Wins: 4 | Losses: 2 | Scratch: 0
+Win Rate           : 66.7%
+Net Cumulative PnL : -0.001600 USDT (INR -0.1512)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #7 OUTCOME JOURNAL | Closed at: 2026-09-04 15:05:22 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4774 USDT (INR 45.10) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.387 USDT (Opened: 2026-09-04 15:02:13)
+Exit Price         : 2.386 USDT (Duration: 189.33s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.386 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.393 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0736 USDT (INR 6.95)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 7 | Wins: 5 | Losses: 2 | Scratch: 0
+Win Rate           : 71.4%
+Net Cumulative PnL : -0.001400 USDT (INR -0.1323)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #8 OUTCOME JOURNAL | Closed at: 2026-09-04 15:06:12 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4772 USDT (INR 45.08) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.386 USDT (Opened: 2026-09-04 15:05:53)
+Exit Price         : 2.387 USDT (Duration: 19.76s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.387 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.380 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0738 USDT (INR 6.97)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 8 | Wins: 6 | Losses: 2 | Scratch: 0
+Win Rate           : 75.0%
+Net Cumulative PnL : -0.001200 USDT (INR -0.1134)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #9 OUTCOME JOURNAL | Closed at: 2026-09-04 15:07:43 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4780 USDT (INR 45.16) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.390 USDT (Opened: 2026-09-04 15:06:34)
+Exit Price         : 2.391 USDT (Duration: 69.21s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.391 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.384 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0740 USDT (INR 6.99)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 9 | Wins: 7 | Losses: 2 | Scratch: 0
+Win Rate           : 77.8%
+Net Cumulative PnL : -0.001000 USDT (INR -0.0945)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #10 OUTCOME JOURNAL | Closed at: 2026-09-04 15:08:11 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4784 USDT (INR 45.20) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.392 USDT (Opened: 2026-09-04 15:08:02)
+Exit Price         : 2.393 USDT (Duration: 9.69s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.393 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.386 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0742 USDT (INR 7.01)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 10 | Wins: 8 | Losses: 2 | Scratch: 0
+Win Rate           : 80.0%
+Net Cumulative PnL : -0.000800 USDT (INR -0.0756)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #11 OUTCOME JOURNAL | Closed at: 2026-09-04 15:08:44 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4780 USDT (INR 45.16) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.390 USDT (Opened: 2026-09-04 15:08:35)
+Exit Price         : 2.396 USDT (Duration: 9.24s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.389 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.396 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.83% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0730 USDT (INR 6.89)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 11 | Wins: 8 | Losses: 3 | Scratch: 0
+Win Rate           : 72.7%
+Net Cumulative PnL : -0.002000 USDT (INR -0.1889)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #12 OUTCOME JOURNAL | Closed at: 2026-09-04 15:09:11 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4796 USDT (INR 45.31) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.398 USDT (Opened: 2026-09-04 15:09:02)
+Exit Price         : 2.397 USDT (Duration: 9.27s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.397 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.404 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.13% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0732 USDT (INR 6.91)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 12 | Wins: 9 | Losses: 3 | Scratch: 0
+Win Rate           : 75.0%
+Net Cumulative PnL : -0.001800 USDT (INR -0.1700)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #13 OUTCOME JOURNAL | Closed at: 2026-09-04 15:10:38 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4790 USDT (INR 45.25) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.395 USDT (Opened: 2026-09-04 15:09:48)
+Exit Price         : 2.396 USDT (Duration: 50.37s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.396 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.389 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.13% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0734 USDT (INR 6.93)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 13 | Wins: 10 | Losses: 3 | Scratch: 0
+Win Rate           : 76.9%
+Net Cumulative PnL : -0.001600 USDT (INR -0.1512)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #14 OUTCOME JOURNAL | Closed at: 2026-09-04 15:11:55 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4792 USDT (INR 45.27) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.396 USDT (Opened: 2026-09-04 15:10:52)
+Exit Price         : 2.390 USDT (Duration: 63.11s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.397 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.390 USDT (Offset: -6 pu / -0.006 USDT | -0.250% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.78% (Price move: -0.250%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0722 USDT (INR 6.82)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 14 | Wins: 10 | Losses: 4 | Scratch: 0
+Win Rate           : 71.4%
+Net Cumulative PnL : -0.002800 USDT (INR -0.2645)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #15 OUTCOME JOURNAL | Closed at: 2026-09-04 15:15:25 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4784 USDT (INR 45.20) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.392 USDT (Opened: 2026-09-04 15:12:15)
+Exit Price         : 2.393 USDT (Duration: 189.98s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.393 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.386 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0724 USDT (INR 6.84)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 15 | Wins: 11 | Losses: 4 | Scratch: 0
+Win Rate           : 73.3%
+Net Cumulative PnL : -0.002600 USDT (INR -0.2456)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #16 OUTCOME JOURNAL | Closed at: 2026-09-04 15:16:06 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4780 USDT (INR 45.16) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.390 USDT (Opened: 2026-09-04 15:15:47)
+Exit Price         : 2.389 USDT (Duration: 19.47s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.389 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.396 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0726 USDT (INR 6.86)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 16 | Wins: 12 | Losses: 4 | Scratch: 0
+Win Rate           : 75.0%
+Net Cumulative PnL : -0.002400 USDT (INR -0.2267)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #17 OUTCOME JOURNAL | Closed at: 2026-09-04 15:16:26 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4784 USDT (INR 45.20) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.392 USDT (Opened: 2026-09-04 15:16:25)
+Exit Price         : 2.391 USDT (Duration: 0.42s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.391 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.398 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0728 USDT (INR 6.87)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 17 | Wins: 13 | Losses: 4 | Scratch: 0
+Win Rate           : 76.5%
+Net Cumulative PnL : -0.002200 USDT (INR -0.2078)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #18 OUTCOME JOURNAL | Closed at: 2026-09-04 15:18:21 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4784 USDT (INR 45.20) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.392 USDT (Opened: 2026-09-04 15:17:12)
+Exit Price         : 2.386 USDT (Duration: 69.26s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.393 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.386 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.81% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0716 USDT (INR 6.76)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 18 | Wins: 13 | Losses: 5 | Scratch: 0
+Win Rate           : 72.2%
+Net Cumulative PnL : -0.003400 USDT (INR -0.3212)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #19 OUTCOME JOURNAL | Closed at: 2026-09-04 15:21:57 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4774 USDT (INR 45.10) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.387 USDT (Opened: 2026-09-04 15:18:57)
+Exit Price         : 2.381 USDT (Duration: 179.87s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.388 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.381 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.9% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.85% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0704 USDT (INR 6.65)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 19 | Wins: 13 | Losses: 6 | Scratch: 0
+Win Rate           : 68.4%
+Net Cumulative PnL : -0.004600 USDT (INR -0.4346)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #20 OUTCOME JOURNAL | Closed at: 2026-09-04 15:22:26 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4762 USDT (INR 44.99) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.381 USDT (Opened: 2026-09-04 15:22:16)
+Exit Price         : 2.380 USDT (Duration: 9.86s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.380 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.387 USDT (Offset: -6 pu / -0.006 USDT | -0.252% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.15% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0706 USDT (INR 6.67)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 20 | Wins: 14 | Losses: 6 | Scratch: 0
+Win Rate           : 70.0%
+Net Cumulative PnL : -0.004400 USDT (INR -0.4157)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #21 OUTCOME JOURNAL | Closed at: 2026-09-04 15:24:06 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4758 USDT (INR 44.95) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.379 USDT (Opened: 2026-09-04 15:22:57)
+Exit Price         : 2.385 USDT (Duration: 69.25s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.378 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.385 USDT (Offset: -6 pu / -0.006 USDT | -0.252% price | -18.9% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.92% (Price move: -0.252%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0694 USDT (INR 6.55)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 21 | Wins: 14 | Losses: 7 | Scratch: 0
+Win Rate           : 66.7%
+Net Cumulative PnL : -0.005600 USDT (INR -0.5290)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #22 OUTCOME JOURNAL | Closed at: 2026-09-04 15:26:54 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4770 USDT (INR 45.06) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.385 USDT (Opened: 2026-09-04 15:25:04)
+Exit Price         : 2.386 USDT (Duration: 109.87s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.386 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.379 USDT (Offset: -6 pu / -0.006 USDT | -0.252% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0696 USDT (INR 6.57)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 22 | Wins: 15 | Losses: 7 | Scratch: 0
+Win Rate           : 68.2%
+Net Cumulative PnL : -0.005400 USDT (INR -0.5101)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #23 OUTCOME JOURNAL | Closed at: 2026-09-04 15:28:02 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : Microstructure(SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4770 USDT (INR 45.06) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.385 USDT (Opened: 2026-09-04 15:27:23)
+Exit Price         : 2.384 USDT (Duration: 39.61s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.384 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.391 USDT (Offset: -6 pu / -0.006 USDT | -0.252% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0698 USDT (INR 6.59)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 23 | Wins: 16 | Losses: 7 | Scratch: 0
+Win Rate           : 69.6%
+Net Cumulative PnL : -0.005200 USDT (INR -0.4913)
+Live USD/INR Rate  : INR 94.47 per USD
+==============================================================================
+==============================================================================
+TRADE #24 OUTCOME JOURNAL | Closed at: 2026-09-04 15:31:25 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4768 USDT (INR 45.05) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.384 USDT (Opened: 2026-09-04 15:28:46)
+Exit Price         : 2.385 USDT (Duration: 159.63s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.385 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.378 USDT (Offset: -6 pu / -0.006 USDT | -0.252% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.15% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0700 USDT (INR 6.61)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 24 | Wins: 17 | Losses: 7 | Scratch: 0
+Win Rate           : 70.8%
+Net Cumulative PnL : -0.005000 USDT (INR -0.4724)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================
+==============================================================================
+TRADE #25 OUTCOME JOURNAL | Closed at: 2026-09-04 15:32:11 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4776 USDT (INR 45.13) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.388 USDT (Opened: 2026-09-04 15:31:51)
+Exit Price         : 2.382 USDT (Duration: 19.81s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.389 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.382 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.84% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0688 USDT (INR 6.50)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 25 | Wins: 17 | Losses: 8 | Scratch: 0
+Win Rate           : 68.0%
+Net Cumulative PnL : -0.006200 USDT (INR -0.5857)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================
+==============================================================================
+TRADE #26 OUTCOME JOURNAL | Closed at: 2026-09-04 15:33:26 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4772 USDT (INR 45.09) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.386 USDT (Opened: 2026-09-04 15:32:56)
+Exit Price         : 2.387 USDT (Duration: 30.07s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.387 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.380 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.14% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0690 USDT (INR 6.52)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 26 | Wins: 18 | Losses: 8 | Scratch: 0
+Win Rate           : 69.2%
+Net Cumulative PnL : -0.006000 USDT (INR -0.5668)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================
+==============================================================================
+TRADE #27 OUTCOME JOURNAL | Closed at: 2026-09-04 15:35:41 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : Microstructure(LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4780 USDT (INR 45.17) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.390 USDT (Opened: 2026-09-04 15:34:25)
+Exit Price         : 2.384 USDT (Duration: 75.80s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.391 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.384 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.83% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0678 USDT (INR 6.40)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 27 | Wins: 18 | Losses: 9 | Scratch: 0
+Win Rate           : 66.7%
+Net Cumulative PnL : -0.007200 USDT (INR -0.6802)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 15:35:41 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4782 USDT (INR 45.19) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.391 USDT (Opened: 2026-09-04 15:34:02)
+Exit Price         : 2.385 USDT (Duration: 99.51s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.392 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.385 USDT (Offset: -6 pu / -0.006 USDT | -0.251% price | -18.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001200 USDT (INR -0.1134)
+Return on Equity   : -18.82% (Price move: -0.251%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0738 USDT (INR 6.97)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 1 | Scratch: 0
+Win Rate           : 0.0%
+Net Cumulative PnL : -0.001200 USDT (INR -0.1134)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================
+==============================================================================
+TRADE #2 OUTCOME JOURNAL | Closed at: 2026-09-04 15:37:11 | [🟢 SIMULATED / DRY-RUN]
+==============================================================================
+Execution Mode     : [🟢 SIMULATED / DRY-RUN]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4762 USDT (INR 45.00) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.381 USDT (Opened: 2026-09-04 15:37:01)
+Exit Price         : 2.380 USDT (Duration: 10.16s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.380 USDT (Offset: +1 pu / +0.001 USDT)
+Stop Loss Level    : 2.387 USDT (Offset: -6 pu / -0.006 USDT | -0.252% price | -18.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +3.15% (Price move: +0.042%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0740 USDT (INR 6.99)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 2 | Wins: 1 | Losses: 1 | Scratch: 0
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.001000 USDT (INR -0.0945)
+Live USD/INR Rate  : INR 94.49 per USD
+==============================================================================

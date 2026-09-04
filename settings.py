@@ -164,13 +164,42 @@ POLL_INTERVAL_SECONDS = 0.2
 
 
 # =============================================================================
-# 7. STRATEGY SELECTION & MICROSTRUCTURE SETTINGS
+# 7. STRATEGY SELECTION & INDICATOR SETTINGS
 # =============================================================================
 # Strategy mode selection:
-#   "MICROSTRUCTURE" -> High-Frequency Market Microstructure (Autonomous Order Book & Tape Imbalance) [Recommended]
+#   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8) [Default / Recommended]
+#   "MICROSTRUCTURE" -> High-Frequency Market Microstructure (Autonomous Order Book & Tape Imbalance)
 #   "CYCLE"          -> Directional Cycle (Classic fixed-direction Long/Short cycle)
-STRATEGY_MODE = "MICROSTRUCTURE"
+STRATEGY_MODE = "EMA_CROSSOVER"
 
+# -----------------------------------------------------------------------------
+# EMA Crossover Configuration
+# -----------------------------------------------------------------------------
+# EMA Presets:
+#   "5/13" -> Fast 5, Slow 13 (Fibonacci Scalp, highly responsive) [Default]
+#   "9/21" -> Fast 9, Slow 21 (Momentum / Intraday Trend Scalp)
+#   "3/8"  -> Fast 3, Slow 8  (Ultra-Fast Micro-Scalp)
+#   "custom" -> Uses EMA_FAST and EMA_SLOW below
+EMA_PRESET = "5/13"
+EMA_FAST = 5
+EMA_SLOW = 13
+
+# Candle timeframe for EMA calculation: "Min1" (1-minute), "Min5" (5-minute), "Min15", etc.
+EMA_INTERVAL = "Min1"
+
+# Confirmation on completed candle close:
+# True (RECOMMENDED) -> Only triggers on closed candle cross to prevent repainting/whipsaws.
+# False              -> Triggers in real-time mid-bar on latest tick.
+EMA_REQUIRE_CLOSED_CANDLE = True
+
+# Autonomous trading direction for EMA Crossover strategy:
+# True  -> Scalps BOTH Long (Golden Cross) and Short (Death Cross) dynamically.
+# False -> Restricts scalps strictly to the DIRECTION specified in Section 1.
+EMA_BI_DIRECTIONAL = True
+
+# -----------------------------------------------------------------------------
+# Microstructure Strategy Configuration
+# -----------------------------------------------------------------------------
 # Autonomous trading direction for Microstructure strategy:
 # True  -> Scalps BOTH Long and Short dynamically as market order flow tilts.
 # False -> Restricts scalps strictly to the DIRECTION specified in Section 1.

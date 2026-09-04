@@ -23,6 +23,9 @@ from kcex.engine.strategy import (
     BaseSubStrategy,
     DirectionalCycleSubStrategy,
     MicrostructureSubStrategy,
+    EMACrossoverSubStrategy,
+    EMA_PRESETS,
+    compute_ema_series,
     MasterplanStrategy
 )
 from kcex.engine.microstructure import (
@@ -47,6 +50,9 @@ __all__ = [
     "BaseSubStrategy",
     "DirectionalCycleSubStrategy",
     "MicrostructureSubStrategy",
+    "EMACrossoverSubStrategy",
+    "EMA_PRESETS",
+    "compute_ema_series",
     "MicrostructureSignalGenerator",
     "SignalConfig",
     "SymbolMeta",
