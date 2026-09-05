@@ -18,6 +18,7 @@ from BACKTESTER.analytics.indexer import ReportIndexer
 from BACKTESTER.analytics.engine import AnalyticsEngine
 from BACKTESTER.analytics.exporter import AIDossierExporter
 from BACKTESTER.analytics.forensics import ForensicsEngine
+from BACKTESTER.analytics.chunker import ChronosChunker
 
 # Ensure UTF-8
 if hasattr(sys.stdout, 'reconfigure'):
@@ -39,6 +40,7 @@ indexer = ReportIndexer()
 engine = AnalyticsEngine(indexer)
 exporter = AIDossierExporter(engine)
 forensics = ForensicsEngine(indexer=indexer)
+chunker = ChronosChunker(indexer=indexer, forensics=forensics)
 
 
 class CompareRequest(BaseModel):
@@ -355,6 +357,97 @@ async def simulate_forensics_what_if(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"What-if simulation error: {str(e)}")
 
+
+# =============================================================================
+# CHRONOS CHUNKER & CROPPED AI DOSSIER ENDPOINTS
+# =============================================================================
+
+class ChunkExportRequest(BaseModel):
+    run_id: str
+    start_ms: int
+    end_ms: int
+    chunk_index: int = 1
+    total_chunks: int = 1
+    max_losing_trades: int = 25
+    include_ticks: bool = True
+    include_post_exit: bool = True
+    format: str = "markdown"  # "markdown" or "json"
+
+
+class BatchChunkExportRequest(BaseModel):
+    run_id: str
+    granularity: str = "monthly"
+    max_losing_trades: int = 20
+    include_ticks: bool = True
+    include_post_exit: bool = True
+
+
+@app.get("/api/chunks/manifest/{run_id}")
+async def get_chunk_manifest(
+    run_id: str,
+    granularity: str = Query("monthly", description="monthly, weekly, daily, loss_clusters")
+):
+    """Generates virtual partition slices and summary scorecards for the selected granularity."""
+    try:
+        return chunker.get_chunk_manifest(run_id, granularity=granularity)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chunk manifest error: {str(e)}")
+
+
+@app.post("/api/chunks/export")
+async def export_single_chunk(req: ChunkExportRequest):
+    """Exports a single cropped chunk as an ultra-rich AI dossier (Markdown or JSON)."""
+    try:
+        chunk_data = chunker.extract_chunk_data(
+            run_id=req.run_id,
+            start_ms=req.start_ms,
+            end_ms=req.end_ms,
+            max_losing_trades=req.max_losing_trades,
+            include_ticks=req.include_ticks,
+            include_post_exit=req.include_post_exit
+        )
+
+        if req.format.lower() == "json":
+            return chunker.format_chunk_json(chunk_data, chunk_index=req.chunk_index, total_chunks=req.total_chunks)
+        else:
+            md_text = chunker.format_chunk_markdown(chunk_data, chunk_index=req.chunk_index, total_chunks=req.total_chunks)
+            start_d = chunk_data["window"]["start_date"]
+            end_d = chunk_data["window"]["end_date"]
+            fname = f"{req.run_id}_chunk_{req.chunk_index:02d}_{start_d}_to_{end_d}.md"
+            return PlainTextResponse(
+                content=md_text,
+                media_type="text/markdown",
+                headers={"Content-Disposition": f'attachment; filename="{fname}"'}
+            )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chunk export error: {str(e)}")
+
+
+@app.post("/api/chunks/batch-export")
+async def export_all_chunks_zip(req: BatchChunkExportRequest):
+    """Batch packages all cropped chunks into a ZIP archive with a Master Synthesis Guide."""
+    try:
+        zip_buffer = chunker.export_all_chunks_zip(
+            run_id=req.run_id,
+            granularity=req.granularity,
+            max_losing_trades=req.max_losing_trades,
+            include_ticks=req.include_ticks,
+            include_post_exit=req.include_post_exit
+        )
+        fname = f"{req.run_id}_{req.granularity}_ai_dossiers.zip"
+        return Response(
+            content=zip_buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{fname}"'}
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Batch chunk export error: {str(e)}")
 
 
 def start_server(host: str = "127.0.0.1", port: int = 8000):

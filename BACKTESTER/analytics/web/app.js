@@ -273,6 +273,53 @@ function setupEventListeners() {
 
   document.getElementById('btnCopyExportAI').addEventListener('click', handleCopyExportAI);
   document.getElementById('btnDownloadExportAI').addEventListener('click', handleDownloadExportAI);
+
+  // Chronos AI Slicer Triggers
+  const btnChronos = document.getElementById('btnOpenChronosSlicer');
+  if (btnChronos) {
+    btnChronos.addEventListener('click', () => openChronosModal());
+  }
+
+  const btnCloseChronos = document.getElementById('btnCloseChronosModal');
+  if (btnCloseChronos) {
+    btnCloseChronos.addEventListener('click', closeChronosModal);
+  }
+
+  const chipsContainer = document.getElementById('chronosGranularityChips');
+  if (chipsContainer) {
+    chipsContainer.addEventListener('click', (e) => {
+      const chip = e.target.closest('.filter-chip');
+      if (!chip) return;
+      chipsContainer.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const gran = chip.getAttribute('data-granularity');
+      loadChronosManifest(gran);
+    });
+  }
+
+  const btnCopyChunk = document.getElementById('btnChronosCopyChunk');
+  if (btnCopyChunk) {
+    btnCopyChunk.addEventListener('click', handleChronosCopyChunk);
+  }
+
+  const btnDownloadChunk = document.getElementById('btnChronosDownloadChunk');
+  if (btnDownloadChunk) {
+    btnDownloadChunk.addEventListener('click', handleChronosDownloadChunk);
+  }
+
+  const btnBatchZip = document.getElementById('btnChronosBatchZip');
+  if (btnBatchZip) {
+    btnBatchZip.addEventListener('click', handleChronosBatchZip);
+  }
+
+  const modalChronos = document.getElementById('modalChronosSlicer');
+  if (modalChronos) {
+    modalChronos.addEventListener('click', (e) => {
+      if (e.target === modalChronos) {
+        closeChronosModal();
+      }
+    });
+  }
 }
 
 let currentExportContext = 'compare'; // 'compare' | 'single' | 'all'
@@ -389,6 +436,292 @@ async function handleDownloadExportAI() {
     closeExportModal();
   } catch (e) {
     alert('Error downloading: ' + e);
+  } finally {
+    btn.innerHTML = origText;
+  }
+}
+
+// =============================================================================
+// CHRONOS SLICER & CROPPED AI DOSSIER CONTROLLER
+// =============================================================================
+
+let chronosState = {
+  runId: null,
+  granularity: 'monthly',
+  manifest: null,
+  selectedChunk: null,
+  selectedIndex: 0
+};
+
+function openChronosModal(runId) {
+  const targetRunId = runId || state.deepDiveRunId || (state.runs[0] ? state.runs[0].metadata.run_id : null);
+  if (!targetRunId) {
+    alert('Please select a backtest run first.');
+    return;
+  }
+  chronosState.runId = targetRunId;
+  const run = state.runs.find(r => r.metadata.run_id === targetRunId);
+  const badge = document.getElementById('chronosActiveRunBadge');
+  if (badge) {
+    badge.textContent = run ? `${run.metadata.symbol} (${run.metadata.strategy})` : targetRunId;
+  }
+
+  const modal = document.getElementById('modalChronosSlicer');
+  if (modal) {
+    modal.classList.add('open');
+  }
+
+  loadChronosManifest(chronosState.granularity);
+}
+
+function closeChronosModal() {
+  const modal = document.getElementById('modalChronosSlicer');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+}
+
+async function loadChronosManifest(granularity) {
+  chronosState.granularity = granularity;
+  const listEl = document.getElementById('chronosChunksList');
+  const countEl = document.getElementById('chronosTotalChunksCount');
+  if (listEl) {
+    listEl.innerHTML = '<div style="color: var(--text-dim); padding: 1.5rem; text-align: center;">⏳ Slicing backtest into partition chunks...</div>';
+  }
+
+  try {
+    const res = await fetch(`/api/chunks/manifest/${chronosState.runId}?granularity=${granularity}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    chronosState.manifest = data;
+
+    if (countEl) countEl.textContent = data.total_chunks || 0;
+
+    renderChronosChunks(data.chunks || []);
+  } catch (err) {
+    if (listEl) {
+      listEl.innerHTML = `<div style="color: var(--accent-red); padding: 1rem;">Failed to load slices: ${err.message}</div>`;
+    }
+  }
+}
+
+function renderChronosChunks(chunks) {
+  const listEl = document.getElementById('chronosChunksList');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  if (!chunks || chunks.length === 0) {
+    listEl.innerHTML = '<div style="color: var(--text-dim); padding: 1.5rem; text-align: center;">No partition chunks found for this granularity.</div>';
+    selectChronosChunk(null, 0);
+    return;
+  }
+
+  chunks.forEach((c, idx) => {
+    const card = document.createElement('div');
+    card.className = `chronos-chunk-card ${idx === 0 ? 'selected' : ''}`;
+    card.id = `chunkCard_${idx}`;
+
+    const isProfit = c.net_pnl_usdt >= 0;
+    const pnlClass = isProfit ? 'win' : 'loss';
+    const tickBadge = c.has_ticks ? '<span class="chunk-pill" style="color: var(--accent-cyan); border-color: rgba(0,210,255,0.4);">⚡ Ticks</span>' : '';
+
+    card.innerHTML = `
+      <div class="chronos-chunk-card-header">
+        <span class="chronos-chunk-card-title">${c.label}</span>
+        <span class="chronos-chunk-card-meta">${c.start_date} → ${c.end_date}</span>
+      </div>
+      <div class="chronos-chunk-metrics">
+        <span class="chunk-pill neutral">${c.trades_count.toLocaleString()} trades</span>
+        <span class="chunk-pill ${pnlClass}">${c.win_rate_pct.toFixed(1)}% WR</span>
+        <span class="chunk-pill ${pnlClass}">${c.net_pnl_usdt > 0 ? '+' : ''}${c.net_pnl_usdt.toFixed(4)} USDT</span>
+        ${tickBadge}
+        <span class="chunk-pill tokens">~${Math.round(c.estimated_tokens / 1000)}k tokens</span>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.chronos-chunk-card').forEach(el => el.classList.remove('selected'));
+      card.classList.add('selected');
+      selectChronosChunk(c, idx);
+    });
+
+    listEl.appendChild(card);
+  });
+
+  // Select first by default
+  selectChronosChunk(chunks[0], 0);
+}
+
+function selectChronosChunk(chunk, idx) {
+  chronosState.selectedChunk = chunk;
+  chronosState.selectedIndex = idx;
+
+  const lbl = document.getElementById('chronosSelectedLabel');
+  const dates = document.getElementById('chronosSelectedDates');
+  const trades = document.getElementById('chronosSelectedTrades');
+  const wr = document.getElementById('chronosSelectedWinRate');
+  const pnl = document.getElementById('chronosSelectedPnL');
+  const losses = document.getElementById('chronosSelectedLosses');
+
+  if (!chunk) {
+    if (lbl) lbl.textContent = 'No chunk selected';
+    if (dates) dates.textContent = '--';
+    if (trades) trades.textContent = '--';
+    if (wr) wr.textContent = '--';
+    if (pnl) pnl.textContent = '--';
+    if (losses) losses.textContent = '--';
+    return;
+  }
+
+  if (lbl) lbl.textContent = `Chunk ${idx + 1}: ${chunk.label}`;
+  if (dates) dates.textContent = `${chunk.start_date} to ${chunk.end_date}`;
+  if (trades) trades.textContent = `${chunk.trades_count.toLocaleString()}`;
+  if (wr) wr.textContent = `${chunk.win_rate_pct.toFixed(1)}%`;
+  if (pnl) {
+    pnl.textContent = `${chunk.net_pnl_usdt > 0 ? '+' : ''}${chunk.net_pnl_usdt.toFixed(4)} USDT`;
+    pnl.style.color = chunk.net_pnl_usdt >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+  }
+  if (losses) losses.textContent = `${chunk.losing_trades.toLocaleString()}`;
+}
+
+async function handleChronosCopyChunk() {
+  const c = chronosState.selectedChunk;
+  if (!c) {
+    alert('Please select a partition chunk first.');
+    return;
+  }
+
+  const btn = document.getElementById('btnChronosCopyChunk');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span>⏳</span> Packaging Chunk...';
+
+  try {
+    const fmt = document.getElementById('selChronosFormat').value;
+    const maxLosses = parseInt(document.getElementById('selChronosMaxLosses').value, 10);
+    const incTicks = document.getElementById('chkChronosTicks').checked;
+    const incPost = document.getElementById('chkChronosPostExit').checked;
+
+    const res = await fetch('/api/chunks/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        run_id: chronosState.runId,
+        start_ms: c.start_ms,
+        end_ms: c.end_ms,
+        chunk_index: chronosState.selectedIndex + 1,
+        total_chunks: (chronosState.manifest ? chronosState.manifest.total_chunks : 1),
+        max_losing_trades: maxLosses,
+        include_ticks: incTicks,
+        include_post_exit: incPost,
+        format: fmt
+      })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const content = fmt === 'json' ? JSON.stringify(await res.json(), null, 2) : await res.text();
+
+    await navigator.clipboard.writeText(content);
+    showToast(`✓ Chunk ${chronosState.selectedIndex + 1} (${c.label}) copied! Ready to paste into AI chat.`);
+  } catch (err) {
+    alert('Could not copy chunk: ' + err.message);
+  } finally {
+    btn.innerHTML = origText;
+  }
+}
+
+async function handleChronosDownloadChunk() {
+  const c = chronosState.selectedChunk;
+  if (!c) {
+    alert('Please select a partition chunk first.');
+    return;
+  }
+
+  const btn = document.getElementById('btnChronosDownloadChunk');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span>⏳</span> Exporting...';
+
+  try {
+    const fmt = document.getElementById('selChronosFormat').value;
+    const maxLosses = parseInt(document.getElementById('selChronosMaxLosses').value, 10);
+    const incTicks = document.getElementById('chkChronosTicks').checked;
+    const incPost = document.getElementById('chkChronosPostExit').checked;
+
+    const res = await fetch('/api/chunks/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        run_id: chronosState.runId,
+        start_ms: c.start_ms,
+        end_ms: c.end_ms,
+        chunk_index: chronosState.selectedIndex + 1,
+        total_chunks: (chronosState.manifest ? chronosState.manifest.total_chunks : 1),
+        max_losing_trades: maxLosses,
+        include_ticks: incTicks,
+        include_post_exit: incPost,
+        format: fmt
+      })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const ext = fmt === 'json' ? 'json' : 'md';
+    const filename = `${chronosState.runId}_chunk_${chronosState.selectedIndex + 1}_${c.chunk_id}.${ext}`;
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToast(`✓ Downloaded Chunk ${chronosState.selectedIndex + 1}!`);
+  } catch (err) {
+    alert('Could not download chunk: ' + err.message);
+  } finally {
+    btn.innerHTML = origText;
+  }
+}
+
+async function handleChronosBatchZip() {
+  const btn = document.getElementById('btnChronosBatchZip');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span>⏳</span> Packaging ZIP Archive...';
+
+  try {
+    const maxLosses = parseInt(document.getElementById('selChronosMaxLosses').value, 10);
+    const incTicks = document.getElementById('chkChronosTicks').checked;
+    const incPost = document.getElementById('chkChronosPostExit').checked;
+
+    const res = await fetch('/api/chunks/batch-export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        run_id: chronosState.runId,
+        granularity: chronosState.granularity,
+        max_losing_trades: maxLosses,
+        include_ticks: incTicks,
+        include_post_exit: incPost
+      })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const filename = `${chronosState.runId}_${chronosState.granularity}_ai_chunks.zip`;
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToast(`✓ Batch ZIP downloaded successfully!`);
+  } catch (err) {
+    alert('Could not batch download chunks: ' + err.message);
   } finally {
     btn.innerHTML = origText;
   }

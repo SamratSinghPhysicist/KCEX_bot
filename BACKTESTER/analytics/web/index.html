@@ -632,6 +632,9 @@
             <button class="btn btn-primary btn-sm" id="btnExportDeepAI" title="Export this run as an AI analytical dossier">
               <span>🤖</span> Export for AI
             </button>
+            <button class="btn btn-primary btn-sm" id="btnOpenChronosSlicer" style="background: linear-gradient(135deg, #00d2ff, #7928ca); border: none; font-weight: 600;" title="Crop this backtest into smaller high-fidelity chunks for AI">
+              <span>✂️</span> AI Chunks Slicer
+            </button>
           </div>
 
         </div>
@@ -873,6 +876,142 @@
           <button class="btn btn-secondary btn-sm" id="btnCancelExportModal">Cancel</button>
           <button class="btn btn-primary btn-sm" id="btnDownloadExportAI">
             <span>💾</span> Download File
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chronos Slicer & Granular AI Dossier Studio Modal -->
+  <div class="modal-backdrop" id="modalChronosSlicer">
+    <div class="modal-content" style="max-width: 920px; max-height: 90vh; display: flex; flex-direction: column;">
+      <!-- Header -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle);">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(121, 40, 202, 0.3)); border: 1px solid rgba(0, 210, 255, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            ✂️
+          </div>
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; background: linear-gradient(135deg, #00d2ff, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+              Chronos AI Slicer & Forensic Dossier Studio
+            </h3>
+            <p style="font-size: 0.78rem; color: var(--text-dim);">
+              Partition multi-month backtests into token-sized micro-chunks with tick traces, MFE/MAE, and loss autopsies for LLMs
+            </p>
+          </div>
+        </div>
+        <button class="chip-remove" id="btnCloseChronosModal" style="font-size: 1.5rem;">&times;</button>
+      </div>
+
+      <!-- Granularity Tabs -->
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <div class="trade-filter-chips" id="chronosGranularityChips">
+          <button class="filter-chip active" data-granularity="monthly">📅 Monthly Chunks</button>
+          <button class="filter-chip" data-granularity="weekly">📆 Weekly Chunks</button>
+          <button class="filter-chip" data-granularity="loss_clusters" style="color: var(--accent-red); border-color: rgba(255, 71, 87, 0.4);">⚡ Loss Clusters (Worst Streaks)</button>
+          <button class="filter-chip" data-granularity="daily">🗓️ Daily Chunks</button>
+        </div>
+        <div id="chronosActiveRunBadge" style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--accent-cyan); background: rgba(0, 210, 255, 0.1); padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid rgba(0, 210, 255, 0.2);">
+          Loading run...
+        </div>
+      </div>
+
+      <!-- Main Slicer Body -->
+      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 1rem; overflow: hidden; flex: 1; min-height: 380px;">
+        
+        <!-- Left Column: Chunks Explorer List -->
+        <div style="display: flex; flex-direction: column; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.75rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-subtle);">
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+              Available Partitions (<span id="chronosTotalChunksCount">0</span>)
+            </span>
+            <span style="font-size: 0.72rem; color: var(--text-dim);">Select a chunk to export</span>
+          </div>
+
+          <div id="chronosChunksList" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.3rem;">
+            <!-- Rendered Chunk Cards -->
+          </div>
+        </div>
+
+        <!-- Right Column: Slicing Configuration & Preview -->
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.85rem; overflow-y: auto;">
+          
+          <div>
+            <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem;">
+              Selected Partition Details:
+            </label>
+            <div id="chronosSelectedCardPreview" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem;">
+              <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;" id="chronosSelectedLabel">No chunk selected</div>
+              <div style="font-size: 0.74rem; color: var(--text-dim);" id="chronosSelectedDates">--</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.75rem;">
+                <div>Trades: <strong id="chronosSelectedTrades">--</strong></div>
+                <div>Win Rate: <strong id="chronosSelectedWinRate">--</strong></div>
+                <div>PnL: <strong id="chronosSelectedPnL">--</strong></div>
+                <div>Losses: <strong id="chronosSelectedLosses" style="color: var(--accent-red);">--</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro-Data Configuration -->
+          <div>
+            <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem;">
+              Microstructure Data Options:
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.78rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="chkChronosTicks" checked>
+                <span>Include Millisecond Ticks & MFE/MAE</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="chkChronosPostExit" checked>
+                <span>Include 120s Post-Exit Bounce Autopsy</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="chkChronosControlGroup" checked>
+                <span>Include Control Group (Winning Trades)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Density & Format -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Max Losses:</label>
+              <select class="select-dark" id="selChronosMaxLosses" style="width: 100%; font-size: 0.78rem; padding: 0.35rem;">
+                <option value="10">10 Losses (Compact)</option>
+                <option value="25" selected>25 Losses (Standard)</option>
+                <option value="50">50 Losses (Deep)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Format:</label>
+              <select class="select-dark" id="selChronosFormat" style="width: 100%; font-size: 0.78rem; padding: 0.35rem;">
+                <option value="markdown" selected>Markdown (.md)</option>
+                <option value="json">JSON (.json)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- AI Model Prompt Guide Banner -->
+          <div style="background: rgba(0, 210, 255, 0.05); border: 1px solid rgba(0, 210, 255, 0.2); border-radius: var(--radius-sm); padding: 0.6rem; font-size: 0.72rem; color: var(--text-dim);">
+            <strong style="color: var(--accent-cyan); display: block; margin-bottom: 0.2rem;">💡 Tip for AI Chat:</strong>
+            Feed chunks sequentially to Gemini/Claude. The dossier includes automated failure fingerprints (<code>COUNTER_TREND_TRAP</code>, <code>TIMEOUT_DRIFT</code>) and questions to derive exact filter rules.
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+        <button class="btn btn-secondary btn-sm" id="btnChronosCopyChunk">
+          <span>📋</span> Copy Chunk to Clipboard
+        </button>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-secondary btn-sm" id="btnChronosDownloadChunk">
+            <span>💾</span> Download Chunk
+          </button>
+          <button class="btn btn-primary btn-sm" id="btnChronosBatchZip" style="background: linear-gradient(135deg, #00d2ff, #7928ca); border: none;">
+            <span>📦</span> Download All Chunks (ZIP)
           </button>
         </div>
       </div>
