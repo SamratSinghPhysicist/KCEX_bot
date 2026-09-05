@@ -194,6 +194,30 @@ class BacktestExecutionEngine:
         )
 
         if not candles:
+            # Automatically download from Binance Vision if data is not locally present
+            try:
+                from BACKTESTER.engine.downloader import ensure_market_data
+                s_str = format_ms_to_utc(start_ms)[:10] if start_ms else "2026-07-01"
+                e_str = format_ms_to_utc(end_ms)[:10] if end_ms else "2026-08-31"
+                print(f"[*] Local data missing for {self.symbol} ({norm_tf}). Auto-downloading from Binance Vision ({s_str} to {e_str})...")
+                ensure_market_data(
+                    symbol=self.symbol,
+                    timeframe=norm_tf,
+                    start_date=s_str,
+                    end_date=e_str,
+                    download_trades=self.config.use_tick_data,
+                    base_dir="BACKTESTER"
+                )
+                candles = self.ohlcv_loader.load_candles(
+                    symbol=self.symbol,
+                    timeframe=norm_tf,
+                    start_ms=start_ms,
+                    end_ms=end_ms
+                )
+            except Exception as e:
+                logger.warning("Auto-download attempt failed: %s", e)
+
+        if not candles:
             logger.warning(
                 "No OHLCV candles found for %s (%s) within range [%s, %s]",
                 self.symbol, norm_tf, format_ms_to_utc(start_ms), format_ms_to_utc(end_ms)

@@ -163,6 +163,33 @@ python BACKTESTER/run_backtest.py --symbol TRUMP_USDT --timeframe 1m --strategy 
 
 ---
 
+## ⚡ GitHub Actions Interactive Cloud Runner
+
+You can trigger backtests on demand directly from the GitHub web interface without uploading large data sets to Git!
+
+### How it works:
+1. Navigate to your repository on GitHub and click the **Actions** tab.
+2. Select the **Run Strategy Backtest** workflow on the left sidebar.
+3. Click the **Run workflow** dropdown button.
+4. Customize your backtest parameters interactively:
+   - **Symbol**: e.g., `TRUMP_USDT`, `DOGE_USDT`, `BTC_USDT`
+   - **Timeframe**: `1m`, `5m`, `15m`, `1h`, `1d`, etc.
+   - **Strategy**: `EMA_CROSSOVER`, `STOCH_RSI`, `CYCLE`, `MICROSTRUCTURE`
+   - **Presets**: EMA lengths (`5/13`, `9/21`, `3/8`), Stoch RSI presets (`FAST_SCALP`, `STANDARD`, `MICRO_BURST`)
+   - **Dates**: Start & End dates (`YYYY-MM-DD`)
+   - **High-Fidelity Ticks**: Toggle millisecond tick simulation
+   - **Fee Schedule**: `LIVE` (KCEX live API query), `ZERO` (0%), or `MANUAL`
+   - **Risk Parameters**: TP ticks, SL mode (`ROE`, `TICKS`, `PRICE_PCT`), Leverage, Starting Capital
+5. Click the green **Run workflow** button.
+
+### What happens automatically:
+- **On-Demand Data Fetching**: The runner automatically downloads the requested Binance Vision monthly archives and caches them using `actions/cache@v4` for instant subsequent runs.
+- **Backtest Execution**: Simulates the exact live strategy and risk engine against historical data.
+- **Job Summary Dashboard**: Markdown executive performance summary is embedded directly into the GitHub Actions run summary page.
+- **Downloadable Artifacts**: The trade log CSV (`trades.csv`), JSONL log (`trades.jsonl`), and summary (`summary.md`) are zipped and made available as downloadable artifacts in the workflow run.
+
+---
+
 ## 🧪 Testing
 
 Run the automated test suite to verify data loaders, market simulation, strategy logic, and math:

@@ -25,10 +25,12 @@ from kcex.engine.models import OrderDirection, ExitReason
 
 class TestBacktesterSuite(unittest.TestCase):
 
-    def setUp(self):
-        self.scanner = DataScanner()
-        self.ohlcv_loader = OHLCVLoader()
-        self.tick_streamer = TickTradeStreamer()
+    @classmethod
+    def setUpClass(cls):
+        cls.scanner = DataScanner()
+        cls.ohlcv_loader = OHLCVLoader()
+        cls.tick_streamer = TickTradeStreamer()
+        cls.catalog = cls.scanner.scan()
 
     def test_symbol_canonicalization(self):
         self.assertEqual(canonicalize_symbol("TRUMPUSDT"), "TRUMP_USDT")
@@ -37,7 +39,7 @@ class TestBacktesterSuite(unittest.TestCase):
         self.assertEqual(canonicalize_symbol("BTC_USDT"), "BTC_USDT")
 
     def test_data_scanner_discovery(self):
-        catalog = self.scanner.scan()
+        catalog = self.catalog
         self.assertIn("TRUMP_USDT", catalog)
         self.assertIn("DOGE_USDT", catalog)
 
