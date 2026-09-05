@@ -12,7 +12,9 @@ Usage:
 
 import os
 import sys
+import json
 import argparse
+import datetime
 
 # Ensure UTF-8 on Windows consoles
 if hasattr(sys.stdout, 'reconfigure'):
@@ -29,6 +31,7 @@ from rich.text import Text
 
 from BACKTESTER.analytics.indexer import ReportIndexer
 from BACKTESTER.analytics.engine import AnalyticsEngine
+from BACKTESTER.analytics.exporter import AIDossierExporter
 
 
 console = Console()
@@ -196,6 +199,8 @@ def main():
     parser.add_argument("--compare", "-c", nargs="*", type=int, help="Compare all or specific runs by numbers (e.g. -c 1 2)")
     parser.add_argument("--deep", "-d", help="Inspect specific run by number or run_id")
     parser.add_argument("--reindex", action="store_true", help="Force re-indexing of reports")
+    parser.add_argument("--export-ai", nargs="*", type=int, help="Export AI-ready quantitative dossier (e.g. --export-ai or --export-ai 1 2)")
+    parser.add_argument("--format", choices=["markdown", "json", "both"], default="both", help="Export format (default: both)")
     args = parser.parse_args()
 
     indexer = ReportIndexer()
@@ -211,6 +216,60 @@ def main():
         return
 
     engine = AnalyticsEngine(indexer)
+    exporter = AIDossierExporter(engine)
+
+    # Export AI dossier mode
+    if args.export_ai is not None:
+        selected_indices = args.export_ai
+        if selected_indices and len(selected_indices) > 0:
+            target_runs = [runs[i - 1] for i in selected_indices if 1 <= i <= len(runs)]
+        else:
+            target_runs = runs
+
+        if not target_runs:
+            console.print("[red]No valid runs found for AI export.[/red]")
+            return
+
+        exports_dir = os.path.join(indexer.reports_dir, "exports")
+        os.makedirs(exports_dir, exist_ok=True)
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        exported_files = []
+
+        if len(target_runs) == 1:
+            r = target_runs[0]
+            prefix = f"{r.metadata.run_id}_ai_dossier"
+            if args.format in ("markdown", "both"):
+                md_path = os.path.join(exports_dir, f"{prefix}.md")
+                with open(md_path, "w", encoding="utf-8") as f:
+                    f.write(exporter.export_single_markdown(r))
+                exported_files.append(md_path)
+            if args.format in ("json", "both"):
+                json_path = os.path.join(exports_dir, f"{prefix}.json")
+                with open(json_path, "w", encoding="utf-8") as f:
+                    json.dump(exporter.export_json_dossier([r], is_comparison=False), f, indent=2)
+                exported_files.append(json_path)
+        else:
+            prefix = f"strategy_comparison_{len(target_runs)}_runs_{ts}"
+            if args.format in ("markdown", "both"):
+                md_path = os.path.join(exports_dir, f"{prefix}.md")
+                with open(md_path, "w", encoding="utf-8") as f:
+                    f.write(exporter.export_comparison_markdown(target_runs))
+                exported_files.append(md_path)
+            if args.format in ("json", "both"):
+                json_path = os.path.join(exports_dir, f"{prefix}.json")
+                with open(json_path, "w", encoding="utf-8") as f:
+                    json.dump(exporter.export_json_dossier(target_runs, is_comparison=True), f, indent=2)
+                exported_files.append(json_path)
+
+        console.print(Panel(
+            "[bold green]✓ AI Quantitative Analysis Dossier Exported Successfully![/bold green]\n\n" +
+            "\n".join([f"  📄 [cyan]{p}[/cyan]" for p in exported_files]) +
+            "\n\n[dim]You can provide these files directly to any AI (Claude, Gemini, ChatGPT) for deep mathematical strategy analysis.[/dim]",
+            title="🤖 AI Export Ready",
+            border_style="green"
+        ))
+        return
 
     if args.deep:
         target = None

@@ -230,7 +230,146 @@ function setupEventListeners() {
       alert('Error purging: ' + e);
     }
   });
+
+  // AI Export Triggers
+  document.getElementById('btnExportAllAI').addEventListener('click', () => {
+    openExportModal('all');
+  });
+
+  document.getElementById('btnExportCompareAI').addEventListener('click', () => {
+    openExportModal('compare');
+  });
+
+  document.getElementById('btnExportDeepAI').addEventListener('click', () => {
+    openExportModal('single');
+  });
+
+  document.getElementById('btnCloseExportModal').addEventListener('click', closeExportModal);
+  document.getElementById('btnCancelExportModal').addEventListener('click', closeExportModal);
+
+  document.getElementById('btnCopyExportAI').addEventListener('click', handleCopyExportAI);
+  document.getElementById('btnDownloadExportAI').addEventListener('click', handleDownloadExportAI);
 }
+
+let currentExportContext = 'compare'; // 'compare' | 'single' | 'all'
+
+function openExportModal(context) {
+  currentExportContext = context;
+  const modal = document.getElementById('modalExportAI');
+  const title = document.getElementById('exportModalTitle');
+  const subtitle = document.getElementById('exportModalSubtitle');
+
+  if (context === 'all') {
+    title.textContent = `Export All Backtests for AI (${state.runs.length} Runs)`;
+    subtitle.textContent = 'Complete repository quantitative dossier for deep LLM analysis';
+  } else if (context === 'compare') {
+    title.textContent = `Export Strategy Comparison for AI (${state.selectedRunIds.size} Runs)`;
+    subtitle.textContent = 'Comparative parameter diffs, scorecards, and radar scores for AI';
+  } else {
+    const run = state.runs.find(r => r.metadata.run_id === state.deepDiveRunId);
+    title.textContent = `Export Single Run for AI (${run ? run.metadata.symbol : ''})`;
+    subtitle.textContent = 'Comprehensive single-strategy analytical dossier with hourly heatmaps and duration distributions';
+  }
+
+  modal.classList.add('open');
+}
+
+function closeExportModal() {
+  const modal = document.getElementById('modalExportAI');
+  modal.classList.remove('open');
+}
+
+async function handleCopyExportAI() {
+  const btn = document.getElementById('btnCopyExportAI');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span>⏳</span> Generating Dossier...';
+
+  try {
+    const format = document.querySelector('input[name="exportFormat"]:checked').value;
+    let content = '';
+
+    if (currentExportContext === 'all') {
+      const res = await fetch(`/api/export/all?format=${format}`);
+      content = format === 'json' ? JSON.stringify(await res.json(), null, 2) : await res.text();
+    } else if (currentExportContext === 'compare') {
+      const res = await fetch('/api/export/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          run_ids: Array.from(state.selectedRunIds),
+          selected_factors: Array.from(state.selectedFactors),
+          format: format
+        })
+      });
+      content = format === 'json' ? JSON.stringify(await res.json(), null, 2) : await res.text();
+    } else {
+      const res = await fetch(`/api/export/run/${state.deepDiveRunId}?format=${format}`);
+      content = format === 'json' ? JSON.stringify(await res.json(), null, 2) : await res.text();
+    }
+
+    await navigator.clipboard.writeText(content);
+    showToast('✓ AI Quantitative Dossier copied to clipboard! Ready to paste into AI chat.');
+    closeExportModal();
+  } catch (e) {
+    alert('Could not copy to clipboard: ' + e);
+  } finally {
+    btn.innerHTML = origText;
+  }
+}
+
+async function handleDownloadExportAI() {
+  const btn = document.getElementById('btnDownloadExportAI');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span>⏳</span> Preparing...';
+
+  try {
+    const format = document.querySelector('input[name="exportFormat"]:checked').value;
+    const ext = format === 'json' ? 'json' : 'md';
+    let filename = `strategy_ai_dossier_${Date.now()}.${ext}`;
+    let content = '';
+
+    if (currentExportContext === 'all') {
+      filename = `all_backtests_ai_dossier_${Date.now()}.${ext}`;
+      const res = await fetch(`/api/export/all?format=${format}`);
+      content = format === 'json' ? JSON.stringify(await res.json(), null, 2) : await res.text();
+    } else if (currentExportContext === 'compare') {
+      filename = `strategy_comparison_${state.selectedRunIds.size}_runs_ai_dossier_${Date.now()}.${ext}`;
+      const res = await fetch('/api/export/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          run_ids: Array.from(state.selectedRunIds),
+          selected_factors: Array.from(state.selectedFactors),
+          format: format
+        })
+      });
+      content = format === 'json' ? JSON.stringify(await res.json(), null, 2) : await res.text();
+    } else {
+      filename = `${state.deepDiveRunId}_ai_dossier.${ext}`;
+      const res = await fetch(`/api/export/run/${state.deepDiveRunId}?format=${format}`);
+      content = format === 'json' ? JSON.stringify(await res.json(), null, 2) : await res.text();
+    }
+
+    const mime = format === 'json' ? 'application/json' : 'text/markdown';
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`✓ Downloaded ${filename}`);
+    closeExportModal();
+  } catch (e) {
+    alert('Error downloading: ' + e);
+  } finally {
+    btn.innerHTML = origText;
+  }
+}
+
 
 function switchToTab(tabName) {
   const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);

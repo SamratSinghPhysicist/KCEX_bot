@@ -44,6 +44,9 @@
     </div>
 
     <div class="nav-actions">
+      <button class="btn btn-secondary btn-sm" id="btnExportAllAI" title="Export complete analytics for AI analysis">
+        <span>🤖</span> Export All for AI
+      </button>
       <button class="btn btn-secondary btn-sm" id="btnReindex" title="Re-scan reports directory">
         <span>🔄</span> Re-Index
       </button>
@@ -51,6 +54,7 @@
         <span>⚖️</span> Compare Runs
       </button>
     </div>
+
   </header>
 
   <!-- Navigation Tabs -->
@@ -143,14 +147,18 @@
           <!-- Active run pills injected here -->
         </div>
 
-        <div style="display: flex; gap: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
           <button class="btn btn-secondary btn-sm" id="btnToggleFactorsDrawer">
             <span>⚙️</span> Choose Factors to Compare
           </button>
-          <button class="btn btn-primary btn-sm" id="btnRefreshCompare">
-            <span>🔄</span> Refresh Comparison
+          <button class="btn btn-primary btn-sm" id="btnExportCompareAI" title="Export comparison as an in-depth AI dossier">
+            <span>🤖</span> Export for AI
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshCompare">
+            <span>🔄</span> Refresh
           </button>
         </div>
+
       </div>
 
       <!-- Collapsible Factors Selection Drawer -->
@@ -270,10 +278,14 @@
             </div>
             <p style="font-size: 0.8rem; color: var(--text-dim);" id="ddSubtitle">Comprehensive institutional analytics</p>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ACTIVE RUN:</label>
             <select class="select-dark" id="ddRunSelector" style="min-width: 280px;"></select>
+            <button class="btn btn-primary btn-sm" id="btnExportDeepAI" title="Export this run as an AI analytical dossier">
+              <span>🤖</span> Export for AI
+            </button>
           </div>
+
         </div>
       </div>
 
@@ -450,7 +462,59 @@
     </div>
   </div>
 
+  <!-- AI Export Modal -->
+  <div class="modal-backdrop" id="modalExportAI">
+    <div class="modal-content" style="max-width: 650px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.5rem;">🤖</span>
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 700;" id="exportModalTitle">Export Quantitative AI Dossier</h3>
+            <p style="font-size: 0.75rem; color: var(--text-dim);" id="exportModalSubtitle">Structured for deep analysis by LLMs (Claude, ChatGPT, Gemini)</p>
+          </div>
+        </div>
+        <button class="chip-remove" id="btnCloseExportModal" style="font-size: 1.5rem;">&times;</button>
+      </div>
+
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
+        <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;">
+          Select Export Format:
+        </label>
+        <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+          <label class="factor-label" style="padding: 0.6rem; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <input type="radio" name="exportFormat" value="markdown" checked>
+            <div>
+              <strong style="color: var(--text-main);">Markdown (.md) Dossier [Recommended for AI Chat]</strong>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.15rem;">Formatted tables, guided questions, and parameter matrices. Best for direct pasting or uploading to Claude, Gemini, ChatGPT.</div>
+            </div>
+          </label>
+          <label class="factor-label" style="padding: 0.6rem; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <input type="radio" name="exportFormat" value="json">
+            <div>
+              <strong style="color: var(--text-main);">Structured Machine JSON (.json) [For Code & Quantitative Models]</strong>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.15rem;">Exhaustive raw schema with downsampled equity curves, hourly distributions, and quantiles.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+        <button class="btn btn-secondary btn-sm" id="btnCopyExportAI">
+          <span>📋</span> Copy Dossier to Clipboard
+        </button>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-secondary btn-sm" id="btnCancelExportModal">Cancel</button>
+          <button class="btn btn-primary btn-sm" id="btnDownloadExportAI">
+            <span>💾</span> Download File
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Client Script -->
   <script src="/static/app.js"></script>
 </body>
 </html>
+

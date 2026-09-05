@@ -9,13 +9,14 @@ import os
 import sys
 from typing import List, Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Query, HTTPException, Response
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from BACKTESTER.analytics.models import BacktestRunRecord
 from BACKTESTER.analytics.indexer import ReportIndexer
 from BACKTESTER.analytics.engine import AnalyticsEngine
+from BACKTESTER.analytics.exporter import AIDossierExporter
 
 # Ensure UTF-8
 if hasattr(sys.stdout, 'reconfigure'):
@@ -35,11 +36,18 @@ app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 indexer = ReportIndexer()
 engine = AnalyticsEngine(indexer)
+exporter = AIDossierExporter(engine)
 
 
 class CompareRequest(BaseModel):
     run_ids: List[str]
     selected_factors: Optional[List[str]] = None
+
+
+class ExportCompareRequest(BaseModel):
+    run_ids: List[str]
+    selected_factors: Optional[List[str]] = None
+    format: str = "markdown"  # "markdown" or "json"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -113,6 +121,60 @@ async def trigger_reindex():
     """Forces re-scanning and cache updating of reports directory."""
     runs = indexer.get_all_runs(force_reindex=True)
     return {"status": "success", "indexed_count": len(runs)}
+
+
+@app.get("/api/export/run/{run_id}")
+async def export_single_run_ai(run_id: str, format: str = Query("markdown")):
+    """Exports a single run as an in-depth AI-ready analytical dossier (Markdown or JSON)."""
+    run = indexer.get_run_by_id(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
+
+    if format.lower() == "json":
+        return exporter.export_json_dossier([run], is_comparison=False)
+    else:
+        md = exporter.export_single_markdown(run)
+        return PlainTextResponse(
+            content=md,
+            media_type="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="{run_id}_ai_dossier.md"'}
+        )
+
+
+@app.post("/api/export/compare")
+async def export_comparison_ai(req: ExportCompareRequest):
+    """Exports multi-run comparative analytics as an in-depth AI dossier (Markdown or JSON)."""
+    runs = [r for r in indexer.get_all_runs() if r.metadata.run_id in set(req.run_ids)]
+    if not runs:
+        raise HTTPException(status_code=400, detail="No valid runs found to export")
+
+    if req.format.lower() == "json":
+        return exporter.export_json_dossier(runs, is_comparison=True)
+    else:
+        md = exporter.export_comparison_markdown(runs, selected_factors=req.selected_factors)
+        return PlainTextResponse(
+            content=md,
+            media_type="text/markdown",
+            headers={"Content-Disposition": 'attachment; filename="strategy_comparison_ai_dossier.md"'}
+        )
+
+
+@app.get("/api/export/all")
+async def export_all_runs_ai(format: str = Query("markdown")):
+    """Exports complete backtest library into a unified AI dossier."""
+    runs = indexer.get_all_runs()
+    if not runs:
+        raise HTTPException(status_code=400, detail="No indexed runs available to export")
+
+    if format.lower() == "json":
+        return exporter.export_json_dossier(runs, is_comparison=True)
+    else:
+        md = exporter.export_comparison_markdown(runs)
+        return PlainTextResponse(
+            content=md,
+            media_type="text/markdown",
+            headers={"Content-Disposition": 'attachment; filename="all_backtests_ai_dossier.md"'}
+        )
 
 
 @app.get("/api/storage")
