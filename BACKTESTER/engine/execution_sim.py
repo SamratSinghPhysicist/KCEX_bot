@@ -28,11 +28,9 @@ from kcex.engine.models import (
 )
 from kcex.engine.strategy import (
     MasterplanStrategy,
-    BaseSubStrategy,
-    DirectionalCycleSubStrategy,
-    EMACrossoverSubStrategy,
-    StochasticRSISubStrategy,
-    MicrostructureSubStrategy
+    BaseStrategy,
+    EMACrossoverStrategy,
+    StochasticRSIStrategy
 )
 from kcex.market import ContractInfo
 from BACKTESTER.engine.config import BacktestConfig
@@ -119,12 +117,12 @@ class BacktestExecutionEngine:
 
     def _create_default_strategy(self) -> MasterplanStrategy:
         """Instantiates the selected sub-strategy with auto_start_feed=False."""
-        strat_mode = getattr(self.config, "strategy_mode", "EMA_CROSSOVER") or "EMA_CROSSOVER"
+        strat_mode = getattr(self.config, "strategy_mode", "STOCH_RSI") or "STOCH_RSI"
         strat_upper = str(strat_mode).upper()
         pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
 
         if strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
-            sub_strat = EMACrossoverSubStrategy(
+            sub_strat = EMACrossoverStrategy(
                 market=self.market,
                 symbol=self.symbol,
                 fast_period=getattr(self.config, "ema_fast", 5),
@@ -136,8 +134,8 @@ class BacktestExecutionEngine:
                 require_closed_candle=getattr(self.config, "ema_require_closed_candle", True),
                 auto_start_feed=False
             )
-        elif strat_upper in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH"):
-            sub_strat = StochasticRSISubStrategy(
+        else:
+            sub_strat = StochasticRSIStrategy(
                 market=self.market,
                 symbol=self.symbol,
                 stoch_preset=getattr(self.config, "stoch_preset", "FAST_SCALP"),
@@ -153,21 +151,6 @@ class BacktestExecutionEngine:
                 cooldown_seconds=self.config.cooldown_seconds,
                 require_closed_candle=getattr(self.config, "stoch_require_closed_candle", True),
                 auto_start_feed=False
-            )
-        elif strat_upper == "MICROSTRUCTURE":
-            sub_strat = MicrostructureSubStrategy(
-                market=self.market,
-                symbol=self.symbol,
-                preferred_direction=pref_dir,
-                cooldown_seconds=self.config.cooldown_seconds,
-                tp_ticks=self.config.tp_ticks,
-                dynamic_tp=getattr(self.config, "dynamic_tp", False),
-                auto_start_feed=False
-            )
-        else:
-            sub_strat = DirectionalCycleSubStrategy(
-                direction=self.config.direction,
-                cooldown_seconds=self.config.cooldown_seconds
             )
 
         return MasterplanStrategy(

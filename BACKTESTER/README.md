@@ -7,12 +7,10 @@ A high-performance, modular backtesting engine that simulates real-time trading 
 ## 🌟 Key Features
 
 1. **Zero Logic Drift (100% Live Strategy Reuse)**:
-   - Evaluates the identical strategies from `kcex/engine/strategy.py`:
-     - `EMACrossoverSubStrategy` (Moving average crossover with candle confirmation and lookback deduplication)
-     - `StochasticRSISubStrategy` (Overbought/oversold reversal scalping with zone filtering)
-     - `DirectionalCycleSubStrategy` (Fixed direction cycling with cooldown)
-     - `MicrostructureSubStrategy` (Order book imbalance and deal flow bursts)
-     - `MasterplanStrategy` (The unified orchestrator)
+   - Evaluates identical strategies from the modular `strategies/` package:
+     - `EMACrossoverStrategy` (Moving average crossover with candle confirmation and lookback deduplication)
+     - `StochasticRSIStrategy` (Overbought/oversold reversal scalping with zone filtering)
+     - `MasterplanStrategy` (Unified trade orchestrator coordinating TP/SL and execution)
    - Guaranteed Min-Profit TP (`entry + N*pu`) and Stop Loss (ROE %, ticks, or price move %) formulas match live production trading.
 2. **Dual-Feed Synchronization**:
    - **OHLCV Candles**: Feeds dynamic timeframes (`1m`, `3m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `6h`, `8h`, `12h`, `1d`) to update indicators and generate trade signals without lookahead bias.
@@ -112,7 +110,7 @@ python BACKTESTER/run_backtest.py
 Guides you through:
 - Selecting symbol (e.g. `TRUMP_USDT`, `DOGE_USDT`)
 - Selecting timeframe (dynamically populated from available folders)
-- Selecting strategy (`EMA_CROSSOVER`, `STOCH_RSI`, `CYCLE`, `MICROSTRUCTURE`)
+- Selecting strategy (`STOCH_RSI`, `EMA_CROSSOVER`)
 - Choosing date range (High-Fidelity Overlap, Full OHLCV, or Custom)
 - Configuring leverage, capital, and TP/SL rules
 
@@ -149,7 +147,7 @@ python BACKTESTER/run_backtest.py --symbol TRUMP_USDT --timeframe 1m --strategy 
 | `--interactive` | Flag | `False` | Forces interactive wizard mode |
 | `--symbol` | String | None | Trading pair symbol (e.g. `TRUMP_USDT`, `DOGE_USDT`) |
 | `--timeframe` | String | `1m` | Strategy timeframe (`1m`, `3m`, `5m`, `15m`, `1h`, `1d`, etc.) |
-| `--strategy` | Choice | `EMA_CROSSOVER` | `EMA_CROSSOVER`, `STOCH_RSI`, `CYCLE`, `MICROSTRUCTURE` |
+| `--strategy` | Choice | `STOCH_RSI` | `STOCH_RSI`, `EMA_CROSSOVER` |
 | `--ema-preset` | Choice | `5/13` | Length presets: `5/13`, `9/21`, `3/8` |
 | `--stoch-preset` | Choice | `FAST_SCALP` | Stoch preset: `FAST_SCALP`, `STANDARD`, `MICRO_BURST` |
 | `--start` | String | None | Start date (`YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`) |
@@ -184,7 +182,7 @@ You can trigger backtests on demand directly from the GitHub web interface witho
 4. Customize your backtest parameters interactively:
    - **Symbol**: e.g., `TRUMP_USDT`, `DOGE_USDT`, `BTC_USDT`
    - **Timeframe**: `1m`, `5m`, `15m`, `1h`, `1d`, etc.
-   - **Strategy**: `EMA_CROSSOVER`, `STOCH_RSI`, `CYCLE`, `MICROSTRUCTURE`
+   - **Strategy**: `STOCH_RSI`, `EMA_CROSSOVER`
    - **Presets**: EMA lengths (`5/13`, `9/21`, `3/8`), Stoch RSI presets (`FAST_SCALP`, `STANDARD`, `MICRO_BURST`)
    - **Dates**: Start & End dates (`YYYY-MM-DD`)
    - **High-Fidelity Ticks**: Toggle millisecond tick simulation

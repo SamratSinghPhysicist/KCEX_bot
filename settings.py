@@ -176,8 +176,6 @@ POLL_INTERVAL_SECONDS = 0.2
 # Strategy mode selection:
 #   "STOCH_RSI"      -> Stochastic RSI Fast Scalp & Reversal Strategy [Default]
 #   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8)
-#   "MICROSTRUCTURE" -> High-Frequency Market Microstructure (Autonomous Order Book & Tape Imbalance)
-#   "CYCLE"          -> Directional Cycle (Classic fixed-direction Long/Short cycle)
 STRATEGY_MODE = "STOCH_RSI"
 
 # -----------------------------------------------------------------------------
@@ -236,22 +234,6 @@ STOCH_REQUIRE_CLOSED_CANDLE = True
 # True  -> Scalps BOTH Long (Oversold bounce) and Short (Overbought rejection) dynamically.
 # False -> Restricts scalps strictly to the DIRECTION specified in Section 1.
 STOCH_BI_DIRECTIONAL = True
-
-# -----------------------------------------------------------------------------
-# Microstructure Strategy Configuration
-# -----------------------------------------------------------------------------
-# Autonomous trading direction for Microstructure strategy:
-# True  -> Scalps BOTH Long and Short dynamically as market order flow tilts.
-# False -> Restricts scalps strictly to the DIRECTION specified in Section 1.
-MICRO_BI_DIRECTIONAL = True
-
-# Microstructure signal calibration (standard deviations in z-space):
-MICRO_OBI_Z = 1.6           # Order Book Imbalance z-score threshold
-MICRO_DELTA_Z = 1.8         # Trade Delta burst z-score threshold
-MICRO_VAMP_Z = 1.5          # Volume-Adjusted Midpoint (micro-price) z-score threshold
-MICRO_MIN_CONFLUENCE = 2    # Number of signals that must agree (>= 2 of 3)
-MICRO_BURST_RECENCY = 0.35  # Fraction of 2s volume concentrated in last 0.5s burst
-MICRO_MAX_SPREAD_TICKS = 1.5 # Max allowed spread in pu ticks before suppressing signals
 
 
 # =============================================================================

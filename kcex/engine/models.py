@@ -63,7 +63,7 @@ class ExecutionConfig:
     volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 2)
     max_trades: int = 0                   # 0 = unlimited
     # Strategy selection
-    strategy_mode: str = "CYCLE"          # "STOCH_RSI", "EMA_CROSSOVER", "MICROSTRUCTURE", or "CYCLE" (bare default is CYCLE for direct test cycles; user defaults are STOCH_RSI in settings.py)
+    strategy_mode: str = "STOCH_RSI"      # "STOCH_RSI" or "EMA_CROSSOVER"
     bi_directional: bool = True           # True for autonomous Long/Short, False for fixed direction
     ema_preset: str = "5/13"              # "5/13", "9/21", "3/8", or "custom"
     ema_fast: int = 5                     # Fast EMA length

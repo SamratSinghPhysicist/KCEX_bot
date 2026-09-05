@@ -165,22 +165,17 @@ def prompt_user_settings():
     default_stoch_interval = get_setting("STOCH_INTERVAL", "Min1")
     default_stoch_bi = get_setting("STOCH_BI_DIRECTIONAL", True)
     default_stoch_zone = get_setting("STOCH_ZONE_FILTER", True)
-    default_micro_bi = get_setting("MICRO_BI_DIRECTIONAL", True)
     default_dir = get_setting("DIRECTION", "LONG").upper()
 
     print("\n3. Strategy & Signal Engine:")
     print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8)")
     print("   [2] STOCHASTIC RSI    -> Fast Scalp & Mean Reversion (%K/%D cross in Oversold/Overbought zones) [Default]")
-    print("   [3] MICROSTRUCTURE    -> Rapid HFT scalper (Order Book & Tape Imbalance)")
-    print("   [4] DIRECTIONAL CYCLE -> Classic fixed-interval single direction cycle")
 
     default_strat_choice = "2"
     if default_strat in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
         default_strat_choice = "1"
-    elif default_strat == "MICROSTRUCTURE":
-        default_strat_choice = "3"
-    elif default_strat in ("CYCLE", "DIRECTIONAL_CYCLE"):
-        default_strat_choice = "4"
+    else:
+        default_strat_choice = "2"
 
     strat_str = input(f"   Select Strategy [default: {default_strat_choice} ({default_strat})]: ").strip()
     if not strat_str:
@@ -251,7 +246,8 @@ def prompt_user_settings():
             dir_val = OrderDirection.LONG
             print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG on Golden Cross and SHORT on Death Cross).")
 
-    elif strat_str in ("2", "STOCH_RSI", "STOCHASTIC_RSI", "STOCH", "stoch_rsi", "stochastic_rsi", "stoch"):
+    else:
+        # Default: STOCH_RSI
         strat_mode_val = "STOCH_RSI"
         print("\n   Stochastic RSI Preset:")
         print("   [1] FAST_SCALP   -> 9/9/3/3 (OS: 20, OB: 80) [Default / Recommended for HFT]")
@@ -304,38 +300,6 @@ def prompt_user_settings():
             bi_directional_val = True
             dir_val = OrderDirection.LONG
             print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG on oversold cross and SHORT on overbought cross).")
-
-    elif strat_str in ("4", "CYCLE", "cycle"):
-        strat_mode_val = "CYCLE"
-        bi_directional_val = False
-        print("\n   Order Direction for Directional Cycle:")
-        print("   [1] LONG  -> Profit when price rises.")
-        print("   [2] SHORT -> Profit when price drops.")
-        dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
-        if dir_str == "2" or dir_str.upper() == "SHORT":
-            dir_val = OrderDirection.SHORT
-        else:
-            dir_val = OrderDirection.LONG
-    else:
-        strat_mode_val = "MICROSTRUCTURE"
-        print("\n   Microstructure Directional Flow:")
-        print("   [1] AUTONOMOUS BI-DIRECTIONAL -> Scalp both LONG & SHORT on market flow [Recommended]")
-        print("   [2] SINGLE DIRECTION ONLY     -> Scalp only one chosen direction")
-        bi_str = input(f"   Select Flow [default: {'1 (BI-DIRECTIONAL)' if default_micro_bi else '2 (SINGLE)'}]: ").strip()
-        if bi_str == "2":
-            bi_directional_val = False
-            print("\n   Order Direction for Microstructure Scalps:")
-            print("   [1] LONG  -> Profit when price rises.")
-            print("   [2] SHORT -> Profit when price drops.")
-            dir_str = input(f"   Select Direction [default: {'1 (LONG)' if default_dir == 'LONG' else '2 (SHORT)'}]: ").strip()
-            if dir_str == "2" or dir_str.upper() == "SHORT":
-                dir_val = OrderDirection.SHORT
-            else:
-                dir_val = OrderDirection.LONG
-        else:
-            bi_directional_val = True
-            dir_val = OrderDirection.LONG  # Default model direction; strategy autonomously signals LONG & SHORT
-            print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG and SHORT based on live order book flow).")
 
     # 4. Trade Quantity / Volume
     if default_vol_mode == "CONTRACTS":

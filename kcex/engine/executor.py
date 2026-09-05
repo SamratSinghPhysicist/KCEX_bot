@@ -37,10 +37,8 @@ from kcex.engine.models import (
 from kcex.engine.logger import DualCurrencyLogger, TradeOutcomeLogger
 from kcex.engine.strategy import (
     MasterplanStrategy,
-    DirectionalCycleSubStrategy,
-    MicrostructureSubStrategy,
-    EMACrossoverSubStrategy,
-    StochasticRSISubStrategy
+    EMACrossoverStrategy,
+    StochasticRSIStrategy
 )
 
 
@@ -80,11 +78,11 @@ class TradeExecutionEngine:
         if strategy is not None:
             self.strategy = strategy
         else:
-            strat_mode = getattr(self.config, "strategy_mode", "EMA_CROSSOVER") or "EMA_CROSSOVER"
+            strat_mode = getattr(self.config, "strategy_mode", "STOCH_RSI") or "STOCH_RSI"
             strat_upper = str(strat_mode).upper()
+            pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
             if strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
-                pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
-                sub_strat = EMACrossoverSubStrategy(
+                sub_strat = EMACrossoverStrategy(
                     market=self.market,
                     symbol=self.config.symbol,
                     fast_period=getattr(self.config, "ema_fast", 5),
@@ -95,9 +93,8 @@ class TradeExecutionEngine:
                     cooldown_seconds=self.config.cooldown_seconds,
                     require_closed_candle=getattr(self.config, "ema_require_closed_candle", True)
                 )
-            elif strat_upper in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH"):
-                pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
-                sub_strat = StochasticRSISubStrategy(
+            else:
+                sub_strat = StochasticRSIStrategy(
                     market=self.market,
                     symbol=self.config.symbol,
                     stoch_preset=getattr(self.config, "stoch_preset", "FAST_SCALP"),
@@ -112,21 +109,6 @@ class TradeExecutionEngine:
                     preferred_direction=pref_dir,
                     cooldown_seconds=self.config.cooldown_seconds,
                     require_closed_candle=getattr(self.config, "stoch_require_closed_candle", True)
-                )
-            elif strat_upper == "MICROSTRUCTURE":
-                pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
-                sub_strat = MicrostructureSubStrategy(
-                    market=self.market,
-                    symbol=self.config.symbol,
-                    preferred_direction=pref_dir,
-                    cooldown_seconds=self.config.cooldown_seconds,
-                    tp_ticks=self.config.tp_ticks,
-                    dynamic_tp=getattr(self.config, "dynamic_tp", False)
-                )
-            else:
-                sub_strat = DirectionalCycleSubStrategy(
-                    direction=self.config.direction,
-                    cooldown_seconds=self.config.cooldown_seconds
                 )
             self.strategy = MasterplanStrategy(
                 market=self.market,

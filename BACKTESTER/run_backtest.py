@@ -123,15 +123,9 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     print("\n4. Select Strategy:")
     print("   [1] Stochastic RSI       (Fast Scalp & Reversals in extreme zones) [Default / Recommended]")
     print("   [2] EMA Crossover        (Trend-following Golden/Death Crosses)")
-    print("   [3] Directional Cycle    (Continuous trade cycling with cooldown)")
-    print("   [4] Microstructure       (Order book imbalance & trade delta bursts)")
     strat_choice = input("   Select Strategy [default: 1 (Stochastic RSI)]: ").strip()
     if strat_choice == "2":
         strategy_mode = "EMA_CROSSOVER"
-    elif strat_choice == "3":
-        strategy_mode = "CYCLE"
-    elif strat_choice == "4":
-        strategy_mode = "MICROSTRUCTURE"
     else:
         strategy_mode = "STOCH_RSI"
 
@@ -302,7 +296,7 @@ def main():
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Personal Access Token for workflow dispatch")
     parser.add_argument("--symbol", type=str, default=None, help="Trading pair symbol (e.g. TRUMP_USDT, DOGE_USDT)")
     parser.add_argument("--timeframe", type=str, default="1m", help="Strategy candle timeframe (e.g. 1m, 5m, 15m, 1h, 1d)")
-    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "CYCLE", "MICROSTRUCTURE"], help="Strategy to evaluate")
+    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER"], help="Strategy to evaluate")
     parser.add_argument("--ema-preset", type=str, default="5/13", help="EMA preset (5/13, 9/21, 3/8)")
     parser.add_argument("--stoch-preset", type=str, default="FAST_SCALP", help="Stoch RSI preset")
     parser.add_argument("--start", type=str, default=None, help="Start date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)")

@@ -10,6 +10,7 @@ Exports:
 - KCEXRiskCalculator, RiskAnalysisReport: Liquidation, fees, TP/SL, and dual currency (USDT & INR)
 - KCEXTrader: Order creation, position TP/SL, partial closing, cancellations
 - KCEXSigner: Reverse-engineered MD5 request signing
+- MasterplanStrategy, EMACrossoverStrategy, StochasticRSIStrategy, BaseStrategy: Modular strategies
 """
 
 from kcex.config import KCEXConfig
@@ -19,33 +20,19 @@ from kcex.market import KCEXMarket, ContractInfo
 from kcex.risk import KCEXRiskCalculator, RiskAnalysisReport
 from kcex.trade import KCEXTrader
 from kcex.feed import KCEXWebSocketFeed
-from kcex.engine import (
-    TradeExecutionEngine,
+from kcex.engine.models import (
     ExecutionConfig,
     OrderDirection,
     EngineMode,
     ExitReason,
     TradeSignal,
     TradeOutcome,
-    CumulativeStats,
-    MasterplanStrategy,
-    DirectionalCycleSubStrategy,
-    MicrostructureSubStrategy,
-    EMACrossoverSubStrategy,
-    EMA_PRESETS,
-    compute_ema_series,
-    StochasticRSISubStrategy,
-    STOCH_RSI_PRESETS,
-    compute_stoch_rsi,
-    compute_rsi_series,
-    MicrostructureSignalGenerator,
-    SignalConfig,
-    SymbolMeta,
-    DualCurrencyLogger,
-    TradeOutcomeLogger
+    CumulativeStats
 )
+from kcex.engine.logger import DualCurrencyLogger, TradeOutcomeLogger
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
+
 __all__ = [
     "KCEXConfig",
     "KCEXSigner",
@@ -65,20 +52,39 @@ __all__ = [
     "TradeSignal",
     "TradeOutcome",
     "CumulativeStats",
+    "BaseStrategy",
+    "BaseSubStrategy",
     "MasterplanStrategy",
-    "DirectionalCycleSubStrategy",
-    "MicrostructureSubStrategy",
+    "EMACrossoverStrategy",
     "EMACrossoverSubStrategy",
     "EMA_PRESETS",
     "compute_ema_series",
+    "StochasticRSIStrategy",
     "StochasticRSISubStrategy",
     "STOCH_RSI_PRESETS",
     "compute_stoch_rsi",
     "compute_rsi_series",
-    "MicrostructureSignalGenerator",
-    "SignalConfig",
-    "SymbolMeta",
     "DualCurrencyLogger",
     "TradeOutcomeLogger",
 ]
 
+
+def __getattr__(name: str):
+    if name in (
+        "TradeExecutionEngine",
+        "BaseStrategy",
+        "BaseSubStrategy",
+        "MasterplanStrategy",
+        "EMACrossoverStrategy",
+        "EMACrossoverSubStrategy",
+        "EMA_PRESETS",
+        "compute_ema_series",
+        "StochasticRSIStrategy",
+        "StochasticRSISubStrategy",
+        "STOCH_RSI_PRESETS",
+        "compute_stoch_rsi",
+        "compute_rsi_series",
+    ):
+        from kcex import engine as _engine
+        return getattr(_engine, name)
+    raise AttributeError(f"module 'kcex' has no attribute '{name}'")
