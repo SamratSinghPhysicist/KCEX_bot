@@ -24,11 +24,18 @@ A high-performance, modular backtesting engine that simulates real-time trading 
 4. **Institutional Performance Analytics & Reporting**:
    - Calculates Win Rate, Net Profit (USDT & INR), Gross Profit/Loss, Total Taker Fees, Profit Factor, Max Drawdown (USDT and %), Sharpe Ratio, Sortino Ratio, Calmar Ratio, and streak statistics.
    - Automatically exports trade logs and executive summaries to `BACKTESTER/reports/` in **CSV**, **JSONL**, and **Markdown** formats.
-5. **Completely Isolated**:
+5. **Interactive Comparison Studio & Deep Analytics (Web & CLI)**:
+   - **Multi-Factor Comparison Matrix**: Side-by-side evaluation of arbitrary runs with automatic detection of parameter tweaks and best-in-class highlights.
+   - **Normalized Equity Curve Overlays & Radar**: Synchronized multi-run ROI charts, peak-to-trough drawdowns, and 6-pillar radar footprints.
+   - **High-Efficiency Caching**: Zero-lag downsampling turns 50MB+ raw files into instant sub-millisecond comparisons without RAM bloat.
+   - **Web UI**: Launch with `python run_analytics.py` (opens `http://localhost:8000`).
+   - **Terminal CLI**: Quick terminal inspection with `python BACKTESTER/analyzer.py --compare`.
+6. **Completely Isolated**:
    - All backtester code resides strictly inside `BACKTESTER/`.
    - The live trading engine (`run_engine.py`, `semi_auto_trader.py`, `kcex/`) remains 100% untouched.
 
 ---
+
 
 ## 📁 Directory & Data Structure
 

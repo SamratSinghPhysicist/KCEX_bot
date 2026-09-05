@@ -395,12 +395,19 @@ class GitHubBacktestRunner:
                             print(f"{Style.CYAN}{'='*78}{Style.RESET}")
                             with open(md_path, "r", encoding="utf-8") as sm:
                                 print(sm.read())
-                            print(f"{Style.CYAN}{'='*78}{Style.RESET}\n")
-                            break
         except Exception as e:
             print(f"[!] Note: Could not auto-extract summary preview: {e}")
 
+        # Auto-Index for Comparison & Analytics Studio
+        try:
+            from BACKTESTER.analytics.indexer import ReportIndexer
+            ReportIndexer(reports_dir=output_dir).get_all_runs(force_reindex=True)
+            print(f"  ⚡ {Style.GREEN}Auto-indexed into Comparison Studio! (Run `python run_analytics.py`){Style.RESET}\n")
+        except Exception:
+            pass
+
         return target_path
+
 
     def run_cloud_backtest(
         self,

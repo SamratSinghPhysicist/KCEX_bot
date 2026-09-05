@@ -477,10 +477,20 @@ class BacktestReporter:
         print(f"[+] Reports generated successfully in '{self.reports_dir}':")
         print(f"    - CSV:  {csv_path}")
         print(f"    - JSON: {jsonl_path}")
-        print(f"    - MD:   {md_path}\n")
+        print(f"    - MD:   {md_path}")
+
+        # 4. Auto-Index for Comparison & Analytics Studio
+        try:
+            from BACKTESTER.analytics.indexer import ReportIndexer
+            indexer = ReportIndexer(reports_dir=self.reports_dir)
+            indexer.get_all_runs(force_reindex=True)
+            print(f"    - Studio: Cached for instant interactive comparison\n")
+        except Exception:
+            print("")
 
         return {
             "csv": csv_path,
             "jsonl": jsonl_path,
             "markdown": md_path
         }
+

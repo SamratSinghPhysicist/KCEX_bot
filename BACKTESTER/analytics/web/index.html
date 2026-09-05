@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KCEX Strategy Lab | Backtest Analytics & Comparison Studio</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-title">
+        <h1>KCEX STRATEGY LAB</h1>
+        <p>High-Fidelity Backtest Analytics & Interactive Comparison Studio</p>
+      </div>
+    </div>
+
+    <div class="nav-stats" id="navGlobalStats">
+      <div class="stat-chip">
+        <span class="stat-chip-label">Indexed Reports</span>
+        <span class="stat-chip-val cyan" id="statRunCount">0</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-chip-label">Trades Simulated</span>
+        <span class="stat-chip-val mono" id="statTotalTrades">0</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-chip-label">Best Win Rate</span>
+        <span class="stat-chip-val profit" id="statBestWR">0.0%</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn btn-secondary btn-sm" id="btnReindex" title="Re-scan reports directory">
+        <span>🔄</span> Re-Index
+      </button>
+      <button class="btn btn-primary btn-sm" id="btnLaunchCompare" title="Compare selected runs">
+        <span>⚖️</span> Compare Runs
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs-bar">
+    <button class="tab-btn active" data-tab="library">
+      <span>📚</span> Report Library
+      <span class="tab-badge" id="libraryBadge">0</span>
+    </button>
+    <button class="tab-btn" data-tab="comparison">
+      <span>⚖️</span> Comparison Studio
+      <span class="tab-badge" id="compareBadge">0</span>
+    </button>
+    <button class="tab-btn" data-tab="deepdive">
+      <span>🔬</span> Deep Dive Inspector
+    </button>
+    <button class="tab-btn" data-tab="storage">
+      <span>💾</span> Disk & Resource Manager
+    </button>
+  </nav>
+
+  <!-- Main Content Body -->
+  <main class="main-content">
+
+    <!-- ====================================================================
+         TAB 1: REPORT LIBRARY
+         ==================================================================== -->
+    <section class="tab-pane active" id="pane-library">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="librarySearch" placeholder="Search by symbol, strategy, timeframe, or tweak...">
+        </div>
+
+        <div class="filter-group" id="filterPairs">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">PAIR:</span>
+          <button class="filter-chip active" data-filter="pair" data-val="ALL">All</button>
+        </div>
+
+        <div class="filter-group" id="filterStrategies">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">STRATEGY:</span>
+          <button class="filter-chip active" data-filter="strat" data-val="ALL">All</button>
+        </div>
+      </div>
+
+      <!-- Runs Table -->
+      <div class="table-container">
+        <table class="runs-table" id="runsTable">
+          <thead>
+            <tr>
+              <th class="run-select-cell">
+                <input type="checkbox" id="selectAllRuns" title="Select All">
+              </th>
+              <th>Backtest Run & Parameters</th>
+              <th>Pair</th>
+              <th>Strategy</th>
+              <th>TF</th>
+              <th>Leverage</th>
+              <th>Total Trades</th>
+              <th>Win Rate</th>
+              <th>Net PnL (USDT)</th>
+              <th>Net ROI</th>
+              <th>Profit Factor</th>
+              <th>Max DD</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="runsTableBody">
+            <!-- Dynamic Injection -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         TAB 2: INTERACTIVE COMPARISON STUDIO (Core Request)
+         ==================================================================== -->
+    <section class="tab-pane" id="pane-comparison">
+      <!-- Comparison Header & Run Chips -->
+      <div class="comparison-header-row">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 700;">Multi-Factor Strategy Comparison Studio</h2>
+          <p style="font-size: 0.8rem; color: var(--text-dim);">
+            Compare performance, risk curves, execution quality, and parameter tweaks side-by-side.
+          </p>
+        </div>
+
+        <div class="active-runs-chips" id="activeRunsChips">
+          <!-- Active run pills injected here -->
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary btn-sm" id="btnToggleFactorsDrawer">
+            <span>⚙️</span> Choose Factors to Compare
+          </button>
+          <button class="btn btn-primary btn-sm" id="btnRefreshCompare">
+            <span>🔄</span> Refresh Comparison
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapsible Factors Selection Drawer -->
+      <div class="factors-drawer" id="factorsDrawer">
+        <div class="factors-drawer-header">
+          <div>
+            <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--accent-cyan);">Select Comparison Factors</h4>
+            <p style="font-size: 0.75rem; color: var(--text-dim);">Check or uncheck factors to customize the comparison table and visual radar.</p>
+          </div>
+          <div style="display: flex; gap: 0.4rem;">
+            <button class="btn btn-secondary btn-sm" id="btnSelectAllFactors">Select All</button>
+            <button class="btn btn-secondary btn-sm" id="btnPresetReturnRisk">Risk & Return Only</button>
+            <button class="btn btn-secondary btn-sm" id="btnResetFactors">Default Factors</button>
+          </div>
+        </div>
+
+        <div class="factors-grid" id="factorsCheckboxesContainer">
+          <!-- Injected dynamically by category -->
+        </div>
+      </div>
+
+      <!-- Parameter Tweaks Diff Card (Highlights What Changed) -->
+      <div class="diff-card" id="parameterDiffCard">
+        <div class="diff-header">
+          <span style="font-size: 1.1rem;">🎛️</span>
+          <h3 style="font-size: 0.95rem; font-weight: 700;">Detected Tweaks & Parameter Variations</h3>
+          <span class="diff-badge" id="diffCountBadge">0 Differences</span>
+        </div>
+        <div class="diff-grid" id="diffGridContainer">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Side-by-Side Factor Comparison Matrix Table -->
+      <div class="matrix-container">
+        <table class="matrix-table" id="comparisonMatrixTable">
+          <thead>
+            <tr id="matrixHeaderRow">
+              <th style="width: 260px;">Comparison Factor</th>
+              <!-- Dynamic run columns -->
+            </tr>
+          </thead>
+          <tbody id="matrixBody">
+            <!-- Dynamic grouped rows with #1 Best badges -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Interactive Charts Studio -->
+      <div class="charts-grid-2">
+        <!-- Multi-Run Equity Overlay Chart -->
+        <div class="chart-box">
+          <div class="chart-header">
+            <div>
+              <h4 class="card-title"><span>📈</span> Normalized Return Curves (% ROI Overlay)</h4>
+              <p class="card-subtitle">Synchronized growth curves over time. Click legend to toggle runs.</p>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chartEquityOverlay"></canvas>
+          </div>
+        </div>
+
+        <!-- Underwater Drawdown Comparison Chart -->
+        <div class="chart-box">
+          <div class="chart-header">
+            <div>
+              <h4 class="card-title"><span>🌊</span> Peak-to-Trough Drawdown Overlay</h4>
+              <p class="card-subtitle">Visualizes tail-risk and downside volatility side-by-side.</p>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chartDrawdownOverlay"></canvas>
+          </div>
+        </div>
+
+        <!-- 6-Pillar Radar Footprint Chart -->
+        <div class="chart-box">
+          <div class="chart-header">
+            <div>
+              <h4 class="card-title"><span>🕸️</span> 6-Pillar Strategy Footprint (Radar)</h4>
+              <p class="card-subtitle">Balances Win Rate, Profit Factor, Drawdown Defense, Risk Alpha, Payoff, and Fees.</p>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chartRadar"></canvas>
+          </div>
+        </div>
+
+        <!-- Exit Trigger Attribution Comparison -->
+        <div class="chart-box">
+          <div class="chart-header">
+            <div>
+              <h4 class="card-title"><span>🎯</span> Exit Reasons & Outcome Breakdown</h4>
+              <p class="card-subtitle">Comparing Take Profit Hit vs Stop Loss Hit rates.</p>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chartExitBreakdown"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         TAB 3: DEEP DIVE SINGLE-RUN INSPECTOR
+         ==================================================================== -->
+    <section class="tab-pane" id="pane-deepdive">
+      <!-- Header with Run Selector -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.25rem;">🔬</span>
+              <h2 style="font-size: 1.15rem; font-weight: 700;" id="ddTitle">Select a Run to Inspect</h2>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-dim);" id="ddSubtitle">Comprehensive institutional analytics</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ACTIVE RUN:</label>
+            <select class="select-dark" id="ddRunSelector" style="min-width: 280px;"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Executive Scorecard Metrics -->
+      <div class="scorecard-grid" id="ddScorecardGrid">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- High-Res Interactive Equity & Drawdown Chart -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title"><span>📈</span> Cumulative Equity & Capital Growth</h3>
+            <p class="card-subtitle">Realized balance trajectory across the entire backtesting window.</p>
+          </div>
+        </div>
+        <div style="height: 360px; position: relative;">
+          <canvas id="chartSingleEquity"></canvas>
+        </div>
+      </div>
+
+      <!-- Distribution & Time Alpha Breakdown -->
+      <div class="charts-grid-2">
+        <!-- Holding Duration Distribution -->
+        <div class="chart-box">
+          <div class="chart-header">
+            <div>
+              <h4 class="card-title"><span>⏱️</span> Trade Holding Duration Distribution</h4>
+              <p class="card-subtitle">Volume and profitability across trade duration buckets.</p>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chartDurationDistribution"></canvas>
+          </div>
+        </div>
+
+        <!-- Directional Long vs Short Alpha -->
+        <div class="chart-box">
+          <div class="chart-header">
+            <div>
+              <h4 class="card-title"><span>🧭</span> Directional Performance (LONG vs SHORT)</h4>
+              <p class="card-subtitle">Compares win rate and net return between long and short signals.</p>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="chartDirectional"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 24-Hour UTC Hourly Heatmap -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title"><span>🌍</span> 24-Hour UTC Trading Heatmap</h3>
+            <p class="card-subtitle">Distribution of trade frequency, win rates, and PnL across market hours.</p>
+          </div>
+        </div>
+        <div class="heatmap-container" id="ddHourlyHeatmap">
+          <!-- Injected dynamically for hours 00 to 23 -->
+        </div>
+      </div>
+
+      <!-- Virtual Trade Journal Table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title"><span>📜</span> Virtual Trade Journal (Low-RAM Paged Explorer)</h3>
+            <p class="card-subtitle" id="tradesSummarySubtitle">Displaying granular trade executions.</p>
+          </div>
+        </div>
+
+        <div class="trades-filter-bar">
+          <input type="text" class="search-input" id="tradesSearch" placeholder="Search by trade ID, price, or text..." style="max-width: 280px;">
+          <select class="select-dark" id="tradesDirectionFilter">
+            <option value="ALL">Direction: All</option>
+            <option value="LONG">LONG Only</option>
+            <option value="SHORT">SHORT Only</option>
+          </select>
+          <select class="select-dark" id="tradesExitFilter">
+            <option value="ALL">Exit Reason: All</option>
+            <option value="MIN_PROFIT_TP_HIT">TP Hits Only</option>
+            <option value="STOP_LOSS_HIT">SL Hits Only</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="runs-table" id="tradesTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dir</th>
+                <th>Entry Price</th>
+                <th>Exit Price</th>
+                <th>PnL (USDT)</th>
+                <th>ROE %</th>
+                <th>Duration</th>
+                <th>Exit Reason</th>
+                <th>Close Time (UTC)</th>
+                <th>Balance After</th>
+              </tr>
+            </thead>
+            <tbody id="tradesTableBody">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="btn btn-secondary btn-sm" id="btnPrevPage">◀ Previous</button>
+          <span id="pageIndicator">Page 1 of 1</span>
+          <button class="btn btn-secondary btn-sm" id="btnNextPage">Next ▶</button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         TAB 4: DISK & STORAGE MANAGER
+         ==================================================================== -->
+    <section class="tab-pane" id="pane-storage">
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title"><span>💾</span> Report Storage & RAM Footprint Manager</h3>
+            <p class="card-subtitle">Keep your backtester lightweight and prevent gigabytes of trade data from cluttering your disk.</p>
+          </div>
+        </div>
+
+        <div class="scorecard-grid" style="margin-top: 1rem;">
+          <div class="scorecard-metric">
+            <span class="scorecard-label">Total Reports Footprint</span>
+            <span class="scorecard-val mono" id="storageTotalMb">0.0 MB</span>
+          </div>
+          <div class="scorecard-metric">
+            <span class="scorecard-label">Heavy JSONL Files</span>
+            <span class="scorecard-val loss mono" id="storageJsonlMb">0.0 MB</span>
+            <span class="scorecard-sub" id="storageJsonlCount">0 files</span>
+          </div>
+          <div class="scorecard-metric">
+            <span class="scorecard-label">Trade CSV Files</span>
+            <span class="scorecard-val cyan mono" id="storageCsvMb">0.0 MB</span>
+            <span class="scorecard-sub" id="storageCsvCount">0 files</span>
+          </div>
+          <div class="scorecard-metric">
+            <span class="scorecard-label">Artifact ZIP Archives</span>
+            <span class="scorecard-val amber mono" id="storageZipMb">0.0 MB</span>
+            <span class="scorecard-sub" id="storageZipCount">0 files</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(255, 42, 85, 0.08); border: 1px solid rgba(255, 42, 85, 0.3); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem;">
+          <h4 style="color: var(--loss-red); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem;">Clean Up Heavy Trade JSONL Files</h4>
+          <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">
+            Trade JSONL files are 15-30MB each and contain redundant raw trade dumps. All full trade data is safely preserved in the companion CSV and ZIP archives, and all analytics are cached. Purging them frees up significant disk space with zero impact on analysis.
+          </p>
+          <button class="btn btn-danger btn-sm" id="btnPurgeJsonl">
+            <span>🗑️</span> Purge Heavy JSONL Files
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Floating Bottom Action Bar for Multi-Run Comparison -->
+  <div class="floating-compare-bar" id="floatingCompareBar">
+    <div class="selected-count-pill">
+      <span>⚖️</span> <span id="selectedCountText">0 runs selected</span>
+    </div>
+    <div style="display: flex; gap: 0.6rem;">
+      <button class="btn btn-secondary btn-sm" id="btnClearSelection">Clear</button>
+      <button class="btn btn-primary btn-sm" id="btnLaunchCompareFloating">Launch Comparison Studio ➔</button>
+    </div>
+  </div>
+
+  <!-- Client Script -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

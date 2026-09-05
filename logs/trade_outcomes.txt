@@ -1194,3 +1194,107 @@ Win Rate           : 60.0%
 Net Cumulative PnL : -0.000800 USDT (INR -0.0756)
 Live USD/INR Rate  : INR 94.51 per USD
 ==============================================================================
+==============================================================================
+TRADE #11 OUTCOME JOURNAL | Closed at: 2026-09-05 11:39:56 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : StochasticRSI(FAST_SCALP-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4680 USDT (INR 44.23) [Notional exposure]
+Margin Committed   : 0.0062 USDT (INR 0.59) [Trade Qty / 75x leverage]
+Entry Price        : 2.340 USDT (Opened: 2026-09-05 11:39:09)
+Exit Price         : 2.345 USDT (Duration: 47.10s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.338 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.345 USDT (Offset: -5 pu / -0.005 USDT | -0.214% price | -16.0% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001000 USDT (INR -0.0945)
+Return on Equity   : -16.03% (Price move: -0.214%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0660 USDT (INR 6.23)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 11 | Wins: 6 | Losses: 4 | Scratch: 1
+Win Rate           : 54.5%
+Net Cumulative PnL : -0.001800 USDT (INR -0.1701)
+Live USD/INR Rate  : INR 94.51 per USD
+==============================================================================
+==============================================================================
+TRADE #12 OUTCOME JOURNAL | Closed at: 2026-09-05 11:45:15 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : StochasticRSI(FAST_SCALP-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4700 USDT (INR 44.42) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.59) [Trade Qty / 75x leverage]
+Entry Price        : 2.350 USDT (Opened: 2026-09-05 11:44:02)
+Exit Price         : 2.348 USDT (Duration: 72.77s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.348 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.355 USDT (Offset: -5 pu / -0.005 USDT | -0.213% price | -16.0% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000400 USDT (+INR 0.0378)
+Return on Equity   : +6.38% (Price move: +0.085%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0664 USDT (INR 6.27)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 12 | Wins: 7 | Losses: 4 | Scratch: 1
+Win Rate           : 58.3%
+Net Cumulative PnL : -0.001400 USDT (INR -0.1323)
+Live USD/INR Rate  : INR 94.51 per USD
+==============================================================================
+==============================================================================
+TRADE #13 OUTCOME JOURNAL | Closed at: 2026-09-05 11:57:37 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : StochasticRSI(FAST_SCALP-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4808 USDT (INR 45.44) [Notional exposure]
+Margin Committed   : 0.0064 USDT (INR 0.61) [Trade Qty / 75x leverage]
+Entry Price        : 2.404 USDT (Opened: 2026-09-05 11:57:14)
+Exit Price         : 2.409 USDT (Duration: 23.50s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.402 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.409 USDT (Offset: -5 pu / -0.005 USDT | -0.208% price | -15.6% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001000 USDT (INR -0.0945)
+Return on Equity   : -15.60% (Price move: -0.208%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0654 USDT (INR 6.18)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 13 | Wins: 7 | Losses: 5 | Scratch: 1
+Win Rate           : 53.8%
+Net Cumulative PnL : -0.002400 USDT (INR -0.2268)
+Live USD/INR Rate  : INR 94.51 per USD
+==============================================================================
+==============================================================================
+TRADE #14 OUTCOME JOURNAL | Closed at: 2026-09-05 12:10:20 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDT [LONG] (75x isolated)
+Strategy Name      : StochasticRSI(FAST_SCALP-LONG)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4750 USDT (INR 44.89) [Notional exposure]
+Margin Committed   : 0.0063 USDT (INR 0.60) [Trade Qty / 75x leverage]
+Entry Price        : 2.375 USDT (Opened: 2026-09-05 12:10:01)
+Exit Price         : 2.368 USDT (Duration: 18.47s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.377 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.370 USDT (Offset: -5 pu / -0.005 USDT | -0.211% price | -15.8% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.001400 USDT (INR -0.1323)
+Return on Equity   : -22.11% (Price move: -0.295%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0640 USDT (INR 6.05)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 14 | Wins: 7 | Losses: 6 | Scratch: 1
+Win Rate           : 50.0%
+Net Cumulative PnL : -0.003800 USDT (INR -0.3591)
+Live USD/INR Rate  : INR 94.51 per USD
+==============================================================================
