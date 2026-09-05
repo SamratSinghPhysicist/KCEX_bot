@@ -115,6 +115,9 @@ class BacktestExecutionEngine:
         self.trade_counter: int = 0
         self._interrupted: bool = False
 
+        from strategies.filters import FilterPipeline
+        self.filter_pipeline = FilterPipeline.from_config(self.config)
+
     def _create_default_strategy(self) -> MasterplanStrategy:
         """Instantiates the selected sub-strategy with auto_start_feed=False."""
         strat_mode = getattr(self.config, "strategy_mode", "STOCH_RSI") or "STOCH_RSI"
@@ -236,6 +239,17 @@ class BacktestExecutionEngine:
                 if not self.strategy.sub_strategy.trade_in_progress:
                     signal = self.strategy.get_signal()
                     if signal:
+                        # Evaluate against Regime & Trend Filter Pipeline
+                        history_slice = candles[max(0, candle_idx - 250):candle_idx + 1]
+                        allowed, reject_reason = self.filter_pipeline.evaluate(
+                            signal=signal,
+                            candles=history_slice,
+                            current_time=sim_time_sec
+                        )
+                        if not allowed:
+                            candle_idx += 1
+                            continue
+
                         self.trade_counter += 1
                         trade_id = self.trade_counter
 
@@ -394,6 +408,38 @@ class BacktestExecutionEngine:
                             hit_via_ticks = True
                             break
 
+                    # Duration Monitoring & Time-Decay Safeguard
+                    if getattr(self.config, "duration_filter_enabled", False):
+                        tick_time_sec = tick.timestamp_ms / 1000.0
+                        elapsed_sec = tick_time_sec - open_time_sec
+                        max_hold_s = float(getattr(self.config, "duration_max_hold_seconds", 90.0))
+                        if elapsed_sec >= max_hold_s:
+                            action = (getattr(self.config, "duration_action", "CLOSE") or "CLOSE").upper()
+                            if action == "CLOSE":
+                                exit_price = tick.price
+                                exit_reason = ExitReason.TIMEOUT_CLOSE
+                                exit_time_sec = tick_time_sec
+                                hit_via_ticks = True
+                                break
+                            elif action == "SCRATCH_OR_MARKET":
+                                u_diff = (tick.price - entry_price) if direction == OrderDirection.LONG else (entry_price - tick.price)
+                                if u_diff >= -1.0 * pu:
+                                    exit_price = tick.price
+                                    exit_reason = ExitReason.DURATION_SCRATCH
+                                    exit_time_sec = tick_time_sec
+                                    hit_via_ticks = True
+                                    break
+                                else:
+                                    if direction == OrderDirection.LONG:
+                                        exact_sl = max(exact_sl, entry_price)
+                                    else:
+                                        exact_sl = min(exact_sl, entry_price)
+                            elif action == "TIGHTEN_SL":
+                                if direction == OrderDirection.LONG:
+                                    exact_sl = max(exact_sl, entry_price)
+                                else:
+                                    exact_sl = min(exact_sl, entry_price)
+
                 if hit_via_ticks:
                     # Find candle index matching exit_time_sec
                     exit_ms = int(exit_time_sec * 1000)
@@ -432,6 +478,38 @@ class BacktestExecutionEngine:
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx
                             break
+
+                    # Duration Monitoring & Time-Decay Safeguard in candle fallback
+                    if getattr(self.config, "duration_filter_enabled", False):
+                        c_time_sec = c.close_time_ms / 1000.0
+                        elapsed_sec = c_time_sec - open_time_sec
+                        max_hold_s = float(getattr(self.config, "duration_max_hold_seconds", 90.0))
+                        if elapsed_sec >= max_hold_s:
+                            action = (getattr(self.config, "duration_action", "CLOSE") or "CLOSE").upper()
+                            if action == "CLOSE":
+                                exit_price = c.close
+                                exit_reason = ExitReason.TIMEOUT_CLOSE
+                                exit_time_sec = c_time_sec
+                                exit_candle_idx = idx
+                                break
+                            elif action == "SCRATCH_OR_MARKET":
+                                u_diff = (c.close - entry_price) if direction == OrderDirection.LONG else (entry_price - c.close)
+                                if u_diff >= -1.0 * pu:
+                                    exit_price = c.close
+                                    exit_reason = ExitReason.DURATION_SCRATCH
+                                    exit_time_sec = c_time_sec
+                                    exit_candle_idx = idx
+                                    break
+                                else:
+                                    if direction == OrderDirection.LONG:
+                                        exact_sl = max(exact_sl, entry_price)
+                                    else:
+                                        exact_sl = min(exact_sl, entry_price)
+                            elif action == "TIGHTEN_SL":
+                                if direction == OrderDirection.LONG:
+                                    exact_sl = max(exact_sl, entry_price)
+                                else:
+                                    exact_sl = min(exact_sl, entry_price)
 
             # If still open at end of data, close at final candle close
             if exit_reason == ExitReason.UNKNOWN:

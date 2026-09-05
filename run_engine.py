@@ -552,6 +552,19 @@ def prompt_user_settings():
         stoch_interval=stoch_interval_val,
         stoch_zone_filter=stoch_zone_val,
         stoch_require_closed_candle=get_setting("STOCH_REQUIRE_CLOSED_CANDLE", True),
+        duration_filter_enabled=get_setting("DURATION_FILTER_ENABLED", False),
+        duration_deep_monitor_seconds=get_setting("DURATION_DEEP_MONITOR_SECONDS", 60.0),
+        duration_max_hold_seconds=get_setting("DURATION_MAX_HOLD_SECONDS", 90.0),
+        duration_action=get_setting("DURATION_ACTION", "CLOSE"),
+        adx_filter_enabled=get_setting("ADX_FILTER_ENABLED", False),
+        adx_period=get_setting("ADX_PERIOD", 14),
+        adx_threshold=get_setting("ADX_THRESHOLD", 25.0),
+        htf_trend_filter_enabled=get_setting("HTF_TREND_FILTER_ENABLED", False),
+        htf_timeframe=get_setting("HTF_TIMEFRAME", "15m"),
+        htf_ema_period=get_setting("HTF_EMA_PERIOD", 200),
+        hourly_filter_enabled=get_setting("HOURLY_FILTER_ENABLED", False),
+        hourly_blacklist_utc=get_setting("HOURLY_BLACKLIST_UTC", [2, 3, 4, 5, 17]),
+        direction_bias=get_setting("DIRECTION_BIAS", "BOTH"),
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -782,6 +795,63 @@ def parse_args():
         action="store_true",
         help="Strictly lock Take-Profit to --tp-ticks (disable dynamic scaling)"
     )
+    # Trade Optimization & Regime Filter Flags
+    parser.add_argument(
+        "--duration-filter",
+        action="store_true",
+        default=None,
+        help="Enable trade duration monitoring and time-decay exits"
+    )
+    parser.add_argument(
+        "--duration-deep-monitor",
+        type=float,
+        default=None,
+        help="Seconds before deep monitoring engages (default: 60.0)"
+    )
+    parser.add_argument(
+        "--duration-max-hold",
+        type=float,
+        default=None,
+        help="Maximum allowed trade hold duration in seconds (default: 90.0)"
+    )
+    parser.add_argument(
+        "--duration-action",
+        type=str,
+        choices=["CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL"],
+        default=None,
+        help="Action on max duration timeout (default: CLOSE)"
+    )
+    parser.add_argument(
+        "--adx-filter",
+        action="store_true",
+        default=None,
+        help="Enable ADX chop suppression filter"
+    )
+    parser.add_argument(
+        "--adx-threshold",
+        type=float,
+        default=None,
+        help="Minimum ADX required to allow trade entry (default: 25.0)"
+    )
+    parser.add_argument(
+        "--htf-trend-filter",
+        action="store_true",
+        default=None,
+        help="Enable Higher-Timeframe 200 EMA trend baseline filter"
+    )
+    parser.add_argument(
+        "--hourly-filter",
+        action="store_true",
+        default=None,
+        help="Enable UTC hourly session blacklist"
+    )
+    parser.add_argument(
+        "--direction-bias",
+        type=str,
+        choices=["BOTH", "LONG_ONLY", "SHORT_ONLY"],
+        default=None,
+        help="Enforce directional bias: BOTH, LONG_ONLY, or SHORT_ONLY"
+    )
     parser.add_argument(
         "--non-interactive",
         action="store_true",
@@ -929,6 +999,19 @@ def main():
             stoch_interval=stoch_interval,
             stoch_zone_filter=stoch_zone,
             stoch_require_closed_candle=get_setting("STOCH_REQUIRE_CLOSED_CANDLE", True),
+            duration_filter_enabled=args.duration_filter if args.duration_filter is not None else get_setting("DURATION_FILTER_ENABLED", False),
+            duration_deep_monitor_seconds=args.duration_deep_monitor if args.duration_deep_monitor is not None else get_setting("DURATION_DEEP_MONITOR_SECONDS", 60.0),
+            duration_max_hold_seconds=args.duration_max_hold if args.duration_max_hold is not None else get_setting("DURATION_MAX_HOLD_SECONDS", 90.0),
+            duration_action=args.duration_action or get_setting("DURATION_ACTION", "CLOSE"),
+            adx_filter_enabled=args.adx_filter if args.adx_filter is not None else get_setting("ADX_FILTER_ENABLED", False),
+            adx_period=get_setting("ADX_PERIOD", 14),
+            adx_threshold=args.adx_threshold if args.adx_threshold is not None else get_setting("ADX_THRESHOLD", 25.0),
+            htf_trend_filter_enabled=args.htf_trend_filter if args.htf_trend_filter is not None else get_setting("HTF_TREND_FILTER_ENABLED", False),
+            htf_timeframe=get_setting("HTF_TIMEFRAME", "15m"),
+            htf_ema_period=get_setting("HTF_EMA_PERIOD", 200),
+            hourly_filter_enabled=args.hourly_filter if args.hourly_filter is not None else get_setting("HOURLY_FILTER_ENABLED", False),
+            hourly_blacklist_utc=get_setting("HOURLY_BLACKLIST_UTC", [2, 3, 4, 5, 17]),
+            direction_bias=args.direction_bias or get_setting("DIRECTION_BIAS", "BOTH"),
             poll_interval_seconds=poll_int,
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),

@@ -116,6 +116,8 @@ class TradeExecutionEngine:
                 sub_strategy=sub_strat
             )
 
+        from strategies.filters import FilterPipeline
+        self.filter_pipeline = FilterPipeline.from_config(self.config)
 
         self.running: bool = False
         self.trade_counter: int = 0
@@ -230,6 +232,18 @@ class TradeExecutionEngine:
         """
         signal = self.strategy.get_signal()
         if not signal:
+            return None
+
+        # Regime & Trend Filter Evaluation
+        try:
+            filter_candles = self.market.get_klines(contract.symbol, interval="Min1", limit=250)
+        except Exception as e:
+            self.logger.debug("Could not fetch candles for regime filter evaluation: %s", e)
+            filter_candles = []
+
+        allowed, reject_reason = self.filter_pipeline.evaluate(signal, filter_candles, time.time())
+        if not allowed:
+            self.logger.info(f"[REGIME FILTER] Signal {signal.direction.value} suppressed: {reject_reason}")
             return None
 
         self.trade_counter += 1
@@ -740,6 +754,8 @@ class TradeExecutionEngine:
         side_str = "LONG" if direction == OrderDirection.LONG else "SHORT"
         close_order_id = None
         last_seen_price = exact_tp
+        deep_alert_logged = False
+        monitor_start_time = time.time()
 
         while not self._shutdown_requested:
             time.sleep(self.config.poll_interval_seconds)
@@ -816,6 +832,42 @@ class TradeExecutionEngine:
                     return last_seen_price, ExitReason.UNKNOWN, None
             except Exception as e:
                 self.logger.debug("Position check error: %s", e)
+
+            # 4. Duration-Based Monitoring & Time-Decay Exit Actions
+            if getattr(self.config, "duration_filter_enabled", False):
+                elapsed = time.time() - (open_time if open_time else time.time())
+                deep_thresh = float(getattr(self.config, "duration_deep_monitor_seconds", 60.0))
+                if elapsed >= deep_thresh and not deep_alert_logged:
+                    deep_alert_logged = True
+                    self.logger.info(
+                        f"[LIVE DURATION IN-DEPTH MONITOR] Position open for {elapsed:.1f}s (threshold {deep_thresh:.0f}s). "
+                        f"Close monitoring engaged..."
+                    )
+
+                max_hold = float(getattr(self.config, "duration_max_hold_seconds", 90.0))
+                if elapsed >= max_hold:
+                    action = (getattr(self.config, "duration_action", "CLOSE") or "CLOSE").upper()
+                    if action in ("CLOSE", "SCRATCH_OR_MARKET"):
+                        exit_reason = ExitReason.TIMEOUT_CLOSE if action == "CLOSE" else ExitReason.DURATION_SCRATCH
+                        self.logger.warning(
+                            f"[LIVE TIME-STOP TRIGGERED] Position open {elapsed:.1f}s >= max {max_hold:.0f}s. "
+                            f"Action: {action}. Executing market close at {exec_price:.{precision}f} USDT..."
+                        )
+                        try:
+                            res = self.trader.close_position(
+                                position_id=position_id or 0,
+                                symbol=symbol,
+                                side=side_str,
+                                vol_contracts=vol_contracts,
+                                leverage=leverage,
+                                is_isolated=self.config.is_isolated,
+                                is_market=True,
+                                price=exec_price
+                            )
+                            close_order_id = str(res.get("data", {}).get("orderId") or "")
+                            return exec_price, exit_reason, close_order_id
+                        except Exception as e:
+                            self.logger.warning("Error executing live time-stop close: %s", e)
 
         # If shutdown was requested during trade, market close immediately
         self.logger.warning("Shutdown received while in position. Closing position...")
@@ -921,6 +973,7 @@ class TradeExecutionEngine:
             exit_price = entry_price
             exit_reason = ExitReason.UNKNOWN
             poll_count = 0
+            deep_alert_logged = False
 
             while not self._shutdown_requested:
                 time.sleep(self.config.poll_interval_seconds)
@@ -974,6 +1027,55 @@ class TradeExecutionEngine:
                             f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.{ps}f} USDT (Market Ask: {cur_ask:.{ps}f}, Last: {cur_last:.{ps}f})"
                         )
                         break
+
+                # Duration Monitoring & Time-Decay Safeguards
+                if getattr(self.config, "duration_filter_enabled", False):
+                    elapsed = time.time() - open_time
+                    deep_thresh = float(getattr(self.config, "duration_deep_monitor_seconds", 60.0))
+                    if elapsed >= deep_thresh and not deep_alert_logged:
+                        deep_alert_logged = True
+                        self.logger.info(
+                            f"[DRY-RUN DURATION IN-DEPTH MONITOR] Trade has been open for {elapsed:.1f}s "
+                            f"(threshold: {deep_thresh:.0f}s). Heightened monitoring active."
+                        )
+
+                    max_hold = float(getattr(self.config, "duration_max_hold_seconds", 90.0))
+                    if elapsed >= max_hold:
+                        action = (getattr(self.config, "duration_action", "CLOSE") or "CLOSE").upper()
+                        if action == "CLOSE":
+                            exit_price = effective_close_price
+                            exit_reason = ExitReason.TIMEOUT_CLOSE
+                            self.logger.warning(
+                                f"[DRY-RUN TIME-STOP] Trade open {elapsed:.1f}s >= max {max_hold:.0f}s. "
+                                f"Forced Market Exit at {exit_price:.{ps}f} USDT."
+                            )
+                            break
+                        elif action == "SCRATCH_OR_MARKET":
+                            u_diff = (effective_close_price - entry_price) if direction == OrderDirection.LONG else (entry_price - effective_close_price)
+                            if u_diff >= -1.0 * pu:
+                                exit_price = effective_close_price
+                                exit_reason = ExitReason.DURATION_SCRATCH
+                                self.logger.warning(
+                                    f"[DRY-RUN DURATION SCRATCH] Trade open {elapsed:.1f}s >= max {max_hold:.0f}s. "
+                                    f"Price near breakeven ({u_diff / pu:+.1f} pu). Scratching at {exit_price:.{ps}f} USDT."
+                                )
+                                break
+                            else:
+                                if direction == OrderDirection.LONG:
+                                    exact_sl = max(exact_sl, entry_price)
+                                else:
+                                    exact_sl = min(exact_sl, entry_price)
+                                self.logger.info(
+                                    f"[DRY-RUN DURATION TIGHTEN] Trade open {elapsed:.1f}s. SL tightened to entry {exact_sl:.{ps}f} USDT."
+                                )
+                        elif action == "TIGHTEN_SL":
+                            if direction == OrderDirection.LONG:
+                                exact_sl = max(exact_sl, entry_price)
+                            else:
+                                exact_sl = min(exact_sl, entry_price)
+                            self.logger.info(
+                                f"[DRY-RUN DURATION TIGHTEN] Trade open {elapsed:.1f}s. SL tightened to entry {exact_sl:.{ps}f} USDT."
+                            )
 
                 # Periodic status report every ~4 seconds
                 poll_interval = max(0.1, self.config.poll_interval_seconds)

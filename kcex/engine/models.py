@@ -6,7 +6,7 @@ and trade outcomes with dual-currency (USDT & INR) representations.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from enum import Enum
 import time
 import os
@@ -24,6 +24,7 @@ class ExitReason(str, Enum):
     SCRATCH_CLOSE = "SCRATCH_CLOSE"
     MANUAL_CLOSE = "MANUAL_CLOSE"
     TIMEOUT_CLOSE = "TIMEOUT_CLOSE"
+    DURATION_SCRATCH = "DURATION_SCRATCH"
     UNKNOWN = "UNKNOWN"
 
 
@@ -81,6 +82,20 @@ class ExecutionConfig:
     stoch_interval: str = "Min1"          # Candle timeframe
     stoch_zone_filter: bool = True        # Gate crossovers to extreme zones
     stoch_require_closed_candle: bool = True # Confirm cross on closed candle
+    # Trade Optimization & Regime Filter Configuration (Toggleable)
+    duration_filter_enabled: bool = False       # Master toggle for duration monitoring and exits
+    duration_deep_monitor_seconds: float = 60.0 # Time in trade after which high-frequency monitoring engages
+    duration_max_hold_seconds: float = 90.0     # Maximum allowable trade duration before time-decay action
+    duration_action: str = "CLOSE"              # "CLOSE", "SCRATCH_OR_MARKET", or "TIGHTEN_SL"
+    adx_filter_enabled: bool = False            # Gate signals when ADX < threshold (chop suppression)
+    adx_period: int = 14                        # ADX smoothing period
+    adx_threshold: float = 25.0                 # Minimum ADX required to allow signal execution
+    htf_trend_filter_enabled: bool = False      # Higher Timeframe Trend Filter (200 EMA baseline)
+    htf_timeframe: str = "15m"                  # HTF candle interval
+    htf_ema_period: int = 200                   # HTF EMA period
+    hourly_filter_enabled: bool = False         # Blacklist low-liquidity UTC hours
+    hourly_blacklist_utc: List[int] = field(default_factory=list) # e.g. [2, 3, 4, 5, 17]
+    direction_bias: str = "BOTH"                # "BOTH", "LONG_ONLY", or "SHORT_ONLY"
     poll_interval_seconds: float = 0.5
     logs_dir: str = "logs"
     realtime_log_file: str = "engine_realtime.log"

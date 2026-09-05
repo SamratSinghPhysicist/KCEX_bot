@@ -238,26 +238,58 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         vol_multiplier = float(m_input) if m_input else def_mult
         vol_contracts = None
 
-    # 8. Fee Schedule Configuration
-    print("\n8. Fee Schedule Configuration:")
-    print("   [1] Live KCEX API (0% for TRUMP/DOGE zero-fee pairs) [Default]")
-    print("   [2] Zero Fees (0.0% Maker / 0.0% Taker)")
-    print("   [3] Manual Custom Rates")
-    fee_choice = input("   Select Fee Mode [default: 1 (Live KCEX API)]: ").strip()
-    maker_fee = None
-    taker_fee = None
-    if fee_choice == "2":
-        fee_mode = "ZERO"
-        maker_fee = 0.0
-        taker_fee = 0.0
-    elif fee_choice == "3":
-        fee_mode = "MANUAL"
-        m_input = input("   Enter Maker Fee % [default: 0.0]: ").strip()
-        t_input = input("   Enter Taker Fee % [default: 0.05]: ").strip()
-        maker_fee = (float(m_input) / 100.0) if m_input else 0.0
-        taker_fee = (float(t_input) / 100.0) if t_input else 0.0005
-    else:
-        fee_mode = "LIVE"
+    # 9. Trade Optimization & Regime Filters (Optional)
+    print("\n9. Trade Optimization & Regime Filters:")
+    print("   [1] Baseline / Disabled (Standard raw strategy execution) [Default]")
+    print("   [2] Enable Duration Time-Stop (Monitor >60s, Auto-Exit at 90s)")
+    print("   [3] Enable Full Institutional Safeguards (Duration + HTF 200 EMA + ADX + Hourly)")
+    print("   [4] Custom Filter Configuration")
+    filter_choice = input("   Select Filter Mode [default: 1 (Baseline / Disabled)]: ").strip()
+
+    dur_enabled = False
+    dur_deep_s = 60.0
+    dur_max_s = 90.0
+    dur_act = "CLOSE"
+    adx_enabled = False
+    adx_per = 14
+    adx_thresh = 25.0
+    htf_enabled = False
+    htf_per = 200
+    htf_tf = "15m"
+    hourly_enabled = False
+    hourly_bl = []
+    dir_bias = "BOTH"
+
+    if filter_choice == "2":
+        dur_enabled = True
+    elif filter_choice == "3":
+        dur_enabled = True
+        adx_enabled = True
+        htf_enabled = True
+        hourly_enabled = True
+        hourly_bl = [2, 3, 4, 5, 17]
+    elif filter_choice == "4":
+        d_in = input("   Enable Duration Filter? [y/N]: ").strip().lower()
+        if d_in in ("y", "yes", "1"):
+            dur_enabled = True
+            hold_in = input("   Max hold seconds [default: 90]: ").strip()
+            dur_max_s = float(hold_in) if hold_in else 90.0
+            act_in = input("   Action on timeout (CLOSE / SCRATCH_OR_MARKET / TIGHTEN_SL) [default: CLOSE]: ").strip().upper()
+            dur_act = act_in if act_in in ("CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL") else "CLOSE"
+        h_in = input("   Enable HTF 200 EMA Trend Filter? [y/N]: ").strip().lower()
+        if h_in in ("y", "yes", "1"):
+            htf_enabled = True
+        a_in = input("   Enable ADX Chop Filter? [y/N]: ").strip().lower()
+        if a_in in ("y", "yes", "1"):
+            adx_enabled = True
+        hr_in = input("   Enable Hourly Session Blacklist? [y/N]: ").strip().lower()
+        if hr_in in ("y", "yes", "1"):
+            hourly_enabled = True
+            bl_in = input("   Comma-separated UTC hours to block [default: 2,3,4,5,17]: ").strip()
+            hourly_bl = [int(x.strip()) for x in bl_in.split(",") if x.strip().isdigit()] if bl_in else [2, 3, 4, 5, 17]
+        bias_in = input("   Directional Bias (BOTH / LONG_ONLY / SHORT_ONLY) [default: BOTH]: ").strip().upper()
+        if bias_in in ("LONG_ONLY", "SHORT_ONLY"):
+            dir_bias = bias_in
 
     config = BacktestConfig(
         symbol=selected_symbol,
@@ -280,7 +312,20 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         use_tick_data=True,
         fee_mode=fee_mode,
         maker_fee_override=maker_fee,
-        taker_fee_override=taker_fee
+        taker_fee_override=taker_fee,
+        duration_filter_enabled=dur_enabled,
+        duration_deep_monitor_seconds=dur_deep_s,
+        duration_max_hold_seconds=dur_max_s,
+        duration_action=dur_act,
+        adx_filter_enabled=adx_enabled,
+        adx_period=adx_per,
+        adx_threshold=adx_thresh,
+        htf_trend_filter_enabled=htf_enabled,
+        htf_ema_period=htf_per,
+        htf_timeframe=htf_tf,
+        hourly_filter_enabled=hourly_enabled,
+        hourly_blacklist_utc=hourly_bl,
+        direction_bias=dir_bias
     )
     return config, target
 
@@ -318,6 +363,20 @@ def main():
     parser.add_argument("--max-trades", type=int, default=0, help="Max trades to execute (0 = unlimited)")
     parser.add_argument("--speed", type=float, default=0.0, help="Simulated real-time playback speed (0 = max batch speed)")
     parser.add_argument("--slippage", type=int, default=0, help="Slippage in ticks")
+    # Trade Optimization & Regime Filter Flags
+    parser.add_argument("--duration-filter", action="store_true", default=False, help="Enable trade duration monitoring and time-decay exits")
+    parser.add_argument("--duration-deep-monitor", type=float, default=60.0, help="Seconds before high-frequency duration monitoring engages (default: 60.0)")
+    parser.add_argument("--duration-max-hold", type=float, default=90.0, help="Maximum allowed trade hold duration in seconds (default: 90.0)")
+    parser.add_argument("--duration-action", type=str, default="CLOSE", choices=["CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL"], help="Action on timeout (default: CLOSE)")
+    parser.add_argument("--adx-filter", action="store_true", default=False, help="Enable ADX chop suppression filter")
+    parser.add_argument("--adx-period", type=int, default=14, help="ADX smoothing period (default: 14)")
+    parser.add_argument("--adx-threshold", type=float, default=25.0, help="Minimum ADX required to allow entry (default: 25.0)")
+    parser.add_argument("--htf-trend-filter", action="store_true", default=False, help="Enable Higher-Timeframe 200 EMA trend filter")
+    parser.add_argument("--htf-ema-period", type=int, default=200, help="HTF EMA period (default: 200)")
+    parser.add_argument("--htf-timeframe", type=str, default="15m", help="HTF candle interval (default: 15m)")
+    parser.add_argument("--hourly-filter", action="store_true", default=False, help="Enable UTC hourly session blacklist")
+    parser.add_argument("--hourly-blacklist", type=str, default="", help="Comma-separated UTC hours to block (e.g. 2,3,4,5,17)")
+    parser.add_argument("--direction-bias", type=str, default="BOTH", choices=["BOTH", "LONG_ONLY", "SHORT_ONLY"], help="Directional bias: BOTH, LONG_ONLY, or SHORT_ONLY")
 
     args = parser.parse_args()
     print_banner()
@@ -356,6 +415,8 @@ def main():
         else:
             vol_mult = 2.0 if "TRUMP" in sym else 1.0
 
+        hourly_bl = [int(x.strip()) for x in args.hourly_blacklist.split(",") if x.strip().isdigit()] if args.hourly_blacklist else []
+
         config = BacktestConfig(
             symbol=sym,
             timeframe=args.timeframe,
@@ -379,7 +440,20 @@ def main():
             slippage_ticks=args.slippage,
             fee_mode=args.fee_mode,
             maker_fee_override=maker_fee,
-            taker_fee_override=taker_fee
+            taker_fee_override=taker_fee,
+            duration_filter_enabled=args.duration_filter,
+            duration_deep_monitor_seconds=args.duration_deep_monitor,
+            duration_max_hold_seconds=args.duration_max_hold,
+            duration_action=args.duration_action,
+            adx_filter_enabled=args.adx_filter,
+            adx_period=args.adx_period,
+            adx_threshold=args.adx_threshold,
+            htf_trend_filter_enabled=args.htf_trend_filter,
+            htf_ema_period=args.htf_ema_period,
+            htf_timeframe=args.htf_timeframe,
+            hourly_filter_enabled=args.hourly_filter,
+            hourly_blacklist_utc=hourly_bl,
+            direction_bias=args.direction_bias
         )
 
     # Dispatch to appropriate execution target

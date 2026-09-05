@@ -237,7 +237,42 @@ STOCH_BI_DIRECTIONAL = True
 
 
 # =============================================================================
-# 8. LOGGING DIRECTORIES & AUDIT FILES
+# 8. TRADE OPTIMIZATION & REGIME FILTERS (OPTIONAL / TOGGLEABLE)
+# =============================================================================
+# 1. Trade Duration Monitoring & Time-Decay Safeguards
+# Solves statistical degradation where trades lasting >60s drift toward the full -25% ROE stop.
+DURATION_FILTER_ENABLED = False          # False = Standard unmonitored hold; True = Enables duration safeguards
+DURATION_DEEP_MONITOR_SECONDS = 60.0     # Engages high-priority monitoring after 60s
+DURATION_MAX_HOLD_SECONDS = 90.0         # Hard time-stop timeout: triggers exit action after 90s
+DURATION_ACTION = "CLOSE"                # "CLOSE" (market exit), "SCRATCH_OR_MARKET" (exit if >= -1 tick), or "TIGHTEN_SL"
+
+# 2. ADX / Volatility Chop Filter
+# Suppresses entries during non-directional, choppy sideways markets.
+ADX_FILTER_ENABLED = False               # False = Disabled; True = Suppresses signals when ADX < ADX_THRESHOLD
+ADX_PERIOD = 14
+ADX_THRESHOLD = 25.0
+
+# 3. Higher-Timeframe (HTF) 200 EMA Macro Trend Filter
+# Restricts micro-scalps to trade strictly in alignment with the dominant trend:
+# Longs only when price >= HTF EMA; Shorts only when price <= HTF EMA.
+HTF_TREND_FILTER_ENABLED = False
+HTF_TIMEFRAME = "15m"
+HTF_EMA_PERIOD = 200
+
+# 4. Hourly Session Blacklist (Dead-Zone Filter)
+# Blocks trade entry during historically erratic, low-liquidity UTC hours.
+HOURLY_FILTER_ENABLED = False
+HOURLY_BLACKLIST_UTC = [2, 3, 4, 5, 17]  # UTC hours to block (e.g. 02:00-05:00, 17:00 UTC)
+
+# 5. Directional Bias Policy
+# "BOTH"       -> Bi-directional scalping (Longs & Shorts)
+# "LONG_ONLY"  -> Restricts all trades strictly to Long positions
+# "SHORT_ONLY" -> Restricts all trades strictly to Short positions
+DIRECTION_BIAS = "BOTH"
+
+
+# =============================================================================
+# 9. LOGGING DIRECTORIES & AUDIT FILES
 # =============================================================================
 LOGS_DIR = "logs"
 REALTIME_LOG_FILE = "engine_realtime.log"     # Live stream of all engine events & price polls
