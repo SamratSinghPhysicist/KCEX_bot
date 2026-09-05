@@ -401,6 +401,7 @@ def main():
     parser.add_argument("--hourly-filter", action="store_true", default=False, help="Enable UTC hourly session blacklist")
     parser.add_argument("--hourly-blacklist", type=str, default="", help="Comma-separated UTC hours to block (e.g. 2,3,4,5,17)")
     parser.add_argument("--direction-bias", type=str, default="BOTH", choices=["BOTH", "LONG_ONLY", "SHORT_ONLY"], help="Directional bias: BOTH, LONG_ONLY, or SHORT_ONLY")
+    parser.add_argument("--filters-json", type=str, default=None, help="JSON string containing Trade Optimization and Regime Filter configurations")
 
     args = parser.parse_args()
     print_banner()
@@ -439,7 +440,43 @@ def main():
         else:
             vol_mult = 2.0 if "TRUMP" in sym else 1.0
 
+        dur_enabled = args.duration_filter
+        dur_deep = args.duration_deep_monitor
+        dur_max = args.duration_max_hold
+        dur_act = args.duration_action
+        adx_enabled = args.adx_filter
+        adx_per = args.adx_period
+        adx_thresh = args.adx_threshold
+        htf_enabled = args.htf_trend_filter
+        htf_ema = args.htf_ema_period
+        htf_tf = args.htf_timeframe
+        hourly_enabled = args.hourly_filter
         hourly_bl = [int(x.strip()) for x in args.hourly_blacklist.split(",") if x.strip().isdigit()] if args.hourly_blacklist else []
+        dir_bias = args.direction_bias
+
+        if args.filters_json:
+            try:
+                fj = json.loads(args.filters_json) if isinstance(args.filters_json, str) else args.filters_json
+                if "duration_filter" in fj: dur_enabled = bool(fj["duration_filter"])
+                if "duration_deep_monitor" in fj: dur_deep = float(fj["duration_deep_monitor"])
+                if "duration_max_hold" in fj: dur_max = float(fj["duration_max_hold"])
+                if "duration_action" in fj: dur_act = str(fj["duration_action"])
+                if "adx_filter" in fj: adx_enabled = bool(fj["adx_filter"])
+                if "adx_period" in fj: adx_per = int(fj["adx_period"])
+                if "adx_threshold" in fj: adx_thresh = float(fj["adx_threshold"])
+                if "htf_trend_filter" in fj: htf_enabled = bool(fj["htf_trend_filter"])
+                if "htf_ema_period" in fj: htf_ema = int(fj["htf_ema_period"])
+                if "htf_timeframe" in fj: htf_tf = str(fj["htf_timeframe"])
+                if "hourly_filter" in fj: hourly_enabled = bool(fj["hourly_filter"])
+                if "hourly_blacklist" in fj:
+                    bl_val = fj["hourly_blacklist"]
+                    if isinstance(bl_val, list):
+                        hourly_bl = [int(x) for x in bl_val]
+                    elif isinstance(bl_val, str) and bl_val.strip():
+                        hourly_bl = [int(x.strip()) for x in bl_val.split(",") if x.strip().isdigit()]
+                if "direction_bias" in fj: dir_bias = str(fj["direction_bias"])
+            except Exception as e:
+                print(f"[!] Warning: Failed to parse --filters-json: {e}")
 
         config = BacktestConfig(
             symbol=sym,
@@ -466,19 +503,19 @@ def main():
             fee_mode=args.fee_mode,
             maker_fee_override=maker_fee,
             taker_fee_override=taker_fee,
-            duration_filter_enabled=args.duration_filter,
-            duration_deep_monitor_seconds=args.duration_deep_monitor,
-            duration_max_hold_seconds=args.duration_max_hold,
-            duration_action=args.duration_action,
-            adx_filter_enabled=args.adx_filter,
-            adx_period=args.adx_period,
-            adx_threshold=args.adx_threshold,
-            htf_trend_filter_enabled=args.htf_trend_filter,
-            htf_ema_period=args.htf_ema_period,
-            htf_timeframe=args.htf_timeframe,
-            hourly_filter_enabled=args.hourly_filter,
+            duration_filter_enabled=dur_enabled,
+            duration_deep_monitor_seconds=dur_deep,
+            duration_max_hold_seconds=dur_max,
+            duration_action=dur_act,
+            adx_filter_enabled=adx_enabled,
+            adx_period=adx_per,
+            adx_threshold=adx_thresh,
+            htf_trend_filter_enabled=htf_enabled,
+            htf_ema_period=htf_ema,
+            htf_timeframe=htf_tf,
+            hourly_filter_enabled=hourly_enabled,
             hourly_blacklist_utc=hourly_bl,
-            direction_bias=args.direction_bias
+            direction_bias=dir_bias
         )
 
     # Dispatch to appropriate execution target

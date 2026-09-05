@@ -186,6 +186,22 @@ class GitHubBacktestRunner:
 
         sl_price = str(config.sl_price_pct if config.sl_price_pct is not None else 0.5)
 
+        filters_dict = {
+            "duration_filter": getattr(config, "duration_filter_enabled", False),
+            "duration_deep_monitor": getattr(config, "duration_deep_monitor_seconds", 60.0),
+            "duration_max_hold": getattr(config, "duration_max_hold_seconds", 90.0),
+            "duration_action": getattr(config, "duration_action", "CLOSE") or "CLOSE",
+            "adx_filter": getattr(config, "adx_filter_enabled", False),
+            "adx_period": getattr(config, "adx_period", 14),
+            "adx_threshold": getattr(config, "adx_threshold", 25.0),
+            "htf_trend_filter": getattr(config, "htf_trend_filter_enabled", False),
+            "htf_ema_period": getattr(config, "htf_ema_period", 200),
+            "htf_timeframe": getattr(config, "htf_timeframe", "15m") or "15m",
+            "hourly_filter": getattr(config, "hourly_filter_enabled", False),
+            "hourly_blacklist": ",".join(str(x) for x in (getattr(config, "hourly_blacklist_utc", []) or [])),
+            "direction_bias": getattr(config, "direction_bias", "BOTH") or "BOTH"
+        }
+
         return {
             "symbol": sym,
             "timeframe": config.timeframe,
@@ -210,19 +226,7 @@ class GitHubBacktestRunner:
             "capital": str(config.initial_balance_usdt),
             "max_trades": str(config.max_trades),
             "slippage": str(config.slippage_ticks),
-            "duration_filter": "true" if getattr(config, "duration_filter_enabled", False) else "false",
-            "duration_deep_monitor": str(getattr(config, "duration_deep_monitor_seconds", 60.0)),
-            "duration_max_hold": str(getattr(config, "duration_max_hold_seconds", 90.0)),
-            "duration_action": str(getattr(config, "duration_action", "CLOSE") or "CLOSE"),
-            "adx_filter": "true" if getattr(config, "adx_filter_enabled", False) else "false",
-            "adx_period": str(getattr(config, "adx_period", 14)),
-            "adx_threshold": str(getattr(config, "adx_threshold", 25.0)),
-            "htf_trend_filter": "true" if getattr(config, "htf_trend_filter_enabled", False) else "false",
-            "htf_ema_period": str(getattr(config, "htf_ema_period", 200)),
-            "htf_timeframe": str(getattr(config, "htf_timeframe", "15m") or "15m"),
-            "hourly_filter": "true" if getattr(config, "hourly_filter_enabled", False) else "false",
-            "hourly_blacklist": ",".join(str(x) for x in (getattr(config, "hourly_blacklist_utc", []) or [])),
-            "direction_bias": str(getattr(config, "direction_bias", "BOTH") or "BOTH")
+            "filters_json": json.dumps(filters_dict)
         }
 
     def dispatch_workflow(self, inputs: Dict[str, str], ref: str = "main") -> bool:

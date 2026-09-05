@@ -171,96 +171,16 @@ on:
         default: "0"
         type: string
 
-      duration_filter:
-        description: "Enable Trade Duration Time-Stop & In-Depth Monitoring"
-        required: false
-        default: false
-        type: boolean
-
-      duration_deep_monitor:
-        description: "Duration Deep Monitoring Threshold in Seconds (e.g. 60.0)"
-        required: false
-        default: "60.0"
-        type: string
-
-      duration_max_hold:
-        description: "Duration Max Hold Seconds before Time-Stop (e.g. 90.0)"
-        required: false
-        default: "90.0"
-        type: string
-
-      duration_action:
-        description: "Duration Action on Timeout"
-        required: false
-        default: "CLOSE"
-        type: choice
-        options:
-          - "CLOSE"
-          - "SCRATCH_OR_MARKET"
-          - "TIGHTEN_SL"
-
-      adx_filter:
-        description: "Enable ADX Chop Filter"
-        required: false
-        default: false
-        type: boolean
-
-      adx_period:
-        description: "ADX Period"
-        required: false
-        default: "14"
-        type: string
-
-      adx_threshold:
-        description: "ADX Threshold (Minimum ADX to allow entry)"
-        required: false
-        default: "25.0"
-        type: string
-
-      htf_trend_filter:
-        description: "Enable Higher-Timeframe Trend Filter (200 EMA)"
-        required: false
-        default: false
-        type: boolean
-
-      htf_ema_period:
-        description: "HTF EMA Period (e.g. 200)"
-        required: false
-        default: "200"
-        type: string
-
-      htf_timeframe:
-        description: "HTF Timeframe (e.g. 15m)"
-        required: false
-        default: "15m"
-        type: string
-
-      hourly_filter:
-        description: "Enable Hourly Session Filter"
-        required: false
-        default: false
-        type: boolean
-
-      hourly_blacklist:
-        description: "Comma-separated UTC hours to blacklist (e.g. 2,3,4,5,17)"
-        required: false
-        default: ""
-        type: string
-
-      direction_bias:
-        description: "Directional Bias Policy"
-        required: false
-        default: "BOTH"
-        type: choice
-        options:
-          - "BOTH"
-          - "LONG_ONLY"
-          - "SHORT_ONLY"
-
       sl_price:
         description: "Stop Loss Price % (if PRICE_PCT mode)"
         required: false
         default: "0.5"
+        type: string
+
+      filters_json:
+        description: "Filters JSON Configuration (Duration, ADX, HTF 200 EMA, Hourly, Directional Bias)"
+        required: false
+        default: "{}"
         type: string
 
 jobs:
@@ -318,29 +238,6 @@ jobs:
             TICKS_FLAG="--no-ticks"
           fi
 
-          FILTER_FLAGS=""
-          if [ "${{ inputs.duration_filter }}" = "true" ]; then
-            FILTER_FLAGS="$FILTER_FLAGS --duration-filter --duration-deep-monitor ${{ inputs.duration_deep_monitor }} --duration-max-hold ${{ inputs.duration_max_hold }} --duration-action ${{ inputs.duration_action }}"
-          fi
-          if [ "${{ inputs.adx_filter }}" = "true" ]; then
-            FILTER_FLAGS="$FILTER_FLAGS --adx-filter --adx-period ${{ inputs.adx_period }} --adx-threshold ${{ inputs.adx_threshold }}"
-          fi
-          if [ "${{ inputs.htf_trend_filter }}" = "true" ]; then
-            FILTER_FLAGS="$FILTER_FLAGS --htf-trend-filter --htf-ema-period ${{ inputs.htf_ema_period }} --htf-timeframe ${{ inputs.htf_timeframe }}"
-          fi
-          if [ "${{ inputs.hourly_filter }}" = "true" ]; then
-            FILTER_FLAGS="$FILTER_FLAGS --hourly-filter"
-            if [ -n "${{ inputs.hourly_blacklist }}" ]; then
-              FILTER_FLAGS="$FILTER_FLAGS --hourly-blacklist ${{ inputs.hourly_blacklist }}"
-            fi
-          fi
-          if [ -n "${{ inputs.direction_bias }}" ]; then
-            FILTER_FLAGS="$FILTER_FLAGS --direction-bias ${{ inputs.direction_bias }}"
-          fi
-          if [ -n "${{ inputs.sl_price }}" ]; then
-            FILTER_FLAGS="$FILTER_FLAGS --sl-price ${{ inputs.sl_price }}"
-          fi
-
           python BACKTESTER/run_backtest.py \
             --symbol "${{ inputs.symbol }}" \
             --timeframe "${{ inputs.timeframe }}" \
@@ -360,11 +257,12 @@ jobs:
             --sl-mode "${{ inputs.sl_mode }}" \
             --sl-ticks "${{ inputs.sl_ticks }}" \
             --sl-roe "${{ inputs.sl_roe }}" \
+            --sl-price "${{ inputs.sl_price }}" \
             --leverage "${{ inputs.leverage }}" \
             --capital "${{ inputs.capital }}" \
             --max-trades "${{ inputs.max_trades }}" \
             --slippage "${{ inputs.slippage }}" \
-            $FILTER_FLAGS
+            --filters-json '${{ inputs.filters_json }}'
 
       - name: Publish Summary to GitHub Job Summary
         if: always()

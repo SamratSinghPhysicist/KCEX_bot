@@ -84,6 +84,7 @@ class TestGitHubRunner(unittest.TestCase):
         self.assertIn("Accept", runner.headers)
 
     def test_workflow_inputs_generation_with_filters(self):
+        import json
         config = BacktestConfig(
             symbol="TRUMP_USDT",
             timeframe="1m",
@@ -91,7 +92,7 @@ class TestGitHubRunner(unittest.TestCase):
             duration_filter_enabled=True,
             duration_deep_monitor_seconds=45.0,
             duration_max_hold_seconds=75.0,
-            duration_action="SCRATCH",
+            duration_action="SCRATCH_OR_MARKET",
             adx_filter_enabled=True,
             adx_period=10,
             adx_threshold=25.0,
@@ -106,19 +107,25 @@ class TestGitHubRunner(unittest.TestCase):
         runner = GitHubBacktestRunner()
         inputs = runner.build_workflow_inputs(config)
 
-        self.assertEqual(inputs["duration_filter"], "true")
-        self.assertEqual(inputs["duration_deep_monitor"], "45.0")
-        self.assertEqual(inputs["duration_max_hold"], "75.0")
-        self.assertEqual(inputs["duration_action"], "SCRATCH")
-        self.assertEqual(inputs["adx_filter"], "true")
-        self.assertEqual(inputs["adx_period"], "10")
-        self.assertEqual(inputs["adx_threshold"], "25.0")
-        self.assertEqual(inputs["htf_trend_filter"], "true")
-        self.assertEqual(inputs["htf_ema_period"], "100")
-        self.assertEqual(inputs["htf_timeframe"], "30m")
-        self.assertEqual(inputs["hourly_filter"], "true")
-        self.assertEqual(inputs["hourly_blacklist"], "0,1,23")
-        self.assertEqual(inputs["direction_bias"], "LONG_ONLY")
+        # Critical: GitHub Actions workflow_dispatch strictly enforces <= 25 inputs
+        self.assertLessEqual(len(inputs), 25, f"Workflow inputs count {len(inputs)} exceeds GitHub 25-property limit")
+
+        self.assertIn("filters_json", inputs)
+        filters = json.loads(inputs["filters_json"])
+
+        self.assertEqual(filters["duration_filter"], True)
+        self.assertEqual(filters["duration_deep_monitor"], 45.0)
+        self.assertEqual(filters["duration_max_hold"], 75.0)
+        self.assertEqual(filters["duration_action"], "SCRATCH_OR_MARKET")
+        self.assertEqual(filters["adx_filter"], True)
+        self.assertEqual(filters["adx_period"], 10)
+        self.assertEqual(filters["adx_threshold"], 25.0)
+        self.assertEqual(filters["htf_trend_filter"], True)
+        self.assertEqual(filters["htf_ema_period"], 100)
+        self.assertEqual(filters["htf_timeframe"], "30m")
+        self.assertEqual(filters["hourly_filter"], True)
+        self.assertEqual(filters["hourly_blacklist"], "0,1,23")
+        self.assertEqual(filters["direction_bias"], "LONG_ONLY")
         self.assertEqual(inputs["sl_price"], "2.15")
 
 
