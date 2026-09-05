@@ -66,6 +66,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadFactors();
   await loadRuns();
   await loadStorageStats();
+  if (window.forensicsLab) {
+    await window.forensicsLab.init();
+  }
 });
 
 function setupTabs() {
@@ -87,9 +90,30 @@ function setupTabs() {
           state.deepDiveRunId = state.runs[0].metadata.run_id;
         }
         renderDeepDive();
+      } else if (btn.dataset.tab === 'forensics') {
+        if (window.forensicsLab) {
+          if (!window.forensicsLab.chart) {
+            window.forensicsLab.init();
+          } else {
+            setTimeout(() => {
+              const c = document.getElementById('forensicMainChartContainer');
+              if (c && window.forensicsLab.chart) {
+                window.forensicsLab.chart.applyOptions({ width: c.clientWidth });
+                window.forensicsLab.chart.timeScale().fitContent();
+              }
+            }, 50);
+          }
+        }
       }
     });
   });
+}
+
+function switchToTab(tabName) {
+  const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+  if (targetBtn) {
+    targetBtn.click();
+  }
 }
 
 function setupEventListeners() {
@@ -1577,7 +1601,7 @@ async function loadPagedTrades() {
     tbody.innerHTML = '';
 
     if (data.trades.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">No matching trade records.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">No matching trade records.</td></tr>`;
       return;
     }
 
@@ -1598,7 +1622,29 @@ async function loadPagedTrades() {
         <td><span class="tag ${t.exit_reason === 'MIN_PROFIT_TP_HIT' ? 'tag-cyan' : 'loss'}">${t.exit_reason}</span></td>
         <td class="mono" style="font-size: 0.75rem; color: var(--text-dim);">${t.close_time}</td>
         <td class="mono">$${parseFloat(t.balance_after_trade_usdt || 0).toFixed(4)}</td>
+        <td>
+          <button class="btn btn-secondary btn-xs btn-inspect-trade" title="Open under Forensic Microscope & Historical Replay">
+            <span>🔬</span> Inspect
+          </button>
+        </td>
       `;
+
+      const btnInspect = tr.querySelector('.btn-inspect-trade');
+      if (btnInspect) {
+        btnInspect.addEventListener('click', async () => {
+          switchToTab('forensics');
+          if (window.forensicsLab) {
+            const runSelect = document.getElementById('forensicRunSelect');
+            if (runSelect && state.deepDiveRunId && window.forensicsLab.activeRunId !== state.deepDiveRunId) {
+              runSelect.value = state.deepDiveRunId;
+              window.forensicsLab.activeRunId = state.deepDiveRunId;
+              await window.forensicsLab.onRunChanged();
+            }
+            window.forensicsLab.jumpToTrade(parseInt(t.trade_id, 10));
+          }
+        });
+      }
+
       tbody.appendChild(tr);
     });
   } catch (e) {

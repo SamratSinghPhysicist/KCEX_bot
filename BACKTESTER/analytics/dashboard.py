@@ -17,6 +17,7 @@ from BACKTESTER.analytics.models import BacktestRunRecord
 from BACKTESTER.analytics.indexer import ReportIndexer
 from BACKTESTER.analytics.engine import AnalyticsEngine
 from BACKTESTER.analytics.exporter import AIDossierExporter
+from BACKTESTER.analytics.forensics import ForensicsEngine
 
 # Ensure UTF-8
 if hasattr(sys.stdout, 'reconfigure'):
@@ -37,6 +38,7 @@ app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 indexer = ReportIndexer()
 engine = AnalyticsEngine(indexer)
 exporter = AIDossierExporter(engine)
+forensics = ForensicsEngine(indexer=indexer)
 
 
 class CompareRequest(BaseModel):
@@ -250,6 +252,92 @@ async def purge_heavy_jsonl():
         "purged_count": purged_count,
         "reclaimed_mb": round(reclaimed_mb, 2)
     }
+
+
+# =============================================================================
+# FORENSICS & REPLAY LAB ENDPOINTS
+# =============================================================================
+
+class WhatIfRequest(BaseModel):
+    timeout_seconds: Optional[float] = None
+    tp_ticks: Optional[int] = None
+    sl_roe_pct: Optional[float] = None
+
+
+@app.get("/api/forensics/catalog")
+async def get_forensics_catalog():
+    """Returns available symbols, timeframes, dates, and runs for forensic charting."""
+    return forensics.get_catalog()
+
+
+@app.get("/api/forensics/candles")
+async def get_forensics_candles(
+    symbol: str = Query(...),
+    timeframe: str = Query("1m"),
+    start_ms: Optional[int] = Query(None),
+    end_ms: Optional[int] = Query(None),
+    limit: int = Query(1500, ge=1, le=5000)
+):
+    """Returns candlestick array formatted for Lightweight Charts."""
+    candles = forensics.get_candles(
+        symbol=symbol,
+        timeframe=timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        limit=limit
+    )
+    return {"symbol": symbol, "timeframe": timeframe, "candles": candles}
+
+
+@app.get("/api/forensics/run/{run_id}/trades-all")
+async def get_forensics_all_trades(run_id: str):
+    """Returns complete catalog of all trades in a run with quick stats and tick data availability."""
+    return forensics.get_all_trades_catalog(run_id)
+
+
+@app.get("/api/forensics/trade/{run_id}/{trade_id}")
+async def get_forensics_trade_context(
+    run_id: str,
+    trade_id: int,
+    timeframe: str = Query("1m"),
+    pad_before: int = Query(80, ge=20, le=300),
+    pad_after: int = Query(50, ge=10, le=200)
+):
+    """Returns complete trade context, surrounding candles, indicators, ticks, MFE/MAE, and post-exit."""
+    try:
+        return forensics.get_trade_forensic_context(
+            run_id=run_id,
+            trade_id=trade_id,
+            timeframe=timeframe,
+            pad_candles_before=pad_before,
+            pad_candles_after=pad_after
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Forensics error: {str(e)}")
+
+
+@app.post("/api/forensics/trade/{run_id}/{trade_id}/what-if")
+async def simulate_forensics_what_if(
+    run_id: str,
+    trade_id: int,
+    req: WhatIfRequest
+):
+    """Simulates counterfactual exit rules against the trade's recorded historical tick stream."""
+    try:
+        return forensics.simulate_what_if(
+            run_id=run_id,
+            trade_id=trade_id,
+            timeout_seconds=req.timeout_seconds,
+            tp_ticks=req.tp_ticks,
+            sl_roe_pct=req.sl_roe_pct
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"What-if simulation error: {str(e)}")
+
 
 
 def start_server(host: str = "127.0.0.1", port: int = 8000):

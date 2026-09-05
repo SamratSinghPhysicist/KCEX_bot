@@ -13,6 +13,9 @@
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   
+  <!-- TradingView Lightweight Charts (Local High-Performance Bundle) -->
+  <script src="/static/lightweight-charts.standalone.production.js"></script>
+  
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -62,6 +65,10 @@
     <button class="tab-btn active" data-tab="library">
       <span>📚</span> Report Library
       <span class="tab-badge" id="libraryBadge">0</span>
+    </button>
+    <button class="tab-btn" data-tab="forensics">
+      <span>📈</span> Forensics & Replay Lab
+      <span class="tab-badge pulse-badge" style="background: rgba(0, 210, 255, 0.2); color: var(--accent-cyan);">NEW</span>
     </button>
     <button class="tab-btn" data-tab="comparison">
       <span>⚖️</span> Comparison Studio
@@ -132,7 +139,290 @@
 
 
     <!-- ====================================================================
-         TAB 2: INTERACTIVE COMPARISON STUDIO (Core Request)
+         TAB 2: FORENSICS & REPLAY LAB
+         ==================================================================== -->
+    <section class="tab-pane" id="pane-forensics">
+      <!-- Forensic Lab Top Control Bar -->
+      <div class="forensic-top-bar">
+        <div class="forensic-selectors">
+          <div class="control-item">
+            <label>BACKTEST RUN:</label>
+            <select class="select-dark" id="forensicRunSelect" style="min-width: 320px;"></select>
+          </div>
+          <div class="control-item">
+            <label>TRADE INSPECTED:</label>
+            <select class="select-dark" id="forensicTradeSelect" style="min-width: 320px;"></select>
+          </div>
+        </div>
+
+        <div class="forensic-tf-group">
+          <label>TIMEFRAME:</label>
+          <div class="tf-buttons">
+            <button class="tf-btn active" data-tf="1m">1m</button>
+            <button class="tf-btn" data-tf="3m">3m</button>
+            <button class="tf-btn" data-tf="5m">5m</button>
+            <button class="tf-btn" data-tf="15m">15m</button>
+            <button class="tf-btn" data-tf="30m">30m</button>
+            <button class="tf-btn" data-tf="1h">1h</button>
+            <button class="tf-btn" data-tf="4h">4h</button>
+            <button class="tf-btn" data-tf="1d">1d</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Trade Filter & Direct Jump Bar -->
+      <div class="forensic-sub-bar">
+        <div class="trade-filter-chips">
+          <button class="filter-chip active" data-trade-filter="ALL" id="chipAllTrades">All (<span id="countAllTrades">0</span>)</button>
+          <button class="filter-chip" data-trade-filter="WIN" id="chipWinTrades">Wins (<span id="countWinTrades">0</span>)</button>
+          <button class="filter-chip" data-trade-filter="LOSS" id="chipLossTrades">Losses (<span id="countLossTrades">0</span>)</button>
+          <button class="filter-chip" data-trade-filter="TIMEOUT" id="chipTimeoutTrades">Timeouts (<span id="countTimeoutTrades">0</span>)</button>
+          <button class="filter-chip" data-trade-filter="TICKS" id="chipTicksTrades" style="color: var(--accent-cyan); border-color: rgba(0, 210, 255, 0.4);">⚡ High-Res Ticks (<span id="countTicksTrades">0</span>)</button>
+        </div>
+
+        <div class="trade-nav-group">
+          <button class="btn btn-secondary btn-sm" id="btnPrevTrade" title="Previous Trade">◀ Prev</button>
+          <div class="jump-trade-box">
+            <input type="number" id="jumpTradeInput" class="jump-trade-input" placeholder="#ID" min="1">
+            <button class="btn btn-secondary btn-sm" id="btnJumpTrade">Go</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnNextTrade" title="Next Trade">Next ▶</button>
+          <button class="btn btn-primary btn-sm" id="btnOpenAllTradesModal" title="Open Complete Trades Explorer Grid" style="margin-left: 0.5rem;">
+            <span>📋</span> All Trades Explorer
+          </button>
+        </div>
+      </div>
+
+
+      <!-- Replay Engine Controller Toolbar -->
+      <div class="replay-toolbar">
+        <div class="replay-playback-controls">
+          <button class="btn btn-secondary btn-sm" id="btnReplayReset" title="Reset to Entry"><span>⏮</span></button>
+          <button class="btn btn-secondary btn-sm" id="btnReplayStepBack" title="Step -1 Tick"><span>◀</span></button>
+          <button class="btn btn-primary btn-sm" id="btnReplayPlay" title="Play Replay"><span>▶</span> Play</button>
+          <button class="btn btn-warning btn-sm" id="btnReplayPause" style="display:none;" title="Pause Replay"><span>⏸</span> Pause</button>
+          <button class="btn btn-secondary btn-sm" id="btnReplayStepFwd" title="Step +1 Tick"><span>▶</span></button>
+        </div>
+
+        <!-- Scrub Slider Bar -->
+        <div class="replay-scrub-container">
+          <div class="scrub-labels">
+            <span>Trade Entry</span>
+            <span id="replayElapsedSec" class="mono text-cyan">0.0s</span>
+            <span>Trade Exit / Post-Exit</span>
+          </div>
+          <input type="range" class="replay-scrubber" id="replayScrubSlider" min="0" max="100" value="0">
+        </div>
+
+        <!-- Speed Selector Chips -->
+        <div class="replay-speed-group">
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">SPEED:</span>
+          <button class="speed-chip active" data-speed="1">1x</button>
+          <button class="speed-chip" data-speed="2">2x</button>
+          <button class="speed-chip" data-speed="5">5x</button>
+          <button class="speed-chip" data-speed="10">10x</button>
+          <button class="speed-chip" data-speed="25">25x</button>
+          <button class="speed-chip" data-speed="50">50x</button>
+          <button class="speed-chip" data-speed="100">100x</button>
+        </div>
+
+        <!-- Live Simulation Readout -->
+        <div class="replay-live-readout">
+          <span class="status-chip neutral" id="replayInPositionPill">STANDBY</span>
+          <div class="readout-metric">
+            <span class="readout-label">PRICE</span>
+            <span class="readout-val mono" id="replayCurrentPrice">--</span>
+          </div>
+          <div class="readout-metric">
+            <span class="readout-label">Δ ENTRY</span>
+            <span class="readout-val mono" id="replayCurrentDelta">--</span>
+          </div>
+          <div class="readout-metric">
+            <span class="readout-label">TO TP</span>
+            <span class="readout-val mono text-profit" id="replayToTp">--</span>
+          </div>
+          <div class="readout-metric">
+            <span class="readout-label">TO SL</span>
+            <span class="readout-val mono text-loss" id="replayToSl">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Forensic Lab Workspace: Dual-Pane Chart + Inspector Drawer -->
+      <div class="forensic-lab-viewport">
+        <!-- Left: Interactive TradingView Lightweight Charts Stack -->
+        <div class="forensic-chart-stack">
+          <div class="chart-container-card" style="position: relative;">
+            <div class="chart-pane-header">
+              <div class="pane-title">
+                <span>📊</span> Candlestick Market Path & Indicators (Wilder EMA 5/13 Overlay)
+              </div>
+              <div class="pane-legend">
+                <span class="legend-dot" style="background: #00f090;"></span> TP Target
+                <span class="legend-dot" style="background: #00d2ff;"></span> Entry
+                <span class="legend-dot" style="background: #ff3366;"></span> Stop Loss
+                <span class="legend-dot" style="background: #ffb800;"></span> Slow EMA
+              </div>
+            </div>
+            <div id="forensicMainChartContainer" class="forensic-chart-canvas"></div>
+            
+            <div class="chart-pane-header" style="border-top: 1px solid var(--border-subtle); margin-top: 0.5rem;">
+              <div class="pane-title">
+                <span>🌊</span> Stochastic RSI Momentum Oscillator (%K / %D with 20/80 Reversal Gates)
+              </div>
+              <div class="pane-legend">
+                <span class="legend-dot" style="background: #00d2ff;"></span> %K Fast
+                <span class="legend-dot" style="background: #ff3366;"></span> %D Slow
+              </div>
+            </div>
+            <div id="forensicOscChartContainer" class="forensic-osc-canvas"></div>
+
+            <div class="forensic-loading-overlay" id="forensicLoadingOverlay" style="display: none;">
+              <div class="spinner"></div>
+              <span>Streaming Millisecond Forensics & Tick Trade Timeline...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Forensic Microscope & Trade Inspector Drawer -->
+        <div class="forensic-inspector-drawer">
+          <!-- Trade Header & Badges -->
+          <div class="drawer-header">
+            <div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">FORENSIC INSPECTOR</div>
+              <h3 id="inspTradeId" style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan); display: inline-block;">#--</h3>
+              <div id="inspFeedBadge" class="data-feed-badge candle-res" style="margin-left: 0.5rem;">📊 1m Candle Fallback</div>
+            </div>
+            <div style="display: flex; gap: 0.4rem;">
+              <span class="status-chip" id="inspDirectionBadge">--</span>
+              <span class="status-chip" id="inspExitReasonBadge">--</span>
+            </div>
+          </div>
+
+          <!-- Execution Price Matrix -->
+          <div class="insp-price-matrix">
+            <div class="matrix-cell">
+              <span class="cell-label">ENTRY</span>
+              <span class="cell-val mono" id="inspEntryPrice">--</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="cell-label">EXIT</span>
+              <span class="cell-val mono" id="inspExitPrice">--</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="cell-label">TP TARGET</span>
+              <span class="cell-val mono text-profit" id="inspTpPrice">--</span>
+            </div>
+            <div class="matrix-cell">
+              <span class="cell-label">STOP LOSS</span>
+              <span class="cell-val mono text-loss" id="inspSlPrice">--</span>
+            </div>
+          </div>
+
+          <!-- Performance Scorecard -->
+          <div class="insp-scorecard">
+            <div class="sc-metric">
+              <span class="sc-label">Realized PnL:</span>
+              <span class="sc-val mono" id="inspPnl">--</span>
+            </div>
+            <div class="sc-metric">
+              <span class="sc-label">Return on Equity (ROE):</span>
+              <span class="sc-val mono" id="inspRoe">--</span>
+            </div>
+            <div class="sc-metric">
+              <span class="sc-label">In-Trade Duration:</span>
+              <span class="sc-val mono" id="inspDuration">--</span>
+            </div>
+            <div class="sc-metric">
+              <span class="sc-label">Fill Time (UTC):</span>
+              <span class="sc-val mono" id="inspOpenTime" style="font-size: 0.72rem;">--</span>
+            </div>
+            <div class="sc-metric">
+              <span class="sc-label">Close Time (UTC):</span>
+              <span class="sc-val mono" id="inspCloseTime" style="font-size: 0.72rem;">--</span>
+            </div>
+          </div>
+
+          <!-- High-Res Tick Forensics: MFE / MAE -->
+          <div class="insp-card">
+            <h4 class="insp-card-title"><span>🎯</span> Max Excursion (MFE / MAE Forensics)</h4>
+            <div class="mfe-mae-grid">
+              <div class="mfe-box">
+                <span class="mfe-label">Max Favorable (MFE)</span>
+                <span class="mfe-val profit mono" id="inspMfe">--</span>
+              </div>
+              <div class="mae-box">
+                <span class="mae-label">Max Drawdown (MAE)</span>
+                <span class="mae-val loss mono" id="inspMae">--</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Strategy State & Filter Verification -->
+          <div class="insp-card">
+            <h4 class="insp-card-title"><span>🛡️</span> Strategy Filters & Regime Gate Verification</h4>
+            <div class="filter-badge-list" id="inspFilterContainer">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- "What Happened After Exit?" Mode -->
+          <div class="insp-card">
+            <h4 class="insp-card-title"><span>🔮</span> Post-Exit Path Forensics ("What Happened After Exit?")</h4>
+            <div class="post-exit-box" id="inspPostExitSummary">
+              Analyzing historical tick trajectory after trade exit...
+            </div>
+          </div>
+
+          <!-- Counterfactual "What-If" Exit Simulator -->
+          <div class="insp-card">
+            <h4 class="insp-card-title"><span>⚡</span> What-If Exit Simulator (Counterfactual Testing)</h4>
+            <div class="what-if-controls">
+              <div class="wi-form-group">
+                <label>ALTERNATIVE TIMEOUT:</label>
+                <select class="select-dark-sm" id="whatIfTimeoutSelect">
+                  <option value="NONE">No Timeout Exit</option>
+                  <option value="30">30 Seconds</option>
+                  <option value="45">45 Seconds</option>
+                  <option value="60">60 Seconds</option>
+                  <option value="75">75 Seconds</option>
+                  <option value="90">90 Seconds</option>
+                  <option value="120">120 Seconds</option>
+                </select>
+              </div>
+              <div class="wi-form-group">
+                <label>TP TARGET DISTANCE:</label>
+                <select class="select-dark-sm" id="whatIfTpSelect">
+                  <option value="DEFAULT">Default Strategy (+2 ticks)</option>
+                  <option value="1">+1 tick</option>
+                  <option value="2">+2 ticks</option>
+                  <option value="3">+3 ticks</option>
+                  <option value="4">+4 ticks</option>
+                  <option value="5">+5 ticks</option>
+                </select>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btnRunWhatIf" style="width: 100%; margin-top: 0.4rem;">
+                <span>🔬</span> Simulate Counterfactual Exit
+              </button>
+            </div>
+            <div id="whatIfResultContainer" style="display: none; margin-top: 0.75rem;"></div>
+          </div>
+
+          <!-- Tick Event Timeline -->
+          <div class="insp-card">
+            <h4 class="insp-card-title"><span>⏱️</span> Millisecond Tick Event Timeline</h4>
+            <div class="timeline-scroll-box" id="inspTimelineContainer">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         TAB 3: INTERACTIVE COMPARISON STUDIO
          ==================================================================== -->
     <section class="tab-pane" id="pane-comparison">
       <!-- Comparison Header & Run Chips -->
@@ -404,6 +694,7 @@
                 <th>Exit Reason</th>
                 <th>Close Time (UTC)</th>
                 <th>Balance After</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="tradesTableBody">
@@ -531,7 +822,61 @@
     </div>
   </div>
 
-  <!-- Client Script -->
+  <!-- All Trades Explorer Modal -->
+  <div class="modal-backdrop" id="allTradesModal" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📋</span> All Trades Explorer — Run: <span id="modalRunTitle" style="color: var(--accent-cyan); font-family: var(--font-mono);">--</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseAllTradesModal">&times;</button>
+      </div>
+
+      <div class="modal-toolbar">
+        <div class="search-box" style="flex: 1; max-width: 350px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="modalTradeSearch" placeholder="Search by ID, date, exit reason, PnL...">
+        </div>
+
+        <div class="trade-filter-chips">
+          <button class="filter-chip active" data-modal-filter="ALL" id="modalChipAll">All</button>
+          <button class="filter-chip" data-modal-filter="WIN" id="modalChipWins">Wins</button>
+          <button class="filter-chip" data-modal-filter="LOSS" id="modalChipLosses">Losses</button>
+          <button class="filter-chip" data-modal-filter="TIMEOUT" id="modalChipTimeouts">Timeouts</button>
+          <button class="filter-chip" data-modal-filter="TICKS" id="modalChipTicks" style="color: var(--accent-cyan); border-color: rgba(0, 210, 255, 0.4);">⚡ With Raw Ticks</button>
+        </div>
+      </div>
+
+      <div class="modal-table-container">
+        <table class="runs-table" id="allTradesTable">
+          <thead>
+            <tr>
+              <th>#ID</th>
+              <th>Open Time (UTC)</th>
+              <th>Direction</th>
+              <th>Duration</th>
+              <th>Exit Reason</th>
+              <th>Realized PnL</th>
+              <th>ROE %</th>
+              <th>Resolution Feed</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="allTradesTableBody">
+            <!-- Dynamic Injection -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <span id="modalTradesCount">Showing 0 trades</span>
+        <button class="btn btn-secondary btn-sm" id="btnCloseAllTradesFooter">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Scripts -->
+  <script src="/static/forensics.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>
