@@ -7372,3 +7372,165 @@ kcex.client.KCEXAPIError: [KCEX Error REQUEST_FAILED] Request failed: The read o
 2026-09-05 03:17:06 [INFO   ] ============================================================================
 2026-09-05 03:17:06 [INFO   ] Total Trades Completed: 22 | Wins: 19 | Losses: 3 | Win Rate: 86.4%
 2026-09-05 03:17:06 [INFO   ] Net Session PnL: -0.0042 USDT (INR -0.40)
+2026-09-05 10:26:39 [INFO   ] ============================================================================
+2026-09-05 10:26:39 [INFO   ]    PRE-FLIGHT CHECKS & SYSTEM INITIALIZATION
+2026-09-05 10:26:39 [INFO   ] ============================================================================
+2026-09-05 10:26:39 [INFO   ] Testing connectivity to KCEX API...
+2026-09-05 10:26:39 [INFO   ] Live USD/INR Exchange Rate: INR 94.44 per USD
+2026-09-05 10:26:40 [INFO   ] Trading Pair: TRUMP_USDT | Tick Size (pu): 0.001 | Contract Size (cs): 0.1 | Min Volume: 1.0 contract(s)
+2026-09-05 10:26:40 [INFO   ] Effective Fees: Maker 0.00% / Taker 0.00% (ZERO FEES CONFIRMED)
+2026-09-05 10:26:40 [INFO   ] Futures Wallet Available: 0.0696 USDT (INR 6.57)
+2026-09-05 10:26:41 [INFO   ] Engine Mode: LIVE
+2026-09-05 10:26:41 [INFO   ] Sub-strategy: StochasticRSI
+2026-09-05 10:26:41 [INFO   ] Position Sizing: 2 contract(s) [Trade Qty != Margin; Committed Margin = Trade Qty / 75x leverage]
+2026-09-05 10:26:41 [INFO   ] Target Leverage: 75x isolated
+2026-09-05 10:26:41 [INFO   ] Min-Profit Take Profit rule: Entry Price +/- 2 pu (Tick Size)
+2026-09-05 10:26:41 [INFO   ] Stop Loss rule: -None% ROE on margin
+2026-09-05 10:26:41 [INFO   ] Post-trade cooldown: 10.0s
+2026-09-05 10:26:41 [INFO   ] ============================================================================
+2026-09-05 10:26:41 [INFO   ]    PRE-FLIGHT CHECKS PASSED - ENGINE READY
+2026-09-05 10:26:41 [INFO   ] ============================================================================
+2026-09-05 10:26:41 [INFO   ] Starting Masterplan Automated Execution Loop...
+2026-09-05 10:26:41 [INFO   ] Target Trades: Unlimited
+2026-09-05 10:26:41 [INFO   ] ============================================================================
+2026-09-05 10:26:41 [INFO   ]    EXECUTING TRADE #1 [SHORT] - TRUMP_USDT
+2026-09-05 10:26:41 [INFO   ] ============================================================================
+2026-09-05 10:26:42 [INFO   ] Pre-Trade Spec: Vol: 2 contract(s) (0.2 TRUMP) | Trade Qty (Notional): +0.4660 USDT (+INR 44.01) | Committed Margin (Qty/75x): +0.0062 USDT (+INR 0.59)
+2026-09-05 10:26:42 [INFO   ] Reference Price: 2.330 USDT | Attached Min-Profit TP: 2.328 USDT (+2 pu) | Attached SL: 2.335 USDT (-5 ticks)
+2026-09-05 10:26:42 [INFO   ] Submitting live MARKET order...
+2026-09-05 10:26:42 [INFO   ] Live order accepted by KCEX. Order ID: 851082177014106624
+2026-09-05 10:26:43 [INFO   ] Position Filled: Entry Price = 2.331 USDT | Exact Min-Profit TP = 2.329 USDT | Exact SL = 2.336 USDT
+2026-09-05 10:26:43 [INFO   ] Server-side position TP/SL registered: TP 2.329, SL 2.336
+2026-09-05 10:26:44 [INFO   ] Entering active position monitoring loop...
+2026-09-05 10:26:45 [INFO   ] Position closed on KCEX. Reconciling fill records...
+2026-09-05 10:26:47 [INFO   ] [BALANCE AFTER TRADE #1] Available: 0.0696 USDT (INR 6.57) | Equity: 0.0696 USDT (INR 6.57)
+2026-09-05 10:26:47 [INFO   ] 
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-05 10:26:45 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : TRUMP_USDT [SHORT] (75x isolated)
+Strategy Name      : StochasticRSI(FAST_SCALP-SHORT)
+Volume Executed    : 2 contract(s) (0.2 TRUMP)
+Trade Quantity     : 0.4662 USDT (INR 44.03) [Notional exposure]
+Margin Committed   : 0.0062 USDT (INR 0.59) [Trade Qty / 75x leverage]
+Entry Price        : 2.331 USDT (Opened: 2026-09-05 10:26:42)
+Exit Price         : 2.331 USDT (Duration: 3.16s)
+Tick Size (pu)     : 0.001 USDT
+Min-Profit TP Target: 2.329 USDT (Offset: +2 pu / +0.002 USDT)
+Stop Loss Level    : 2.336 USDT (Offset: -5 pu / -0.005 USDT | -0.215% price | -16.1% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : 0.000000 USDT (INR 0.0000)
+Return on Equity   : 0.00% (Price move: 0.000%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0696 USDT (INR 6.57)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 0 | Scratch: 1
+Win Rate           : 0.0%
+Net Cumulative PnL : +0.000000 USDT (+INR 0.0000)
+Live USD/INR Rate  : INR 94.44 per USD
+==============================================================================
+
+2026-09-05 10:26:47 [INFO   ] Initiating 10s cooldown before next trade cycle...
+2026-09-05 10:26:58 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 92.4 | %D: 96.2 | Diff: -3.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 2s
+2026-09-05 10:27:02 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 86.2 | %D: 91.6 | Diff: -5.4 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 58s
+2026-09-05 10:27:06 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 92.8 | Diff: -2.9 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 53s
+2026-09-05 10:27:10 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 92.8 | Diff: -2.9 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 49s
+2026-09-05 10:27:15 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 92.8 | Diff: -2.9 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 45s
+2026-09-05 10:27:19 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 92.8 | Diff: -2.9 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 40s
+2026-09-05 10:27:23 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 92.4 | %D: 93.6 | Diff: -1.3 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 36s
+2026-09-05 10:27:27 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 92.8 | Diff: -2.9 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 32s
+2026-09-05 10:27:32 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 92.4 | %D: 93.6 | Diff: -1.3 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 28s
+2026-09-05 10:27:36 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 92.4 | %D: 93.6 | Diff: -1.3 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 24s
+2026-09-05 10:27:40 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 92.4 | %D: 93.6 | Diff: -1.3 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 20s
+2026-09-05 10:27:44 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 92.4 | %D: 93.6 | Diff: -1.3 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 15s
+2026-09-05 10:27:48 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 92.4 | %D: 93.6 | Diff: -1.3 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 11s
+2026-09-05 10:27:52 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 92.8 | Diff: -2.9 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 7s
+2026-09-05 10:27:57 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 92.8 | Diff: -2.9 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 3s
+2026-09-05 10:28:01 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.8 | Diff: -0.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 58s
+2026-09-05 10:28:06 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.8 | Diff: -0.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 54s
+2026-09-05 10:28:10 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 93.8 | %D: 92.0 | Diff: +1.7 | Zone: OVERBOUGHT | Trend: BULLISH | Bar Close In: 50s
+2026-09-05 10:28:14 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 93.8 | %D: 92.0 | Diff: +1.7 | Zone: OVERBOUGHT | Trend: BULLISH | Bar Close In: 46s
+2026-09-05 10:28:18 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.8 | Diff: -0.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 41s
+2026-09-05 10:28:22 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 78.2 | %D: 86.9 | Diff: -8.6 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 37s
+2026-09-05 10:28:26 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 78.2 | %D: 86.9 | Diff: -8.6 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 33s
+2026-09-05 10:28:31 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.8 | Diff: -0.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 29s
+2026-09-05 10:28:35 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.8 | Diff: -0.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 24s
+2026-09-05 10:28:39 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.8 | Diff: -0.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 20s
+2026-09-05 10:28:43 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.8 | Diff: -0.8 | Zone: OVERBOUGHT | Trend: BEARISH | Bar Close In: 16s
+2026-09-05 10:28:48 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 78.2 | %D: 86.9 | Diff: -8.6 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 12s
+2026-09-05 10:28:52 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 78.2 | %D: 86.9 | Diff: -8.6 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 7s
+2026-09-05 10:28:56 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 78.2 | %D: 86.9 | Diff: -8.6 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 3s
+2026-09-05 10:29:01 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.0 | Diff: +0.0 | Zone: OVERBOUGHT | Trend: BULLISH | Bar Close In: 59s
+2026-09-05 10:29:05 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 76.9 | %D: 85.6 | Diff: -8.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 54s
+2026-09-05 10:29:10 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 76.9 | %D: 85.6 | Diff: -8.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 50s
+2026-09-05 10:29:14 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 76.9 | %D: 85.6 | Diff: -8.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 46s
+2026-09-05 10:29:18 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.0 | Diff: +0.0 | Zone: OVERBOUGHT | Trend: BULLISH | Bar Close In: 42s
+2026-09-05 10:29:22 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 90.0 | %D: 90.0 | Diff: +0.0 | Zone: OVERBOUGHT | Trend: BULLISH | Bar Close In: 37s
+2026-09-05 10:29:26 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 65.7 | %D: 81.9 | Diff: -16.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 33s
+2026-09-05 10:29:31 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 29s
+2026-09-05 10:29:35 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 24s
+2026-09-05 10:29:40 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 20s
+2026-09-05 10:29:44 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 16s
+2026-09-05 10:29:48 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 12s
+2026-09-05 10:29:52 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 7s
+2026-09-05 10:29:56 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 3s
+2026-09-05 10:30:00 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 60.5 | %D: 80.2 | Diff: -19.7 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 0s
+2026-09-05 10:30:05 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 55s
+2026-09-05 10:30:09 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 51s
+2026-09-05 10:30:13 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 47s
+2026-09-05 10:30:17 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 42s
+2026-09-05 10:30:22 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 38s
+2026-09-05 10:30:26 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 33s
+2026-09-05 10:30:30 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 29s
+2026-09-05 10:30:35 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 25s
+2026-09-05 10:30:39 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 29.6 | %D: 60.0 | Diff: -30.5 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 20s
+2026-09-05 10:30:43 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 35.6 | %D: 62.0 | Diff: -26.4 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 16s
+2026-09-05 10:30:47 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 35.6 | %D: 62.0 | Diff: -26.4 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 12s
+2026-09-05 10:30:52 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 35.6 | %D: 62.0 | Diff: -26.4 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 8s
+2026-09-05 10:30:56 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 35.6 | %D: 62.0 | Diff: -26.4 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 4s
+2026-09-05 10:31:00 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 6.1 | %D: 34.1 | Diff: -28.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 59s
+2026-09-05 10:31:05 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 6.1 | %D: 34.1 | Diff: -28.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 55s
+2026-09-05 10:31:09 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 51s
+2026-09-05 10:31:13 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 46s
+2026-09-05 10:31:17 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 42s
+2026-09-05 10:31:22 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 38s
+2026-09-05 10:31:27 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 6.1 | %D: 34.1 | Diff: -28.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 33s
+2026-09-05 10:31:31 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 28s
+2026-09-05 10:31:36 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 6.1 | %D: 34.1 | Diff: -28.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 24s
+2026-09-05 10:31:40 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 20s
+2026-09-05 10:31:45 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 14s
+2026-09-05 10:31:49 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 12.1 | %D: 36.1 | Diff: -24.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 10s
+2026-09-05 10:31:53 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 18.0 | %D: 38.0 | Diff: -20.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 6s
+2026-09-05 10:31:58 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 18.0 | %D: 38.0 | Diff: -20.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 1s
+2026-09-05 10:32:02 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 40.2 | %D: 33.0 | Diff: +7.2 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 57s
+2026-09-05 10:32:07 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 40.2 | %D: 33.0 | Diff: +7.2 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 53s
+2026-09-05 10:32:11 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.6 | %D: 28.4 | Diff: -1.9 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 48s
+2026-09-05 10:32:15 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 44s
+2026-09-05 10:32:20 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 40s
+2026-09-05 10:32:24 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 36s
+2026-09-05 10:32:28 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 31s
+2026-09-05 10:32:32 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 27s
+2026-09-05 10:32:36 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 23s
+2026-09-05 10:32:41 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 19s
+2026-09-05 10:32:45 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 15s
+2026-09-05 10:32:49 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 11s
+2026-09-05 10:32:53 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 6s
+2026-09-05 10:32:58 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 23.1 | %D: 27.3 | Diff: -4.2 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 2s
+2026-09-05 10:33:02 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 17.1 | %D: 21.1 | Diff: -4.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 58s
+2026-09-05 10:33:06 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 17.1 | %D: 21.1 | Diff: -4.0 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 54s
+2026-09-05 10:33:10 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 49s
+2026-09-05 10:33:14 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 45s
+2026-09-05 10:33:19 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 41s
+2026-09-05 10:33:23 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 37s
+2026-09-05 10:33:27 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 32s
+2026-09-05 10:33:31 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 22.3 | %D: 22.8 | Diff: -0.6 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 28s
+2026-09-05 10:33:35 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 24s
+2026-09-05 10:33:40 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 30.9 | %D: 25.7 | Diff: +5.2 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 20s
+2026-09-05 10:33:44 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 15s
+2026-09-05 10:33:48 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 26.8 | %D: 24.4 | Diff: +2.5 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 11s
+2026-09-05 10:33:52 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 30.9 | %D: 25.7 | Diff: +5.2 | Zone: NEUTRAL | Trend: BULLISH | Bar Close In: 7s
+2026-09-05 10:33:57 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 22.3 | %D: 22.8 | Diff: -0.6 | Zone: NEUTRAL | Trend: BEARISH | Bar Close In: 3s
+2026-09-05 10:34:01 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 15.5 | %D: 20.3 | Diff: -4.8 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 59s
+2026-09-05 10:34:05 [INFO   ] [HUNTING ENTRY] StochRSI(FAST_SCALP) Min1 | %K: 15.5 | %D: 20.3 | Diff: -4.8 | Zone: OVERSOLD | Trend: BEARISH | Bar Close In: 54s

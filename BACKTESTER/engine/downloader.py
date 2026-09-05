@@ -109,7 +109,7 @@ def download_and_extract_zip(url: str, extract_to: str, expected_csv_name: str) 
 def ensure_market_data(
     symbol: str,
     timeframe: str = "1m",
-    start_date: str = "2026-07-01",
+    start_date: str = "2026-01-01",
     end_date: str = "2026-08-31",
     download_trades: bool = True,
     base_dir: str = "BACKTESTER"
@@ -163,7 +163,7 @@ def main():
     parser = argparse.ArgumentParser(description="Download Binance Vision historical data for backtesting")
     parser.add_argument("--symbol", type=str, default="TRUMP_USDT", help="Trading pair symbol")
     parser.add_argument("--timeframe", type=str, default="1m", help="Candle timeframe")
-    parser.add_argument("--start", type=str, default="2026-07-01", help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--start", type=str, default="2026-01-01", help="Start date (YYYY-MM-DD)")
     parser.add_argument("--end", type=str, default="2026-08-31", help="End date (YYYY-MM-DD)")
     parser.add_argument("--ticks", dest="use_ticks", action="store_true", default=True, help="Download tick trades")
     parser.add_argument("--no-ticks", dest="use_ticks", action="store_false", help="Skip downloading tick trades")

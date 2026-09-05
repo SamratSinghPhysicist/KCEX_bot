@@ -115,20 +115,20 @@ def print_banner(mode: EngineMode):
 class TradePreset:
     """Stores trade configuration for fast presets in consecutive trades."""
     symbol: str = "TRUMP_USDT"
-    leverage: int = 30
+    leverage: int = 75
     is_isolated: bool = True
     # Quantity configuration:
     # "CONTRACTS", "MARGIN_USDT", "NOTIONAL_USDT", "COIN_QTY"
     qty_mode: str = "CONTRACTS"
-    qty_val: float = 1.0
+    qty_val: float = 2.0  # Default 2 contracts for TRUMP (2x min volume)
     # TP configuration:
     # "TICKS", "ROE_PCT", "PRICE_PCT", "ABSOLUTE"
     tp_mode: str = "TICKS"
-    tp_val: float = 3.0
+    tp_val: float = 2.0  # 2 pu ticks (fixed TP)
     # SL configuration:
     # "ROE_PCT", "TICKS", "PRICE_PCT", "ABSOLUTE", "NONE"
     sl_mode: str = "ROE_PCT"
-    sl_val: Optional[float] = 15.0
+    sl_val: Optional[float] = 25.0  # 25% default ROE SL
     # Execution mode
     mode: EngineMode = EngineMode.LIVE
 
@@ -163,22 +163,29 @@ def init_default_preset(config: KCEXConfig) -> TradePreset:
     mode = EngineMode.LIVE if (default_mode_str == "live" and config.is_authenticated) else EngineMode.DRY_RUN
 
     default_sym = str(get_setting_default("SYMBOL", "TRUMP_USDT")).upper()
-    default_lev = int(get_setting_default("LEVERAGE", 30))
-    default_tp = float(get_setting_default("TP_TICKS", 3))
+    default_lev = int(get_setting_default("LEVERAGE", 75))
+    default_tp = float(get_setting_default("TP_TICKS", 2))
     
-    # Qty defaults
-    vol_mode = str(get_setting_default("VOLUME_MODE", "CONTRACTS")).upper()
-    if vol_mode == "CONTRACTS":
+    # Qty defaults tailored per symbol (2x min for TRUMP, 1x min for DOGE)
+    if "TRUMP" in default_sym:
         qty_mode = "CONTRACTS"
-        qty_val = float(get_setting_default("VOLUME_CONTRACTS", 1))
-    elif vol_mode == "MULTIPLIER":
-        qty_mode = "CONTRACTS"
-        qty_val = float(get_setting_default("VOLUME_MULTIPLIER", 1.0))
-    else:
+        qty_val = 2.0
+    elif "DOGE" in default_sym:
         qty_mode = "CONTRACTS"
         qty_val = 1.0
+    else:
+        vol_mode = str(get_setting_default("VOLUME_MODE", "CONTRACTS")).upper()
+        if vol_mode == "CONTRACTS":
+            qty_mode = "CONTRACTS"
+            qty_val = float(get_setting_default("VOLUME_CONTRACTS", 2))
+        elif vol_mode == "MULTIPLIER":
+            qty_mode = "CONTRACTS"
+            qty_val = float(get_setting_default("VOLUME_MULTIPLIER", 2.0))
+        else:
+            qty_mode = "CONTRACTS"
+            qty_val = 2.0
 
-    # SL defaults
+    # SL defaults (25% ROE default)
     sl_mode = str(get_setting_default("SL_MODE", "ROE")).upper()
     if sl_mode == "TICKS":
         sl_m = "TICKS"
@@ -191,7 +198,7 @@ def init_default_preset(config: KCEXConfig) -> TradePreset:
         sl_v = None
     else:
         sl_m = "ROE_PCT"
-        sl_v = float(get_setting_default("SL_ROE_PCT", 15.0))
+        sl_v = float(get_setting_default("SL_ROE_PCT", 25.0))
 
     return TradePreset(
         symbol=default_sym,
@@ -489,11 +496,16 @@ def prompt_stop_loss(
             buf_ticks = int(round((cur_price * buf_pct) / pu))
             sl_dist_ticks = abs(cur_price - target_p) / pu
             if sl_dist_ticks >= buf_ticks:
-                print(f"    {Style.BG_RED}{Style.BOLD} ⚠️ CONFLICT: Requested SL is beyond Liquidation (~{buf_ticks} ticks away at {leverage}x)! {Style.RESET}")
-                print(f"    {Style.RED}   At {leverage}x leverage, max possible SL is ~{int(buf_ticks * 0.8)} ticks before liquidation occurs.{Style.RESET}")
-                retry = input("    Do you want to re-enter a tighter SL? [Y/n]: ").strip().lower()
-                if retry not in ("n", "no"):
+                safe_sl_ticks = max(2, int(buf_ticks * 0.85))
+                print(f"    {Style.BG_RED}{Style.BOLD} ⚠️ CONFLICT: Requested SL ({sl_dist_ticks:.0f} ticks) is beyond Liquidation (~{buf_ticks} ticks at {leverage}x)! {Style.RESET}")
+                print(f"    {Style.YELLOW}   Keeping {leverage}x leverage per user preference; clamping SL to safe max: ~{safe_sl_ticks} ticks.{Style.RESET}")
+                clamp_choice = input(f"    Clamp SL to safe distance ({safe_sl_ticks} ticks) to maintain {leverage}x leverage? [Y/n]: ").strip().lower()
+                if clamp_choice in ("n", "no"):
                     continue
+                chosen_mode = "TICKS"
+                val = float(safe_sl_ticks)
+                dist = val * pu
+                target_p = cur_price - dist if direction == OrderDirection.LONG else cur_price + dist
 
             print(f"    {Style.RED}✓ SL Target Price: {target_p:.{ps}f} USDT{Style.RESET} (At current ref price {cur_price:.{ps}f})")
             return chosen_mode, val

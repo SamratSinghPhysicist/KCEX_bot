@@ -66,3 +66,5 @@ class BacktestConfig(ExecutionConfig):
         # Normalize symbol name (e.g. TRUMP_USDT -> TRUMP_USDT)
         if self.symbol:
             self.symbol = self.symbol.upper()
+            if "DOGE" in self.symbol and self.volume_multiplier == 2.0 and self.volume_mode == "MULTIPLIER":
+                self.volume_multiplier = 1.0

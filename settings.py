@@ -79,13 +79,27 @@ MODE = "live"
 #   "CONTRACTS"  -> Execute an exact integer number of contracts (e.g. 1, 2, 5).
 VOLUME_MODE = "MULTIPLIER"  # "MIN", "MULTIPLIER", or "CONTRACTS"
 
-# If VOLUME_MODE == "MULTIPLIER":
-# Multiplier of min_volume (e.g. 1.0 = 1x min, 2.0 = 2x min, 5.0 = 5x min quantity)
-VOLUME_MULTIPLIER = 1.0
+# Default volume sizing: 2x min for TRUMP_USDT, 1x min for DOGE_USDT
+VOLUME_MULTIPLIER = 2.0
 
 # If VOLUME_MODE == "CONTRACTS":
 # Exact number of contracts (must be >= contract min_volume, which is 1 for TRUMP)
-VOLUME_CONTRACTS = 1
+VOLUME_CONTRACTS = 2
+
+
+def get_default_quantity_for_symbol(symbol: str) -> tuple[str, float]:
+    """
+    Returns default (volume_mode, volume_value) tailored per symbol:
+    - TRUMP_USDT: 2x minimum volume (2 contracts / 2.0x multiplier)
+    - DOGE_USDT : 1x minimum volume (1 contract / 1.0x multiplier)
+    - Others    : 1.0x minimum multiplier
+    """
+    s = str(symbol).upper()
+    if "TRUMP" in s:
+        return ("MULTIPLIER", 2.0)
+    elif "DOGE" in s:
+        return ("MULTIPLIER", 1.0)
+    return ("MULTIPLIER", 1.0)
 
 
 # =============================================================================
@@ -95,10 +109,10 @@ VOLUME_CONTRACTS = 1
 # For TRUMP_USDT, 1 pu = 0.001 USDT.
 # TP_TICKS = 1 -> TP = Entry Price + 1 * pu (for Long) or Entry Price - 1 * pu (for Short)
 # TP_TICKS = 2 -> TP = Entry Price + 2 * pu (for Long) or Entry Price - 2 * pu (for Short)
-TP_TICKS = 1
+TP_TICKS = 2
 
 # Dynamic TP Scaling:
-# False (RECOMMENDED) -> Strictly locks Take Profit to TP_TICKS (e.g. 1 pu scalp is always closed at +1 pu).
+# False (RECOMMENDED) -> Strictly locks Take Profit to TP_TICKS (e.g. 2 pu scalp is always closed at +2 pu).
 # True                -> Allows microstructure signals to scale TP dynamically (1 to 3 pu) on strong confluence.
 DYNAMIC_TP = False
 
@@ -107,10 +121,10 @@ DYNAMIC_TP = False
 # 4. STOP-LOSS (SL) RULES & MODES
 # =============================================================================
 # Choose how the Stop Loss distance is determined:
-#   "TICKS"     -> Fixed number of price units / ticks away from entry (RECOMMENDED)
-#   "ROE"       -> Return on Equity / Margin loss percentage (e.g. 25.0% loss on margin)
+#   "ROE"       -> Return on Equity / Margin loss percentage (e.g. 25.0% loss on margin) [Default]
+#   "TICKS"     -> Fixed number of price units / ticks away from entry
 #   "PRICE_PCT" -> Direct asset price movement percentage (e.g. 0.5% price drop)
-SL_MODE = "TICKS"
+SL_MODE = "ROE"
 
 # Setting for SL_MODE = "TICKS":
 # Number of pu (tick size) away from entry price.
@@ -132,16 +146,9 @@ SL_PRICE_PCT = 0.5
 # 5. LEVERAGE & MARGIN SETTINGS
 # =============================================================================
 # Position leverage multiplier.
-#
-# ⚠️ CRITICAL LEVERAGE & LIQUIDATION BUFFER CHEAT SHEET (TRUMP_USDT at 2.35 USDT):
-#   Leverage | Liq Distance | Safe SL Max | 10% ROE Move | Margin (1 contract)
-#   ---------+--------------+-------------+--------------+--------------------
-#     75x    |  11.0 ticks  |   6 ticks   |  3.1 ticks   | 0.0031 USDT (INR 0.30) [Extreme risk]
-#     50x    |  28.0 ticks  |  18 ticks   |  4.7 ticks   | 0.0047 USDT (INR 0.44)
-#     30x    |  53.0 ticks  |  35 ticks   |  7.8 ticks   | 0.0079 USDT (INR 0.75) [Recommended]
-#     20x    |  89.0 ticks  |  65 ticks   | 11.8 ticks   | 0.0118 USDT (INR 1.11)
-#     10x    | 211.5 ticks  | 150 ticks   | 23.5 ticks   | 0.0235 USDT (INR 2.22)
-LEVERAGE = 30
+# Note: At 75x leverage, 25% ROE loss represents a 0.333% price move (approx ~7.8 ticks for TRUMP).
+# In case of conflict between liquidation and SL, 75x leverage is strictly prioritized.
+LEVERAGE = 75
 
 # Margin mode: True for Isolated (openType=1), False for Cross (openType=2).
 # Isolated margin is strongly recommended to restrict risk strictly to position margin.
@@ -167,11 +174,11 @@ POLL_INTERVAL_SECONDS = 0.2
 # 7. STRATEGY SELECTION & INDICATOR SETTINGS
 # =============================================================================
 # Strategy mode selection:
-#   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8) [Default / Recommended]
-#   "STOCH_RSI"      -> Stochastic RSI Momentum & Reversal Strategy (Option 2)
+#   "STOCH_RSI"      -> Stochastic RSI Fast Scalp & Reversal Strategy [Default]
+#   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8)
 #   "MICROSTRUCTURE" -> High-Frequency Market Microstructure (Autonomous Order Book & Tape Imbalance)
 #   "CYCLE"          -> Directional Cycle (Classic fixed-direction Long/Short cycle)
-STRATEGY_MODE = "EMA_CROSSOVER"
+STRATEGY_MODE = "STOCH_RSI"
 
 # -----------------------------------------------------------------------------
 # EMA Crossover Configuration

@@ -88,13 +88,13 @@ def prompt_user_settings():
     default_sym = get_setting("SYMBOL", "TRUMP_USDT").upper()
     default_tp = get_setting("TP_TICKS", 2)
     default_vol_mode = get_setting("VOLUME_MODE", "MULTIPLIER").upper()
-    default_vol_mult = get_setting("VOLUME_MULTIPLIER", 1.0)
-    default_vol_contracts = get_setting("VOLUME_CONTRACTS", 1)
-    default_sl_mode = get_setting("SL_MODE", "TICKS").upper()
+    default_vol_mult = get_setting("VOLUME_MULTIPLIER", 2.0)
+    default_vol_contracts = get_setting("VOLUME_CONTRACTS", 2)
+    default_sl_mode = get_setting("SL_MODE", "ROE").upper()
     default_sl_ticks = get_setting("SL_TICKS", 10)
     default_sl_roe = get_setting("SL_ROE_PCT", 25.0)
     default_sl_price = get_setting("SL_PRICE_PCT", 0.5)
-    default_lev = get_setting("LEVERAGE", 30)
+    default_lev = get_setting("LEVERAGE", 75)
     default_cool = get_setting("COOLDOWN_SECONDS", 30.0)
     default_max = get_setting("MAX_TRADES", 3)
 
@@ -140,8 +140,16 @@ def prompt_user_settings():
     except Exception as e:
         print(f"   ℹ️  Note: Market preview skipped for {sym_val} ({e}).")
 
+    # Dynamic default volume per symbol: 2x min for TRUMP, 1x min for DOGE
+    if hasattr(settings, "get_default_quantity_for_symbol"):
+        default_vol_mode, default_vol_mult = settings.get_default_quantity_for_symbol(sym_val)
+    elif "TRUMP" in sym_val:
+        default_vol_mode, default_vol_mult = "MULTIPLIER", 2.0
+    elif "DOGE" in sym_val:
+        default_vol_mode, default_vol_mult = "MULTIPLIER", 1.0
+
     # 3. Strategy Engine Selection & Directional Flow
-    default_strat = get_setting("STRATEGY_MODE", "EMA_CROSSOVER").upper()
+    default_strat = get_setting("STRATEGY_MODE", "STOCH_RSI").upper()
     default_ema_preset = get_setting("EMA_PRESET", "5/13")
     default_ema_fast = get_setting("EMA_FAST", 5)
     default_ema_slow = get_setting("EMA_SLOW", 13)
@@ -161,14 +169,14 @@ def prompt_user_settings():
     default_dir = get_setting("DIRECTION", "LONG").upper()
 
     print("\n3. Strategy & Signal Engine:")
-    print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8) [Default / Recommended]")
-    print("   [2] STOCHASTIC RSI    -> Fast Scalp & Mean Reversion (%K/%D cross in Oversold/Overbought zones) [2nd Option]")
+    print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8)")
+    print("   [2] STOCHASTIC RSI    -> Fast Scalp & Mean Reversion (%K/%D cross in Oversold/Overbought zones) [Default]")
     print("   [3] MICROSTRUCTURE    -> Rapid HFT scalper (Order Book & Tape Imbalance)")
     print("   [4] DIRECTIONAL CYCLE -> Classic fixed-interval single direction cycle")
 
-    default_strat_choice = "1"
-    if default_strat in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH"):
-        default_strat_choice = "2"
+    default_strat_choice = "2"
+    if default_strat in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
+        default_strat_choice = "1"
     elif default_strat == "MICROSTRUCTURE":
         default_strat_choice = "3"
     elif default_strat in ("CYCLE", "DIRECTIONAL_CYCLE"):
@@ -513,18 +521,18 @@ def prompt_user_settings():
             print(f"   To keep your {user_sl_ticks}-tick Stop Loss, leverage must be reduced to <= {safe_lev_for_sl}x (e.g. {rec_lev}x).")
 
             print("\n   Resolution Options:")
-            print(f"   [1] Reduce leverage to {rec_lev}x (keeps your full {user_sl_ticks}-tick SL) [Recommended]")
-            print(f"   [2] Keep {lev_val}x leverage and tighten SL to safe max ({max_safe_sl_ticks} ticks)")
-            res_choice = input(f"   Select option [default: 1]: ").strip()
+            print(f"   [1] Keep {lev_val}x leverage and tighten SL to safe max ({max_safe_sl_ticks} ticks) [Recommended]")
+            print(f"   [2] Reduce leverage to {rec_lev}x (keeps your full {user_sl_ticks}-tick SL)")
+            res_choice = input(f"   Select option [default: 1 (Keep {lev_val}x leverage)]: ").strip()
             if res_choice == "2":
+                lev_val = rec_lev
+                print(f"   ✓ Leverage set to {lev_val}x (retaining your {user_sl_ticks}-tick Stop Loss with safe buffer).")
+            else:
                 sl_mode_val = "TICKS"
                 sl_ticks_val = max_safe_sl_ticks
                 sl_roe_val = None
                 sl_price_val = None
-                print(f"   ✓ Stop loss tightened to {max_safe_sl_ticks} ticks at {lev_val}x leverage.")
-            else:
-                lev_val = rec_lev
-                print(f"   ✓ Leverage set to {lev_val}x (retaining your {user_sl_ticks}-tick Stop Loss with safe buffer).")
+                print(f"   ✓ Kept {lev_val}x leverage! Stop loss safely clamped to {max_safe_sl_ticks} ticks.")
 
     # 8. Cooldown
     print("\n8. Post-Trade Cooldown:")
@@ -840,10 +848,20 @@ def main():
         mode_enum = EngineMode.LIVE if mode_raw == "live" else EngineMode.DRY_RUN
 
         vol_mode = (args.volume_mode or get_setting("VOLUME_MODE", "MULTIPLIER")).upper()
-        vol_mult = args.volume_multiplier if args.volume_multiplier is not None else get_setting("VOLUME_MULTIPLIER", 1.0)
-        vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 1) if vol_mode == "CONTRACTS" else None)
+        if args.volume_multiplier is not None:
+            vol_mult = args.volume_multiplier
+        elif hasattr(settings, "get_default_quantity_for_symbol"):
+            _, vol_mult = settings.get_default_quantity_for_symbol(sym)
+        elif "TRUMP" in sym:
+            vol_mult = 2.0
+        elif "DOGE" in sym:
+            vol_mult = 1.0
+        else:
+            vol_mult = get_setting("VOLUME_MULTIPLIER", 2.0)
 
-        tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 1)
+        vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 2) if vol_mode == "CONTRACTS" else None)
+
+        tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 2)
         if args.fixed_tp:
             dynamic_tp = False
         elif args.dynamic_tp:
@@ -851,17 +869,17 @@ def main():
         else:
             dynamic_tp = get_setting("DYNAMIC_TP", False)
 
-        sl_mode = (args.sl_mode or get_setting("SL_MODE", "TICKS")).upper()
+        sl_mode = (args.sl_mode or get_setting("SL_MODE", "ROE")).upper()
         sl_ticks = args.sl_ticks if args.sl_ticks is not None else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None)
         sl_price_pct = args.sl_price_pct if args.sl_price_pct is not None else (get_setting("SL_PRICE_PCT", 0.5) if sl_mode == "PRICE_PCT" else None)
         sl_roe = args.sl_roe if args.sl_roe is not None else get_setting("SL_ROE_PCT", 25.0)
 
-        lev = args.leverage if args.leverage is not None else get_setting("LEVERAGE", 30)
+        lev = args.leverage if args.leverage is not None else get_setting("LEVERAGE", 75)
         cooldown = args.cooldown if args.cooldown is not None else get_setting("COOLDOWN_SECONDS", 30.0)
         max_trades = args.max_trades if args.max_trades is not None else get_setting("MAX_TRADES", 3)
         poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.3)
 
-        strat_raw = (args.strategy or get_setting("STRATEGY_MODE", "EMA_CROSSOVER")).upper()
+        strat_raw = (args.strategy or get_setting("STRATEGY_MODE", "STOCH_RSI")).upper()
         if args.single_direction:
             bi_directional = False
         elif args.bi_directional:

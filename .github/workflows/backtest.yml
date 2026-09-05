@@ -31,11 +31,11 @@ on:
       strategy:
         description: "Strategy"
         required: true
-        default: "EMA_CROSSOVER"
+        default: "STOCH_RSI"
         type: choice
         options:
-          - "EMA_CROSSOVER"
           - "STOCH_RSI"
+          - "EMA_CROSSOVER"
           - "CYCLE"
           - "MICROSTRUCTURE"
 
@@ -62,7 +62,7 @@ on:
       start_date:
         description: "Start Date (YYYY-MM-DD)"
         required: true
-        default: "2026-07-01"
+        default: "2026-01-01"
         type: string
 
       end_date:
@@ -102,23 +102,23 @@ on:
       volume_mode:
         description: "Trade Volume Mode (CONTRACTS, MULTIPLIER, MIN)"
         required: true
-        default: "CONTRACTS"
+        default: "MULTIPLIER"
         type: choice
         options:
-          - "CONTRACTS"
           - "MULTIPLIER"
+          - "CONTRACTS"
           - "MIN"
 
       volume_contracts:
-        description: "Number of Contracts per trade (if CONTRACTS mode, e.g. 5, 10, 50)"
+        description: "Number of Contracts per trade (if CONTRACTS mode, e.g. 2, 5, 10)"
         required: false
-        default: "10"
+        default: "2"
         type: string
 
       volume_multiplier:
-        description: "Volume Multiplier (if MULTIPLIER mode, e.g. 1.0 or 2.0)"
+        description: "Volume Multiplier (if MULTIPLIER mode, e.g. 2.0 for TRUMP 2x min, 1.0 for DOGE 1x min)"
         required: false
-        default: "1.0"
+        default: "2.0"
         type: string
 
       tp_ticks:
@@ -260,14 +260,14 @@ jobs:
             cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
           else
             echo "## 📊 Backtest Results" >> $GITHUB_STEP_SUMMARY
-            echo "No summary markdown file generated." >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ No summary markdown report generated. The run may have encountered an execution failure or data error." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload Generated Reports & Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backtest-results-${{ inputs.symbol }}-${{ inputs.strategy }}-${{ inputs.timeframe }}-run${{ github.run_id }}
+          name: backtest-${{ inputs.symbol }}-${{ inputs.strategy }}-${{ inputs.timeframe }}-${{ inputs.leverage }}x-tp${{ inputs.tp_ticks }}pu-sl${{ inputs.sl_mode }}${{ inputs.sl_mode == 'ROE' && inputs.sl_roe || inputs.sl_ticks }}-run${{ github.run_id }}
           path: |
             BACKTESTER/reports/*.csv
             BACKTESTER/reports/*.jsonl

@@ -51,19 +51,19 @@ class ExecutionConfig:
     leverage: int = 75
     is_isolated: bool = True
     cooldown_seconds: float = 30.0
-    tp_ticks: int = 1               # Number of pu (tick size) away from entry
+    tp_ticks: int = 2               # Number of pu (tick size) away from entry (fixed TP)
     dynamic_tp: bool = False        # False = strictly enforce tp_ticks; True = allow dynamic 1..3 pu scaling
     sl_mode: str = "ROE"            # "ROE", "TICKS", or "PRICE_PCT"
-    sl_roe_pct: float = 10.0        # -10% ROE (Return on Equity/Margin)
+    sl_roe_pct: float = 25.0        # -25.0% ROE (Return on Equity/Margin)
     sl_ticks: Optional[int] = None  # Number of pu ticks away from entry
     sl_price_pct: Optional[float] = None # Price move percentage away from entry
     # Trade Quantity / Volume settings (Note: Trade Quantity is NOT margin. Margin = Trade Quantity / Leverage)
     volume_mode: str = "MULTIPLIER"       # "MIN", "MULTIPLIER", or "CONTRACTS"
-    volume_multiplier: float = 1.0        # x times min_volume (e.g. 1.0 = 1x, 2.0 = 2x)
-    volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 5)
+    volume_multiplier: float = 2.0        # x times min_volume (e.g. 2.0 = 2x min quantity for TRUMP)
+    volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 2)
     max_trades: int = 0                   # 0 = unlimited
     # Strategy selection
-    strategy_mode: str = "CYCLE"          # "EMA_CROSSOVER", "STOCH_RSI", "MICROSTRUCTURE", or "CYCLE" (default for bare config is CYCLE)
+    strategy_mode: str = "CYCLE"          # "STOCH_RSI", "EMA_CROSSOVER", "MICROSTRUCTURE", or "CYCLE" (bare default is CYCLE for direct test cycles; user defaults are STOCH_RSI in settings.py)
     bi_directional: bool = True           # True for autonomous Long/Short, False for fixed direction
     ema_preset: str = "5/13"              # "5/13", "9/21", "3/8", or "custom"
     ema_fast: int = 5                     # Fast EMA length
