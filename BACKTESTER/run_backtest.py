@@ -184,6 +184,29 @@ def run_interactive_wizard(scanner: DataScanner) -> BacktestConfig:
     max_input = input("   Max Trades limit (0 = run entire period) [default: 0]: ").strip()
     max_trades = int(max_input) if max_input.isdigit() else 0
 
+    # 6. Trade Volume / Quantity Sizing
+    print("\n6. Trade Volume / Quantity Sizing:")
+    print("   [1] Exact Number of Contracts (e.g. 5, 10, 50 contracts)")
+    print("   [2] Multiplier of Minimum Volume (e.g. 1x, 2x, 5x)")
+    print("   [3] Minimum Volume (1x min contract)")
+    vol_choice = input("   Select sizing mode [default: 1 (Exact Contracts)]: ").strip()
+    vol_mode = "CONTRACTS"
+    vol_contracts = 10
+    vol_multiplier = 1.0
+    if vol_choice == "2":
+        vol_mode = "MULTIPLIER"
+        m_input = input("   Enter Volume Multiplier (e.g. 2.0 = 2x min volume) [default: 1.0]: ").strip()
+        vol_multiplier = float(m_input) if m_input else 1.0
+        vol_contracts = None
+    elif vol_choice == "3":
+        vol_mode = "MIN"
+        vol_multiplier = 1.0
+        vol_contracts = None
+    else:
+        vol_mode = "CONTRACTS"
+        c_input = input("   Enter number of contracts per trade [default: 10]: ").strip()
+        vol_contracts = int(c_input) if c_input.isdigit() else 10
+
     # 7. Fee Schedule Configuration
     print("\n7. Fee Schedule Configuration:")
     print("   [1] Live KCEX API (Fetch live fee rate from KCEX - 0% for zero-fee pairs)")
@@ -213,6 +236,9 @@ def run_interactive_wizard(scanner: DataScanner) -> BacktestConfig:
         stoch_preset=stoch_preset,
         start_time=start_val,
         end_time=end_val,
+        volume_mode=vol_mode,
+        volume_contracts=vol_contracts,
+        volume_multiplier=vol_multiplier,
         tp_ticks=tp_ticks,
         sl_mode=sl_mode,
         sl_ticks=sl_ticks,
@@ -247,6 +273,9 @@ def main():
     parser.add_argument("--taker-fee", type=float, default=None, help="Taker fee rate or %% (e.g. 0.0 or 0.05)")
     parser.add_argument("--tp-ticks", type=int, default=2, help="Take profit ticks away from entry")
     parser.add_argument("--sl-mode", type=str, default="TICKS", choices=["TICKS", "ROE", "PRICE_PCT"], help="Stop loss mode")
+    parser.add_argument("--volume-mode", type=str, default=None, choices=["CONTRACTS", "MULTIPLIER", "MIN"], help="Volume sizing mode: CONTRACTS, MULTIPLIER, or MIN")
+    parser.add_argument("--contracts", "--volume-contracts", dest="volume_contracts", type=int, default=None, help="Number of contracts per trade (e.g. 5, 10, 50)")
+    parser.add_argument("--volume-multiplier", type=float, default=1.0, help="Multiplier of minimum contract volume (e.g. 1.0, 2.0, 5.0)")
     parser.add_argument("--sl-ticks", type=int, default=10, help="Stop loss ticks away from entry")
     parser.add_argument("--sl-roe", type=float, default=25.0, help="Stop loss ROE %")
     parser.add_argument("--leverage", type=int, default=30, help="Leverage multiplier")
@@ -277,6 +306,11 @@ def main():
         if args.taker_fee is not None:
             taker_fee = args.taker_fee / 100.0 if args.taker_fee > 0.01 else args.taker_fee
 
+        vol_mode = args.volume_mode
+        vol_contracts = args.volume_contracts
+        if vol_mode is None:
+            vol_mode = "CONTRACTS" if vol_contracts is not None else "MULTIPLIER"
+
         config = BacktestConfig(
             symbol=args.symbol,
             timeframe=args.timeframe,
@@ -285,6 +319,9 @@ def main():
             stoch_preset=args.stoch_preset,
             start_time=args.start,
             end_time=args.end,
+            volume_mode=vol_mode,
+            volume_contracts=vol_contracts,
+            volume_multiplier=args.volume_multiplier,
             tp_ticks=args.tp_ticks,
             sl_mode=args.sl_mode,
             sl_ticks=args.sl_ticks,
@@ -309,6 +346,8 @@ def main():
     else:
         fee_summary = f"Maker {m_pct:.3f}% / Taker {t_pct:.3f}% ({config.fee_mode})"
 
+    vol_desc = f"{config.volume_contracts} contracts" if config.volume_contracts else f"{config.volume_multiplier}x min volume"
+
     print("\n" + "=" * 78)
     print("                    STARTING BACKTEST EXECUTION")
     print("=" * 78)
@@ -316,6 +355,7 @@ def main():
     print(f"Timeframe:        {config.timeframe}")
     print(f"Strategy:         {config.strategy_mode}")
     print(f"Date Range:       {config.start_time or 'Earliest'} -> {config.end_time or 'Latest'}")
+    print(f"Trade Volume:     {vol_desc} ({config.volume_mode})")
     print(f"High-Fid Ticks:   {'ENABLED (Streaming tick trades)' if config.use_tick_data else 'DISABLED (Candle High/Low)'}")
     print(f"Fee Schedule:     {fee_summary}")
     print(f"Initial Capital:  {config.initial_balance_usdt:.2f} USDT")

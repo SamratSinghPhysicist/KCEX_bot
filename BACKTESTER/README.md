@@ -151,6 +151,9 @@ python BACKTESTER/run_backtest.py --symbol TRUMP_USDT --timeframe 1m --strategy 
 | `--fee-mode` | Choice | `LIVE` | Fee mode: `LIVE` (query KCEX API), `ZERO` (0.0%), or `MANUAL` |
 | `--maker-fee` | Float | None | Maker fee rate or % (e.g. `0.0` or `0.02`) |
 | `--taker-fee` | Float | None | Taker fee rate or % (e.g. `0.0` or `0.05`) |
+| `--volume-mode` | Choice | `CONTRACTS` | Sizing mode: `CONTRACTS`, `MULTIPLIER`, or `MIN` |
+| `--contracts` | Integer | None | Exact number of contracts per trade (e.g. `10`, `50`, `100`) |
+| `--volume-multiplier` | Float | `1.0` | Multiplier of min contract volume (e.g. `1.0`, `2.0`, `5.0`) |
 | `--tp-ticks` | Integer | `2` | Take Profit in ticks (`pu`) from entry price |
 | `--sl-mode` | Choice | `TICKS` | Stop loss mode: `TICKS`, `ROE`, `PRICE_PCT` |
 | `--sl-ticks` | Integer | `10` | SL distance in ticks |

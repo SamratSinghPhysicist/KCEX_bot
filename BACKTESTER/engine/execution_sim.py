@@ -327,13 +327,15 @@ class BacktestExecutionEngine:
             entry_price = round(raw_entry - slippage, ps)
 
         # 2. Sizing & Margin
-        if self.config.volume_mode == "CONTRACTS" and self.config.volume_contracts:
-            vol_contracts = self.config.volume_contracts
-        elif self.config.volume_mode == "MIN":
-            vol_contracts = int(self.contract.min_volume)
+        min_vol = int(self.contract.min_volume)
+        vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
+        if getattr(self.config, "volume_contracts", None) is not None:
+            vol_contracts = max(min_vol, int(self.config.volume_contracts))
+        elif vol_mode == "MIN":
+            vol_contracts = min_vol
         else: # MULTIPLIER
-            mult = max(1.0, self.config.volume_multiplier)
-            vol_contracts = int(math.ceil(self.contract.min_volume * mult))
+            mult = max(1.0, float(getattr(self.config, "volume_multiplier", 1.0) or 1.0))
+            vol_contracts = max(min_vol, int(math.ceil(min_vol * mult)))
 
         underlying_qty = vol_contracts * cs
         notional_usdt = underlying_qty * entry_price

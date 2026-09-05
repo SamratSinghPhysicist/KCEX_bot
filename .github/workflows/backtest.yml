@@ -99,6 +99,28 @@ on:
         default: "0.0"
         type: string
 
+      volume_mode:
+        description: "Trade Volume Mode (CONTRACTS, MULTIPLIER, MIN)"
+        required: true
+        default: "CONTRACTS"
+        type: choice
+        options:
+          - "CONTRACTS"
+          - "MULTIPLIER"
+          - "MIN"
+
+      volume_contracts:
+        description: "Number of Contracts per trade (if CONTRACTS mode, e.g. 5, 10, 50)"
+        required: false
+        default: "10"
+        type: string
+
+      volume_multiplier:
+        description: "Volume Multiplier (if MULTIPLIER mode, e.g. 1.0 or 2.0)"
+        required: false
+        default: "1.0"
+        type: string
+
       tp_ticks:
         description: "Take Profit in ticks (pu away from entry)"
         required: true
@@ -215,6 +237,9 @@ jobs:
             --fee-mode "${{ inputs.fee_mode }}" \
             --maker-fee "${{ inputs.maker_fee }}" \
             --taker-fee "${{ inputs.taker_fee }}" \
+            --volume-mode "${{ inputs.volume_mode }}" \
+            --contracts "${{ inputs.volume_contracts }}" \
+            --volume-multiplier "${{ inputs.volume_multiplier }}" \
             --tp-ticks "${{ inputs.tp_ticks }}" \
             --sl-mode "${{ inputs.sl_mode }}" \
             --sl-ticks "${{ inputs.sl_ticks }}" \
