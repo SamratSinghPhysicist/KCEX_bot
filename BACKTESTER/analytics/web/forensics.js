@@ -45,6 +45,10 @@ class ForensicsController {
     
     // All-trades overlay
     this.showAllTrades = false;
+
+    // Replay Scissor State
+    this.isScissorMode = false;
+    this.scissorCutIndex = null;
     
     this.catalog = null;
     this.allTrades = [];
@@ -81,12 +85,15 @@ class ForensicsController {
 
     // Timeframe buttons
     document.querySelectorAll(".tf-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         this.activeTimeframe = btn.dataset.tf;
-        if (this.activeRunId && this.activeTradeId) {
-          this.loadTrade(this.activeRunId, this.activeTradeId);
+        if (this.activeRunId) {
+          await this.loadRunCandles();
+          if (this.activeTradeId) {
+            this.loadTrade(this.activeRunId, this.activeTradeId);
+          }
         }
       });
     });
@@ -200,6 +207,20 @@ class ForensicsController {
     if (btnChartReplay) {
       btnChartReplay.addEventListener("click", () => this.startChartReplay());
     }
+
+    // Replay Scissor Tool
+    const btnScissor = document.getElementById("btnReplayScissor");
+    if (btnScissor) {
+      btnScissor.addEventListener("click", () => this.toggleScissorMode());
+    }
+
+    // Chart mouse events for Scissor Cut & Preview
+    const chartCanvas = document.getElementById("forensicMainChartContainer");
+    if (chartCanvas) {
+      chartCanvas.addEventListener("mousemove", (e) => this.onChartMouseMove(e));
+      chartCanvas.addEventListener("mouseleave", () => this.onChartMouseLeave());
+      chartCanvas.addEventListener("click", (e) => this.onChartClick(e));
+    }
   }
 
   initCharts() {
@@ -255,17 +276,24 @@ class ForensicsController {
       scaleMargins: { top: 0.82, bottom: 0 }
     });
 
-    // EMA Overlays
+    // EMA Overlays (Titles removed so right price scale is not blocked; shown in top-left HUD legend)
     this.fastEmaSeries = this.chart.addLineSeries({
       color: "#00d2ff",
       lineWidth: 1.5,
-      title: "EMA Fast (5)"
+      lastValueVisible: false,
+      priceLineVisible: false
     });
 
     this.slowEmaSeries = this.chart.addLineSeries({
       color: "#ffb800",
       lineWidth: 1.5,
-      title: "EMA Slow (13)"
+      lastValueVisible: false,
+      priceLineVisible: false
+    });
+
+    // Crosshair Subscriber for TradingView-style top-left HUD legend
+    this.chart.subscribeCrosshairMove((param) => {
+      this.onCrosshairMove(param);
     });
 
     // 2. Create Oscillator Chart (Stoch RSI)
@@ -372,10 +400,124 @@ class ForensicsController {
     }
   }
 
+  async loadRunCandles() {
+    if (!this.activeRunId) return;
+    try {
+      const res = await fetch(`/api/forensics/run/${this.activeRunId}/candles?timeframe=${this.activeTimeframe}`);
+      if (!res.ok) throw new Error("Could not fetch run candles");
+      const data = await res.json();
+
+      this.activeSymbol = data.symbol || this.activeSymbol;
+      const candles = data.candles || [];
+      const indicators = data.indicators || {};
+
+      this.fullCandleData = candles.map(c => ({
+        time: c.time,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close
+      }));
+
+      this.fullVolumeData = candles.map(c => ({
+        time: c.time,
+        value: c.volume,
+        color: c.close >= c.open ? "rgba(0, 240, 144, 0.25)" : "rgba(255, 51, 102, 0.25)"
+      }));
+
+      this.fullIndicators = indicators;
+
+      if (this.candleSeries) this.candleSeries.setData(this.fullCandleData);
+      if (this.volumeSeries) this.volumeSeries.setData(this.fullVolumeData);
+      if (this.fastEmaSeries && indicators.ema_fast) this.fastEmaSeries.setData(indicators.ema_fast);
+      if (this.slowEmaSeries && indicators.ema_slow) this.slowEmaSeries.setData(indicators.ema_slow);
+      if (this.stochKSeries && indicators.stoch_rsi) {
+        this.stochKSeries.setData(indicators.stoch_rsi.k || []);
+        this.stochDSeries.setData(indicators.stoch_rsi.d || []);
+      }
+
+      this.updateLegendWithLatest();
+    } catch (e) {
+      console.error("[!] Error loading run candles:", e);
+    }
+  }
+
+  updateLegend(candle, fastEma, slowEma) {
+    const ohlcEl = document.getElementById("legendOhlcRow");
+    const indEl = document.getElementById("legendIndicatorsRow");
+    if (!ohlcEl || !candle) return;
+
+    const diff = candle.close - candle.open;
+    const diffPct = candle.open > 0 ? (diff / candle.open * 100) : 0;
+    const isUp = diff >= 0;
+    const sign = isUp ? "+" : "";
+    const color = isUp ? "#00f090" : "#ff3366";
+
+    ohlcEl.innerHTML = `
+      <span class="leg-sym">${this.activeSymbol}</span>
+      <span class="leg-tf">${this.activeTimeframe}</span>
+      <span class="leg-val">O <span style="color: ${color}">${candle.open.toFixed(4)}</span></span>
+      <span class="leg-val">H <span style="color: ${color}">${candle.high.toFixed(4)}</span></span>
+      <span class="leg-val">L <span style="color: ${color}">${candle.low.toFixed(4)}</span></span>
+      <span class="leg-val">C <span style="color: ${color}">${candle.close.toFixed(4)}</span></span>
+      <span class="leg-val"><span style="color: ${color}">(${sign}${diffPct.toFixed(2)}%)</span></span>
+    `;
+
+    if (indEl) {
+      const fastStr = (fastEma !== null && fastEma !== undefined) ? fastEma.toFixed(4) : "--";
+      const slowStr = (slowEma !== null && slowEma !== undefined) ? slowEma.toFixed(4) : "--";
+      indEl.innerHTML = `
+        <span class="leg-ind-fast">EMA Fast (5): ${fastStr}</span>
+        <span class="leg-ind-slow">EMA Slow (13): ${slowStr}</span>
+      `;
+    }
+  }
+
+  updateLegendWithLatest() {
+    if (!this.fullCandleData || this.fullCandleData.length === 0) return;
+    const latestCandle = this.fullCandleData[this.fullCandleData.length - 1];
+    let fastVal = null;
+    let slowVal = null;
+    if (this.fullIndicators) {
+      const fastList = this.fullIndicators.ema_fast || [];
+      const slowList = this.fullIndicators.ema_slow || [];
+      if (fastList.length > 0) fastVal = fastList[fastList.length - 1].value;
+      if (slowList.length > 0) slowVal = slowList[slowList.length - 1].value;
+    }
+    this.updateLegend(latestCandle, fastVal, slowVal);
+  }
+
+  onCrosshairMove(param) {
+    if (!param || !param.time || !this.candleSeries) {
+      this.updateLegendWithLatest();
+      return;
+    }
+    const candle = param.seriesData.get(this.candleSeries);
+    if (!candle) {
+      this.updateLegendWithLatest();
+      return;
+    }
+    let fastVal = null;
+    let slowVal = null;
+    if (this.fastEmaSeries) {
+      const fastData = param.seriesData.get(this.fastEmaSeries);
+      if (fastData && fastData.value !== undefined) fastVal = fastData.value;
+    }
+    if (this.slowEmaSeries) {
+      const slowData = param.seriesData.get(this.slowEmaSeries);
+      if (slowData && slowData.value !== undefined) slowVal = slowData.value;
+    }
+    this.updateLegend(candle, fastVal, slowVal);
+  }
+
   async onRunChanged() {
     if (!this.activeRunId) return;
 
     try {
+      // 1. First load complete backtest date range candles & indicators
+      await this.loadRunCandles();
+
+      // 2. Load all trades catalog
       const res = await fetch(`/api/forensics/run/${this.activeRunId}/trades-all`);
       if (!res.ok) throw new Error("Could not fetch complete trades catalog");
       const data = await res.json();
@@ -611,7 +753,13 @@ class ForensicsController {
       if (!res.ok) throw new Error(`Trade #${tradeId} context fetch failed: ${res.statusText}`);
       this.tradeContext = await res.json();
 
-      this.renderChartData();
+      // If full candle data is already loaded for the run, just overlay this trade
+      if (this.fullCandleData && this.fullCandleData.length > 0) {
+        this.renderTradeOverlay();
+      } else {
+        this.renderChartData();
+      }
+
       this.renderTradeInspector();
       this.initReplaySlider();
     } catch (e) {
@@ -654,7 +802,7 @@ class ForensicsController {
     if (this.fastEmaSeries && indicators && indicators.ema_fast) {
       this.fastEmaSeries.setData(indicators.ema_fast);
     }
-    if (this.slowEmaSeries && indicators && indicators.ema_slow) {
+    if (this.slowEmaSeries && indicators.ema_slow) {
       this.slowEmaSeries.setData(indicators.ema_slow);
     }
 
@@ -664,7 +812,15 @@ class ForensicsController {
       this.stochDSeries.setData(indicators.stoch_rsi.d || []);
     }
 
-    // 5. Clean up old price lines
+    this.renderTradeOverlay();
+    this.updateLegendWithLatest();
+  }
+
+  renderTradeOverlay() {
+    if (!this.tradeContext || !this.candleSeries) return;
+    const { trade } = this.tradeContext;
+
+    // Clean up old price lines
     this.priceLines.forEach(pl => this.candleSeries.removePriceLine(pl));
     this.priceLines = [];
     if (this.chartReplayPriceLine) {
@@ -672,7 +828,7 @@ class ForensicsController {
       this.chartReplayPriceLine = null;
     }
 
-    // 6. Draw Entry, TP, and SL Price Lines
+    // Draw Entry, TP, and SL Price Lines
     const entryLine = this.candleSeries.createPriceLine({
       price: trade.entry_price,
       color: "#00d2ff",
@@ -707,12 +863,26 @@ class ForensicsController {
       this.priceLines.push(slLine);
     }
 
-    // 7. Build markers — current trade entry/exit + all trades overlay
+    // Build markers — current trade entry/exit + all trades overlay
     const markers = this.buildTradeMarkers(trade);
     this.candleSeries.setMarkers(markers);
 
-    // Zoom chart centered on trade
-    if (this.chart) {
+    // Focus viewport on trade without discarding full backtest data
+    this.focusTradeOnChart(trade);
+  }
+
+  focusTradeOnChart(trade) {
+    if (!trade || !this.chart || !this.fullCandleData || this.fullCandleData.length === 0) return;
+    const entrySec = Math.floor(trade.open_time_ms / 1000);
+    let entryIdx = this.fullCandleData.findIndex(c => c.time >= entrySec);
+    if (entryIdx === -1) entryIdx = this.fullCandleData.length - 1;
+
+    const fromIdx = Math.max(0, entryIdx - 40);
+    const toIdx = Math.min(this.fullCandleData.length - 1, entryIdx + 60);
+
+    try {
+      this.chart.timeScale().setVisibleLogicalRange({ from: fromIdx, to: toIdx });
+    } catch (e) {
       this.chart.timeScale().fitContent();
     }
   }
@@ -938,14 +1108,23 @@ class ForensicsController {
     const ticks = (this.tradeContext && this.tradeContext.ticks) ? this.tradeContext.ticks : [];
     if (ticks.length === 0) return;
 
-    this.isPlaying = true;
-    document.getElementById("btnReplayPlay").style.display = "none";
-    document.getElementById("btnReplayPause").style.display = "inline-flex";
+    // If at end, rewind to beginning
+    if (this.currentTickIndex >= ticks.length - 1) {
+      this.currentTickIndex = 0;
+      this.seekReplay(0);
+    }
 
-    const stepMs = Math.max(20, Math.floor(100 / this.replaySpeed));
+    this.isPlaying = true;
+    const btnPlay = document.getElementById("btnReplayPlay");
+    const btnPause = document.getElementById("btnReplayPause");
+    if (btnPlay) btnPlay.style.display = "none";
+    if (btnPause) btnPause.style.display = "inline-flex";
+
+    const stepMs = Math.max(30, Math.floor(600 / this.replaySpeed));
     this.replayInterval = setInterval(() => {
       if (this.currentTickIndex >= ticks.length - 1) {
         this.pauseReplay();
+        if (btnPlay) btnPlay.innerHTML = "<span>🔄</span> Replay";
         return;
       }
       this.currentTickIndex++;
@@ -961,7 +1140,10 @@ class ForensicsController {
     }
     const btnPlay = document.getElementById("btnReplayPlay");
     const btnPause = document.getElementById("btnReplayPause");
-    if (btnPlay) btnPlay.style.display = "inline-flex";
+    if (btnPlay) {
+      btnPlay.style.display = "inline-flex";
+      btnPlay.innerHTML = "<span>▶</span> Play";
+    }
     if (btnPause) btnPause.style.display = "none";
 
     // Update chart replay button state
@@ -976,7 +1158,11 @@ class ForensicsController {
     this.pauseReplay();
 
     if (this.replayMode === "chart") {
-      this.stopChartReplay();
+      const resetIdx = this.getInitialReplayIndex();
+      this.chartReplayIndex = resetIdx;
+      this.renderChartReplayFrame(resetIdx);
+      const slider = document.getElementById("replayScrubSlider");
+      if (slider) slider.value = resetIdx;
       return;
     }
 
@@ -988,6 +1174,8 @@ class ForensicsController {
       this.pauseReplay();
       this.chartReplayIndex = Math.max(0, Math.min(this.fullCandleData.length - 1, this.chartReplayIndex + delta));
       this.renderChartReplayFrame(this.chartReplayIndex);
+      const slider = document.getElementById("replayScrubSlider");
+      if (slider) slider.value = this.chartReplayIndex;
       return;
     }
 
@@ -1056,10 +1244,19 @@ class ForensicsController {
   // LIVE CHART REPLAY (TradingView-style progressive candle reveal)
   // =========================================================================
 
-  /**
-   * Starts the live chart replay — clears the chart and progressively reveals
-   * candles one-by-one at the selected speed, creating a "live trading" effect.
-   */
+  getInitialReplayIndex() {
+    if (this.scissorCutIndex !== null) return this.scissorCutIndex;
+    if (!this.fullCandleData || this.fullCandleData.length === 0) return 0;
+    if (!this.tradeContext || !this.tradeContext.trade) return 0;
+    const entryTimeSec = Math.floor(this.tradeContext.trade.open_time_ms / 1000);
+    for (let i = 0; i < this.fullCandleData.length; i++) {
+      if (this.fullCandleData[i].time >= entryTimeSec) {
+        return Math.max(0, i - 15);
+      }
+    }
+    return 0;
+  }
+
   startChartReplay() {
     if (!this.fullCandleData || this.fullCandleData.length === 0) return;
 
@@ -1079,18 +1276,7 @@ class ForensicsController {
     this.pauseReplay();
     this.replayMode = "chart";
 
-    // Find the candle index where the trade entry is (start replay a bit before)
-    const trade = this.tradeContext.trade;
-    const entryTimeSec = Math.floor(trade.open_time_ms / 1000);
-    let startIdx = 0;
-    for (let i = 0; i < this.fullCandleData.length; i++) {
-      if (this.fullCandleData[i].time >= entryTimeSec) {
-        startIdx = Math.max(0, i - 10); // 10 candles before entry
-        break;
-      }
-    }
-
-    // Show initial pre-trade candles
+    const startIdx = this.getInitialReplayIndex();
     this.chartReplayIndex = startIdx;
 
     // Update scrub slider to use candle count
@@ -1104,19 +1290,20 @@ class ForensicsController {
     // Render initial frame and start playing
     this.renderChartReplayFrame(startIdx);
     this.playChartReplay();
-
-    // Update button UI
-    const btnChartReplay = document.getElementById("btnChartReplay");
-    if (btnChartReplay) {
-      btnChartReplay.textContent = "⏸ Pause Replay";
-      btnChartReplay.classList.add("active-pulse");
-    }
   }
 
-  /**
-   * Continues the chart replay animation from the current chartReplayIndex.
-   */
   playChartReplay() {
+    if (!this.fullCandleData || this.fullCandleData.length === 0) return;
+
+    // If at end, rewind to start point and replay
+    if (this.chartReplayIndex >= this.fullCandleData.length - 1) {
+      const startIdx = this.getInitialReplayIndex();
+      this.chartReplayIndex = startIdx;
+      this.renderChartReplayFrame(startIdx);
+      const slider = document.getElementById("replayScrubSlider");
+      if (slider) slider.value = startIdx;
+    }
+
     this.isPlaying = true;
 
     const btnPlay = document.getElementById("btnReplayPlay");
@@ -1130,12 +1317,28 @@ class ForensicsController {
       btnChartReplay.classList.add("active-pulse");
     }
 
-    const stepMs = Math.max(30, Math.floor(200 / this.replaySpeed));
+    // Calibrated speed mapping: 1x = 1000ms (1 full second per candle), 0.5x = 2000ms
+    const speedMsMap = {
+      0.5: 2000,
+      1: 1000,
+      2: 500,
+      5: 200,
+      10: 100,
+      25: 50,
+      50: 25
+    };
+    const stepMs = speedMsMap[this.replaySpeed] || Math.max(25, Math.floor(1000 / this.replaySpeed));
+
     this.replayInterval = setInterval(() => {
       if (this.chartReplayIndex >= this.fullCandleData.length - 1) {
         this.pauseReplay();
-        // Restore full chart when replay ends
-        this.renderChartData();
+        if (btnChartReplay) {
+          btnChartReplay.textContent = "🔄 Replay Again";
+          btnChartReplay.classList.remove("active-pulse");
+        }
+        if (btnPlay) {
+          btnPlay.innerHTML = "<span>🔄</span> Replay";
+        }
         return;
       }
       this.chartReplayIndex++;
@@ -1147,10 +1350,6 @@ class ForensicsController {
     }, stepMs);
   }
 
-  /**
-   * Renders the chart up to the given candle index, hiding all future candles.
-   * This creates the "live chart" effect where candles appear progressively.
-   */
   renderChartReplayFrame(upToIndex) {
     const slicedCandles = this.fullCandleData.slice(0, upToIndex + 1);
     const slicedVolumes = this.fullVolumeData.slice(0, upToIndex + 1);
@@ -1163,7 +1362,6 @@ class ForensicsController {
 
     // Slice indicators to match
     if (this.fullIndicators) {
-
       if (this.fastEmaSeries && this.fullIndicators.ema_fast) {
         this.fastEmaSeries.setData(this.fullIndicators.ema_fast.filter(d => d.time <= maxTime));
       }
@@ -1179,7 +1377,6 @@ class ForensicsController {
     // Moving live price line
     const currentCandle = slicedCandles[slicedCandles.length - 1];
     if (currentCandle) {
-      // Remove old live price line
       if (this.chartReplayPriceLine) {
         try { this.candleSeries.removePriceLine(this.chartReplayPriceLine); } catch(e) {}
       }
@@ -1193,8 +1390,29 @@ class ForensicsController {
         title: "LIVE"
       });
 
-      // Keep the latest candle visible by scrolling
-      this.chart.timeScale().scrollToPosition(2, false);
+      // Gently maintain visibility ONLY if candle moves beyond right edge of visible range
+      // Does NOT aggressively reset or snap user's manual layout
+      try {
+        const visibleRange = this.chart.timeScale().getVisibleLogicalRange();
+        if (visibleRange && upToIndex >= visibleRange.to - 2) {
+          const span = visibleRange.to - visibleRange.from;
+          this.chart.timeScale().setVisibleLogicalRange({
+            from: upToIndex - span + 2,
+            to: upToIndex + 2
+          });
+        }
+      } catch (e) {}
+
+      // Update top-left HUD legend for current candle
+      let curFast = null;
+      let curSlow = null;
+      if (this.fullIndicators) {
+        const fastPoints = (this.fullIndicators.ema_fast || []).filter(d => d.time <= maxTime);
+        const slowPoints = (this.fullIndicators.ema_slow || []).filter(d => d.time <= maxTime);
+        if (fastPoints.length > 0) curFast = fastPoints[fastPoints.length - 1].value;
+        if (slowPoints.length > 0) curSlow = slowPoints[slowPoints.length - 1].value;
+      }
+      this.updateLegend(currentCandle, curFast, curSlow);
     }
 
     // Build markers only for candles revealed so far
@@ -1286,6 +1504,7 @@ class ForensicsController {
   stopChartReplay() {
     this.replayMode = "tick";
     this.chartReplayIndex = 0;
+    this.scissorCutIndex = null;
 
     // Remove live price line
     if (this.chartReplayPriceLine) {
@@ -1293,16 +1512,131 @@ class ForensicsController {
       this.chartReplayPriceLine = null;
     }
 
-    // Restore button
+    // Restore buttons
     const btnChartReplay = document.getElementById("btnChartReplay");
     if (btnChartReplay) {
       btnChartReplay.textContent = "▶ Chart Replay";
       btnChartReplay.classList.remove("active-pulse");
     }
+    const btnPlay = document.getElementById("btnReplayPlay");
+    if (btnPlay) {
+      btnPlay.innerHTML = "<span>▶</span> Play";
+    }
 
     // Re-render full chart
     this.renderChartData();
     this.initReplaySlider();
+  }
+
+  // =========================================================================
+  // REPLAY SCISSOR ("CUT & REPLAY") INTERACTIVE TOOL
+  // =========================================================================
+
+  toggleScissorMode() {
+    this.isScissorMode = !this.isScissorMode;
+    const btn = document.getElementById("btnReplayScissor");
+    const container = document.getElementById("forensicMainChartContainer");
+    const overlay = document.getElementById("scissorOverlayContainer");
+
+    if (this.isScissorMode) {
+      if (btn) btn.classList.add("active-scissor");
+      if (container) container.classList.add("scissor-mode");
+      if (overlay) overlay.style.display = "block";
+    } else {
+      if (btn) btn.classList.remove("active-scissor");
+      if (container) container.classList.remove("scissor-mode");
+      if (overlay) overlay.style.display = "none";
+    }
+  }
+
+  onChartMouseMove(e) {
+    if (!this.isScissorMode || !this.chart || !this.fullCandleData || this.fullCandleData.length === 0) return;
+    const container = document.getElementById("forensicMainChartContainer");
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const chartWidth = rect.width;
+
+    // Constrain mouseX within main chart canvas area (excluding right price scale)
+    const clampedX = Math.max(10, Math.min(chartWidth - 65, mouseX));
+
+    const line = document.getElementById("scissorDottedLine");
+    const mask = document.getElementById("scissorBlurMask");
+    const tip = document.getElementById("scissorTooltip");
+
+    if (line) line.style.left = `${clampedX}px`;
+    if (mask) mask.style.left = `${clampedX}px`;
+    if (tip) {
+      tip.style.left = `${clampedX}px`;
+      const timeCoord = this.chart.timeScale().coordinateToTime(clampedX);
+      if (timeCoord) {
+        const d = new Date(timeCoord * 1000);
+        const timeStr = d.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+        tip.innerHTML = `<span>✂️</span> Cut & Replay from <strong>${timeStr}</strong>`;
+      } else {
+        tip.innerHTML = `<span>✂️</span> Click to cut & replay from here`;
+      }
+    }
+  }
+
+  onChartMouseLeave() {
+    if (!this.isScissorMode) return;
+    const overlay = document.getElementById("scissorOverlayContainer");
+    if (overlay) overlay.style.display = "none";
+  }
+
+  onChartClick(e) {
+    if (!this.isScissorMode || !this.chart || !this.fullCandleData || this.fullCandleData.length === 0) return;
+    const container = document.getElementById("forensicMainChartContainer");
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+
+    // Convert mouseX to time coordinate
+    let clickTime = this.chart.timeScale().coordinateToTime(mouseX);
+    let targetIdx = -1;
+
+    if (clickTime) {
+      targetIdx = this.fullCandleData.findIndex(c => c.time >= clickTime);
+    }
+    if (targetIdx === -1) {
+      const frac = Math.max(0, Math.min(1, mouseX / (rect.width - 65)));
+      targetIdx = Math.floor(frac * (this.fullCandleData.length - 1));
+    }
+
+    targetIdx = Math.max(0, Math.min(this.fullCandleData.length - 1, targetIdx));
+
+    // Cut chart at targetIdx!
+    this.scissorCutIndex = targetIdx;
+    this.chartReplayIndex = targetIdx;
+    this.replayMode = "chart";
+
+    // Update scrubber to cut point
+    const slider = document.getElementById("replayScrubSlider");
+    if (slider) {
+      slider.min = 0;
+      slider.max = this.fullCandleData.length - 1;
+      slider.value = targetIdx;
+    }
+
+    // Render frame up to cut point (left visible, right hidden)
+    this.renderChartReplayFrame(targetIdx);
+
+    // Turn off scissor mode
+    this.toggleScissorMode();
+
+    // Update button states
+    const btnChartReplay = document.getElementById("btnChartReplay");
+    if (btnChartReplay) {
+      btnChartReplay.textContent = "▶ Play Cut Replay";
+      btnChartReplay.classList.add("active-pulse");
+    }
+    const btnPlay = document.getElementById("btnReplayPlay");
+    if (btnPlay) {
+      btnPlay.innerHTML = "<span>▶</span> Play";
+    }
   }
 
   // =========================================================================

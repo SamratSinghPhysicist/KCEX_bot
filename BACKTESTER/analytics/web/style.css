@@ -1880,3 +1880,140 @@ body {
   background: var(--border-subtle);
   margin: 0 0.25rem;
 }
+
+/* =========================================================================
+   TradingView-Style Top-Left Chart Legend HUD
+   ========================================================================= */
+.chart-legend-overlay {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 15;
+  pointer-events: none;
+  background: rgba(8, 12, 20, 0.78);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  line-height: 1.45;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  user-select: none;
+}
+
+.legend-row-ohlc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-bright);
+}
+
+.legend-row-ohlc .leg-sym {
+  font-weight: 700;
+  color: #fff;
+}
+
+.legend-row-ohlc .leg-tf {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.legend-row-ohlc .leg-val {
+  color: var(--text-dim);
+}
+
+.legend-row-ohlc .leg-val span {
+  font-weight: 600;
+}
+
+.legend-row-indicators {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.71rem;
+}
+
+.leg-ind-fast {
+  color: #00d2ff;
+  font-weight: 600;
+}
+
+.leg-ind-slow {
+  color: #ffb800;
+  font-weight: 600;
+}
+
+/* =========================================================================
+   Replay Scissor Interactive Tool Styles
+   ========================================================================= */
+.forensic-chart-canvas.scissor-mode {
+  cursor: crosshair !important;
+}
+
+.scissor-overlay-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.scissor-dotted-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-left: 2px dashed #00d2ff;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.7);
+  pointer-events: none;
+  transition: left 0.04s ease-out;
+}
+
+.scissor-blur-mask {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(6, 10, 18, 0.68);
+  backdrop-filter: blur(2.5px);
+  border-left: 1px solid rgba(0, 210, 255, 0.5);
+  pointer-events: none;
+  transition: left 0.04s ease-out;
+}
+
+.scissor-tooltip {
+  position: absolute;
+  top: 18px;
+  background: rgba(11, 20, 36, 0.95);
+  border: 1px solid #00d2ff;
+  color: #fff;
+  padding: 5px 12px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: left 0.04s ease-out;
+}
+
+#btnReplayScissor.active-scissor {
+  background: linear-gradient(135deg, rgba(255, 184, 0, 0.2), rgba(255, 51, 102, 0.2));
+  border-color: #ffb800;
+  color: #ffb800;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(255, 184, 0, 0.35);
+  animation: pulseGreen 1.5s infinite;
+}

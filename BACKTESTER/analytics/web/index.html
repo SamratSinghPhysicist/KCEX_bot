@@ -202,21 +202,22 @@
       <!-- Replay Engine Controller Toolbar -->
       <div class="replay-toolbar">
         <div class="replay-playback-controls">
-          <button class="btn btn-secondary btn-sm" id="btnReplayReset" title="Reset to Entry"><span>⏮</span></button>
-          <button class="btn btn-secondary btn-sm" id="btnReplayStepBack" title="Step -1 Tick"><span>◀</span></button>
-          <button class="btn btn-primary btn-sm" id="btnReplayPlay" title="Play Replay"><span>▶</span> Play</button>
+          <button class="btn btn-secondary btn-sm" id="btnReplayReset" title="Reset to Start / Cut Point"><span>⏮</span></button>
+          <button class="btn btn-secondary btn-sm" id="btnReplayStepBack" title="Step -1 Bar / Tick"><span>◀</span></button>
+          <button class="btn btn-primary btn-sm" id="btnReplayPlay" title="Play / Resume Replay"><span>▶</span> Play</button>
           <button class="btn btn-warning btn-sm" id="btnReplayPause" style="display:none;" title="Pause Replay"><span>⏸</span> Pause</button>
-          <button class="btn btn-secondary btn-sm" id="btnReplayStepFwd" title="Step +1 Tick"><span>▶</span></button>
+          <button class="btn btn-secondary btn-sm" id="btnReplayStepFwd" title="Step +1 Bar / Tick"><span>▶</span></button>
           <span class="replay-divider"></span>
           <button class="btn btn-accent btn-sm" id="btnChartReplay" title="Live Chart Replay: progressively reveals candles like a live chart">▶ Chart Replay</button>
+          <button class="btn btn-secondary btn-sm" id="btnReplayScissor" title="Click to cut chart at any candle and replay from that point"><span>✂️</span> Cut & Replay</button>
         </div>
 
         <!-- Scrub Slider Bar -->
         <div class="replay-scrub-container">
           <div class="scrub-labels">
-            <span>Trade Entry</span>
+            <span>Replay Start / Cut</span>
             <span id="replayElapsedSec" class="mono text-cyan">0.0s</span>
-            <span>Trade Exit / Post-Exit</span>
+            <span>Current / End</span>
           </div>
           <input type="range" class="replay-scrubber" id="replayScrubSlider" min="0" max="100" value="0">
         </div>
@@ -224,13 +225,13 @@
         <!-- Speed Selector Chips -->
         <div class="replay-speed-group">
           <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">SPEED:</span>
+          <button class="speed-chip" data-speed="0.5">0.5x</button>
           <button class="speed-chip active" data-speed="1">1x</button>
           <button class="speed-chip" data-speed="2">2x</button>
           <button class="speed-chip" data-speed="5">5x</button>
           <button class="speed-chip" data-speed="10">10x</button>
           <button class="speed-chip" data-speed="25">25x</button>
           <button class="speed-chip" data-speed="50">50x</button>
-          <button class="speed-chip" data-speed="100">100x</button>
         </div>
 
         <!-- Live Simulation Readout -->
@@ -271,7 +272,20 @@
                 <span class="legend-dot" style="background: #ffb800;"></span> Slow EMA
               </div>
             </div>
-            <div id="forensicMainChartContainer" class="forensic-chart-canvas"></div>
+            <div id="forensicMainChartContainer" class="forensic-chart-canvas" style="position: relative;">
+              <!-- TradingView-Style Indicator & OHLC Legend (Top-Left) -->
+              <div id="chartLegendOverlay" class="chart-legend-overlay">
+                <div class="legend-row-ohlc" id="legendOhlcRow">--</div>
+                <div class="legend-row-indicators" id="legendIndicatorsRow">--</div>
+              </div>
+
+              <!-- Replay Scissor Interactive Cut Preview Overlay -->
+              <div id="scissorOverlayContainer" class="scissor-overlay-container" style="display: none;">
+                <div id="scissorDottedLine" class="scissor-dotted-line"></div>
+                <div id="scissorBlurMask" class="scissor-blur-mask"></div>
+                <div id="scissorTooltip" class="scissor-tooltip">✂️ Click to cut & replay from here</div>
+              </div>
+            </div>
             
             <div class="chart-pane-header" style="border-top: 1px solid var(--border-subtle); margin-top: 0.5rem;">
               <div class="pane-title">

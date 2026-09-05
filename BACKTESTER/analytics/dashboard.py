@@ -318,6 +318,21 @@ async def get_forensics_trade_context(
         raise HTTPException(status_code=500, detail=f"Forensics error: {str(e)}")
 
 
+@app.get("/api/forensics/run/{run_id}/candles")
+async def get_forensics_run_candles(
+    run_id: str,
+    timeframe: str = Query(default="1m"),
+    limit: int = Query(default=100000)
+):
+    """Loads complete OHLCV candlestick series covering the full evaluation date range of the run."""
+    try:
+        return forensics.get_run_candles(run_id=run_id, timeframe=timeframe, limit=limit)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Run candles error: {str(e)}")
+
+
 @app.post("/api/forensics/trade/{run_id}/{trade_id}/what-if")
 async def simulate_forensics_what_if(
     run_id: str,

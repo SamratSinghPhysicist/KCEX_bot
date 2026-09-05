@@ -68,6 +68,7 @@ class ForensicsEngine:
 
         self.ohlcv_loader = OHLCVLoader(data_dir=self.ohlcv_dir)
         self.tick_streamer = TickTradeStreamer(data_dir=self.trades_dir)
+        self._candles_cache = {}
 
     # =========================================================================
     # DATA CATALOG & DISCOVERY
@@ -163,7 +164,7 @@ class ForensicsEngine:
         timeframe: str = "1m",
         start_ms: Optional[int] = None,
         end_ms: Optional[int] = None,
-        limit: int = 1500
+        limit: int = 100000
     ) -> List[Dict[str, Any]]:
         """
         Loads and formats candles for Lightweight Charts:
@@ -197,6 +198,73 @@ class ForensicsEngine:
             })
 
         return chart_candles
+
+    def get_run_candles(
+        self,
+        run_id: str,
+        timeframe: str = "1m",
+        limit: int = 100000
+    ) -> Dict[str, Any]:
+        """
+        Loads the complete OHLCV candlestick series covering the full evaluation date range of the backtest run.
+        Calculates indicators (EMA, Stoch RSI) over the series.
+        Caches result in memory for instantaneous trade navigation and replay.
+        """
+        run = self.indexer.get_run_by_id(run_id)
+        if not run:
+            raise ValueError(f"Run '{run_id}' not found")
+
+        symbol = canonicalize_symbol(run.metadata.symbol)
+        tf = normalize_timeframe(timeframe)
+        cache_key = f"{run_id}:{tf}:{limit}"
+
+        if cache_key in self._candles_cache:
+            return self._candles_cache[cache_key]
+
+        start_ms = None
+        end_ms = None
+        if run.metadata.start_date and run.metadata.start_date != "N/A":
+            s_parsed = parse_timestamp_ms(run.metadata.start_date)
+            if s_parsed:
+                start_ms = s_parsed
+
+        if run.metadata.end_date and run.metadata.end_date != "N/A":
+            e_parsed = parse_timestamp_ms(run.metadata.end_date)
+            if e_parsed:
+                end_ms = e_parsed + (86400 * 1000) - 1
+
+        if not start_ms or not end_ms:
+            trades_catalog = self.get_all_trades_catalog(run_id)
+            trades = trades_catalog.get("trades", [])
+            valid_opens = [t["open_time_ms"] for t in trades if t.get("open_time_ms", 0) > 0]
+            valid_closes = [t["close_time_ms"] for t in trades if t.get("close_time_ms", 0) > 0]
+            if valid_opens:
+                start_ms = min(valid_opens) - (3600 * 1000)
+            if valid_closes:
+                end_ms = max(valid_closes) + (3600 * 1000)
+
+        candles = self.get_candles(
+            symbol=symbol,
+            timeframe=tf,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            limit=limit
+        )
+
+        indicators = self.calculate_indicators(candles, run.metadata.parameters)
+
+        res = {
+            "symbol": symbol,
+            "run_id": run_id,
+            "timeframe": tf,
+            "date_range": run.metadata.date_range,
+            "start_ms": start_ms,
+            "end_ms": end_ms,
+            "candles": candles,
+            "indicators": indicators
+        }
+        self._candles_cache[cache_key] = res
+        return res
 
     # =========================================================================
     # INDICATOR CALCULATIONS
@@ -379,7 +447,8 @@ class ForensicsEngine:
         trade_id: int,
         timeframe: str = "1m",
         pad_candles_before: int = 80,
-        pad_candles_after: int = 50
+        pad_candles_after: int = 50,
+        full_backtest: bool = True
     ) -> Dict[str, Any]:
         """
         Extracts comprehensive forensic context for a single trade:
@@ -422,22 +491,31 @@ class ForensicsEngine:
         roe_pct = float(trade_raw.get("roe_percentage", 0.0))
         exit_reason = trade_raw.get("exit_reason", "UNKNOWN")
 
-        # 1. Load Candlesticks around trade
-        tf = normalize_timeframe(timeframe)
-        tf_sec = TF_SECONDS_MAP.get(tf, 60)
-        start_slice_ms = open_ms - (pad_candles_before * tf_sec * 1000)
-        end_slice_ms = close_ms + (pad_candles_after * tf_sec * 1000)
+        # 1. Load Candlesticks (Full backtest series if requested, fallback to local slice)
+        candles = []
+        indicators = {}
+        if full_backtest:
+            try:
+                run_data = self.get_run_candles(run_id, timeframe=timeframe)
+                candles = run_data.get("candles", [])
+                indicators = run_data.get("indicators", {})
+            except Exception as e:
+                print(f"[!] Warning: Full run candle load fallback triggered: {e}")
 
-        candles = self.get_candles(
-            symbol=symbol,
-            timeframe=tf,
-            start_ms=start_slice_ms,
-            end_ms=end_slice_ms,
-            limit=1000
-        )
+        if not candles:
+            tf = normalize_timeframe(timeframe)
+            tf_sec = TF_SECONDS_MAP.get(tf, 60)
+            start_slice_ms = open_ms - (pad_candles_before * tf_sec * 1000)
+            end_slice_ms = close_ms + (pad_candles_after * tf_sec * 1000)
 
-        # 2. Calculate Indicators for the candle slice
-        indicators = self.calculate_indicators(candles, run.metadata.parameters)
+            candles = self.get_candles(
+                symbol=symbol,
+                timeframe=tf,
+                start_ms=start_slice_ms,
+                end_ms=end_slice_ms,
+                limit=2000
+            )
+            indicators = self.calculate_indicators(candles, run.metadata.parameters)
 
         # 3. Strategy & Filter State Assessment
         strategy_state = {
@@ -909,83 +987,127 @@ class ForensicsEngine:
         Tests alternative exit rules (timeout, TP distance, SL) against the trade's
         historical tick stream WITHOUT altering the original backtest records.
         """
-        context = self.get_trade_forensic_context(run_id=run_id, trade_id=trade_id)
+        context = self.get_trade_forensic_context(run_id=run_id, trade_id=trade_id, full_backtest=False)
         trade = context["trade"]
         symbol = trade["symbol"]
         direction = trade["direction"]
         entry_price = trade["entry_price"]
         open_ms = trade["open_time_ms"]
-        pu = context["strategy_state"]["price_unit"]
-        leverage = context["strategy_state"]["leverage"]
+        close_ms = trade["close_time_ms"]
+        pu = context["strategy_state"].get("price_unit") or 0.0001
+        leverage = context["strategy_state"].get("leverage") or 75
 
         is_long = (direction == "LONG")
 
-        # Determine target TP
-        active_tp_ticks = tp_ticks if tp_ticks is not None else context["strategy_state"]["tp_ticks"]
-        if is_long:
-            hypo_tp = round(entry_price + (active_tp_ticks * pu), 6)
+        # Determine target TP price
+        trade_tp = float(trade.get("tp_price", 0.0))
+        if tp_ticks is not None:
+            active_tp_ticks = tp_ticks
+            if is_long:
+                hypo_tp = round(entry_price + (active_tp_ticks * pu), 6)
+            else:
+                hypo_tp = round(entry_price - (active_tp_ticks * pu), 6)
+        elif trade_tp > 0:
+            hypo_tp = trade_tp
+            active_tp_ticks = round(abs(trade_tp - entry_price) / pu) if pu > 0 else 2
         else:
-            hypo_tp = round(entry_price - (active_tp_ticks * pu), 6)
+            active_tp_ticks = int(context["strategy_state"].get("tp_ticks", 2))
+            if is_long:
+                hypo_tp = round(entry_price + (active_tp_ticks * pu), 6)
+            else:
+                hypo_tp = round(entry_price - (active_tp_ticks * pu), 6)
 
-        # Determine target SL
-        active_sl_roe = sl_roe_pct if sl_roe_pct is not None else 25.0
-        sl_dist = (entry_price * (active_sl_roe / 100.0)) / leverage
-        if is_long:
-            hypo_sl = round(entry_price - sl_dist, 6)
+        # Determine target SL price
+        trade_sl = float(trade.get("sl_price", 0.0))
+        if sl_roe_pct is not None:
+            active_sl_roe = sl_roe_pct
+            sl_dist = (entry_price * (active_sl_roe / 100.0)) / leverage if leverage > 0 else 0.0
+            if is_long:
+                hypo_sl = round(entry_price - sl_dist, 6)
+            else:
+                hypo_sl = round(entry_price + sl_dist, 6)
+        elif trade_sl > 0:
+            hypo_sl = trade_sl
+            active_sl_roe = round((abs(trade_sl - entry_price) / entry_price) * leverage * 100.0, 2) if entry_price > 0 else 25.0
         else:
-            hypo_sl = round(entry_price + sl_dist, 6)
+            active_sl_roe = 25.0
+            sl_dist = (entry_price * (active_sl_roe / 100.0)) / leverage if leverage > 0 else 0.0
+            if is_long:
+                hypo_sl = round(entry_price - sl_dist, 6)
+            else:
+                hypo_sl = round(entry_price + sl_dist, 6)
 
-        # Fetch ticks starting from entry up to 300 seconds
-        max_sim_sec = 300.0
+        # Simulation window calculation
+        trade_actual_duration = float(trade.get("duration_seconds", 300.0))
         if timeout_seconds is not None and timeout_seconds > 0:
-            max_sim_sec = max(max_sim_sec, timeout_seconds + 30.0)
+            max_sim_sec = max(60.0, timeout_seconds + 30.0)
+        else:
+            max_sim_sec = max(7200.0, trade_actual_duration + 600.0)
 
         end_fetch_ms = open_ms + int(max_sim_sec * 1000)
 
-        hypo_exit_price = entry_price
-        hypo_exit_time_ms = open_ms
-        hypo_exit_reason = "TIMEOUT"
+        hypo_exit_price = trade["exit_price"]
+        hypo_exit_time_ms = trade["close_time_ms"]
+        hypo_exit_reason = trade["exit_reason"]
 
+        found_exit = False
         tick_count = 0
+        last_t = None
+
         try:
             tick_gen = self.tick_streamer.stream_ticks(symbol, start_ms=open_ms, end_ms=end_fetch_ms)
             for t in tick_gen:
                 tick_count += 1
+                last_t = t
                 elapsed_s = (t.timestamp_ms - open_ms) / 1000.0
 
+                # 1. Check timeout exit if specified
+                if timeout_seconds is not None and timeout_seconds > 0:
+                    if elapsed_s >= timeout_seconds:
+                        hypo_exit_price = t.price
+                        hypo_exit_time_ms = t.timestamp_ms
+                        hypo_exit_reason = "TIMEOUT_CLOSE"
+                        found_exit = True
+                        break
+
+                # 2. Check TP / SL hits
                 if is_long:
                     if t.price >= hypo_tp:
                         hypo_exit_price = hypo_tp
                         hypo_exit_time_ms = t.timestamp_ms
                         hypo_exit_reason = "MIN_PROFIT_TP_HIT"
+                        found_exit = True
                         break
                     elif t.price <= hypo_sl:
                         hypo_exit_price = hypo_sl
                         hypo_exit_time_ms = t.timestamp_ms
                         hypo_exit_reason = "STOP_LOSS_HIT"
+                        found_exit = True
                         break
                 else:
                     if t.price <= hypo_tp:
                         hypo_exit_price = hypo_tp
                         hypo_exit_time_ms = t.timestamp_ms
                         hypo_exit_reason = "MIN_PROFIT_TP_HIT"
+                        found_exit = True
                         break
                     elif t.price >= hypo_sl:
                         hypo_exit_price = hypo_sl
                         hypo_exit_time_ms = t.timestamp_ms
                         hypo_exit_reason = "STOP_LOSS_HIT"
-                        break
-
-                if timeout_seconds is not None and timeout_seconds > 0:
-                    if elapsed_s >= timeout_seconds:
-                        hypo_exit_price = t.price
-                        hypo_exit_time_ms = t.timestamp_ms
-                        hypo_exit_reason = "TIMEOUT_CLOSE"
+                        found_exit = True
                         break
         except Exception as e:
             print(f"[!] What-if simulation error: {e}")
 
-        # If no raw millisecond ticks exist for this date, evaluate against 1m candles
+        # If ticks were processed but no TP/SL/Timeout triggered within dataset
+        if tick_count > 0 and not found_exit and last_t is not None:
+            hypo_exit_price = last_t.price
+            hypo_exit_time_ms = last_t.timestamp_ms
+            hypo_exit_reason = "MAX_SIM_WINDOW_REACHED" if timeout_seconds is None else "TIMEOUT_CLOSE"
+            found_exit = True
+
+        # Fallback to 1m candles if no raw millisecond ticks exist for this date
         if tick_count == 0:
             candles = self.ohlcv_loader.load_candles(
                 symbol=symbol,
@@ -995,67 +1117,86 @@ class ForensicsEngine:
             )
             found_exit = False
             for c in candles:
-                c_elapsed = max(0.0, (c.open_time_ms - open_ms) / 1000.0)
+                c_start_s = max(0.0, (c.open_time_ms - open_ms) / 1000.0)
+                c_end_s = max(0.0, (c.close_time_ms - open_ms) / 1000.0)
 
-                # Check TP / SL hit within candle
+                # 1. Check if timeout occurred before this candle
+                if timeout_seconds is not None and timeout_seconds > 0 and c_start_s >= timeout_seconds:
+                    hypo_exit_price = c.open
+                    hypo_exit_time_ms = open_ms + int(timeout_seconds * 1000)
+                    hypo_exit_reason = "TIMEOUT_CLOSE"
+                    found_exit = True
+                    break
+
+                # 2. Check TP / SL hit within candle
                 if is_long:
-                    if c.high >= hypo_tp:
+                    if c.high >= hypo_tp and (timeout_seconds is None or c_start_s < timeout_seconds):
                         hypo_exit_price = hypo_tp
                         hypo_exit_time_ms = c.open_time_ms + 30000
                         hypo_exit_reason = "MIN_PROFIT_TP_HIT"
                         found_exit = True
                         break
-                    elif c.low <= hypo_sl:
+                    elif c.low <= hypo_sl and (timeout_seconds is None or c_start_s < timeout_seconds):
                         hypo_exit_price = hypo_sl
                         hypo_exit_time_ms = c.open_time_ms + 15000
                         hypo_exit_reason = "STOP_LOSS_HIT"
                         found_exit = True
                         break
                 else:
-                    if c.low <= hypo_tp:
+                    if c.low <= hypo_tp and (timeout_seconds is None or c_start_s < timeout_seconds):
                         hypo_exit_price = hypo_tp
                         hypo_exit_time_ms = c.open_time_ms + 30000
                         hypo_exit_reason = "MIN_PROFIT_TP_HIT"
                         found_exit = True
                         break
-                    elif c.high >= hypo_sl:
+                    elif c.high >= hypo_sl and (timeout_seconds is None or c_start_s < timeout_seconds):
                         hypo_exit_price = hypo_sl
                         hypo_exit_time_ms = c.open_time_ms + 15000
                         hypo_exit_reason = "STOP_LOSS_HIT"
                         found_exit = True
                         break
 
-                # Check timeout
-                if timeout_seconds is not None and timeout_seconds > 0:
-                    if (c.close_time_ms - open_ms) / 1000.0 >= timeout_seconds:
-                        hypo_exit_price = c.close
-                        hypo_exit_time_ms = open_ms + int(timeout_seconds * 1000)
-                        hypo_exit_reason = "TIMEOUT_CLOSE"
-                        found_exit = True
-                        break
+                # 3. Check if timeout occurred within this candle
+                if timeout_seconds is not None and timeout_seconds > 0 and c_end_s >= timeout_seconds:
+                    hypo_exit_price = c.close
+                    hypo_exit_time_ms = open_ms + int(timeout_seconds * 1000)
+                    hypo_exit_reason = "TIMEOUT_CLOSE"
+                    found_exit = True
+                    break
 
             if not found_exit:
                 if candles:
                     hypo_exit_price = candles[-1].close
                     hypo_exit_time_ms = candles[-1].close_time_ms
-                    hypo_exit_reason = "TIMEOUT_CLOSE"
+                    hypo_exit_reason = "MAX_SIM_WINDOW_REACHED" if timeout_seconds is None else "TIMEOUT_CLOSE"
                 else:
                     hypo_exit_price = trade["exit_price"]
                     hypo_exit_time_ms = trade["close_time_ms"]
                     hypo_exit_reason = trade["exit_reason"]
 
-
-        hypo_duration_sec = round((hypo_exit_time_ms - open_ms) / 1000.0, 2)
+        hypo_duration_sec = max(0.1, round((hypo_exit_time_ms - open_ms) / 1000.0, 2))
         price_diff = (hypo_exit_price - entry_price) if is_long else (entry_price - hypo_exit_price)
-        hypo_roe_pct = round((price_diff / entry_price) * leverage * 100.0, 2) if entry_price > 0 else 0.0
 
-        # Contract notional calculation
-        contracts = context["strategy_state"]["contracts"]
-        cs = context["strategy_state"]["contract_size"]
-        notional = entry_price * contracts * cs
-        hypo_pnl_usdt = round(price_diff * contracts * cs, 6)
+        contracts = float(context["strategy_state"].get("contracts", 1.0))
+        cs = float(context["strategy_state"].get("contract_size", 1.0))
+        underlying_qty = contracts * cs
+        notional = entry_price * underlying_qty
+        margin = (notional / leverage) if leverage > 0 else notional
 
-        actual_pnl = trade["realized_pnl_usdt"]
+        trade_raw = self.get_trade_record(run_id, trade_id) or {}
+        actual_fee = float(trade_raw.get("fee_total_usdt", 0.0) or 0.0)
+        fee_rate = 0.0
+        if actual_fee > 0 and notional > 0:
+            fee_rate = actual_fee / (2.0 * notional)
+
+        fee_open = notional * fee_rate
+        fee_close = (underlying_qty * hypo_exit_price) * fee_rate
+        fee_total = fee_open + fee_close
+
+        hypo_pnl_usdt = round((underlying_qty * price_diff) - fee_total, 6)
+        hypo_roe_pct = round((hypo_pnl_usdt / margin * 100.0), 2) if margin > 0 else 0.0
+
+        actual_pnl = float(trade.get("realized_pnl_usdt", 0.0))
         pnl_diff = round(hypo_pnl_usdt - actual_pnl, 6)
 
         return {
