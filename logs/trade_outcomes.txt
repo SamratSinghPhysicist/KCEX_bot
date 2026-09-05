@@ -310,3 +310,627 @@ Win Rate           : 0.0%
 Net Cumulative PnL : -0.002400 USDT (INR -0.2266)
 Live USD/INR Rate  : INR 94.43 per USD
 ==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 19:06:04 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 2 contract(s) (20 DOGE)
+Trade Quantity     : 1.6990 USDT (INR 160.42) [Notional exposure]
+Margin Committed   : 0.0227 USDT (INR 2.14) [Trade Qty / 75x leverage]
+Entry Price        : 0.08495 USDT (Opened: 2026-09-04 19:06:02)
+Exit Price         : 0.08495 USDT (Duration: 2.45s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08493 USDT (Offset: +2 pu / +0.00002 USDT)
+Stop Loss Level    : 0.08545 USDT (Offset: -50 pu / -0.00050 USDT | -0.589% price | -44.1% ROE)
+Exit Reason        : IMMEDIATE_PROFIT_CLOSE
+------------------------------------------------------------------------------
+REALIZED PnL       : 0.000000 USDT (INR 0.0000)
+Return on Equity   : 0.00% (Price move: 0.000%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0771 USDT (INR 7.28)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 0 | Losses: 0 | Scratch: 1
+Win Rate           : 0.0%
+Net Cumulative PnL : +0.000000 USDT (+INR 0.0000)
+Live USD/INR Rate  : INR 94.42 per USD
+==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 19:15:12 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8519 USDT (INR 80.43) [Notional exposure]
+Margin Committed   : 0.0114 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08519 USDT (Opened: 2026-09-04 19:10:01)
+Exit Price         : 0.08521 USDT (Duration: 311.80s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08529 USDT (Offset: +10 pu / +0.00010 USDT)
+Stop Loss Level    : 0.08485 USDT (Offset: -34 pu / -0.00034 USDT | -0.399% price | -29.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.76% (Price move: +0.023%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0773 USDT (INR 7.30)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000200 USDT (+INR 0.0189)
+Live USD/INR Rate  : INR 94.42 per USD
+==============================================================================
+==============================================================================
+TRADE #1 OUTCOME JOURNAL | Closed at: 2026-09-04 19:24:24 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8515 USDT (INR 80.40) [Notional exposure]
+Margin Committed   : 0.0114 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08515 USDT (Opened: 2026-09-04 19:24:03)
+Exit Price         : 0.08512 USDT (Duration: 21.06s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08512 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08543 USDT (Offset: -28 pu / -0.00028 USDT | -0.329% price | -24.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000300 USDT (+INR 0.0283)
+Return on Equity   : +2.64% (Price move: +0.035%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0776 USDT (INR 7.32)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 1 | Wins: 1 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000300 USDT (+INR 0.0283)
+Live USD/INR Rate  : INR 94.42 per USD
+==============================================================================
+==============================================================================
+TRADE #2 OUTCOME JOURNAL | Closed at: 2026-09-04 19:58:49 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8500 USDT (INR 80.24) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08500 USDT (Opened: 2026-09-04 19:58:03)
+Exit Price         : 0.08502 USDT (Duration: 45.61s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08503 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08472 USDT (Offset: -28 pu / -0.00028 USDT | -0.329% price | -24.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.76% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0778 USDT (INR 7.34)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 2 | Wins: 2 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000500 USDT (+INR 0.0472)
+Live USD/INR Rate  : INR 94.39 per USD
+==============================================================================
+==============================================================================
+TRADE #3 OUTCOME JOURNAL | Closed at: 2026-09-04 20:02:34 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8486 USDT (INR 80.07) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08486 USDT (Opened: 2026-09-04 20:01:03)
+Exit Price         : 0.08484 USDT (Duration: 91.19s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08483 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08514 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.77% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0780 USDT (INR 7.36)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 3 | Wins: 3 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.000700 USDT (+INR 0.0661)
+Live USD/INR Rate  : INR 94.36 per USD
+==============================================================================
+==============================================================================
+TRADE #4 OUTCOME JOURNAL | Closed at: 2026-09-04 20:02:57 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8482 USDT (INR 80.03) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08482 USDT (Opened: 2026-09-04 20:02:50)
+Exit Price         : 0.08485 USDT (Duration: 6.32s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08485 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08454 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000300 USDT (+INR 0.0283)
+Return on Equity   : +2.65% (Price move: +0.035%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0783 USDT (INR 7.39)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 4 | Wins: 4 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.001000 USDT (+INR 0.0944)
+Live USD/INR Rate  : INR 94.36 per USD
+==============================================================================
+==============================================================================
+TRADE #5 OUTCOME JOURNAL | Closed at: 2026-09-04 20:03:21 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8484 USDT (INR 80.05) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08484 USDT (Opened: 2026-09-04 20:03:13)
+Exit Price         : 0.08482 USDT (Duration: 8.40s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08481 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08512 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.77% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0785 USDT (INR 7.40)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 5 | Wins: 5 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.001200 USDT (+INR 0.1133)
+Live USD/INR Rate  : INR 94.36 per USD
+==============================================================================
+==============================================================================
+TRADE #6 OUTCOME JOURNAL | Closed at: 2026-09-04 20:34:32 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8429 USDT (INR 79.59) [Notional exposure]
+Margin Committed   : 0.0112 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08429 USDT (Opened: 2026-09-04 20:34:03)
+Exit Price         : 0.08432 USDT (Duration: 28.92s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08432 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08401 USDT (Offset: -28 pu / -0.00028 USDT | -0.332% price | -24.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000300 USDT (+INR 0.0283)
+Return on Equity   : +2.67% (Price move: +0.036%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0788 USDT (INR 7.44)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 6 | Wins: 6 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.001500 USDT (+INR 0.1416)
+Live USD/INR Rate  : INR 94.42 per USD
+==============================================================================
+==============================================================================
+TRADE #7 OUTCOME JOURNAL | Closed at: 2026-09-04 21:03:26 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8437 USDT (INR 79.66) [Notional exposure]
+Margin Committed   : 0.0112 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08437 USDT (Opened: 2026-09-04 21:02:02)
+Exit Price         : 0.08435 USDT (Duration: 83.75s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08434 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08465 USDT (Offset: -28 pu / -0.00028 USDT | -0.332% price | -24.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.78% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0790 USDT (INR 7.46)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 7 | Wins: 7 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.001700 USDT (+INR 0.1605)
+Live USD/INR Rate  : INR 94.41 per USD
+==============================================================================
+==============================================================================
+TRADE #8 OUTCOME JOURNAL | Closed at: 2026-09-04 21:09:22 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8446 USDT (INR 79.74) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08446 USDT (Opened: 2026-09-04 21:09:04)
+Exit Price         : 0.08448 USDT (Duration: 18.02s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08449 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08418 USDT (Offset: -28 pu / -0.00028 USDT | -0.332% price | -24.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.78% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0792 USDT (INR 7.47)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 8 | Wins: 8 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.001900 USDT (+INR 0.1793)
+Live USD/INR Rate  : INR 94.41 per USD
+==============================================================================
+==============================================================================
+TRADE #9 OUTCOME JOURNAL | Closed at: 2026-09-04 21:23:22 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8432 USDT (INR 79.61) [Notional exposure]
+Margin Committed   : 0.0112 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08432 USDT (Opened: 2026-09-04 21:20:02)
+Exit Price         : 0.08431 USDT (Duration: 199.45s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08429 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08460 USDT (Offset: -28 pu / -0.00028 USDT | -0.332% price | -24.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0094)
+Return on Equity   : +0.89% (Price move: +0.012%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0793 USDT (INR 7.48)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 9 | Wins: 9 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.002000 USDT (+INR 0.1888)
+Live USD/INR Rate  : INR 94.41 per USD
+==============================================================================
+==============================================================================
+TRADE #10 OUTCOME JOURNAL | Closed at: 2026-09-04 21:38:15 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8450 USDT (INR 79.79) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08450 USDT (Opened: 2026-09-04 21:38:02)
+Exit Price         : 0.08452 USDT (Duration: 12.73s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08453 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08422 USDT (Offset: -28 pu / -0.00028 USDT | -0.331% price | -24.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.78% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0795 USDT (INR 7.50)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 10 | Wins: 10 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.002200 USDT (+INR 0.2077)
+Live USD/INR Rate  : INR 94.43 per USD
+==============================================================================
+==============================================================================
+TRADE #11 OUTCOME JOURNAL | Closed at: 2026-09-04 22:00:20 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8449 USDT (INR 79.81) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08449 USDT (Opened: 2026-09-04 21:56:03)
+Exit Price         : 0.08448 USDT (Duration: 256.84s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08446 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08477 USDT (Offset: -28 pu / -0.00028 USDT | -0.331% price | -24.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000100 USDT (+INR 0.0094)
+Return on Equity   : +0.89% (Price move: +0.012%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0796 USDT (INR 7.52)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 11 | Wins: 11 | Losses: 0 | Scratch: 0
+Win Rate           : 100.0%
+Net Cumulative PnL : +0.002300 USDT (+INR 0.2171)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+==============================================================================
+TRADE #12 OUTCOME JOURNAL | Closed at: 2026-09-04 22:03:11 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8445 USDT (INR 79.77) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08445 USDT (Opened: 2026-09-04 22:01:02)
+Exit Price         : 0.08474 USDT (Duration: 128.56s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08442 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08473 USDT (Offset: -28 pu / -0.00028 USDT | -0.332% price | -24.9% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.002900 USDT (INR -0.2739)
+Return on Equity   : -25.75% (Price move: -0.343%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0767 USDT (INR 7.24)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 12 | Wins: 11 | Losses: 1 | Scratch: 0
+Win Rate           : 91.7%
+Net Cumulative PnL : -0.000600 USDT (INR -0.0568)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+==============================================================================
+TRADE #13 OUTCOME JOURNAL | Closed at: 2026-09-04 22:03:32 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8475 USDT (INR 80.05) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08475 USDT (Opened: 2026-09-04 22:03:26)
+Exit Price         : 0.08480 USDT (Duration: 5.62s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08478 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08447 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000500 USDT (+INR 0.0472)
+Return on Equity   : +4.42% (Price move: +0.059%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0772 USDT (INR 7.29)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 13 | Wins: 12 | Losses: 1 | Scratch: 0
+Win Rate           : 92.3%
+Net Cumulative PnL : -0.000100 USDT (INR -0.0096)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+==============================================================================
+TRADE #14 OUTCOME JOURNAL | Closed at: 2026-09-04 22:28:20 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8464 USDT (INR 79.95) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08464 USDT (Opened: 2026-09-04 22:27:03)
+Exit Price         : 0.08462 USDT (Duration: 77.25s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08461 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08492 USDT (Offset: -28 pu / -0.00028 USDT | -0.331% price | -24.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.77% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0774 USDT (INR 7.31)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 14 | Wins: 13 | Losses: 1 | Scratch: 0
+Win Rate           : 92.9%
+Net Cumulative PnL : +0.000100 USDT (+INR 0.0093)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+==============================================================================
+TRADE #15 OUTCOME JOURNAL | Closed at: 2026-09-04 23:12:06 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8442 USDT (INR 79.76) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08442 USDT (Opened: 2026-09-04 22:58:01)
+Exit Price         : 0.08412 USDT (Duration: 844.42s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08445 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08414 USDT (Offset: -28 pu / -0.00028 USDT | -0.332% price | -24.9% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.003000 USDT (INR -0.2834)
+Return on Equity   : -26.65% (Price move: -0.355%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0744 USDT (INR 7.03)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 15 | Wins: 13 | Losses: 2 | Scratch: 0
+Win Rate           : 86.7%
+Net Cumulative PnL : -0.002900 USDT (INR -0.2741)
+Live USD/INR Rate  : INR 94.48 per USD
+==============================================================================
+==============================================================================
+TRADE #16 OUTCOME JOURNAL | Closed at: 2026-09-04 23:32:27 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8421 USDT (INR 79.56) [Notional exposure]
+Margin Committed   : 0.0112 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08421 USDT (Opened: 2026-09-04 23:31:03)
+Exit Price         : 0.08423 USDT (Duration: 84.26s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08424 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08393 USDT (Offset: -28 pu / -0.00028 USDT | -0.333% price | -24.9% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.78% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0746 USDT (INR 7.05)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 16 | Wins: 14 | Losses: 2 | Scratch: 0
+Win Rate           : 87.5%
+Net Cumulative PnL : -0.002700 USDT (INR -0.2552)
+Live USD/INR Rate  : INR 94.48 per USD
+==============================================================================
+==============================================================================
+TRADE #17 OUTCOME JOURNAL | Closed at: 2026-09-05 02:36:08 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8422 USDT (INR 79.55) [Notional exposure]
+Margin Committed   : 0.0112 USDT (INR 1.06) [Trade Qty / 75x leverage]
+Entry Price        : 0.08422 USDT (Opened: 2026-09-04 23:45:03)
+Exit Price         : 0.08452 USDT (Duration: 10264.73s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08419 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08450 USDT (Offset: -28 pu / -0.00028 USDT | -0.332% price | -24.9% ROE)
+Exit Reason        : STOP_LOSS_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : -0.003000 USDT (INR -0.2834)
+Return on Equity   : -26.72% (Price move: -0.356%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0716 USDT (INR 6.76)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 17 | Wins: 14 | Losses: 3 | Scratch: 0
+Win Rate           : 82.4%
+Net Cumulative PnL : -0.005700 USDT (INR -0.5386)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+==============================================================================
+TRADE #18 OUTCOME JOURNAL | Closed at: 2026-09-05 02:37:15 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8471 USDT (INR 80.01) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08471 USDT (Opened: 2026-09-05 02:37:02)
+Exit Price         : 0.08473 USDT (Duration: 12.55s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08474 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08443 USDT (Offset: -28 pu / -0.00028 USDT | -0.331% price | -24.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.77% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0718 USDT (INR 6.78)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 18 | Wins: 15 | Losses: 3 | Scratch: 0
+Win Rate           : 83.3%
+Net Cumulative PnL : -0.005500 USDT (INR -0.5197)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+==============================================================================
+TRADE #19 OUTCOME JOURNAL | Closed at: 2026-09-05 02:58:11 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8477 USDT (INR 80.07) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08477 USDT (Opened: 2026-09-05 02:58:02)
+Exit Price         : 0.08475 USDT (Duration: 9.77s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08474 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08505 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.77% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0720 USDT (INR 6.80)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 19 | Wins: 16 | Losses: 3 | Scratch: 0
+Win Rate           : 84.2%
+Net Cumulative PnL : -0.005300 USDT (INR -0.5008)
+Live USD/INR Rate  : INR 94.45 per USD
+==============================================================================
+==============================================================================
+TRADE #20 OUTCOME JOURNAL | Closed at: 2026-09-05 03:02:15 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8486 USDT (INR 80.15) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08486 USDT (Opened: 2026-09-05 03:02:02)
+Exit Price         : 0.08488 USDT (Duration: 13.21s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08489 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08458 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.77% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0722 USDT (INR 6.82)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 20 | Wins: 17 | Losses: 3 | Scratch: 0
+Win Rate           : 85.0%
+Net Cumulative PnL : -0.005100 USDT (INR -0.4819)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+==============================================================================
+TRADE #21 OUTCOME JOURNAL | Closed at: 2026-09-05 03:04:08 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [SHORT] (75x isolated)
+Strategy Name      : EMACrossover(5/13-SHORT)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8482 USDT (INR 80.12) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08482 USDT (Opened: 2026-09-05 03:03:08)
+Exit Price         : 0.08475 USDT (Duration: 59.74s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08479 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08510 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.8% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000700 USDT (+INR 0.0661)
+Return on Equity   : +6.19% (Price move: +0.083%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0729 USDT (INR 6.88)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 21 | Wins: 18 | Losses: 3 | Scratch: 0
+Win Rate           : 85.7%
+Net Cumulative PnL : -0.004400 USDT (INR -0.4158)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================
+==============================================================================
+TRADE #22 OUTCOME JOURNAL | Closed at: 2026-09-05 03:16:38 | [🔴 LIVE TRADING]
+==============================================================================
+Execution Mode     : [🔴 LIVE TRADING]
+Symbol & Direction : DOGE_USDT [LONG] (75x isolated)
+Strategy Name      : EMACrossover(5/13-LONG)
+Volume Executed    : 1 contract(s) (10 DOGE)
+Trade Quantity     : 0.8486 USDT (INR 80.15) [Notional exposure]
+Margin Committed   : 0.0113 USDT (INR 1.07) [Trade Qty / 75x leverage]
+Entry Price        : 0.08486 USDT (Opened: 2026-09-05 03:12:02)
+Exit Price         : 0.08488 USDT (Duration: 276.17s)
+Tick Size (pu)     : 0.00001 USDT
+Min-Profit TP Target: 0.08489 USDT (Offset: +3 pu / +0.00003 USDT)
+Stop Loss Level    : 0.08458 USDT (Offset: -28 pu / -0.00028 USDT | -0.330% price | -24.7% ROE)
+Exit Reason        : MIN_PROFIT_TP_HIT
+------------------------------------------------------------------------------
+REALIZED PnL       : +0.000200 USDT (+INR 0.0189)
+Return on Equity   : +1.77% (Price move: +0.024%)
+Trading Fees       : 0.000000 USDT (INR 0.0000) [Zero-Fee Pair]
+ACCOUNT BALANCE    : 0.0731 USDT (INR 6.90)
+------------------------------------------------------------------------------
+CUMULATIVE STATS   : Total Trades: 22 | Wins: 19 | Losses: 3 | Scratch: 0
+Win Rate           : 86.4%
+Net Cumulative PnL : -0.004200 USDT (INR -0.3969)
+Live USD/INR Rate  : INR 94.46 per USD
+==============================================================================

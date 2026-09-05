@@ -31,3 +31,10 @@ logs/*.jsonl
 .pytest_cache/
 .coverage
 htmlcov/
+
+
+# Backtester Data & Output Artifacts
+BACKTESTER/Historical_Trades_Data_Binance/
+BACKTESTER/OHLCV_Data_Binance/
+BACKTESTER/reports/
+
