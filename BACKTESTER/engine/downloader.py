@@ -21,8 +21,28 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-from BACKTESTER.engine.scanner import canonicalize_symbol
-from BACKTESTER.engine.data_loader import normalize_timeframe
+def canonicalize_symbol(sym: str) -> str:
+    """Normalizes symbol representations (e.g. 'TRUMPUSDT' -> 'TRUMP_USDT')."""
+    s = sym.strip().upper().replace("-", "_")
+    if "_" not in s and s.endswith("USDT"):
+        base = s[:-4]
+        return f"{base}_USDT"
+    return s
+
+
+def normalize_timeframe(tf: str) -> str:
+    """Normalizes timeframes like '15m', '1h', '1d'."""
+    s = tf.strip().lower()
+    m = re.search(r"(\d+)\s*([a-zA-Z]+)", s)
+    if m:
+        num, unit = m.group(1), m.group(2)
+        if unit.startswith("m") and not unit.startswith("mo"):
+            return f"{num}m"
+        elif unit.startswith("h"):
+            return f"{num}h"
+        elif unit.startswith("d"):
+            return f"{num}d"
+    return s
 
 BINANCE_VISION_BASE = "https://data.binance.vision/data/futures/um/monthly"
 
