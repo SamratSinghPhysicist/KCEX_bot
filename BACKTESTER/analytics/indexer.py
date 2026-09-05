@@ -70,7 +70,8 @@ class ReportIndexer:
         if not force_reindex and cached_index is not None:
             cache_mtimes = cached_index.get("_files_mtime", {})
             current_mtimes = {k: v["mtime"] for k, v in files_state.items()}
-            if cache_mtimes == current_mtimes:
+            cache_ver = cached_index.get("_version", 1)
+            if cache_mtimes == current_mtimes and cache_ver >= 3:
                 # Cache is 100% up to date!
                 records = [
                     BacktestRunRecord.from_dict(r)
@@ -87,6 +88,7 @@ class ReportIndexer:
 
         # Save to cache
         cache_data = {
+            "_version": 3,
             "_updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "_files_mtime": {k: v["mtime"] for k, v in files_state.items()},
             "runs": [r.to_dict() for r in records]
@@ -316,17 +318,184 @@ class ReportIndexer:
         meta.starting_capital_usdt = scorecard.initial_capital_usdt
 
         # Settings
-        meta.timeframe = get_table_cell(r"\|\s*\*\*Candle Timeframe\*\*\s*\|\s*`([^`]+)`")
-        meta.strategy = get_table_cell(r"\|\s*\*\*Strategy Evaluated\*\*\s*\|\s*`([^`]+)`")
-        meta.strategy_desc = get_table_cell(r"\|\s*\*\*Strategy Evaluated\*\*\s*\|[^\|]+\|\s*([^\|]+)\|")
-        date_range_str = get_table_cell(r"\|\s*\*\*Evaluation Date Range\*\*\s*\|\s*`([^`]+)`")
-        if "→" in date_range_str:
-            parts = date_range_str.split("→")
-            meta.start_date = parts[0].strip()
-            meta.end_date = parts[1].strip()
-            meta.date_range = f"{meta.start_date} to {meta.end_date}"
+        tf_cell_m = re.search(r"\|\s*\*\*Candle Timeframe\*\*\s*\|\s*([^\|]+)\|", md_text)
+        if tf_cell_m:
+            tf_m = re.search(r"`([^`]+)`", tf_cell_m.group(1))
+            meta.timeframe = tf_m.group(1).strip() if tf_m else tf_cell_m.group(1).strip()
         else:
-            meta.date_range = date_range_str
+            meta.timeframe = get_table_cell(r"\|\s*\*\*Candle Timeframe\*\*\s*\|\s*`([^`]+)`")
+        if not meta.timeframe:
+            tf_match = re.search(r"_(1m|3m|5m|15m|30m|1h|4h|1d)_", run_id.lower())
+            meta.timeframe = tf_match.group(1) if tf_match else "1m"
+        
+        strat_m = re.search(r"\|\s*\*\*Strategy Evaluated\*\*\s*\|\s*`([^`]+)`\s*\|\s*([^\r\n\|]+(?:\s*[;\|]\s*[^\r\n\|]+)*)\s*\|", md_text)
+        if strat_m:
+            meta.strategy = strat_m.group(1).strip()
+            meta.strategy_desc = strat_m.group(2).strip()
+        else:
+            meta.strategy = get_table_cell(r"\|\s*\*\*Strategy Evaluated\*\*\s*\|\s*`([^`]+)`")
+            meta.strategy_desc = get_table_cell(r"\|\s*\*\*Strategy Evaluated\*\*\s*\|[^\|]+\|\s*([^\|]+)\|")
+
+        # Strategy Preset
+        meta.strategy_preset = get_table_cell(r"\|\s*\*\*Strategy Preset\*\*\s*\|\s*`([^`]+)`")
+        if not meta.strategy_preset:
+            meta.strategy_preset = get_table_cell(r"\|\s*\*\*Active Strategy Preset\*\*\s*\|\s*`([^`]+)`")
+        if not meta.strategy_preset and meta.strategy_desc:
+            p_m = re.search(r"Preset:\s*([^\s;|\)]+)", meta.strategy_desc)
+            if p_m:
+                meta.strategy_preset = p_m.group(1).strip()
+
+        # Build meta.parameters & meta.filters
+        params: Dict[str, Any] = {}
+        filters: Dict[str, Any] = {}
+
+        if meta.strategy_preset:
+            params["preset"] = meta.strategy_preset
+
+        fast_ema = parse_number(get_table_cell(r"\|\s*\*\*Fast EMA Period\*\*\s*\|\s*`([^`]+)`"))
+        if fast_ema:
+            params["ema_fast"] = int(fast_ema)
+        slow_ema = parse_number(get_table_cell(r"\|\s*\*\*Slow EMA Period\*\*\s*\|\s*`([^`]+)`"))
+        if slow_ema:
+            params["ema_slow"] = int(slow_ema)
+
+        rsi_p = parse_number(get_table_cell(r"\|\s*\*\*RSI Period\*\*\s*\|\s*`([^`]+)`"))
+        if rsi_p:
+            params["stoch_rsi_period"] = int(rsi_p)
+        stoch_p = parse_number(get_table_cell(r"\|\s*\*\*Stoch Lookback Period\*\*\s*\|\s*`([^`]+)`"))
+        if stoch_p:
+            params["stoch_period"] = int(stoch_p)
+        stoch_k = parse_number(get_table_cell(r"\|\s*\*\*\%K Smoothing\*\*\s*\|\s*`([^`]+)`"))
+        if stoch_k:
+            params["stoch_k_period"] = int(stoch_k)
+        stoch_d = parse_number(get_table_cell(r"\|\s*\*\*\%D Smoothing\*\*\s*\|\s*`([^`]+)`"))
+        if stoch_d:
+            params["stoch_d_period"] = int(stoch_d)
+        os_val = parse_number(get_table_cell(r"\|\s*\*\*Oversold Threshold[^\*]*\*\*\s*\|\s*`([^`]+)`"))
+        if os_val:
+            params["stoch_oversold"] = os_val
+        ob_val = parse_number(get_table_cell(r"\|\s*\*\*Overbought Threshold[^\*]*\*\*\s*\|\s*`([^`]+)`"))
+        if ob_val:
+            params["stoch_overbought"] = ob_val
+
+        candle_conf = get_table_cell(r"\|\s*\*\*Candle Close Confirmation\*\*\s*\|\s*`([^`]+)`")
+        if candle_conf:
+            params["candle_close_confirmation"] = ("ENABLED" in candle_conf.upper())
+
+        dir_flow = get_table_cell(r"\|\s*\*\*Directional Flow Mode\*\*\s*\|\s*`([^`]+)`")
+        if dir_flow:
+            params["directional_flow"] = dir_flow
+
+        # Smart fallback inference for existing reports
+        strat_upper = meta.strategy.upper()
+        if "EMA" in strat_upper:
+            if "ema_fast" not in params or "ema_slow" not in params:
+                if meta.strategy_preset == "9/21" or "9/21" in meta.strategy_desc:
+                    params["preset"] = meta.strategy_preset = "9/21"
+                    params["ema_fast"], params["ema_slow"] = 9, 21
+                elif meta.strategy_preset == "3/8" or "3/8" in meta.strategy_desc:
+                    params["preset"] = meta.strategy_preset = "3/8"
+                    params["ema_fast"], params["ema_slow"] = 3, 8
+                else:
+                    params["preset"] = meta.strategy_preset = meta.strategy_preset or "5/13"
+                    params["ema_fast"], params["ema_slow"] = 5, 13
+        elif "STOCH" in strat_upper:
+            if "stoch_rsi_period" not in params:
+                if meta.strategy_preset == "MICRO_BURST" or "MICRO_BURST" in meta.strategy_desc:
+                    params["preset"] = meta.strategy_preset = "MICRO_BURST"
+                    params["stoch_rsi_period"] = 7
+                    params["stoch_period"] = 7
+                    params["stoch_k_period"] = 3
+                    params["stoch_d_period"] = 3
+                    params["stoch_oversold"] = 15.0
+                    params["stoch_overbought"] = 85.0
+                elif meta.strategy_preset == "STANDARD" or "STANDARD" in meta.strategy_desc:
+                    params["preset"] = meta.strategy_preset = "STANDARD"
+                    params["stoch_rsi_period"] = 14
+                    params["stoch_period"] = 14
+                    params["stoch_k_period"] = 3
+                    params["stoch_d_period"] = 3
+                    params["stoch_oversold"] = 20.0
+                    params["stoch_overbought"] = 80.0
+                else:
+                    params["preset"] = meta.strategy_preset = meta.strategy_preset or "FAST_SCALP"
+                    params["stoch_rsi_period"] = 9
+                    params["stoch_period"] = 9
+                    params["stoch_k_period"] = 3
+                    params["stoch_d_period"] = 3
+                    params["stoch_oversold"] = 20.0
+                    params["stoch_overbought"] = 80.0
+
+        # Extract Trade Optimization & Regime Filters
+        dur_mon = get_table_cell(r"\|\s*\*\*Trade Duration Monitoring\*\*\s*\|\s*`([^`]+)`")
+        dur_action_line = get_table_cell(r"\|\s*\*\*Time-Stop Protective Exit\*\*\s*\|[^\|]+\|\s*([^\|]+)\|")
+        if dur_mon:
+            filters["duration_filter"] = ("ENABLED" in dur_mon.upper())
+            deep_m = re.search(r"(\d+(\.\d+)?)\s*s", get_table_cell(r"\|\s*\*\*Trade Duration Monitoring\*\*\s*\|[^\|]+\|\s*([^\|]+)\|"))
+            if deep_m:
+                filters["deep_monitor_s"] = float(deep_m.group(1))
+            hold_m = re.search(r">\s*`?(\d+(\.\d+)?)\s*s", dur_action_line)
+            if hold_m:
+                filters["max_hold_s"] = float(hold_m.group(1))
+            if "Action" in dur_action_line:
+                act_m = re.search(r"Action\s*`?([A-Z_]+)`?", dur_action_line)
+                if act_m:
+                    filters["duration_action"] = act_m.group(1)
+        else:
+            filters["duration_filter"] = False
+
+        adx_stat = get_table_cell(r"\|\s*\*\*ADX Trend Regime Filter\*\*\s*\|\s*`([^`]+)`")
+        if adx_stat:
+            filters["adx_filter"] = ("ENABLED" in adx_stat.upper())
+            adx_det = get_table_cell(r"\|\s*\*\*ADX Trend Regime Filter\*\*\s*\|[^\|]+\|\s*([^\|]+)\|")
+            adx_p_m = re.search(r"Period:\s*`?(\d+)`?", adx_det)
+            if adx_p_m:
+                filters["adx_period"] = int(adx_p_m.group(1))
+            adx_th_m = re.search(r"Threshold:\s*`?(\d+(\.\d+)?)`?", adx_det)
+            if adx_th_m:
+                filters["adx_threshold"] = float(adx_th_m.group(1))
+        else:
+            filters["adx_filter"] = False
+
+        htf_stat = get_table_cell(r"\|\s*\*\*HTF Trend Baseline \(200 EMA\)\*\*\s*\|\s*`([^`]+)`")
+        if htf_stat:
+            filters["htf_trend_filter"] = ("ENABLED" in htf_stat.upper())
+        else:
+            filters["htf_trend_filter"] = False
+
+        hourly_stat = get_table_cell(r"\|\s*\*\*Hourly Session Filter\*\*\s*\|\s*`([^`]+)`")
+        if hourly_stat:
+            filters["hourly_filter"] = ("ENABLED" in hourly_stat.upper())
+        else:
+            filters["hourly_filter"] = False
+
+        bias_val = get_table_cell(r"\|\s*\*\*Directional Bias Policy\*\*\s*\|\s*`([^`]+)`")
+        filters["direction_bias"] = bias_val or "BOTH"
+
+        meta.parameters = params
+        meta.filters = filters
+        # Robust Date Range Extraction
+        dr_cell_m = re.search(r"\|\s*\*\*Evaluation Date Range\*\*\s*\|\s*([^\|]+)\|", md_text)
+        if dr_cell_m:
+            dr_cell = dr_cell_m.group(1).strip()
+            dates = re.findall(r"\d{4}-\d{2}-\d{2}", dr_cell)
+            if len(dates) >= 2:
+                meta.start_date = dates[0]
+                meta.end_date = dates[1]
+                meta.date_range = f"{meta.start_date} → {meta.end_date}"
+            elif len(dates) == 1:
+                meta.start_date = dates[0]
+                meta.end_date = dates[0]
+                meta.date_range = meta.start_date
+            else:
+                clean_dr = re.sub(r"[`*]", "", dr_cell).strip()
+                meta.date_range = clean_dr
+                if "→" in clean_dr:
+                    parts = clean_dr.split("→")
+                    meta.start_date = parts[0].strip()
+                    meta.end_date = parts[1].strip()
+        else:
+            meta.date_range = "N/A"
 
         meta.high_fidelity_ticks = "ENABLED" in get_table_cell(r"\|\s*\*\*High-Fidelity Simulation\*\*\s*\|\s*`([^`]+)`")
         meta.slippage_ticks = parse_int(get_table_cell(r"\|\s*\*\*Slippage Tolerance\*\*\s*\|\s*`([^\s`]+)"))
@@ -356,6 +525,14 @@ class ReportIndexer:
 
         meta.contract_size = parse_number(get_table_cell(r"\|\s*\*\*Contract Size \(cs\)\*\*\s*\|\s*`([^\s`]+)"))
         meta.price_unit = parse_number(get_table_cell(r"\|\s*\*\*Price Unit \(pu / tick\)\*\*\s*\|\s*`([^`]+)`"))
+
+        # Exchange Specifications & Fee Rates
+        meta.fee_mode = get_table_cell(r"\|\s*\*\*Fee Schedule Mode\*\*\s*\|\s*`([^`]+)`") or "ZERO"
+        meta.maker_fee_pct = parse_number(get_table_cell(r"\|\s*\*\*Maker Fee Rate\*\*\s*\|\s*`([^%`]+)%?`"))
+        meta.taker_fee_pct = parse_number(get_table_cell(r"\|\s*\*\*Taker Fee Rate\*\*\s*\|\s*`([^%`]+)%?`"))
+        meta.price_precision = parse_int(get_table_cell(r"\|\s*\*\*Price Precision\*\*\s*\|\s*`(\d+)")) or 4
+        meta.min_volume = parse_number(get_table_cell(r"\|\s*\*\*Min Volume\*\*\s*\|\s*`([^\s`]+)")) or 1.0
+        meta.max_leverage = parse_int(get_table_cell(r"\|\s*\*\*Max Leverage\*\*\s*\|\s*`([^\s`x]+)")) or meta.leverage
 
         # Trade Stats
         scorecard.total_trades = parse_int(get_table_cell(r"\|\s*\*\*Total Trades Executed\*\*\s*\|\s*`([^`]+)`"))

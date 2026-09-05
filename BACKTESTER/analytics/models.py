@@ -20,6 +20,7 @@ class RunMetadata:
     timeframe: str = ""
     strategy: str = ""
     strategy_desc: str = ""
+    strategy_preset: str = ""
     date_range: str = ""
     start_date: str = ""
     end_date: str = ""
@@ -39,6 +40,12 @@ class RunMetadata:
     contract_size: float = 1.0
     price_unit: float = 0.0001
     source: str = "local"
+    fee_mode: str = "ZERO"
+    maker_fee_pct: float = 0.0
+    taker_fee_pct: float = 0.0
+    price_precision: int = 4
+    min_volume: float = 1.0
+    max_leverage: int = 75
     has_csv: bool = False
     has_jsonl: bool = False
     has_md: bool = False
@@ -47,6 +54,8 @@ class RunMetadata:
     csv_size_mb: float = 0.0
     jsonl_size_mb: float = 0.0
     zip_size_mb: float = 0.0
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    filters: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

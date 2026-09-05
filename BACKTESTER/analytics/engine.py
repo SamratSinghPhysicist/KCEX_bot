@@ -53,15 +53,47 @@ METRIC_DEFINITIONS = {
 PARAMETER_KEYS = [
     ("symbol", "Trading Pair Symbol"),
     ("strategy", "Strategy Evaluated"),
+    ("strategy_preset", "Strategy Preset"),
     ("timeframe", "Candle Timeframe"),
+    ("date_range", "Evaluation Date Window"),
+    ("start_date", "Backtest Start Date"),
+    ("end_date", "Backtest End Date"),
     ("leverage", "Leverage Multiplier"),
     ("tp_ticks", "Take Profit (ticks)"),
     ("sl_rule_desc", "Stop Loss Rule"),
     ("sizing_mode", "Sizing Mode"),
     ("contracts", "Contracts per Trade"),
+    ("starting_capital_usdt", "Initial Capital (USDT)"),
     ("slippage_ticks", "Slippage (ticks)"),
     ("high_fidelity_ticks", "Tick Trade Matching"),
-    ("date_range", "Evaluation Date Window"),
+    ("fee_mode", "Fee Schedule Mode"),
+    ("maker_fee_pct", "Maker Fee Rate (%)"),
+    ("taker_fee_pct", "Taker Fee Rate (%)"),
+    ("contract_size", "Contract Size (cs)"),
+    ("price_unit", "Price Unit (pu / tick)"),
+    ("price_precision", "Price Precision"),
+    ("min_volume", "Min Order Volume"),
+    ("max_leverage", "Max Exchange Leverage"),
+    # Indicator Hyperparameters:
+    ("param_ema_fast", "Fast EMA Period"),
+    ("param_ema_slow", "Slow EMA Period"),
+    ("param_stoch_rsi_period", "Stoch RSI Period"),
+    ("param_stoch_period", "Stoch Lookback Period"),
+    ("param_stoch_k_period", "Stoch %K Smoothing"),
+    ("param_stoch_d_period", "Stoch %D Smoothing"),
+    ("param_stoch_oversold", "Stoch Oversold Threshold"),
+    ("param_stoch_overbought", "Stoch Overbought Threshold"),
+    ("param_candle_close_confirmation", "Candle Close Confirmation"),
+    # Trade Optimization & Regime Filters:
+    ("filter_duration", "Duration Time-Stop Filter"),
+    ("filter_deep_monitor_s", "Duration Deep Monitor Threshold"),
+    ("filter_max_hold_s", "Duration Max Hold / Exit Threshold"),
+    ("filter_duration_action", "Duration Exit Action"),
+    ("filter_adx", "ADX Regime Filter"),
+    ("filter_adx_threshold", "ADX Threshold"),
+    ("filter_htf_trend", "HTF Trend 200 EMA Filter"),
+    ("filter_hourly", "Hourly Session Filter"),
+    ("filter_direction_bias", "Directional Bias Policy"),
 ]
 
 
@@ -92,46 +124,36 @@ class AnalyticsEngine:
         selected_factors: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
-        Executes an in-depth multi-run comparison.
-        Returns:
-        1. Parameter diffs (what tweaks changed between runs)
-        2. Scorecard matrix across chosen factors with best-performer highlights
-        3. Normalized equity curve overlay data
-        4. 6-pillar radar score footprints
-        5. Exit trigger comparison bars
+        Executes a multi-run comparative matrix analysis across the requested runs.
         """
-        all_runs = {r.metadata.run_id: r for r in self.indexer.get_all_runs()}
-        target_runs: List[BacktestRunRecord] = [
-            all_runs[rid] for rid in run_ids if rid in all_runs
-        ]
+        all_runs = self.indexer.get_all_runs()
+        runs_map = {r.metadata.run_id: r for r in all_runs}
+
+        # Filter target runs maintaining input order
+        target_runs: List[BacktestRunRecord] = []
+        for rid in run_ids:
+            if rid in runs_map:
+                target_runs.append(runs_map[rid])
 
         if not target_runs:
-            return {"error": "No valid runs found for specified run_ids"}
+            return {"error": "No valid runs found matching the requested IDs."}
 
-        # 1. Parameter Diffs & Tweaks Detection
-        parameter_matrix = self._build_parameter_diffs(target_runs)
+        factors_to_use = selected_factors or list(METRIC_DEFINITIONS.keys())
 
-        # 2. Factor Comparison Matrix
-        factors_to_use = selected_factors if selected_factors else list(METRIC_DEFINITIONS.keys())
+        # Build comparison sub-components
         comparison_matrix = self._build_comparison_matrix(target_runs, factors_to_use)
-
-        # 3. Normalized Equity Curve Overlays
-        overlay_series = self._build_equity_overlays(target_runs)
-
-        # 4. 6-Pillar Radar Footprints
-        radar_data = self._build_radar_footprints(target_runs)
-
-        # 5. Exit Reasons Comparison
+        parameter_matrix = self._build_parameter_diffs(target_runs)
+        equity_overlays = self._build_equity_overlays(target_runs)
+        radar_footprints = self._build_radar_footprints(target_runs)
         exit_comparison = self._build_exit_comparison(target_runs)
 
         return {
             "run_ids": [r.metadata.run_id for r in target_runs],
-            "run_names": [r.metadata.run_name for r in target_runs],
             "runs_meta": [r.metadata.to_dict() for r in target_runs],
-            "parameter_diffs": parameter_matrix,
             "comparison_matrix": comparison_matrix,
-            "equity_overlays": overlay_series,
-            "radar_footprints": radar_data,
+            "parameter_diffs": parameter_matrix,
+            "equity_overlays": equity_overlays,
+            "radar_footprints": radar_footprints,
             "exit_comparison": exit_comparison,
         }
 
@@ -141,18 +163,60 @@ class AnalyticsEngine:
         for key, display_name in PARAMETER_KEYS:
             values = {}
             unique_vals = set()
+            has_meaningful_val = False
+
             for r in runs:
-                val = getattr(r.metadata, key, None)
-                if key == "leverage":
-                    val_str = f"{val}x"
+                val = None
+                if key.startswith("param_"):
+                    p_key = key.replace("param_", "")
+                    val = r.metadata.parameters.get(p_key) if r.metadata.parameters else None
+                elif key.startswith("filter_"):
+                    f_key = key.replace("filter_", "")
+                    val = r.metadata.filters.get(f_key) if r.metadata.filters else None
+                else:
+                    val = getattr(r.metadata, key, None)
+
+                if val is not None and val != "":
+                    has_meaningful_val = True
+
+                if key in ("leverage", "max_leverage"):
+                    val_str = f"{val}x" if val is not None else "—"
                 elif key == "tp_ticks":
-                    val_str = f"+{val} pu ticks"
-                elif key == "contracts":
-                    val_str = f"{val} contract(s)"
+                    val_str = f"+{val} pu ticks" if val is not None else "—"
+                elif key in ("contracts", "min_volume"):
+                    val_str = f"{val} contract(s)" if val is not None else "—"
+                elif key == "starting_capital_usdt":
+                    val_str = f"${float(val):.2f} USDT" if val is not None else "—"
+                elif key in ("maker_fee_pct", "taker_fee_pct"):
+                    val_str = f"{float(val):.4f}%" if val is not None else "—"
+                elif key == "contract_size":
+                    val_str = f"{val} {r.metadata.base_asset}" if val is not None else "—"
+                elif key == "price_precision":
+                    val_str = f"{val} decimals" if val is not None else "—"
+                elif isinstance(val, bool):
+                    val_str = "ENABLED" if val else "DISABLED"
+                elif val is None or val == "":
+                    val_str = "—"
                 else:
                     val_str = str(val)
+
                 values[r.metadata.run_id] = val_str
                 unique_vals.add(val_str)
+
+            # Filter out irrelevant indicators if no runs use them
+            always_keep = (
+                "symbol", "strategy", "strategy_preset", "timeframe", "date_range",
+                "start_date", "end_date", "leverage", "tp_ticks", "sl_rule_desc",
+                "sizing_mode", "contracts", "starting_capital_usdt", "high_fidelity_ticks",
+                "slippage_ticks", "fee_mode", "contract_size", "price_unit"
+            )
+            if not has_meaningful_val and key not in always_keep:
+                continue
+
+            if "ema" in key and not any("EMA" in r.metadata.strategy.upper() for r in runs):
+                continue
+            if "stoch" in key and not any("STOCH" in r.metadata.strategy.upper() for r in runs):
+                continue
 
             is_different = len(unique_vals) > 1
             diffs.append({

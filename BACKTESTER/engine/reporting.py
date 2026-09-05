@@ -160,12 +160,42 @@ class BacktestReporter:
 
         # Strategy Description
         strat_desc_map = {
-            "EMA_CROSSOVER": f"EMA Crossover Trend Follower (Preset: {ema_preset} | Closed Candle Confirmation: True)",
-            "STOCH_RSI": f"Stochastic RSI Momentum Scalper (Preset: {stoch_preset} | Overbought/Oversold Reversal)",
+            "EMA_CROSSOVER": f"EMA Crossover Trend Follower (Preset: {ema_preset} ; Closed Candle Confirmation: True)",
+            "STOCH_RSI": f"Stochastic RSI Momentum Scalper (Preset: {stoch_preset} ; Overbought/Oversold Reversal)",
             "CYCLE": "Directional Cycle Sub-Strategy (Fixed direction trade cycling)",
             "MICROSTRUCTURE": "Order Book Imbalance (OBI) & Deal Flow Delta Bursts"
         }
         strat_full_desc = strat_desc_map.get(strat, strat)
+
+        # Strategy specific parameter resolution
+        active_preset = ema_preset if strat == "EMA_CROSSOVER" else (stoch_preset if strat == "STOCH_RSI" else "DEFAULT")
+        ema_fast = getattr(config, "ema_fast", 5) if config else 5
+        ema_slow = getattr(config, "ema_slow", 13) if config else 13
+        ema_candle_conf = getattr(config, "ema_require_closed_candle", True) if config else True
+        stoch_rsi_p = getattr(config, "stoch_rsi_period", 9) if config else 9
+        stoch_p = getattr(config, "stoch_period", 9) if config else 9
+        stoch_k = getattr(config, "stoch_k_period", 3) if config else 3
+        stoch_d = getattr(config, "stoch_d_period", 3) if config else 3
+        stoch_os = getattr(config, "stoch_oversold", 20.0) if config else 20.0
+        stoch_ob = getattr(config, "stoch_overbought", 80.0) if config else 80.0
+        stoch_zone = getattr(config, "stoch_zone_filter", True) if config else True
+        stoch_candle_conf = getattr(config, "stoch_require_closed_candle", True) if config else True
+        bi_directional = getattr(config, "bi_directional", True) if config else True
+
+        # Trade Optimization & Filter parameters
+        dur_filter_enabled = getattr(config, "duration_filter_enabled", False) if config else False
+        dur_deep_s = getattr(config, "duration_deep_monitor_seconds", 60.0) if config else 60.0
+        dur_max_s = getattr(config, "duration_max_hold_seconds", 90.0) if config else 90.0
+        dur_action = getattr(config, "duration_action", "CLOSE") if config else "CLOSE"
+        adx_filter_enabled = getattr(config, "adx_filter_enabled", False) if config else False
+        adx_period = getattr(config, "adx_period", 14) if config else 14
+        adx_threshold = getattr(config, "adx_threshold", 25.0) if config else 25.0
+        htf_trend_enabled = getattr(config, "htf_trend_filter_enabled", False) if config else False
+        htf_timeframe = getattr(config, "htf_timeframe", "15m") if config else "15m"
+        htf_ema = getattr(config, "htf_ema_period", 200) if config else 200
+        hourly_filter_enabled = getattr(config, "hourly_filter_enabled", False) if config else False
+        hourly_blacklist = getattr(config, "hourly_blacklist_utc", []) if config else []
+        direction_bias = getattr(config, "direction_bias", "BOTH") if config else "BOTH"
 
         # Stop loss description
         if sl_mode == "ROE":
@@ -248,9 +278,42 @@ class BacktestReporter:
         lines.append(f"| **Trading Pair Symbol** | `{sym}` | Base Asset: `{base_coin}` / Quote Asset: `{quote_coin}` |")
         lines.append(f"| **Candle Timeframe** | `{tf}` | Dynamic candle granularity evaluated by strategy indicators |")
         lines.append(f"| **Strategy Evaluated** | `{strat}` | {strat_full_desc} |")
+        lines.append(f"| **Strategy Preset** | `{active_preset}` | Configured indicator preset profile |")
         lines.append(f"| **Evaluation Date Range** | `{start_date}` → `{end_date}` | Historical evaluation window |")
         lines.append(f"| **High-Fidelity Simulation** | `{'ENABLED (Tick Trades)' if use_ticks else 'DISABLED (Candle OHLC)'}` | Millisecond-level trade order matching & stop triggering |")
         lines.append(f"| **Slippage Tolerance** | `{slippage} ticks` (`{slippage * pu:.{ps}f} USDT` per fill) | Adverse fill penalty applied to entry and exit orders |")
+        lines.append("")
+
+        lines.append("### Strategy & Indicator Hyperparameters")
+        lines.append("| Hyperparameter | Value | Technical Context |")
+        lines.append("| :--- | :--- | :--- |")
+        lines.append(f"| **Active Strategy Engine** | `{strat}` | Quantitative model evaluated |")
+        lines.append(f"| **Active Strategy Preset** | `{active_preset}` | Selected preset configuration |")
+        if strat == "EMA_CROSSOVER":
+            lines.append(f"| **Fast EMA Period** | `{ema_fast}` | Short-term fast moving average |")
+            lines.append(f"| **Slow EMA Period** | `{ema_slow}` | Baseline slow moving average |")
+            lines.append(f"| **Candle Close Confirmation** | `{'ENABLED' if ema_candle_conf else 'DISABLED'}` | Requires bar to close before emitting cross |")
+        elif strat == "STOCH_RSI":
+            lines.append(f"| **RSI Period** | `{stoch_rsi_p}` | Relative Strength Index calculation length |")
+            lines.append(f"| **Stoch Lookback Period** | `{stoch_p}` | Stochastic window over RSI |")
+            lines.append(f"| **%K Smoothing** | `{stoch_k}` | Fast stochastic line smoothing period |")
+            lines.append(f"| **%D Smoothing** | `{stoch_d}` | Slow signal line smoothing period |")
+            lines.append(f"| **Oversold Threshold (OS)** | `{stoch_os}` | Extreme oversold boundary (Bullish entry gate) |")
+            lines.append(f"| **Overbought Threshold (OB)** | `{stoch_ob}` | Extreme overbought boundary (Bearish entry gate) |")
+            lines.append(f"| **Extreme Zone Filter** | `{'ENABLED' if stoch_zone else 'DISABLED'}` | Suppresses non-extreme neutral whipsaws |")
+            lines.append(f"| **Candle Close Confirmation** | `{'ENABLED' if stoch_candle_conf else 'DISABLED'}` | Requires bar to close before emitting cross |")
+        lines.append(f"| **Directional Flow Mode** | `{'Autonomous Bi-Directional (LONG & SHORT)' if bi_directional else 'Single-Direction'}` | Order generation policy |")
+        lines.append("")
+
+        lines.append("### Trade Optimization & Regime Filters")
+        lines.append("| Filter Dimension | Configuration | Operational Action & Trigger |")
+        lines.append("| :--- | :--- | :--- |")
+        lines.append(f"| **Trade Duration Monitoring** | `{'ENABLED' if dur_filter_enabled else 'DISABLED'}` | Deep in-position monitoring at `{dur_deep_s}s` elapsed |")
+        lines.append(f"| **Time-Stop Protective Exit** | `{'ENABLED' if dur_filter_enabled else 'DISABLED'}` | Action `{dur_action}` triggered if open duration > `{dur_max_s}s` |")
+        lines.append(f"| **ADX Trend Regime Filter** | `{'ENABLED' if adx_filter_enabled else 'DISABLED'}` | Period: `{adx_period}` / Threshold: `{adx_threshold}` |")
+        lines.append(f"| **HTF Trend Baseline (200 EMA)** | `{'ENABLED' if htf_trend_enabled else 'DISABLED'}` | Timeframe: `{htf_timeframe}` / Period: `{htf_ema}` |")
+        lines.append(f"| **Hourly Session Filter** | `{'ENABLED' if hourly_filter_enabled else 'DISABLED'}` | Blacklisted UTC Hours: `{hourly_blacklist if hourly_blacklist else 'None'}` |")
+        lines.append(f"| **Directional Bias Policy** | `{direction_bias}` | Pre-trade signal directional allowance |")
         lines.append("")
 
         lines.append("### Position Sizing, Leverage & Risk Management")

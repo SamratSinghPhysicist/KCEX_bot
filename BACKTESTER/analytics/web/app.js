@@ -493,7 +493,7 @@ function populateDeepDiveSelector() {
   state.runs.forEach(r => {
     const opt = document.createElement('option');
     opt.value = r.metadata.run_id;
-    opt.textContent = `${r.metadata.symbol} - ${r.metadata.strategy} (${r.metadata.timeframe}) [PnL: ${r.scorecard.net_pnl_usdt >= 0 ? '+' : ''}${r.scorecard.net_pnl_usdt} USDT]`;
+    opt.textContent = `${r.metadata.symbol} - ${r.metadata.strategy} [TF: ${r.metadata.timeframe || '1m'} | Window: ${r.metadata.date_range || 'N/A'}] [PnL: ${r.scorecard.net_pnl_usdt >= 0 ? '+' : ''}${r.scorecard.net_pnl_usdt} USDT]`;
     if (r.metadata.run_id === state.deepDiveRunId) {
       opt.selected = true;
     }
@@ -513,14 +513,14 @@ function renderRunsTable() {
     if (state.activePairFilter !== 'ALL' && r.metadata.symbol !== state.activePairFilter) return false;
     if (state.activeStratFilter !== 'ALL' && r.metadata.strategy !== state.activeStratFilter) return false;
     if (state.searchQuery) {
-      const txt = `${r.metadata.symbol} ${r.metadata.strategy} ${r.metadata.timeframe} ${r.metadata.run_name}`.toLowerCase();
+      const txt = `${r.metadata.symbol} ${r.metadata.strategy} ${r.metadata.timeframe} ${r.metadata.date_range} ${r.metadata.run_name}`.toLowerCase();
       if (!txt.includes(state.searchQuery)) return false;
     }
     return true;
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-dim); padding: 2rem;">No matching backtest runs found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14" style="text-align: center; color: var(--text-dim); padding: 2rem;">No matching backtest runs found.</td></tr>`;
     return;
   }
 
@@ -544,17 +544,24 @@ function renderRunsTable() {
             <span style="color: var(--text-dim); font-weight: normal; font-size: 0.78rem;">${r.metadata.timestamp_utc || ''}</span>
           </span>
           <div class="run-tags">
-            <span class="tag tag-cyan">${r.metadata.timeframe}</span>
-            <span class="tag tag-purple">${r.metadata.leverage}x Lev</span>
-            <span class="tag">TP +${r.metadata.tp_ticks}pu</span>
-            <span class="tag">SL ${r.metadata.sl_mode}${r.metadata.sl_value}</span>
+            <span class="tag tag-blue" style="font-weight: 600;">📅 ${r.metadata.date_range || 'N/A'}</span>
+            <span class="tag tag-cyan" style="font-weight: 700;">⏱️ ${r.metadata.timeframe || '1m'}</span>
+            <span class="tag tag-purple">⚡ ${r.metadata.leverage}x</span>
+            <span class="tag tag-green">🎯 TP +${r.metadata.tp_ticks}pu</span>
+            <span class="tag tag-red">🛑 SL ${r.metadata.sl_mode}${r.metadata.sl_value}</span>
+            <span class="tag">📦 ${r.metadata.contracts} cs</span>
+            ${r.metadata.high_fidelity_ticks ? '<span class="tag tag-cyan">⚡ Tick High-Res</span>' : '<span class="tag">🕯️ Candle</span>'}
             ${r.metadata.source === 'github_cloud' ? '<span class="tag tag-cyan">☁️ Cloud</span>' : '<span class="tag">💻 Local</span>'}
           </div>
         </div>
       </td>
       <td><strong>${r.metadata.symbol}</strong></td>
-      <td><span class="mono">${r.metadata.strategy}</span></td>
-      <td><span class="mono">${r.metadata.timeframe}</span></td>
+      <td>
+        <span class="mono" style="font-weight: 700;">${r.metadata.strategy}</span>
+        ${(r.metadata.strategy_preset || (r.metadata.parameters && r.metadata.parameters.preset)) ? `<span class="tag tag-cyan" style="font-size: 0.65rem; margin-left: 4px; padding: 1px 5px; border-radius: 4px;">${r.metadata.strategy_preset || r.metadata.parameters.preset}</span>` : ''}
+      </td>
+      <td><span class="mono font-weight-bold" style="color: var(--accent-cyan);">${r.metadata.timeframe || '1m'}</span></td>
+      <td><span class="mono" style="font-size: 0.76rem; white-space: nowrap; color: var(--text-bright);">${r.metadata.date_range || 'N/A'}</span></td>
       <td><span class="mono">${r.metadata.leverage}x</span></td>
       <td class="mono">${(r.scorecard.total_trades || 0).toLocaleString()}</td>
       <td class="mono font-weight-bold ${r.scorecard.win_rate_pct >= 80 ? 'profit' : ''}">
@@ -1099,9 +1106,10 @@ async function renderDeepDive() {
     const curveRes = await fetch(`/api/run/${state.deepDiveRunId}/curve`);
     const curveData = await curveRes.json();
 
-    document.getElementById('ddTitle').textContent = `${run.metadata.symbol} — ${run.metadata.strategy} (${run.metadata.timeframe})`;
-    document.getElementById('ddSubtitle').textContent = `Leverage: ${run.metadata.leverage}x | TP: +${run.metadata.tp_ticks} ticks | SL: ${run.metadata.sl_mode}${run.metadata.sl_value} | Date Range: ${run.metadata.date_range}`;
+    document.getElementById('ddTitle').textContent = `${run.metadata.symbol} — ${run.metadata.strategy} (${run.metadata.timeframe || '1m'})`;
+    document.getElementById('ddSubtitle').textContent = `📅 Window: ${run.metadata.date_range || 'N/A'} | ⏱️ Timeframe: ${run.metadata.timeframe || '1m'} | ⚡ Leverage: ${run.metadata.leverage}x | 🎯 TP: +${run.metadata.tp_ticks} ticks | 🛑 SL: ${run.metadata.sl_mode} ${run.metadata.sl_value} | 📦 Sizing: ${run.metadata.contracts} contract(s)`;
 
+    renderDeepDiveParametersCard(run);
     renderDeepDiveScorecard(run);
     renderSingleEquityChart(curveData.points);
     renderDurationDistributionChart(run.detailed?.duration_buckets);
@@ -1114,6 +1122,217 @@ async function renderDeepDive() {
   } catch (e) {
     console.error('Deep dive error:', e);
   }
+}
+
+function renderDeepDiveParametersCard(run) {
+  const container = document.getElementById('ddParametersContent');
+  if (!container) return;
+  const m = run.metadata;
+  const params = m.parameters || {};
+  const filters = m.filters || {};
+
+  const strat = m.strategy || 'UNKNOWN';
+  const preset = m.strategy_preset || params.preset || 'STANDARD';
+
+  let paramBadgesHtml = '';
+  if (Object.keys(params).length > 0) {
+    for (const [k, v] of Object.entries(params)) {
+      if (k === 'preset') continue;
+      const label = k.replace(/_/g, ' ').toUpperCase();
+      paramBadgesHtml += `
+        <div class="param-pill">
+          <span class="param-pill-key">${label}</span>
+          <span class="param-pill-val">${v}</span>
+        </div>
+      `;
+    }
+  } else {
+    paramBadgesHtml = `<span style="color: var(--text-dim); font-size: 0.8rem; padding: 4px 0;">Standard factory calibration</span>`;
+  }
+
+  let filterBadgesHtml = '';
+  if (Object.keys(filters).length > 0) {
+    for (const [k, v] of Object.entries(filters)) {
+      const label = k.replace(/_/g, ' ').toUpperCase();
+      const isTrue = v === true || v === 'ENABLED';
+      const isFalse = v === false || v === 'DISABLED';
+      const valStr = isTrue ? 'ENABLED' : (isFalse ? 'DISABLED' : v);
+      const valClass = isTrue ? 'val-active' : (isFalse ? 'val-inactive' : 'val-custom');
+      filterBadgesHtml += `
+        <div class="param-pill">
+          <span class="param-pill-key">${label}</span>
+          <span class="param-pill-val ${valClass}">${valStr}</span>
+        </div>
+      `;
+    }
+  } else {
+    filterBadgesHtml = `
+      <div class="param-pill">
+        <span class="param-pill-key">DURATION FILTER</span>
+        <span class="param-pill-val val-inactive">DISABLED</span>
+      </div>
+      <div class="param-pill">
+        <span class="param-pill-key">ADX REGIME</span>
+        <span class="param-pill-val val-inactive">DISABLED</span>
+      </div>
+      <div class="param-pill">
+        <span class="param-pill-key">200 EMA HTF</span>
+        <span class="param-pill-val val-inactive">DISABLED</span>
+      </div>
+      <div class="param-pill">
+        <span class="param-pill-key">HOURLY FILTER</span>
+        <span class="param-pill-val val-inactive">DISABLED</span>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+      <!-- Group 1: Market & Backtest Window -->
+      <div class="params-subgroup">
+        <div class="params-subgroup-title">
+          <span>📅 Backtest Window & Market Scope</span>
+          <span class="tag tag-blue">${m.timeframe || '1m'}</span>
+        </div>
+        <div class="params-pills-wrap">
+          <div class="param-pill">
+            <span class="param-pill-key">TIMEFRAME</span>
+            <span class="param-pill-val" style="color: var(--accent-cyan); font-weight: 700;">${m.timeframe || '1m'} Candles</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">EVALUATION WINDOW</span>
+            <span class="param-pill-val" style="color: #82b1ff; font-weight: 700;">${m.date_range || 'N/A'}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">START DATE</span>
+            <span class="param-pill-val">${m.start_date || '2026-01-01'}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">END DATE</span>
+            <span class="param-pill-val">${m.end_date || '2026-08-31'}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">STARTING CAPITAL</span>
+            <span class="param-pill-val">$${(m.starting_capital_usdt || 100).toFixed(2)} USDT (₹${(m.starting_capital_inr || 9445).toFixed(2)})</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">MATCHING MODE</span>
+            <span class="param-pill-val">${m.high_fidelity_ticks ? '⚡ High-Fidelity Ticks' : '🕯️ Candle OHLC'}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">SLIPPAGE</span>
+            <span class="param-pill-val">${m.slippage_ticks} ticks</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">RUN SOURCE</span>
+            <span class="param-pill-val">${m.source === 'github_cloud' ? '☁️ GitHub Cloud Runner' : '💻 Local Workstation'}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group 2: Strategy & Indicators -->
+      <div class="params-subgroup">
+        <div class="params-subgroup-title">
+          <span>⚙️ Strategy & Indicators</span>
+          <span class="tag tag-cyan">${preset}</span>
+        </div>
+        <div class="params-pills-wrap">
+          <div class="param-pill">
+            <span class="param-pill-key">STRATEGY</span>
+            <span class="param-pill-val" style="color: var(--accent-cyan); font-weight: 700;">${strat}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">PRESET PROFILE</span>
+            <span class="param-pill-val" style="color: #00e676; font-weight: 700;">${preset}</span>
+          </div>
+          ${paramBadgesHtml}
+        </div>
+      </div>
+
+      <!-- Group 3: Execution, Sizing & Risk Rules -->
+      <div class="params-subgroup">
+        <div class="params-subgroup-title">
+          <span>🛡️ Execution & Risk Rules</span>
+          <span class="tag tag-purple">${m.leverage}x Leverage</span>
+        </div>
+        <div class="params-pills-wrap">
+          <div class="param-pill">
+            <span class="param-pill-key">LEVERAGE</span>
+            <span class="param-pill-val" style="color: #c77dff; font-weight: 700;">${m.leverage}x Isolated</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">POSITION SIZING</span>
+            <span class="param-pill-val">${m.volume_desc || (m.contracts + ' contract(s)')}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">SIZING MODE</span>
+            <span class="param-pill-val">${m.sizing_mode}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">TAKE PROFIT</span>
+            <span class="param-pill-val" style="color: var(--profit-green); font-weight: 700;">${m.tp_target_desc || ('+' + m.tp_ticks + ' ticks')}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">STOP LOSS</span>
+            <span class="param-pill-val" style="color: var(--loss-red); font-weight: 700;">${m.sl_rule_desc || (m.sl_mode + ' ' + m.sl_value)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group 4: Exchange Specs & Fee Structure -->
+      <div class="params-subgroup">
+        <div class="params-subgroup-title">
+          <span>🏦 KCEX Specifications & Fees</span>
+          <span class="tag tag-amber">${m.fee_mode || 'ZERO'} Fee Mode</span>
+        </div>
+        <div class="params-pills-wrap">
+          <div class="param-pill">
+            <span class="param-pill-key">FEE SCHEDULE</span>
+            <span class="param-pill-val" style="color: #ffab00; font-weight: 700;">${m.fee_mode || 'ZERO'} Mode</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">MAKER FEE</span>
+            <span class="param-pill-val">${(m.maker_fee_pct || 0).toFixed(4)}%</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">TAKER FEE</span>
+            <span class="param-pill-val">${(m.taker_fee_pct || 0).toFixed(4)}%</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">CONTRACT SIZE (CS)</span>
+            <span class="param-pill-val">${m.contract_size} ${m.base_asset}</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">PRICE UNIT (PU)</span>
+            <span class="param-pill-val">${m.price_unit} USDT</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">PRICE PRECISION</span>
+            <span class="param-pill-val">${m.price_precision || 3} Decimals</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">MIN ORDER VOLUME</span>
+            <span class="param-pill-val">${m.min_volume || 1.0} Contracts</span>
+          </div>
+          <div class="param-pill">
+            <span class="param-pill-key">MAX LEVERAGE</span>
+            <span class="param-pill-val">${m.max_leverage || m.leverage}x</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group 5: Trade Optimization & Regime Filters -->
+      <div class="params-subgroup">
+        <div class="params-subgroup-title">
+          <span>🎛️ Optimization & Regime Filters</span>
+          <span class="tag">${filters.duration_filter ? 'PROTECTED' : 'STANDARD'}</span>
+        </div>
+        <div class="params-pills-wrap">
+          ${filterBadgesHtml}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderDeepDiveScorecard(run) {

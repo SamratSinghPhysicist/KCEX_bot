@@ -112,6 +112,7 @@
               <th>Pair</th>
               <th>Strategy</th>
               <th>TF</th>
+              <th>Date Window</th>
               <th>Leverage</th>
               <th>Total Trades</th>
               <th>Win Rate</th>
@@ -286,6 +287,23 @@
             </button>
           </div>
 
+        </div>
+      </div>
+
+      <!-- Strategy, Hyperparameters & Filter Configuration Card -->
+      <div class="card" id="ddParametersCard" style="margin-bottom: 1.5rem; border-color: rgba(0, 210, 255, 0.25);">
+        <div class="card-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.15rem;">🎛️</span>
+            <div>
+              <h3 class="card-title" style="font-size: 0.95rem; font-weight: 700; color: var(--text-bright);">Complete Strategy Calibration, Hyperparameters & Filter Rules</h3>
+              <p class="card-subtitle">Exact indicator parameters, risk management rules, and active protective filters used during this backtest run.</p>
+            </div>
+          </div>
+          <span class="diff-badge" style="background: rgba(0, 210, 255, 0.15); color: #00d2ff; border-color: rgba(0, 210, 255, 0.3);">100% Transparent Settings</span>
+        </div>
+        <div class="params-container" id="ddParametersContent" style="padding: 1.1rem 1.25rem;">
+          <!-- Injected dynamically by renderDeepDiveParametersCard -->
         </div>
       </div>
 

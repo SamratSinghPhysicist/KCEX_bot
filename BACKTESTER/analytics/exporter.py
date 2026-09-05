@@ -43,20 +43,51 @@ class AIDossierExporter:
             "Provide concrete, mathematically justified optimization recommendations.\n",
             "---",
             "\n## 1. ⚙️ Hyperparameters & Configuration",
+            "### General Execution & Market Setup",
             "| Parameter | Value | Notes / Operational Meaning |",
             "| :--- | :--- | :--- |",
             f"| **Trading Pair Symbol** | `{m.symbol}` | Base: `{m.base_asset}` / Quote: `{m.quote_asset}` |",
             f"| **Strategy Evaluated** | `{m.strategy}` | {m.strategy_desc or m.strategy} |",
+            f"| **Strategy Preset** | `{m.strategy_preset or (m.parameters.get('preset') if m.parameters else 'STANDARD')}` | Calibrated preset profile |",
             f"| **Candle Timeframe** | `{m.timeframe}` | Granularity for indicator calculations |",
             f"| **Leverage Multiplier** | `{m.leverage}x` | Isolated margin trading leverage |",
             f"| **Take Profit Rule** | `{m.tp_target_desc or f'+{m.tp_ticks} ticks'}` | Min-profit target formula |",
             f"| **Stop Loss Rule** | `{m.sl_rule_desc or f'{m.sl_mode} {m.sl_value}'}` | Stop loss evaluation logic |",
             f"| **Position Sizing** | `{m.volume_desc or f'{m.contracts} contract(s)'}` | Mode: `{m.sizing_mode}` |",
             f"| **Historical Window** | `{m.date_range}` | Start: `{m.start_date}` → End: `{m.end_date}` |",
+            f"| **Starting Capital** | `${m.starting_capital_usdt:.2f} USDT` | ₹{m.starting_capital_inr:.2f} INR (Rate: ₹94.45) |",
             f"| **Tick Simulation** | `{'ENABLED (Tick-Level)' if m.high_fidelity_ticks else 'DISABLED (Candle)'}` | High-fidelity millisecond fills |",
             f"| **Slippage Tolerance** | `{m.slippage_ticks} ticks` | Fill penalty applied to orders |",
+            f"| **Fee Schedule Mode** | `{m.fee_mode} Mode` | Maker: `{m.maker_fee_pct:.4f}%` / Taker: `{m.taker_fee_pct:.4f}%` |",
             f"| **Contract Size (cs)** | `{m.contract_size}` | 1 contract = {m.contract_size} {m.base_asset} |",
             f"| **Price Unit (pu / tick)** | `{m.price_unit}` | Minimum orderbook tick increment |",
+            f"| **Price Precision** | `{m.price_precision} decimals` | Quote price precision |",
+            f"| **Min / Max Leverage** | `{m.min_volume} contracts min / {m.max_leverage}x max lev` | Exchange order constraints |",
+            "",
+            "### Strategy & Indicator Detailed Parameters",
+            "| Indicator Parameter | Value | Functional Role |",
+            "| :--- | :--- | :--- |"
+        ]
+
+        if m.parameters:
+            for p_k, p_v in m.parameters.items():
+                lines.append(f"| **{p_k.replace('_', ' ').title()}** | `{p_v}` | Active model configuration |")
+        else:
+            lines.append(f"| **Default Calibration** | `Standard Preset: {m.strategy_preset or 'DEFAULT'}` | Factory settings |")
+
+        lines.extend([
+            "",
+            "### Trade Optimization & Regime Filters",
+            "| Filter Dimension | Value | Operational Trigger / Safeguard |",
+            "| :--- | :--- | :--- |"
+        ])
+        if m.filters:
+            for f_k, f_v in m.filters.items():
+                lines.append(f"| **{f_k.replace('_', ' ').title()}** | `{'ENABLED' if f_v is True else ('DISABLED' if f_v is False else f_v)}` | Guardrail condition |")
+        else:
+            lines.append("| **Filters Status** | `Unconfigured / Default` | Standard execution without additional filters |")
+
+        lines.extend([
             "\n---",
             "\n## 2. ⚡ Executive Performance Scorecard",
             "| Metric | Value | Baseline / Context |",
@@ -99,7 +130,7 @@ class AIDossierExporter:
             "\n## 5. 🎯 Exit Reasons & Trigger Attribution",
             "| Exit Trigger Reason | Trades Count | % of Total | Net PnL (USDT) | Win Rate | Avg Duration |",
             "| :--- | :--- | :--- | :--- | :--- | :--- |"
-        ]
+        ])
 
         for ea in run.exit_attributions:
             lines.append(
