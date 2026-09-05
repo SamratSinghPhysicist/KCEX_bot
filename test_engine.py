@@ -373,6 +373,8 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             symbol="TRUMP_USDT",
             direction=OrderDirection.LONG,
             mode=EngineMode.DRY_RUN,
+            volume_mode="CONTRACTS",
+            volume_contracts=1,
             cooldown_seconds=1.0,
             max_trades=1,
             logs_dir=self.test_log_dir,
@@ -416,6 +418,8 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             symbol="TRUMP_USDT",
             direction=OrderDirection.LONG,
             mode=EngineMode.DRY_RUN,
+            volume_mode="CONTRACTS",
+            volume_contracts=1,
             cooldown_seconds=1.0,
             max_trades=1,
             logs_dir=self.test_log_dir,
@@ -424,11 +428,11 @@ class TestEngineExecutionDryRun(unittest.TestCase):
         engine = create_test_engine(config=config)
         contract = engine.pre_flight_checks()
 
-        # Mock ticker sequence: entry at 2.350, then price drops to 2.345 (SL hit)
+        # Mock ticker sequence: entry at 2.350, then price drops to 2.340 (SL hit)
         ticker_sequence = [
             {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
             {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
-            {"symbol": "TRUMP_USDT", "lastPrice": 2.344, "bid1": 2.344, "ask1": 2.345}
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.340, "bid1": 2.340, "ask1": 2.341}
         ]
         seq_idx = [0]
         def mock_ticker(sym):
@@ -455,6 +459,8 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             symbol="TRUMP_USDT",
             direction=OrderDirection.SHORT,
             mode=EngineMode.DRY_RUN,
+            volume_mode="CONTRACTS",
+            volume_contracts=1,
             cooldown_seconds=1.0,
             max_trades=1,
             logs_dir=self.test_log_dir,
@@ -494,6 +500,8 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             symbol="TRUMP_USDT",
             direction=OrderDirection.SHORT,
             mode=EngineMode.DRY_RUN,
+            volume_mode="CONTRACTS",
+            volume_contracts=1,
             cooldown_seconds=1.0,
             max_trades=1,
             logs_dir=self.test_log_dir,

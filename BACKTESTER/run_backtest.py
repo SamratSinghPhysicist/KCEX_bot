@@ -186,6 +186,7 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     tp_input = input("   Take Profit Ticks (pu away from entry) [default: 2]: ").strip()
     tp_ticks = int(tp_input) if tp_input.isdigit() else 2
 
+    sl_price = None
     sl_mode_input = input("   Stop Loss Mode ([1] ROE % on margin, [2] TICKS, [3] PRICE %) [default: 1 (ROE %)]: ").strip()
     if sl_mode_input == "2":
         sl_mode = "TICKS"
@@ -237,6 +238,27 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         m_input = input(f"   Enter Volume Multiplier [default: {def_mult:g}x min]: ").strip()
         vol_multiplier = float(m_input) if m_input else def_mult
         vol_contracts = None
+
+    # 8. Fee Schedule Configuration
+    print("\n8. Fee Schedule Configuration:")
+    print("   [1] Live KCEX API (0% for TRUMP/DOGE zero-fee pairs) [Default]")
+    print("   [2] Zero Fees (0.0% Maker / 0.0% Taker)")
+    print("   [3] Manual Custom Rates")
+    fee_choice = input("   Select Fee Mode [default: 1 (Live KCEX API)]: ").strip()
+    maker_fee = None
+    taker_fee = None
+    if fee_choice == "2":
+        fee_mode = "ZERO"
+        maker_fee = 0.0
+        taker_fee = 0.0
+    elif fee_choice == "3":
+        fee_mode = "MANUAL"
+        m_input = input("   Enter Maker Fee % [default: 0.0]: ").strip()
+        t_input = input("   Enter Taker Fee % [default: 0.01]: ").strip()
+        maker_fee = (float(m_input) / 100.0) if m_input else 0.0
+        taker_fee = (float(t_input) / 100.0) if t_input else 0.0001
+    else:
+        fee_mode = "LIVE"
 
     # 9. Trade Optimization & Regime Filters (Optional)
     print("\n9. Trade Optimization & Regime Filters:")
@@ -306,6 +328,7 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         sl_mode=sl_mode,
         sl_ticks=sl_ticks,
         sl_roe_pct=sl_roe,
+        sl_price_pct=sl_price,
         leverage=leverage,
         initial_balance_usdt=capital,
         max_trades=max_trades,
@@ -358,6 +381,7 @@ def main():
     parser.add_argument("--volume-multiplier", type=float, default=None, help="Multiplier of minimum contract volume (e.g. 2.0 = 2x min, 1.0 = 1x min)")
     parser.add_argument("--sl-ticks", type=int, default=10, help="Stop loss ticks away from entry")
     parser.add_argument("--sl-roe", type=float, default=25.0, help="Stop loss ROE percent (e.g. 25.0)")
+    parser.add_argument("--sl-price", type=float, default=None, help="Stop loss price percentage away from entry (e.g. 0.5)")
     parser.add_argument("--leverage", type=int, default=75, help="Leverage multiplier")
     parser.add_argument("--capital", type=float, default=100.0, help="Initial wallet balance in USDT")
     parser.add_argument("--max-trades", type=int, default=0, help="Max trades to execute (0 = unlimited)")
@@ -432,6 +456,7 @@ def main():
             sl_mode=args.sl_mode,
             sl_ticks=args.sl_ticks,
             sl_roe_pct=args.sl_roe,
+            sl_price_pct=args.sl_price,
             leverage=args.leverage,
             initial_balance_usdt=args.capital,
             max_trades=args.max_trades,
@@ -490,7 +515,13 @@ def main():
     print(f"Initial Capital:  {config.initial_balance_usdt:.2f} USDT")
     print(f"Leverage:         {config.leverage}x")
     print(f"Take Profit:      +{config.tp_ticks} ticks")
-    print(f"Stop Loss:        {config.sl_ticks} ticks" if config.sl_mode == "TICKS" else f"-{config.sl_roe_pct}% ROE")
+    if config.sl_mode == "TICKS":
+        sl_summary_str = f"{config.sl_ticks} ticks"
+    elif config.sl_mode == "PRICE_PCT":
+        sl_summary_str = f"-{config.sl_price_pct}% price"
+    else:
+        sl_summary_str = f"-{config.sl_roe_pct}% ROE"
+    print(f"Stop Loss:        {sl_summary_str}")
     print("=" * 78 + "\n")
 
     t_start = time.time()

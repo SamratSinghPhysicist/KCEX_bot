@@ -40,6 +40,7 @@ from kcex.engine.strategy import (
     EMACrossoverStrategy,
     StochasticRSIStrategy
 )
+from strategies.filters import FilterPipeline
 
 
 class TradeExecutionEngine:
@@ -116,7 +117,6 @@ class TradeExecutionEngine:
                 sub_strategy=sub_strat
             )
 
-        from strategies.filters import FilterPipeline
         self.filter_pipeline = FilterPipeline.from_config(self.config)
 
         self.running: bool = False
@@ -236,7 +236,13 @@ class TradeExecutionEngine:
 
         # Regime & Trend Filter Evaluation
         try:
-            filter_candles = self.market.get_klines(contract.symbol, interval="Min1", limit=250)
+            htf_tf = getattr(self.config, "htf_timeframe", "15m")
+            tf_map = {
+                "1m": "Min1", "3m": "Min3", "5m": "Min5", "15m": "Min15",
+                "30m": "Min30", "1h": "Min60", "2h": "Hour2", "4h": "Hour4", "1d": "Day1"
+            }
+            kline_interval = tf_map.get(htf_tf, "Min15") if getattr(self.config, "htf_trend_filter_enabled", False) else "Min1"
+            filter_candles = self.market.get_klines(contract.symbol, interval=kline_interval, limit=250)
         except Exception as e:
             self.logger.debug("Could not fetch candles for regime filter evaluation: %s", e)
             filter_candles = []
@@ -522,7 +528,8 @@ class TradeExecutionEngine:
                 exact_tp=exact_tp,
                 exact_sl=exact_sl,
                 precision=ps,
-                entry_price=entry_price
+                entry_price=entry_price,
+                open_time=open_time
             )
 
         close_time = time.time()
@@ -744,7 +751,8 @@ class TradeExecutionEngine:
         exact_tp: float,
         exact_sl: float,
         precision: int = 4,
-        entry_price: Optional[float] = None
+        entry_price: Optional[float] = None,
+        open_time: Optional[float] = None
     ) -> tuple[float, ExitReason, Optional[str]]:
         """
         Polls ticker and open positions until the position closes.
@@ -754,8 +762,9 @@ class TradeExecutionEngine:
         side_str = "LONG" if direction == OrderDirection.LONG else "SHORT"
         close_order_id = None
         last_seen_price = exact_tp
+        exec_price = exact_tp
         deep_alert_logged = False
-        monitor_start_time = time.time()
+        monitor_start_time = open_time if open_time is not None else time.time()
 
         while not self._shutdown_requested:
             time.sleep(self.config.poll_interval_seconds)
@@ -835,7 +844,7 @@ class TradeExecutionEngine:
 
             # 4. Duration-Based Monitoring & Time-Decay Exit Actions
             if getattr(self.config, "duration_filter_enabled", False):
-                elapsed = time.time() - (open_time if open_time else time.time())
+                elapsed = time.time() - monitor_start_time
                 deep_thresh = float(getattr(self.config, "duration_deep_monitor_seconds", 60.0))
                 if elapsed >= deep_thresh and not deep_alert_logged:
                     deep_alert_logged = True
