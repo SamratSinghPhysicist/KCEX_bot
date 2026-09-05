@@ -220,6 +220,9 @@ jobs:
 
       - name: Execute Backtest
         run: |
+          # Clean any stale report files so only this run's artifacts are produced
+          rm -f BACKTESTER/reports/*.csv BACKTESTER/reports/*.jsonl BACKTESTER/reports/*.md
+
           TICKS_FLAG="--ticks"
           if [ "${{ inputs.use_ticks }}" != "true" ]; then
             TICKS_FLAG="--no-ticks"
@@ -252,12 +255,11 @@ jobs:
       - name: Publish Summary to GitHub Job Summary
         if: always()
         run: |
-          echo "## 📊 Backtest Results: ${{ inputs.symbol }} (${{ inputs.strategy }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           SUMMARY_FILE=$(ls -t BACKTESTER/reports/*_summary.md 2>/dev/null | head -n 1)
           if [ -f "$SUMMARY_FILE" ]; then
             cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
           else
+            echo "## 📊 Backtest Results" >> $GITHUB_STEP_SUMMARY
             echo "No summary markdown file generated." >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -266,5 +268,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backtest-results-${{ inputs.symbol }}-${{ inputs.strategy }}-${{ inputs.timeframe }}-run${{ github.run_id }}
-          path: BACKTESTER/reports/
+          path: |
+            BACKTESTER/reports/*.csv
+            BACKTESTER/reports/*.jsonl
+            BACKTESTER/reports/*.md
+          if-no-files-found: warn
           retention-days: 30

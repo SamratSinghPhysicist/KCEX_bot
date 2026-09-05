@@ -382,7 +382,7 @@ def main():
     reporter = BacktestReporter()
     reporter.print_summary(summary)
     reporter.print_trades_table(outcomes, limit=15)
-    reporter.export_all(outcomes, summary)
+    reporter.export_all(outcomes=outcomes, summary=summary, config=config, contract=contract)
 
 
 if __name__ == "__main__":
