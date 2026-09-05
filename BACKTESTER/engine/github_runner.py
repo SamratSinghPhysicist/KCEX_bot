@@ -454,17 +454,22 @@ class GitHubBacktestRunner:
         print(f"Stop Loss:        {inputs['sl_mode']} ({inputs['sl_roe']}% ROE)" if inputs['sl_mode'] == 'ROE' else f"{inputs['sl_ticks']} ticks")
         print(f"Date Range:       {inputs['start_date']} to {inputs['end_date']}")
         print(f"Tick Simulation:  {'ENABLED' if inputs['use_ticks'] == 'true' else 'DISABLED'}")
-        dur_desc = f"ENABLED (Monitor >{inputs['duration_deep_monitor']}s, Action: {inputs['duration_action']} at {inputs['duration_max_hold']}s)" if inputs['duration_filter'] == 'true' else "DISABLED"
+        filters = json.loads(inputs.get("filters_json", "{}")) if "filters_json" in inputs else {}
+        dur_desc = (
+            f"ENABLED (Monitor >{filters.get('duration_deep_monitor', 60.0)}s, Action: {filters.get('duration_action', 'CLOSE')} at {filters.get('duration_max_hold', 90.0)}s)"
+            if filters.get("duration_filter", False)
+            else "DISABLED"
+        )
         print(f"Duration Filter:  {dur_desc}")
         regime_parts = []
-        if inputs['adx_filter'] == 'true':
-            regime_parts.append(f"ADX({inputs['adx_period']})>={inputs['adx_threshold']}")
-        if inputs['htf_trend_filter'] == 'true':
-            regime_parts.append(f"HTF {inputs['htf_ema_period']} EMA ({inputs['htf_timeframe']})")
-        if inputs['hourly_filter'] == 'true':
-            regime_parts.append(f"Hourly Block [{inputs['hourly_blacklist']}]")
-        if inputs['direction_bias'] != 'BOTH':
-            regime_parts.append(f"Bias: {inputs['direction_bias']}")
+        if filters.get("adx_filter", False):
+            regime_parts.append(f"ADX({filters.get('adx_period', 14)})>={filters.get('adx_threshold', 25.0)}")
+        if filters.get("htf_trend_filter", False):
+            regime_parts.append(f"HTF {filters.get('htf_ema_period', 200)} EMA ({filters.get('htf_timeframe', '15m')})")
+        if filters.get("hourly_filter", False):
+            regime_parts.append(f"Hourly Block [{filters.get('hourly_blacklist', '')}]")
+        if filters.get("direction_bias", "BOTH") != "BOTH":
+            regime_parts.append(f"Bias: {filters.get('direction_bias')}")
         print(f"Regime Filters:   {', '.join(regime_parts) if regime_parts else 'DISABLED (Baseline)'}")
         print(f"{Style.CYAN}{'='*78}{Style.RESET}\n")
 
