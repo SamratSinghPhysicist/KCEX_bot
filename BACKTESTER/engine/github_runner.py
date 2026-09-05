@@ -184,6 +184,8 @@ class GitHubBacktestRunner:
         maker_fee = str(config.maker_fee_override * 100.0) if config.maker_fee_override is not None else "0.0"
         taker_fee = str(config.taker_fee_override * 100.0) if config.taker_fee_override is not None else "0.0"
 
+        sl_price = str(config.sl_price_pct if config.sl_price_pct is not None else 0.5)
+
         return {
             "symbol": sym,
             "timeframe": config.timeframe,
@@ -203,10 +205,24 @@ class GitHubBacktestRunner:
             "sl_mode": config.sl_mode,
             "sl_ticks": str(config.sl_ticks or 10),
             "sl_roe": str(config.sl_roe_pct),
+            "sl_price": sl_price,
             "leverage": str(config.leverage),
             "capital": str(config.initial_balance_usdt),
             "max_trades": str(config.max_trades),
-            "slippage": str(config.slippage_ticks)
+            "slippage": str(config.slippage_ticks),
+            "duration_filter": "true" if getattr(config, "duration_filter_enabled", False) else "false",
+            "duration_deep_monitor": str(getattr(config, "duration_deep_monitor_seconds", 60.0)),
+            "duration_max_hold": str(getattr(config, "duration_max_hold_seconds", 90.0)),
+            "duration_action": str(getattr(config, "duration_action", "CLOSE") or "CLOSE"),
+            "adx_filter": "true" if getattr(config, "adx_filter_enabled", False) else "false",
+            "adx_period": str(getattr(config, "adx_period", 14)),
+            "adx_threshold": str(getattr(config, "adx_threshold", 25.0)),
+            "htf_trend_filter": "true" if getattr(config, "htf_trend_filter_enabled", False) else "false",
+            "htf_ema_period": str(getattr(config, "htf_ema_period", 200)),
+            "htf_timeframe": str(getattr(config, "htf_timeframe", "15m") or "15m"),
+            "hourly_filter": "true" if getattr(config, "hourly_filter_enabled", False) else "false",
+            "hourly_blacklist": ",".join(str(x) for x in (getattr(config, "hourly_blacklist_utc", []) or [])),
+            "direction_bias": str(getattr(config, "direction_bias", "BOTH") or "BOTH")
         }
 
     def dispatch_workflow(self, inputs: Dict[str, str], ref: str = "main") -> bool:
@@ -434,6 +450,18 @@ class GitHubBacktestRunner:
         print(f"Stop Loss:        {inputs['sl_mode']} ({inputs['sl_roe']}% ROE)" if inputs['sl_mode'] == 'ROE' else f"{inputs['sl_ticks']} ticks")
         print(f"Date Range:       {inputs['start_date']} to {inputs['end_date']}")
         print(f"Tick Simulation:  {'ENABLED' if inputs['use_ticks'] == 'true' else 'DISABLED'}")
+        dur_desc = f"ENABLED (Monitor >{inputs['duration_deep_monitor']}s, Action: {inputs['duration_action']} at {inputs['duration_max_hold']}s)" if inputs['duration_filter'] == 'true' else "DISABLED"
+        print(f"Duration Filter:  {dur_desc}")
+        regime_parts = []
+        if inputs['adx_filter'] == 'true':
+            regime_parts.append(f"ADX({inputs['adx_period']})>={inputs['adx_threshold']}")
+        if inputs['htf_trend_filter'] == 'true':
+            regime_parts.append(f"HTF {inputs['htf_ema_period']} EMA ({inputs['htf_timeframe']})")
+        if inputs['hourly_filter'] == 'true':
+            regime_parts.append(f"Hourly Block [{inputs['hourly_blacklist']}]")
+        if inputs['direction_bias'] != 'BOTH':
+            regime_parts.append(f"Bias: {inputs['direction_bias']}")
+        print(f"Regime Filters:   {', '.join(regime_parts) if regime_parts else 'DISABLED (Baseline)'}")
         print(f"{Style.CYAN}{'='*78}{Style.RESET}\n")
 
         t_dispatch = time.time()

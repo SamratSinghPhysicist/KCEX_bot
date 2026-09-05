@@ -982,6 +982,7 @@ def monitor_position_until_closed(
     peak_profit_usdt = 0.0
     consecutive_not_found = 0
     tp_hit_first_seen: Optional[float] = None
+    deep_monitor_warned: bool = False
 
     print(f"\n{Style.CYAN}{Style.BOLD}>>> AUTONOMOUS POSITION MONITOR ACTIVE <<<{Style.RESET}")
     print(f"Target TP: {Style.GREEN}{exact_tp:.{ps}f} USDT{Style.RESET} | Target SL: {Style.RED}{exact_sl:.{ps}f} USDT{Style.RESET}" if exact_sl else f"Target TP: {Style.GREEN}{exact_tp:.{ps}f} USDT{Style.RESET} | Target SL: None")
@@ -1168,6 +1169,42 @@ def monitor_position_until_closed(
                     return hist_exit_p, hist_reason, close_oid
         else:
             tp_hit_first_seen = None
+
+        # 10. DURATION-BASED EXIT / STALE TRADE MONITORING
+        duration_enabled = getattr(settings, "DURATION_FILTER_ENABLED", False) if settings else False
+        if duration_enabled:
+            deep_monitor_sec = getattr(settings, "DURATION_DEEP_MONITOR_SECONDS", 60) if settings else 60
+            max_hold_sec = getattr(settings, "DURATION_MAX_HOLD_SECONDS", 90) if settings else 90
+            action = getattr(settings, "DURATION_ACTION", "SCRATCH").upper() if settings else "SCRATCH"
+
+            if elapsed >= max_hold_sec:
+                print(f"\n\n{Style.BG_YELLOW}{Style.BOLD} ⏱ MAX HOLD TIME REACHED ({elapsed:.1f}s >= {max_hold_sec}s)! Action: {action} {Style.RESET}")
+                exit_p, close_oid = execute_market_close_and_verify(
+                    trader=trader,
+                    market=market,
+                    symbol=symbol,
+                    position_id=position_id,
+                    direction=direction,
+                    vol_contracts=vol_contracts,
+                    leverage=leverage,
+                    contract=contract,
+                    is_live=is_live
+                )
+                if is_live:
+                    hist_exit_p, hist_pnl, hist_reason = reconcile_exit_from_kcex(
+                        trader=trader,
+                        symbol=symbol,
+                        position_id=position_id,
+                        direction=direction,
+                        entry_price=entry_price,
+                        fallback_price=exit_p,
+                        open_time=start_time
+                    )
+                    return hist_exit_p, ExitReason.DURATION_SCRATCH, close_oid
+                return exit_p, ExitReason.DURATION_SCRATCH, close_oid
+            elif elapsed >= deep_monitor_sec and not deep_monitor_warned:
+                deep_monitor_warned = True
+                print(f"\n{Style.YELLOW}⚠️ [DEEP MONITOR WARNING] Position open for {elapsed:.1f}s (threshold: {deep_monitor_sec}s). Monitoring closely...{Style.RESET}")
 
 
 # =============================================================================

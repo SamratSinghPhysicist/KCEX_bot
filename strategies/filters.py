@@ -237,12 +237,113 @@ class BaseFilter(ABC):
 # HIGHER TIMEFRAME 200 EMA TREND FILTER
 # =============================================================================
 
+TF_MS_MAP: Dict[str, int] = {
+    "1m": 60_000,
+    "3m": 180_000,
+    "5m": 300_000,
+    "15m": 900_000,
+    "30m": 1_800_000,
+    "1h": 3_600_000,
+    "60m": 3_600_000,
+    "2h": 7_200_000,
+    "4h": 14_400_000,
+    "6h": 21_600_000,
+    "8h": 28_800_000,
+    "12h": 43_200_000,
+    "1d": 86_400_000,
+    "Min1": 60_000,
+    "Min3": 180_000,
+    "Min5": 300_000,
+    "Min15": 900_000,
+    "Min30": 1_800_000,
+    "Min60": 3_600_000,
+    "Hour2": 7_200_000,
+    "Hour4": 14_400_000,
+    "Hour6": 21_600_000,
+    "Hour8": 28_800_000,
+    "Day1": 86_400_000,
+}
+
+
+def resample_closes_to_timeframe(candles: List[Any], target_timeframe: str) -> List[float]:
+    """
+    Resamples smaller granularity candles (e.g. 1m) into the target timeframe's closes.
+    If candles are already at or larger than the target timeframe or lack timestamps,
+    returns the raw candle closes directly.
+    """
+    if not candles:
+        return []
+
+    target_bucket_ms = TF_MS_MAP.get(target_timeframe, 900_000)
+
+    # Check if candles have timestamp information
+    first_c = candles[0]
+    ts_field = None
+    if hasattr(first_c, "open_time_ms"):
+        ts_field = "open_time_ms"
+    elif hasattr(first_c, "timestamp"):
+        ts_field = "timestamp"
+    elif isinstance(first_c, dict):
+        if "openTime" in first_c:
+            ts_field = "openTime"
+        elif "timestamp_ms" in first_c:
+            ts_field = "timestamp_ms"
+        elif "open_time_ms" in first_c:
+            ts_field = "open_time_ms"
+
+    # If no timestamps available or only 1 candle, extract raw closes
+    def get_c_close(c: Any) -> float:
+        if hasattr(c, "close"):
+            return float(c.close)
+        elif isinstance(c, dict) and "close" in c:
+            return float(c["close"])
+        elif isinstance(c, (list, tuple)) and len(c) >= 5:
+            return float(c[4])
+        return 0.0
+
+    def get_c_ts(c: Any) -> int:
+        if ts_field and hasattr(c, ts_field):
+            val = getattr(c, ts_field)
+            return int(val * 1000) if val < 1e11 else int(val)
+        elif ts_field and isinstance(c, dict) and ts_field in c:
+            val = c[ts_field]
+            return int(val * 1000) if val < 1e11 else int(val)
+        return 0
+
+    if not ts_field or len(candles) < 2:
+        return [get_c_close(c) for c in candles]
+
+    # Detect candle granularity
+    ts0 = get_c_ts(candles[0])
+    ts1 = get_c_ts(candles[1])
+    candle_step_ms = abs(ts1 - ts0) if (ts1 > 0 and ts0 > 0) else 0
+
+    # If candles are already at or above target interval, return closes directly
+    if candle_step_ms >= target_bucket_ms or candle_step_ms <= 0:
+        return [get_c_close(c) for c in candles]
+
+    # Resample into target timeframe buckets
+    buckets: Dict[int, float] = {}
+    for c in candles:
+        ts = get_c_ts(c)
+        if ts <= 0:
+            continue
+        bucket_id = ts // target_bucket_ms
+        buckets[bucket_id] = get_c_close(c)
+
+    if not buckets:
+        return [get_c_close(c) for c in candles]
+
+    return list(buckets.values())
+
+
 class HTFTrendFilter(BaseFilter):
     """
     Higher Timeframe (HTF) Trend Filter (e.g. 200 EMA baseline).
     Enforces that micro-scalp entries align with the macro trend:
     - Long signals permitted ONLY when current_price >= HTF EMA.
     - Short signals permitted ONLY when current_price <= HTF EMA.
+    Automatically resamples lower-timeframe candles to the target HTF timeframe.
     """
 
     def __init__(
@@ -275,35 +376,38 @@ class HTFTrendFilter(BaseFilter):
         if not candles:
             return True, None
 
-        # Extract closing prices
-        closes: List[float] = []
-        for c in candles:
-            if hasattr(c, "close"):
-                closes.append(float(c.close))
-            elif isinstance(c, dict) and "close" in c:
-                closes.append(float(c["close"]))
-            elif isinstance(c, (list, tuple)) and len(c) >= 5:
-                closes.append(float(c[4]))
-
-        if len(closes) < 5:
+        # Extract current price from the latest candle
+        latest_c = candles[-1]
+        if hasattr(latest_c, "close"):
+            current_price = float(latest_c.close)
+        elif isinstance(latest_c, dict) and "close" in latest_c:
+            current_price = float(latest_c["close"])
+        elif isinstance(latest_c, (list, tuple)) and len(latest_c) >= 5:
+            current_price = float(latest_c[4])
+        else:
             return True, None
 
-        period = min(self.ema_period, len(closes))
-        ema_series = compute_ema_series(closes, period)
+        # Resample closes into target HTF timeframe (e.g. 15m)
+        htf_closes = resample_closes_to_timeframe(candles, self.timeframe)
+        if len(htf_closes) < 10:
+            # Need minimum history to establish a reliable baseline
+            return True, None
+
+        period = min(self.ema_period, len(htf_closes))
+        ema_series = compute_ema_series(htf_closes, period)
         if not ema_series:
             return True, None
 
-        current_price = closes[-1]
         htf_ema = ema_series[-1]
 
         direction_str = str(getattr(signal, "direction", "")).upper()
         is_long = "LONG" in direction_str or "BUY" in direction_str
 
         if is_long and current_price < htf_ema:
-            return False, f"HTF Trend: Long rejected (Price {current_price:.4f} < {period} EMA {htf_ema:.4f})"
+            return False, f"HTF Trend: Long rejected (Price {current_price:.4f} < {self.timeframe} {period} EMA {htf_ema:.4f})"
 
         if not is_long and current_price > htf_ema:
-            return False, f"HTF Trend: Short rejected (Price {current_price:.4f} > {period} EMA {htf_ema:.4f})"
+            return False, f"HTF Trend: Short rejected (Price {current_price:.4f} > {self.timeframe} {period} EMA {htf_ema:.4f})"
 
         return True, None
 

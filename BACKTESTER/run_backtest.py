@@ -522,6 +522,18 @@ def main():
     else:
         sl_summary_str = f"-{config.sl_roe_pct}% ROE"
     print(f"Stop Loss:        {sl_summary_str}")
+    dur_desc = f"ENABLED (Monitor >{config.duration_deep_monitor_seconds}s, Action: {config.duration_action} at {config.duration_max_hold_seconds}s)" if config.duration_filter_enabled else "DISABLED"
+    print(f"Duration Filter:  {dur_desc}")
+    regime_parts = []
+    if config.adx_filter_enabled:
+        regime_parts.append(f"ADX({config.adx_period})>={config.adx_threshold}")
+    if config.htf_trend_filter_enabled:
+        regime_parts.append(f"HTF {config.htf_ema_period} EMA ({config.htf_timeframe})")
+    if config.hourly_filter_enabled:
+        regime_parts.append(f"Hourly Block [{','.join(str(x) for x in config.hourly_blacklist_utc)}]")
+    if config.direction_bias != "BOTH":
+        regime_parts.append(f"Bias: {config.direction_bias}")
+    print(f"Regime Filters:   {', '.join(regime_parts) if regime_parts else 'DISABLED (Baseline)'}")
     print("=" * 78 + "\n")
 
     t_start = time.time()

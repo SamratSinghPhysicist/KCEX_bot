@@ -30,17 +30,22 @@ from strategies.filters import (
     DirectionalBiasFilter,
     FilterPipeline,
     compute_atr_series,
-    compute_adx_series
+    compute_adx_series,
+    resample_closes_to_timeframe
 )
+from strategies.stoch_rsi import StochasticRSIStrategy
+from strategies.ema_crossover import EMACrossoverStrategy
+from kcex.engine.strategy import MasterplanStrategy
 
 
 class MockCandle:
-    def __init__(self, open_: float, high: float, low: float, close: float, close_time_ms: int = 0):
+    def __init__(self, open_: float, high: float, low: float, close: float, close_time_ms: int = 0, open_time_ms: int = 0):
         self.open = open_
         self.high = high
         self.low = low
         self.close = close
         self.close_time_ms = close_time_ms
+        self.open_time_ms = open_time_ms
 
 
 class TestIndicatorMath(unittest.TestCase):
@@ -237,6 +242,75 @@ class TestFilterPipeline(unittest.TestCase):
         self.assertTrue(params["adx_filter_enabled"])
         self.assertTrue(params["hourly_filter_enabled"])
         self.assertEqual(params["direction_bias"], "LONG_ONLY")
+
+
+class TestHTFTrendFilterWithResampling(unittest.TestCase):
+    """Verifies candle resampling and multi-timeframe HTF trend filtering."""
+
+    def test_resample_closes_to_timeframe_1m_to_15m(self):
+        # 30 candles spaced 1 minute (60,000 ms) apart aligned to 15m boundary -> 2 15m buckets
+        bucket_ms = 900_000
+        base_ts = 1700000000000 - (1700000000000 % bucket_ms)
+        candles = [
+            MockCandle(100.0 + i, 101.0 + i, 99.0 + i, 100.5 + i, open_time_ms=base_ts + i * 60_000)
+            for i in range(30)
+        ]
+        resampled = resample_closes_to_timeframe(candles, target_timeframe="15m")
+        self.assertEqual(len(resampled), 2)
+        # Bucket 1 should have close of candle 14, Bucket 2 close of candle 29
+        self.assertEqual(resampled[0], candles[14].close)
+        self.assertEqual(resampled[1], candles[29].close)
+
+    def test_htf_trend_filter_with_resampling(self):
+        # 300 1m candles in steady uptrend
+        base_ts = 1700000000000
+        candles = [
+            MockCandle(100.0 + i * 0.1, 101.0 + i * 0.1, 99.0 + i * 0.1, 100.5 + i * 0.1, open_time_ms=base_ts + i * 60_000)
+            for i in range(300)
+        ]
+        filter_ = HTFTrendFilter(enabled=True, ema_period=10, timeframe="15m")
+        long_sig = TradeSignal("TRUMP_USDT", OrderDirection.LONG, "STOCH_RSI")
+        short_sig = TradeSignal("TRUMP_USDT", OrderDirection.SHORT, "STOCH_RSI")
+
+        allowed_long, _ = filter_.is_allowed(long_sig, candles, 0.0)
+        allowed_short, reason_short = filter_.is_allowed(short_sig, candles, 0.0)
+
+        self.assertTrue(allowed_long)
+        self.assertFalse(allowed_short)
+        self.assertIn("Short rejected", reason_short)
+
+
+class TestStrategyTradeRejectedReset(unittest.TestCase):
+    """Verifies that on_trade_rejected() correctly unlocks strategies when filters reject signals."""
+
+    def test_stoch_rsi_on_trade_rejected_resets_state(self):
+        from unittest.mock import MagicMock
+        strat = StochasticRSIStrategy(market=MagicMock(), symbol="TRUMP_USDT", auto_start_feed=False)
+        strat.trade_in_progress = True
+        self.assertTrue(strat.trade_in_progress)
+
+        strat.on_trade_rejected()
+        self.assertFalse(strat.trade_in_progress)
+
+    def test_ema_crossover_on_trade_rejected_resets_state(self):
+        from unittest.mock import MagicMock
+        strat = EMACrossoverStrategy(market=MagicMock(), symbol="TRUMP_USDT", auto_start_feed=False)
+        strat.trade_in_progress = True
+        self.assertTrue(strat.trade_in_progress)
+
+        strat.on_trade_rejected()
+        self.assertFalse(strat.trade_in_progress)
+
+    def test_masterplan_forwards_on_trade_rejected(self):
+        from unittest.mock import MagicMock
+        sub_strat = StochasticRSIStrategy(market=MagicMock(), symbol="TRUMP_USDT", auto_start_feed=False)
+        masterplan = MasterplanStrategy(market=MagicMock(), sub_strategy=sub_strat)
+
+        sub_strat.trade_in_progress = True
+        self.assertTrue(sub_strat.trade_in_progress)
+
+        masterplan.on_trade_rejected()
+        self.assertFalse(sub_strat.trade_in_progress)
 
 
 if __name__ == "__main__":

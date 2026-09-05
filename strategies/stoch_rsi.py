@@ -414,6 +414,10 @@ class StochasticRSIStrategy(BaseStrategy):
             int(self.cooldown_seconds)
         )
 
+    def on_trade_rejected(self) -> None:
+        """Resets trade_in_progress when candidate signal is suppressed by a regime filter."""
+        self.trade_in_progress = False
+
     def get_parameters(self) -> Dict[str, Any]:
         """Returns strategy configuration parameters for reporting and analytics."""
         return {

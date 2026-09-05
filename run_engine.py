@@ -516,6 +516,59 @@ def prompt_user_settings():
     except ValueError:
         max_val = default_max
 
+    # 10. Trade Optimization & Regime Filters
+    print("\n10. Trade Optimization & Regime Filters:")
+    print("   [1] Baseline / Disabled (Standard raw strategy execution) [Default]")
+    print("   [2] Enable Duration Time-Stop (Monitor >60s, Auto-Exit at 90s)")
+    print("   [3] Enable Full Institutional Safeguards (Duration + HTF 200 EMA + ADX + Hourly)")
+    print("   [4] Custom Filter Configuration")
+    filter_choice = input("   Select Filter Mode [default: 1 (Baseline / Disabled)]: ").strip()
+
+    dur_enabled = get_setting("DURATION_FILTER_ENABLED", False)
+    dur_deep_s = get_setting("DURATION_DEEP_MONITOR_SECONDS", 60.0)
+    dur_max_s = get_setting("DURATION_MAX_HOLD_SECONDS", 90.0)
+    dur_act = get_setting("DURATION_ACTION", "CLOSE")
+    adx_enabled = get_setting("ADX_FILTER_ENABLED", False)
+    adx_per = get_setting("ADX_PERIOD", 14)
+    adx_thresh = get_setting("ADX_THRESHOLD", 25.0)
+    htf_enabled = get_setting("HTF_TREND_FILTER_ENABLED", False)
+    htf_per = get_setting("HTF_EMA_PERIOD", 200)
+    htf_tf = get_setting("HTF_TIMEFRAME", "15m")
+    hourly_enabled = get_setting("HOURLY_FILTER_ENABLED", False)
+    hourly_bl = get_setting("HOURLY_BLACKLIST_UTC", [2, 3, 4, 5, 17])
+    dir_bias = get_setting("DIRECTION_BIAS", "BOTH")
+
+    if filter_choice == "2":
+        dur_enabled = True
+    elif filter_choice == "3":
+        dur_enabled = True
+        adx_enabled = True
+        htf_enabled = True
+        hourly_enabled = True
+        hourly_bl = [2, 3, 4, 5, 17]
+    elif filter_choice == "4":
+        d_in = input("   Enable Duration Filter? [y/N]: ").strip().lower()
+        if d_in in ("y", "yes", "1"):
+            dur_enabled = True
+            hold_in = input(f"   Max hold seconds [default: {dur_max_s}]: ").strip()
+            dur_max_s = float(hold_in) if hold_in else dur_max_s
+            act_in = input(f"   Action on timeout (CLOSE / SCRATCH_OR_MARKET / TIGHTEN_SL) [default: {dur_act}]: ").strip().upper()
+            dur_act = act_in if act_in in ("CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL") else dur_act
+        h_in = input("   Enable HTF 200 EMA Trend Filter? [y/N]: ").strip().lower()
+        if h_in in ("y", "yes", "1"):
+            htf_enabled = True
+        a_in = input("   Enable ADX Chop Filter? [y/N]: ").strip().lower()
+        if a_in in ("y", "yes", "1"):
+            adx_enabled = True
+        hr_in = input("   Enable Hourly Session Blacklist? [y/N]: ").strip().lower()
+        if hr_in in ("y", "yes", "1"):
+            hourly_enabled = True
+            bl_in = input("   Comma-separated UTC hours to block [default: 2,3,4,5,17]: ").strip()
+            hourly_bl = [int(x.strip()) for x in bl_in.split(",") if x.strip().isdigit()] if bl_in else [2, 3, 4, 5, 17]
+        bias_in = input(f"   Directional Bias (BOTH / LONG_ONLY / SHORT_ONLY) [default: {dir_bias}]: ").strip().upper()
+        if bias_in in ("LONG_ONLY", "SHORT_ONLY", "BOTH"):
+            dir_bias = bias_in
+
     print("=" * 78 + "\n")
 
     return ExecutionConfig(
@@ -552,19 +605,19 @@ def prompt_user_settings():
         stoch_interval=stoch_interval_val,
         stoch_zone_filter=stoch_zone_val,
         stoch_require_closed_candle=get_setting("STOCH_REQUIRE_CLOSED_CANDLE", True),
-        duration_filter_enabled=get_setting("DURATION_FILTER_ENABLED", False),
-        duration_deep_monitor_seconds=get_setting("DURATION_DEEP_MONITOR_SECONDS", 60.0),
-        duration_max_hold_seconds=get_setting("DURATION_MAX_HOLD_SECONDS", 90.0),
-        duration_action=get_setting("DURATION_ACTION", "CLOSE"),
-        adx_filter_enabled=get_setting("ADX_FILTER_ENABLED", False),
-        adx_period=get_setting("ADX_PERIOD", 14),
-        adx_threshold=get_setting("ADX_THRESHOLD", 25.0),
-        htf_trend_filter_enabled=get_setting("HTF_TREND_FILTER_ENABLED", False),
-        htf_timeframe=get_setting("HTF_TIMEFRAME", "15m"),
-        htf_ema_period=get_setting("HTF_EMA_PERIOD", 200),
-        hourly_filter_enabled=get_setting("HOURLY_FILTER_ENABLED", False),
-        hourly_blacklist_utc=get_setting("HOURLY_BLACKLIST_UTC", [2, 3, 4, 5, 17]),
-        direction_bias=get_setting("DIRECTION_BIAS", "BOTH"),
+        duration_filter_enabled=dur_enabled,
+        duration_deep_monitor_seconds=dur_deep_s,
+        duration_max_hold_seconds=dur_max_s,
+        duration_action=dur_act,
+        adx_filter_enabled=adx_enabled,
+        adx_period=adx_per,
+        adx_threshold=adx_thresh,
+        htf_trend_filter_enabled=htf_enabled,
+        htf_timeframe=htf_tf,
+        htf_ema_period=htf_per,
+        hourly_filter_enabled=hourly_enabled,
+        hourly_blacklist_utc=hourly_bl,
+        direction_bias=dir_bias,
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),

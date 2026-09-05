@@ -250,6 +250,10 @@ class TradeExecutionEngine:
         allowed, reject_reason = self.filter_pipeline.evaluate(signal, filter_candles, time.time())
         if not allowed:
             self.logger.info(f"[REGIME FILTER] Signal {signal.direction.value} suppressed: {reject_reason}")
+            if hasattr(self.strategy, "on_trade_rejected"):
+                self.strategy.on_trade_rejected()
+            elif hasattr(self.strategy.sub_strategy, "trade_in_progress"):
+                self.strategy.sub_strategy.trade_in_progress = False
             return None
 
         self.trade_counter += 1

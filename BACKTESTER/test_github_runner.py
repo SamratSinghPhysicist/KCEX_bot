@@ -83,6 +83,44 @@ class TestGitHubRunner(unittest.TestCase):
         self.assertEqual(runner.headers["Authorization"], "Bearer test_token_123")
         self.assertIn("Accept", runner.headers)
 
+    def test_workflow_inputs_generation_with_filters(self):
+        config = BacktestConfig(
+            symbol="TRUMP_USDT",
+            timeframe="1m",
+            strategy_mode="STOCH_RSI",
+            duration_filter_enabled=True,
+            duration_deep_monitor_seconds=45.0,
+            duration_max_hold_seconds=75.0,
+            duration_action="SCRATCH",
+            adx_filter_enabled=True,
+            adx_period=10,
+            adx_threshold=25.0,
+            htf_trend_filter_enabled=True,
+            htf_ema_period=100,
+            htf_timeframe="30m",
+            hourly_filter_enabled=True,
+            hourly_blacklist_utc=[0, 1, 23],
+            direction_bias="LONG_ONLY",
+            sl_price_pct=2.15
+        )
+        runner = GitHubBacktestRunner()
+        inputs = runner.build_workflow_inputs(config)
+
+        self.assertEqual(inputs["duration_filter"], "true")
+        self.assertEqual(inputs["duration_deep_monitor"], "45.0")
+        self.assertEqual(inputs["duration_max_hold"], "75.0")
+        self.assertEqual(inputs["duration_action"], "SCRATCH")
+        self.assertEqual(inputs["adx_filter"], "true")
+        self.assertEqual(inputs["adx_period"], "10")
+        self.assertEqual(inputs["adx_threshold"], "25.0")
+        self.assertEqual(inputs["htf_trend_filter"], "true")
+        self.assertEqual(inputs["htf_ema_period"], "100")
+        self.assertEqual(inputs["htf_timeframe"], "30m")
+        self.assertEqual(inputs["hourly_filter"], "true")
+        self.assertEqual(inputs["hourly_blacklist"], "0,1,23")
+        self.assertEqual(inputs["direction_bias"], "LONG_ONLY")
+        self.assertEqual(inputs["sl_price"], "2.15")
+
 
 if __name__ == "__main__":
     unittest.main()

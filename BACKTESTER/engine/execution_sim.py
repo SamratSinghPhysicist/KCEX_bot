@@ -239,14 +239,18 @@ class BacktestExecutionEngine:
                 if not self.strategy.sub_strategy.trade_in_progress:
                     signal = self.strategy.get_signal()
                     if signal:
-                        # Evaluate against Regime & Trend Filter Pipeline
-                        history_slice = candles[max(0, candle_idx - 250):candle_idx + 1]
+                        # Evaluate against Regime & Trend Filter Pipeline (with sufficient lookback for HTF resampling)
+                        history_slice = candles[max(0, candle_idx - 4000):candle_idx + 1]
                         allowed, reject_reason = self.filter_pipeline.evaluate(
                             signal=signal,
                             candles=history_slice,
                             current_time=sim_time_sec
                         )
                         if not allowed:
+                            if hasattr(self.strategy, "on_trade_rejected"):
+                                self.strategy.on_trade_rejected()
+                            elif hasattr(self.strategy.sub_strategy, "trade_in_progress"):
+                                self.strategy.sub_strategy.trade_in_progress = False
                             candle_idx += 1
                             continue
 

@@ -293,6 +293,13 @@ class MasterplanStrategy:
         """Notifies active sub-strategy when trade completes."""
         self.sub_strategy.on_trade_completed(outcome)
 
+    def on_trade_rejected(self) -> None:
+        """Notifies active sub-strategy when candidate trade signal is suppressed by a regime filter."""
+        if hasattr(self.sub_strategy, "on_trade_rejected"):
+            self.sub_strategy.on_trade_rejected()
+        elif hasattr(self.sub_strategy, "trade_in_progress"):
+            self.sub_strategy.trade_in_progress = False
+
     def start(self) -> None:
         """Starts sub-strategy resources (e.g. WebSocket feeds)."""
         self.sub_strategy.start()
