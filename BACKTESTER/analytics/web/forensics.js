@@ -56,6 +56,14 @@ class ForensicsController {
     this.tradeCounts = { all: 0, wins: 0, losses: 0, timeouts: 0, with_ticks: 0 };
     this.activeTradeFilter = "ALL";
     this.modalFilter = "ALL";
+
+    // Replay Live Executions & Positions
+    this.tradesByOpenSec = new Map();
+    this.tradesByCloseSec = new Map();
+    this.replayActivePosition = null;
+    this.revealedReplayMarkers = [];
+    this.bannerTimeout = null;
+    this.markerUpdateTimeout = null;
   }
 
   async init() {
@@ -79,7 +87,7 @@ class ForensicsController {
     if (tradeSelect) {
       tradeSelect.addEventListener("change", (e) => {
         this.activeTradeId = parseInt(e.target.value, 10);
-        this.loadTrade(this.activeRunId, this.activeTradeId);
+        this.loadTrade(this.activeRunId, this.activeTradeId, true);
       });
     }
 
@@ -90,10 +98,12 @@ class ForensicsController {
         btn.classList.add("active");
         this.activeTimeframe = btn.dataset.tf;
         if (this.activeRunId) {
+          this.showChartBlur(`Switching to ${this.activeTimeframe}...`);
           await this.loadRunCandles();
           if (this.activeTradeId) {
-            this.loadTrade(this.activeRunId, this.activeTradeId);
+            this.loadTrade(this.activeRunId, this.activeTradeId, false);
           }
+          this.hideChartBlur();
         }
       });
     });
@@ -201,6 +211,16 @@ class ForensicsController {
         this.renderAllTradesMarkers();
       });
     }
+
+    // Chart Viewport Navigation Controls
+    const btnFit = document.getElementById("btnFitChart");
+    if (btnFit) btnFit.addEventListener("click", () => this.fitChartContent());
+
+    const btnLatest = document.getElementById("btnScrollToLatest");
+    if (btnLatest) btnLatest.addEventListener("click", () => this.scrollToLatest());
+
+    const btnCenter = document.getElementById("btnCenterTrade");
+    if (btnCenter) btnCenter.addEventListener("click", () => this.centerSelectedTrade());
 
     // Chart Replay Mode Toggle
     const btnChartReplay = document.getElementById("btnChartReplay");
@@ -437,9 +457,160 @@ class ForensicsController {
       }
 
       this.updateLegendWithLatest();
+      this.scrollToLatest();
     } catch (e) {
       console.error("[!] Error loading run candles:", e);
     }
+  }
+
+  /* =========================================================================
+     Chart Viewport Navigation & Framing
+     ========================================================================= */
+
+  fitChartContent() {
+    if (!this.chart) return;
+    try {
+      this.chart.timeScale().fitContent();
+    } catch (e) {
+      console.warn("[!] fitContent warning:", e);
+    }
+  }
+
+  scrollToLatest() {
+    if (!this.chart || !this.fullCandleData || this.fullCandleData.length === 0) return;
+    const totalBars = this.fullCandleData.length;
+    try {
+      this.chart.timeScale().setVisibleLogicalRange({
+        from: Math.max(0, totalBars - 120),
+        to: totalBars + 6
+      });
+    } catch (e) {
+      console.warn("[!] scrollToLatest warning:", e);
+    }
+  }
+
+  centerSelectedTrade() {
+    if (this.tradeContext && this.tradeContext.trade) {
+      this.focusTradeOnChart(this.tradeContext.trade);
+    } else if (this.allTrades && this.allTrades.length > 0) {
+      this.focusTradeOnChart(this.allTrades[0]);
+    }
+  }
+
+  showChartBlur(title = "Loading Strategy Backtest...", subtitle = "Streaming OHLCV candlesticks & calculating indicators") {
+    const overlay = document.getElementById("chartSwitchingOverlay");
+    const tEl = document.getElementById("switchingTitle");
+    if (overlay) {
+      if (tEl) tEl.textContent = title;
+      overlay.classList.remove("fade-out");
+      overlay.style.display = "flex";
+    }
+  }
+
+  hideChartBlur() {
+    const overlay = document.getElementById("chartSwitchingOverlay");
+    if (overlay) {
+      overlay.classList.add("fade-out");
+      setTimeout(() => {
+        if (overlay.classList.contains("fade-out")) {
+          overlay.style.display = "none";
+        }
+      }, 300);
+    }
+  }
+
+  throttledUpdateMarkers() {
+    if (this.markerUpdateTimeout) return;
+    this.markerUpdateTimeout = setTimeout(() => {
+      this.markerUpdateTimeout = null;
+      if (this.showAllTrades && this.candleSeries && !this.isPlaying) {
+        const markers = this.buildTradeMarkers(this.tradeContext ? this.tradeContext.trade : null);
+        this.candleSeries.setMarkers(markers);
+      }
+    }, 120);
+  }
+
+  buildTradesTimeIndex() {
+    this.tradesByOpenSec = new Map();
+    this.tradesByCloseSec = new Map();
+
+    if (!this.allTrades || this.allTrades.length === 0) return;
+
+    for (const t of this.allTrades) {
+      if (!t.open_time_ms) continue;
+      const openSec = Math.floor(t.open_time_ms / 1000);
+      const closeSec = t.close_time_ms ? Math.floor(t.close_time_ms / 1000) : openSec + 60;
+
+      const openBar = Math.floor(openSec / 60) * 60;
+      const closeBar = Math.floor(closeSec / 60) * 60;
+
+      if (!this.tradesByOpenSec.has(openBar)) {
+        this.tradesByOpenSec.set(openBar, []);
+      }
+      this.tradesByOpenSec.get(openBar).push(t);
+
+      if (!this.tradesByCloseSec.has(closeBar)) {
+        this.tradesByCloseSec.set(closeBar, []);
+      }
+      this.tradesByCloseSec.get(closeBar).push(t);
+    }
+  }
+
+  showExecutionBanner(type, icon, text) {
+    const banner = document.getElementById("replayExecutionBanner");
+    const iconEl = document.getElementById("replayBannerIcon");
+    const textEl = document.getElementById("replayBannerText");
+    if (!banner) return;
+
+    if (iconEl) iconEl.textContent = icon;
+    if (textEl) textEl.textContent = text;
+    banner.className = `replay-execution-banner ${type}`;
+    banner.style.display = "flex";
+
+    if (this.bannerTimeout) clearTimeout(this.bannerTimeout);
+    this.bannerTimeout = setTimeout(() => {
+      if (banner) banner.style.display = "none";
+    }, 3800);
+  }
+
+  updateReplayPositionHUD(trade, candle) {
+    const hud = document.getElementById("replayPositionHUD");
+    const badgeEl = document.getElementById("replayPosBadge");
+    const infoEl = document.getElementById("replayPosInfo");
+    const pnlEl = document.getElementById("replayPosPnl");
+    const roeEl = document.getElementById("replayPosRoe");
+    if (!hud || !trade || !candle) return;
+
+    hud.style.display = "flex";
+    const isLong = trade.direction === "LONG";
+    if (badgeEl) {
+      badgeEl.textContent = `${trade.direction} #${trade.trade_id}`;
+      badgeEl.className = `pos-badge ${trade.direction.toLowerCase()}`;
+    }
+
+    if (infoEl) {
+      infoEl.textContent = `Entry: ${trade.entry_price} | Mark: ${candle.close.toFixed(4)}`;
+    }
+
+    const deltaPrice = (candle.close - trade.entry_price) * (isLong ? 1 : -1);
+    const leverage = trade.leverage || 75;
+    const roePct = trade.entry_price > 0 ? (deltaPrice / trade.entry_price) * 100 * leverage : 0;
+    const estPnl = deltaPrice * (trade.contracts || 1);
+
+    const sign = estPnl >= 0 ? "+" : "";
+    if (pnlEl) {
+      pnlEl.textContent = `${sign}${estPnl.toFixed(4)} USDT`;
+      pnlEl.style.color = estPnl >= 0 ? "#00f090" : "#ff3366";
+    }
+    if (roeEl) {
+      roeEl.textContent = `(${sign}${roePct.toFixed(2)}% ROE)`;
+      roeEl.style.color = estPnl >= 0 ? "#00f090" : "#ff3366";
+    }
+  }
+
+  hideReplayPositionHUD() {
+    const hud = document.getElementById("replayPositionHUD");
+    if (hud) hud.style.display = "none";
   }
 
   updateLegend(candle, fastEma, slowEma) {
@@ -512,6 +683,7 @@ class ForensicsController {
 
   async onRunChanged() {
     if (!this.activeRunId) return;
+    this.showChartBlur(`Loading ${this.activeRunId}...`);
 
     try {
       // 1. First load complete backtest date range candles & indicators
@@ -524,6 +696,7 @@ class ForensicsController {
 
       this.allTrades = data.trades || [];
       this.tradeCounts = data.counts || { all: 0, wins: 0, losses: 0, timeouts: 0, with_ticks: 0 };
+      this.buildTradesTimeIndex();
 
       // Update chip counts
       const elAll = document.getElementById("countAllTrades");
@@ -539,8 +712,13 @@ class ForensicsController {
       if (elTick) elTick.textContent = this.tradeCounts.with_ticks;
 
       this.applyTradeFilter(this.activeTradeFilter, true);
+
+      // Anchor viewport at the END DATE (recent candles) on initial load
+      this.scrollToLatest();
     } catch (e) {
       console.error("[!] Error loading all trades for run:", e);
+    } finally {
+      this.hideChartBlur();
     }
   }
 
@@ -592,7 +770,8 @@ class ForensicsController {
     const jumpInput = document.getElementById("jumpTradeInput");
     if (jumpInput) jumpInput.value = this.activeTradeId;
 
-    this.loadTrade(this.activeRunId, this.activeTradeId);
+    // When initializing run, don't auto-center chart on trade #1 (keeps end date visible)
+    this.loadTrade(this.activeRunId, this.activeTradeId, !isInitial);
   }
 
   stepTrade(delta) {
@@ -736,7 +915,7 @@ class ForensicsController {
     }
   }
 
-  async loadTrade(runId, tradeId) {
+  async loadTrade(runId, tradeId, autoCenter = true) {
     if (!runId || !tradeId) return;
     this.activeRunId = runId;
     this.activeTradeId = tradeId;
@@ -749,15 +928,17 @@ class ForensicsController {
     if (overlay) overlay.style.display = "flex";
 
     try {
-      const res = await fetch(`/api/forensics/trade/${runId}/${tradeId}?timeframe=${this.activeTimeframe}`);
+      const hasFullCandles = (this.fullCandleData && this.fullCandleData.length > 0);
+      const incParam = hasFullCandles ? "include_candles=false" : "include_candles=true";
+      const res = await fetch(`/api/forensics/trade/${runId}/${tradeId}?timeframe=${this.activeTimeframe}&${incParam}`);
       if (!res.ok) throw new Error(`Trade #${tradeId} context fetch failed: ${res.statusText}`);
       this.tradeContext = await res.json();
 
       // If full candle data is already loaded for the run, just overlay this trade
-      if (this.fullCandleData && this.fullCandleData.length > 0) {
-        this.renderTradeOverlay();
+      if (hasFullCandles) {
+        this.renderTradeOverlay(autoCenter);
       } else {
-        this.renderChartData();
+        this.renderChartData(autoCenter);
       }
 
       this.renderTradeInspector();
@@ -770,7 +951,7 @@ class ForensicsController {
     }
   }
 
-  renderChartData() {
+  renderChartData(autoCenter = true) {
     if (!this.tradeContext || !this.candleSeries) return;
     const { trade, candles, indicators } = this.tradeContext;
 
@@ -812,11 +993,11 @@ class ForensicsController {
       this.stochDSeries.setData(indicators.stoch_rsi.d || []);
     }
 
-    this.renderTradeOverlay();
+    this.renderTradeOverlay(autoCenter);
     this.updateLegendWithLatest();
   }
 
-  renderTradeOverlay() {
+  renderTradeOverlay(autoCenter = true) {
     if (!this.tradeContext || !this.candleSeries) return;
     const { trade } = this.tradeContext;
 
@@ -867,8 +1048,10 @@ class ForensicsController {
     const markers = this.buildTradeMarkers(trade);
     this.candleSeries.setMarkers(markers);
 
-    // Focus viewport on trade without discarding full backtest data
-    this.focusTradeOnChart(trade);
+    // Focus viewport on trade without discarding full backtest data if autoCenter requested
+    if (autoCenter) {
+      this.focusTradeOnChart(trade);
+    }
   }
 
   focusTradeOnChart(trade) {
@@ -893,63 +1076,79 @@ class ForensicsController {
    */
   buildTradeMarkers(activeTrade) {
     const markers = [];
-    const entryTimeSec = Math.floor(activeTrade.open_time_ms / 1000);
-    const exitTimeSec = Math.floor(activeTrade.close_time_ms / 1000);
-    const isLong = activeTrade.direction === "LONG";
 
-    // Active trade markers (prominent)
-    markers.push({
-      time: entryTimeSec,
-      position: isLong ? "belowBar" : "aboveBar",
-      color: "#00d2ff",
-      shape: isLong ? "arrowUp" : "arrowDown",
-      text: `${activeTrade.direction} ENTRY @ ${activeTrade.entry_price}`
-    });
+    if (activeTrade && activeTrade.open_time_ms) {
+      const entryTimeSec = Math.floor(activeTrade.open_time_ms / 1000);
+      const exitTimeSec = Math.floor(activeTrade.close_time_ms / 1000);
+      const isLong = activeTrade.direction === "LONG";
 
-    const isWin = activeTrade.realized_pnl_usdt > 0;
-    const isTimeout = activeTrade.exit_reason.includes("TIMEOUT");
-    const exitColor = isWin ? "#00f090" : (isTimeout ? "#ffb800" : "#ff3366");
+      // Active trade markers (prominent)
+      markers.push({
+        time: entryTimeSec,
+        position: isLong ? "belowBar" : "aboveBar",
+        color: "#00d2ff",
+        shape: isLong ? "arrowUp" : "arrowDown",
+        text: `${activeTrade.direction} ENTRY @ ${activeTrade.entry_price}`
+      });
 
-    markers.push({
-      time: exitTimeSec,
-      position: isLong ? "aboveBar" : "belowBar",
-      color: exitColor,
-      shape: "circle",
-      text: `EXIT: ${activeTrade.exit_reason} (${activeTrade.exit_price})`
-    });
+      const isWin = activeTrade.realized_pnl_usdt > 0;
+      const isTimeout = (activeTrade.exit_reason || "").includes("TIMEOUT");
+      const exitColor = isWin ? "#00f090" : (isTimeout ? "#ffb800" : "#ff3366");
 
-    // All-trades overlay markers (smaller, semi-transparent)
-    if (this.showAllTrades && this.allTrades.length > 0) {
-      const candleTimes = this.fullCandleData.map(c => c.time);
-      const minTime = candleTimes.length > 0 ? candleTimes[0] : 0;
-      const maxTime = candleTimes.length > 0 ? candleTimes[candleTimes.length - 1] : Infinity;
+      markers.push({
+        time: exitTimeSec,
+        position: isLong ? "aboveBar" : "belowBar",
+        color: exitColor,
+        shape: "circle",
+        text: `EXIT: ${activeTrade.exit_reason} (${activeTrade.exit_price})`
+      });
+    }
 
+    // All-trades overlay markers (virtualized by visible time range for smooth 60fps)
+    if (this.showAllTrades && this.allTrades && this.allTrades.length > 0) {
+      let minTime = 0;
+      let maxTime = Infinity;
+
+      if (this.chart) {
+        try {
+          const visRange = this.chart.timeScale().getVisibleRange();
+          if (visRange && visRange.from && visRange.to) {
+            const span = visRange.to - visRange.from;
+            minTime = visRange.from - span * 0.4;
+            maxTime = visRange.to + span * 0.4;
+          }
+        } catch (e) {}
+      }
+
+      let count = 0;
       for (const t of this.allTrades) {
-        if (t.trade_id === activeTrade.trade_id) continue; // skip active trade (already drawn)
+        if (activeTrade && t.trade_id === activeTrade.trade_id) continue;
         if (!t.open_time_ms || !t.close_time_ms) continue;
 
         const tEntrySec = Math.floor(t.open_time_ms / 1000);
         const tExitSec = Math.floor(t.close_time_ms / 1000);
 
-        // Only show trades whose timestamps fall within the visible candle range
-        if (tEntrySec < minTime || tEntrySec > maxTime) continue;
+        if ((tEntrySec < minTime || tEntrySec > maxTime) && (tExitSec < minTime || tExitSec > maxTime)) {
+          continue;
+        }
 
         const tIsLong = t.direction === "LONG";
         const tIsWin = t.pnl_usdt > 0;
         const tIsTimeout = (t.exit_reason || "").includes("TIMEOUT");
 
-        // Entry marker for this trade
-        markers.push({
-          time: tEntrySec,
-          position: tIsLong ? "belowBar" : "aboveBar",
-          color: tIsLong ? "rgba(0, 210, 255, 0.5)" : "rgba(199, 125, 255, 0.5)",
-          shape: tIsLong ? "arrowUp" : "arrowDown",
-          text: `#${t.trade_id} ${t.direction}`
-        });
+        if (tEntrySec >= minTime && tEntrySec <= maxTime) {
+          markers.push({
+            time: tEntrySec,
+            position: tIsLong ? "belowBar" : "aboveBar",
+            color: tIsLong ? "rgba(0, 210, 255, 0.55)" : "rgba(199, 125, 255, 0.55)",
+            shape: tIsLong ? "arrowUp" : "arrowDown",
+            text: `#${t.trade_id} ${t.direction}`
+          });
+          count++;
+        }
 
-        // Exit marker for this trade
         if (tExitSec >= minTime && tExitSec <= maxTime) {
-          const tExitColor = tIsWin ? "rgba(0, 240, 144, 0.5)" : (tIsTimeout ? "rgba(255, 184, 0, 0.5)" : "rgba(255, 51, 102, 0.5)");
+          const tExitColor = tIsWin ? "rgba(0, 240, 144, 0.55)" : (tIsTimeout ? "rgba(255, 184, 0, 0.55)" : "rgba(255, 51, 102, 0.55)");
           markers.push({
             time: tExitSec,
             position: tIsLong ? "aboveBar" : "belowBar",
@@ -957,7 +1156,10 @@ class ForensicsController {
             shape: "circle",
             text: `#${t.trade_id} ${t.exit_reason}`
           });
+          count++;
         }
+
+        if (count > 200) break;
       }
     }
 
@@ -1156,6 +1358,12 @@ class ForensicsController {
 
   resetReplay() {
     this.pauseReplay();
+    this.replayActivePosition = null;
+    this.hideReplayPositionHUD();
+    const banner = document.getElementById("replayExecutionBanner");
+    if (banner) banner.style.display = "none";
+    const lastEventText = document.getElementById("replayLastEventText");
+    if (lastEventText) lastEventText.textContent = "Replay Reset. Ready.";
 
     if (this.replayMode === "chart") {
       const resetIdx = this.getInitialReplayIndex();
@@ -1415,16 +1623,108 @@ class ForensicsController {
       this.updateLegend(currentCandle, curFast, curSlow);
     }
 
+    // --- Replay Trade Events & Live Position Tracking ---
+    const curTime = currentCandle ? currentCandle.time : 0;
+    const prevTime = upToIndex > 0 && this.fullCandleData[upToIndex - 1] ? this.fullCandleData[upToIndex - 1].time : (curTime - 60);
+
+    const openedTrades = [];
+    const closedTrades = [];
+    let activeTradeForBar = null;
+
+    // Check active inspected trade if present
+    if (this.tradeContext && this.tradeContext.trade) {
+      const t = this.tradeContext.trade;
+      const tOpenSec = Math.floor(t.open_time_ms / 1000);
+      const tCloseSec = Math.floor(t.close_time_ms / 1000);
+
+      if (tOpenSec > prevTime && tOpenSec <= curTime) {
+        openedTrades.push(t);
+      }
+      if (tCloseSec > prevTime && tCloseSec <= curTime) {
+        closedTrades.push(t);
+      }
+      if (curTime >= tOpenSec && curTime <= tCloseSec) {
+        activeTradeForBar = t;
+      }
+    }
+
+    // Also check global indexed trades across the entire backtest
+    if (this.tradesByOpenSec) {
+      for (const [openBar, trades] of this.tradesByOpenSec.entries()) {
+        if (openBar > prevTime && openBar <= curTime) {
+          for (const t of trades) {
+            if (!openedTrades.some(x => x.trade_id === t.trade_id)) openedTrades.push(t);
+          }
+        }
+      }
+    }
+    if (this.tradesByCloseSec) {
+      for (const [closeBar, trades] of this.tradesByCloseSec.entries()) {
+        if (closeBar > prevTime && closeBar <= curTime) {
+          for (const t of trades) {
+            if (!closedTrades.some(x => x.trade_id === t.trade_id)) closedTrades.push(t);
+          }
+        }
+      }
+    }
+
+    // Trigger Execution Notifications & Update Last Event Box
+    const lastEventText = document.getElementById("replayLastEventText");
+
+    for (const ot of openedTrades) {
+      this.showExecutionBanner("entry", "🔔", `ENTERED #${ot.trade_id} ${ot.direction} @ ${ot.entry_price}`);
+      if (lastEventText) {
+        lastEventText.innerHTML = `<span style="color: var(--accent-cyan); font-weight: 600;">🔔 Entered #${ot.trade_id} ${ot.direction} @ ${ot.entry_price}</span>`;
+      }
+      this.replayActivePosition = ot;
+    }
+
+    for (const ct of closedTrades) {
+      const pnlVal = ct.realized_pnl_usdt !== undefined ? ct.realized_pnl_usdt : (ct.pnl_usdt || 0);
+      const isWin = pnlVal > 0;
+      const sign = pnlVal >= 0 ? "+" : "";
+      const bannerType = isWin ? "win-exit" : "loss-exit";
+      const icon = isWin ? "🎯" : "🏁";
+      const pnlText = `${sign}${Number(pnlVal).toFixed(4)} USDT`;
+      this.showExecutionBanner(bannerType, icon, `CLOSED #${ct.trade_id} ${pnlText} (${ct.exit_reason || "EXIT"})`);
+      if (lastEventText) {
+        const color = isWin ? "var(--accent-green)" : "var(--accent-red)";
+        lastEventText.innerHTML = `<span style="color: ${color}; font-weight: 600;">${icon} Closed #${ct.trade_id} ${pnlText} (${ct.exit_reason || "EXIT"})</span>`;
+      }
+      if (this.replayActivePosition && this.replayActivePosition.trade_id === ct.trade_id) {
+        this.replayActivePosition = null;
+      }
+    }
+
+    // Determine active position for HUD (supporting scrub, jumps, and continuous play)
+    if (activeTradeForBar) {
+      this.replayActivePosition = activeTradeForBar;
+    } else if (this.allTrades && this.allTrades.length > 0 && !this.replayActivePosition) {
+      const matching = this.allTrades.find(t => {
+        const o = Math.floor(t.open_time_ms / 1000);
+        const c = Math.floor((t.close_time_ms || t.open_time_ms) / 1000);
+        return curTime >= o && curTime <= c;
+      });
+      if (matching) this.replayActivePosition = matching;
+    }
+
+    // Update or hide HUD
+    if (this.replayActivePosition && currentCandle) {
+      this.updateReplayPositionHUD(this.replayActivePosition, currentCandle);
+    } else {
+      this.hideReplayPositionHUD();
+    }
+
     // Build markers only for candles revealed so far
-    if (this.tradeContext) {
+    const markers = [];
+
+    if (this.tradeContext && this.tradeContext.trade) {
       const trade = this.tradeContext.trade;
       const entryTimeSec = Math.floor(trade.open_time_ms / 1000);
       const exitTimeSec = Math.floor(trade.close_time_ms / 1000);
-
-      const markers = [];
       const isLong = trade.direction === "LONG";
 
-      // Show entry marker only if we've revealed past it
+      // Show entry marker only if revealed past it
       if (maxTime >= entryTimeSec) {
         markers.push({
           time: entryTimeSec,
@@ -1435,10 +1735,11 @@ class ForensicsController {
         });
       }
 
-      // Show exit marker only if we've revealed past it
+      // Show exit marker only if revealed past it
       if (maxTime >= exitTimeSec) {
-        const isWin = trade.realized_pnl_usdt > 0;
-        const isTimeout = trade.exit_reason.includes("TIMEOUT");
+        const pnl = trade.realized_pnl_usdt !== undefined ? trade.realized_pnl_usdt : (trade.pnl_usdt || 0);
+        const isWin = pnl > 0;
+        const isTimeout = (trade.exit_reason || "").includes("TIMEOUT");
         const exitColor = isWin ? "#00f090" : (isTimeout ? "#ffb800" : "#ff3366");
         markers.push({
           time: exitTimeSec,
@@ -1448,10 +1749,48 @@ class ForensicsController {
           text: `EXIT: ${trade.exit_reason} (${trade.exit_price})`
         });
       }
-
-      markers.sort((a, b) => a.time - b.time);
-      this.candleSeries.setMarkers(markers);
     }
+
+    // Also include revealed markers for other trades if showAllTrades is active
+    if (this.showAllTrades && this.allTrades && this.allTrades.length > 0) {
+      const activeId = this.tradeContext ? this.tradeContext.trade.trade_id : -1;
+      let count = 0;
+      for (const t of this.allTrades) {
+        if (t.trade_id === activeId) continue;
+        const tOpenSec = Math.floor(t.open_time_ms / 1000);
+        const tCloseSec = Math.floor(t.close_time_ms / 1000);
+
+        if (maxTime >= tOpenSec) {
+          const tIsLong = t.direction === "LONG";
+          markers.push({
+            time: tOpenSec,
+            position: tIsLong ? "belowBar" : "aboveBar",
+            color: tIsLong ? "rgba(0, 210, 255, 0.55)" : "rgba(199, 125, 255, 0.55)",
+            shape: tIsLong ? "arrowUp" : "arrowDown",
+            text: `#${t.trade_id} ${t.direction}`
+          });
+          count++;
+        }
+
+        if (maxTime >= tCloseSec) {
+          const isWin = t.pnl_usdt > 0;
+          const isTimeout = (t.exit_reason || "").includes("TIMEOUT");
+          const exitColor = isWin ? "rgba(0, 240, 144, 0.55)" : (isTimeout ? "rgba(255, 184, 0, 0.55)" : "rgba(255, 51, 102, 0.55)");
+          markers.push({
+            time: tCloseSec,
+            position: t.direction === "LONG" ? "aboveBar" : "belowBar",
+            color: exitColor,
+            shape: "circle",
+            text: `#${t.trade_id} ${t.exit_reason}`
+          });
+          count++;
+        }
+        if (count > 200) break;
+      }
+    }
+
+    markers.sort((a, b) => a.time - b.time);
+    this.candleSeries.setMarkers(markers);
 
     // Update replay display info
     if (currentCandle && this.tradeContext) {
@@ -1505,6 +1844,13 @@ class ForensicsController {
     this.replayMode = "tick";
     this.chartReplayIndex = 0;
     this.scissorCutIndex = null;
+    this.replayActivePosition = null;
+    this.hideReplayPositionHUD();
+
+    const banner = document.getElementById("replayExecutionBanner");
+    if (banner) banner.style.display = "none";
+    const lastEventText = document.getElementById("replayLastEventText");
+    if (lastEventText) lastEventText.textContent = "Replay Stopped. Ready.";
 
     // Remove live price line
     if (this.chartReplayPriceLine) {

@@ -69,6 +69,7 @@ class ForensicsEngine:
         self.ohlcv_loader = OHLCVLoader(data_dir=self.ohlcv_dir)
         self.tick_streamer = TickTradeStreamer(data_dir=self.trades_dir)
         self._candles_cache = {}
+        self._ticks_cache = {}
 
     # =========================================================================
     # DATA CATALOG & DISCOVERY
@@ -448,12 +449,13 @@ class ForensicsEngine:
         timeframe: str = "1m",
         pad_candles_before: int = 80,
         pad_candles_after: int = 50,
-        full_backtest: bool = True
+        full_backtest: bool = False,
+        include_candles: bool = False
     ) -> Dict[str, Any]:
         """
         Extracts comprehensive forensic context for a single trade:
         - Exact trade parameters, prices, direction, outcome
-        - Surrounding candlestick slice with indicators
+        - Surrounding candlestick slice with indicators (optional, if include_candles=True)
         - Millisecond timestamps
         - High-resolution tick stream & MFE/MAE
         - Strategy and filter verification at entry
@@ -491,31 +493,32 @@ class ForensicsEngine:
         roe_pct = float(trade_raw.get("roe_percentage", 0.0))
         exit_reason = trade_raw.get("exit_reason", "UNKNOWN")
 
-        # 1. Load Candlesticks (Full backtest series if requested, fallback to local slice)
+        # 1. Load Candlesticks (only if include_candles requested by client)
         candles = []
         indicators = {}
-        if full_backtest:
-            try:
-                run_data = self.get_run_candles(run_id, timeframe=timeframe)
-                candles = run_data.get("candles", [])
-                indicators = run_data.get("indicators", {})
-            except Exception as e:
-                print(f"[!] Warning: Full run candle load fallback triggered: {e}")
+        if include_candles:
+            if full_backtest:
+                try:
+                    run_data = self.get_run_candles(run_id, timeframe=timeframe)
+                    candles = run_data.get("candles", [])
+                    indicators = run_data.get("indicators", {})
+                except Exception as e:
+                    print(f"[!] Warning: Full run candle load fallback triggered: {e}")
 
-        if not candles:
-            tf = normalize_timeframe(timeframe)
-            tf_sec = TF_SECONDS_MAP.get(tf, 60)
-            start_slice_ms = open_ms - (pad_candles_before * tf_sec * 1000)
-            end_slice_ms = close_ms + (pad_candles_after * tf_sec * 1000)
+            if not candles:
+                tf = normalize_timeframe(timeframe)
+                tf_sec = TF_SECONDS_MAP.get(tf, 60)
+                start_slice_ms = open_ms - (pad_candles_before * tf_sec * 1000)
+                end_slice_ms = close_ms + (pad_candles_after * tf_sec * 1000)
 
-            candles = self.get_candles(
-                symbol=symbol,
-                timeframe=tf,
-                start_ms=start_slice_ms,
-                end_ms=end_slice_ms,
-                limit=2000
-            )
-            indicators = self.calculate_indicators(candles, run.metadata.parameters)
+                candles = self.get_candles(
+                    symbol=symbol,
+                    timeframe=tf,
+                    start_ms=start_slice_ms,
+                    end_ms=end_slice_ms,
+                    limit=2000
+                )
+                indicators = self.calculate_indicators(candles, run.metadata.parameters)
 
         # 3. Strategy & Filter State Assessment
         strategy_state = {
@@ -626,6 +629,10 @@ class ForensicsEngine:
         Streams millisecond ticks for the trade lifecycle and post-exit observation.
         Computes exact MFE and MAE.
         """
+        cache_key = f"{symbol}:{entry_ms}:{exit_ms}:{direction}"
+        if cache_key in self._ticks_cache:
+            return self._ticks_cache[cache_key]
+
         post_exit_ms = exit_ms + int(post_exit_sec * 1000)
         start_fetch_ms = entry_ms - 2000  # 2s pre-entry
 
@@ -638,6 +645,8 @@ class ForensicsEngine:
             )
             for t in tick_gen:
                 raw_ticks.append(t)
+                if len(raw_ticks) >= max_return_ticks * 3:
+                    break
         except Exception as e:
             print(f"[!] Error streaming ticks for {symbol}: {e}")
 
@@ -813,7 +822,7 @@ class ForensicsEngine:
             })
             timeline.sort(key=lambda x: x["time_ms"])
 
-            return {
+            res = {
                 "has_ticks": True,
                 "is_synthetic": True,
                 "data_resolution": "1m CANDLE RESOLUTION",
@@ -822,6 +831,8 @@ class ForensicsEngine:
                 "mfe_mae": mfe_mae_summary,
                 "post_exit": post_exit_summary
             }
+            self._ticks_cache[cache_key] = res
+            return res
 
 
         # Divide into in-position ticks vs post-exit ticks
@@ -960,7 +971,7 @@ class ForensicsEngine:
                     "is_buyer_maker": t.is_buyer_maker
                 })
 
-        return {
+        res = {
             "has_ticks": True,
             "is_synthetic": False,
             "data_resolution": "HIGH-FIDELITY MILLISECOND TICKS",
@@ -969,6 +980,8 @@ class ForensicsEngine:
             "mfe_mae": mfe_mae_summary,
             "post_exit": post_exit_summary
         }
+        self._ticks_cache[cache_key] = res
+        return res
 
     # =========================================================================
     # WHAT-IF EXIT SIMULATION

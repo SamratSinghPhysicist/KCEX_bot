@@ -301,16 +301,18 @@ async def get_forensics_trade_context(
     trade_id: int,
     timeframe: str = Query("1m"),
     pad_before: int = Query(80, ge=20, le=300),
-    pad_after: int = Query(50, ge=10, le=200)
+    pad_after: int = Query(50, ge=10, le=200),
+    include_candles: bool = Query(False)
 ):
-    """Returns complete trade context, surrounding candles, indicators, ticks, MFE/MAE, and post-exit."""
+    """Returns complete trade context, surrounding candles (optional), ticks, MFE/MAE, and post-exit."""
     try:
         return forensics.get_trade_forensic_context(
             run_id=run_id,
             trade_id=trade_id,
             timeframe=timeframe,
             pad_candles_before=pad_before,
-            pad_candles_after=pad_after
+            pad_candles_after=pad_after,
+            include_candles=include_candles
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

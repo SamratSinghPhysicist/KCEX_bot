@@ -253,6 +253,10 @@
             <span class="readout-label">TO SL</span>
             <span class="readout-val mono text-loss" id="replayToSl">--</span>
           </div>
+          <div class="readout-metric" id="replayLastEventBox" style="min-width: 140px;">
+            <span class="readout-label">LAST EVENT</span>
+            <span class="readout-val mono" id="replayLastEventText" style="font-size: 0.72rem; color: var(--accent-cyan);">--</span>
+          </div>
         </div>
       </div>
 
@@ -279,11 +283,43 @@
                 <div class="legend-row-indicators" id="legendIndicatorsRow">--</div>
               </div>
 
+              <!-- Chart Viewport Controls (Top-Right: Fit, Latest, Center Trade) -->
+              <div class="chart-viewport-controls" id="chartViewportControls">
+                <button type="button" class="btn-chart-nav" id="btnFitChart" title="Auto Fit Entire Evaluation Period (TradingView Fit)">⛶ Fit View</button>
+                <button type="button" class="btn-chart-nav" id="btnScrollToLatest" title="Jump to Latest / End Date (Default View)">⏩ Latest</button>
+                <button type="button" class="btn-chart-nav" id="btnCenterTrade" title="Center on Active Trade">📍 Center Trade</button>
+              </div>
+
+              <!-- Live Replay Trade Execution Alert Banner -->
+              <div id="replayExecutionBanner" class="replay-execution-banner" style="display: none;">
+                <span class="banner-icon" id="replayBannerIcon">🔔</span>
+                <span class="banner-text" id="replayBannerText">ORDER EXECUTED</span>
+              </div>
+
+              <!-- Live Replay Active Position HUD -->
+              <div id="replayPositionHUD" class="replay-position-hud" style="display: none;">
+                <div class="pos-hud-left">
+                  <span class="pos-badge" id="replayPosBadge">LONG #--</span>
+                  <span class="pos-info" id="replayPosInfo">Entry: -- | Mark: --</span>
+                </div>
+                <div class="pos-hud-right">
+                  <span class="pos-pnl" id="replayPosPnl">-- USDT</span>
+                  <span class="pos-roe" id="replayPosRoe">(--%)</span>
+                </div>
+              </div>
+
               <!-- Replay Scissor Interactive Cut Preview Overlay -->
               <div id="scissorOverlayContainer" class="scissor-overlay-container" style="display: none;">
                 <div id="scissorDottedLine" class="scissor-dotted-line"></div>
                 <div id="scissorBlurMask" class="scissor-blur-mask"></div>
                 <div id="scissorTooltip" class="scissor-tooltip">✂️ Click to cut & replay from here</div>
+              </div>
+
+              <!-- Backtest Switching Glassmorphic Blur Overlay -->
+              <div id="chartSwitchingOverlay" class="chart-switching-overlay" style="display: none;">
+                <div class="switching-spinner"></div>
+                <div class="switching-title" id="switchingTitle">Loading Strategy Backtest...</div>
+                <div class="switching-subtitle">Streaming OHLCV candlesticks & calculating indicators</div>
               </div>
             </div>
             
