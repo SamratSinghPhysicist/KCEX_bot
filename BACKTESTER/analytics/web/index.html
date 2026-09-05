@@ -190,6 +190,11 @@
           <button class="btn btn-primary btn-sm" id="btnOpenAllTradesModal" title="Open Complete Trades Explorer Grid" style="margin-left: 0.5rem;">
             <span>📋</span> All Trades Explorer
           </button>
+          <label class="toggle-all-trades-label" title="Overlay all trade entry/exit markers on the chart">
+            <input type="checkbox" id="toggleShowAllTrades">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Show All Trades on Chart</span>
+          </label>
         </div>
       </div>
 
@@ -202,6 +207,8 @@
           <button class="btn btn-primary btn-sm" id="btnReplayPlay" title="Play Replay"><span>▶</span> Play</button>
           <button class="btn btn-warning btn-sm" id="btnReplayPause" style="display:none;" title="Pause Replay"><span>⏸</span> Pause</button>
           <button class="btn btn-secondary btn-sm" id="btnReplayStepFwd" title="Step +1 Tick"><span>▶</span></button>
+          <span class="replay-divider"></span>
+          <button class="btn btn-accent btn-sm" id="btnChartReplay" title="Live Chart Replay: progressively reveals candles like a live chart">▶ Chart Replay</button>
         </div>
 
         <!-- Scrub Slider Bar -->

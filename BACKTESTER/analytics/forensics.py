@@ -346,6 +346,13 @@ class ForensicsEngine:
                     if has_ticks:
                         counts["with_ticks"] += 1
 
+                    # Parse prices and timestamps for chart markers
+                    entry_p = float(row.get("entry_price", 0.0))
+                    exit_p = float(row.get("exit_price", 0.0))
+                    close_str = row.get("close_time", row.get("close_time_utc", "")).replace(" UTC", "")
+                    open_ms = parse_timestamp_ms(open_str) or 0
+                    close_ms = parse_timestamp_ms(close_str) or 0
+
                     trades.append({
                         "trade_id": tid,
                         "direction": direction,
@@ -355,7 +362,11 @@ class ForensicsEngine:
                         "duration_s": round(duration, 1),
                         "date": open_str.split(" ")[0] if open_str else "",
                         "time_utc": open_str,
-                        "has_ticks": has_ticks
+                        "has_ticks": has_ticks,
+                        "entry_price": round(entry_p, 6),
+                        "exit_price": round(exit_p, 6),
+                        "open_time_ms": open_ms,
+                        "close_time_ms": close_ms
                     })
                 except (ValueError, KeyError):
                     continue

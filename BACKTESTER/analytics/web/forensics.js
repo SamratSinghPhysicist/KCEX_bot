@@ -36,6 +36,15 @@ class ForensicsController {
     this.replaySpeed = 1.0;
     this.currentTickIndex = 0;
     this.replayInterval = null;
+    this.replayMode = "tick"; // "tick" = tick replay, "chart" = live chart replay
+    this.chartReplayIndex = 0; // for progressive candle reveal
+    this.chartReplayPriceLine = null; // live price line during chart replay
+    this.fullCandleData = []; // full candle data for chart replay
+    this.fullVolumeData = []; // full volume data for chart replay
+    this.fullIndicators = null; // full indicator data for chart replay
+    
+    // All-trades overlay
+    this.showAllTrades = false;
     
     this.catalog = null;
     this.allTrades = [];
@@ -175,6 +184,21 @@ class ForensicsController {
     const btnSimulate = document.getElementById("btnRunWhatIf");
     if (btnSimulate) {
       btnSimulate.addEventListener("click", () => this.runWhatIfSimulation());
+    }
+
+    // All Trades On Chart Toggle
+    const toggleAllTrades = document.getElementById("toggleShowAllTrades");
+    if (toggleAllTrades) {
+      toggleAllTrades.addEventListener("change", (e) => {
+        this.showAllTrades = e.target.checked;
+        this.renderAllTradesMarkers();
+      });
+    }
+
+    // Chart Replay Mode Toggle
+    const btnChartReplay = document.getElementById("btnChartReplay");
+    if (btnChartReplay) {
+      btnChartReplay.addEventListener("click", () => this.startChartReplay());
     }
   }
 
@@ -612,14 +636,18 @@ class ForensicsController {
     }));
     this.candleSeries.setData(candleData);
 
+    // Store full data for chart replay
+    this.fullCandleData = candleData;
+    this.fullVolumeData = (candles || []).map(c => ({
+      time: c.time,
+      value: c.volume,
+      color: c.close >= c.open ? "rgba(0, 240, 144, 0.25)" : "rgba(255, 51, 102, 0.25)"
+    }));
+    this.fullIndicators = indicators;
+
     // 2. Volumes
     if (this.volumeSeries) {
-      const volData = (candles || []).map(c => ({
-        time: c.time,
-        value: c.volume,
-        color: c.close >= c.open ? "rgba(0, 240, 144, 0.25)" : "rgba(255, 51, 102, 0.25)"
-      }));
-      this.volumeSeries.setData(volData);
+      this.volumeSeries.setData(this.fullVolumeData);
     }
 
     // 3. EMAs
@@ -639,6 +667,10 @@ class ForensicsController {
     // 5. Clean up old price lines
     this.priceLines.forEach(pl => this.candleSeries.removePriceLine(pl));
     this.priceLines = [];
+    if (this.chartReplayPriceLine) {
+      try { this.candleSeries.removePriceLine(this.chartReplayPriceLine); } catch(e) {}
+      this.chartReplayPriceLine = null;
+    }
 
     // 6. Draw Entry, TP, and SL Price Lines
     const entryLine = this.candleSeries.createPriceLine({
@@ -675,23 +707,37 @@ class ForensicsController {
       this.priceLines.push(slLine);
     }
 
-    // 7. Markers (Entry and Exit)
-    const entryTimeSec = Math.floor(trade.open_time_ms / 1000);
-    const exitTimeSec = Math.floor(trade.close_time_ms / 1000);
+    // 7. Build markers — current trade entry/exit + all trades overlay
+    const markers = this.buildTradeMarkers(trade);
+    this.candleSeries.setMarkers(markers);
 
-    const isLong = trade.direction === "LONG";
+    // Zoom chart centered on trade
+    if (this.chart) {
+      this.chart.timeScale().fitContent();
+    }
+  }
+
+  /**
+   * Builds a sorted array of chart markers including the active trade's
+   * entry/exit and optionally all other trades in the run.
+   */
+  buildTradeMarkers(activeTrade) {
     const markers = [];
+    const entryTimeSec = Math.floor(activeTrade.open_time_ms / 1000);
+    const exitTimeSec = Math.floor(activeTrade.close_time_ms / 1000);
+    const isLong = activeTrade.direction === "LONG";
 
+    // Active trade markers (prominent)
     markers.push({
       time: entryTimeSec,
       position: isLong ? "belowBar" : "aboveBar",
       color: "#00d2ff",
       shape: isLong ? "arrowUp" : "arrowDown",
-      text: `${trade.direction} ENTRY @ ${trade.entry_price}`
+      text: `${activeTrade.direction} ENTRY @ ${activeTrade.entry_price}`
     });
 
-    const isWin = trade.realized_pnl_usdt > 0;
-    const isTimeout = trade.exit_reason.includes("TIMEOUT");
+    const isWin = activeTrade.realized_pnl_usdt > 0;
+    const isTimeout = activeTrade.exit_reason.includes("TIMEOUT");
     const exitColor = isWin ? "#00f090" : (isTimeout ? "#ffb800" : "#ff3366");
 
     markers.push({
@@ -699,15 +745,64 @@ class ForensicsController {
       position: isLong ? "aboveBar" : "belowBar",
       color: exitColor,
       shape: "circle",
-      text: `EXIT: ${trade.exit_reason} (${trade.exit_price})`
+      text: `EXIT: ${activeTrade.exit_reason} (${activeTrade.exit_price})`
     });
 
-    this.candleSeries.setMarkers(markers);
+    // All-trades overlay markers (smaller, semi-transparent)
+    if (this.showAllTrades && this.allTrades.length > 0) {
+      const candleTimes = this.fullCandleData.map(c => c.time);
+      const minTime = candleTimes.length > 0 ? candleTimes[0] : 0;
+      const maxTime = candleTimes.length > 0 ? candleTimes[candleTimes.length - 1] : Infinity;
 
-    // Zoom chart centered on trade
-    if (this.chart) {
-      this.chart.timeScale().fitContent();
+      for (const t of this.allTrades) {
+        if (t.trade_id === activeTrade.trade_id) continue; // skip active trade (already drawn)
+        if (!t.open_time_ms || !t.close_time_ms) continue;
+
+        const tEntrySec = Math.floor(t.open_time_ms / 1000);
+        const tExitSec = Math.floor(t.close_time_ms / 1000);
+
+        // Only show trades whose timestamps fall within the visible candle range
+        if (tEntrySec < minTime || tEntrySec > maxTime) continue;
+
+        const tIsLong = t.direction === "LONG";
+        const tIsWin = t.pnl_usdt > 0;
+        const tIsTimeout = (t.exit_reason || "").includes("TIMEOUT");
+
+        // Entry marker for this trade
+        markers.push({
+          time: tEntrySec,
+          position: tIsLong ? "belowBar" : "aboveBar",
+          color: tIsLong ? "rgba(0, 210, 255, 0.5)" : "rgba(199, 125, 255, 0.5)",
+          shape: tIsLong ? "arrowUp" : "arrowDown",
+          text: `#${t.trade_id} ${t.direction}`
+        });
+
+        // Exit marker for this trade
+        if (tExitSec >= minTime && tExitSec <= maxTime) {
+          const tExitColor = tIsWin ? "rgba(0, 240, 144, 0.5)" : (tIsTimeout ? "rgba(255, 184, 0, 0.5)" : "rgba(255, 51, 102, 0.5)");
+          markers.push({
+            time: tExitSec,
+            position: tIsLong ? "aboveBar" : "belowBar",
+            color: tExitColor,
+            shape: "circle",
+            text: `#${t.trade_id} ${t.exit_reason}`
+          });
+        }
+      }
     }
+
+    // Lightweight Charts requires markers sorted by time
+    markers.sort((a, b) => a.time - b.time);
+    return markers;
+  }
+
+  /**
+   * Re-renders all-trade markers when toggle changes.
+   */
+  renderAllTradesMarkers() {
+    if (!this.tradeContext || !this.candleSeries) return;
+    const markers = this.buildTradeMarkers(this.tradeContext.trade);
+    this.candleSeries.setMarkers(markers);
   }
 
   renderTradeInspector() {
@@ -819,7 +914,7 @@ class ForensicsController {
   }
 
   // =========================================================================
-  // REPLAY ENGINE
+  // REPLAY ENGINE (Tick replay + Live Chart Replay)
   // =========================================================================
 
   initReplaySlider() {
@@ -830,10 +925,16 @@ class ForensicsController {
       slider.max = Math.max(0, ticks.length - 1);
       slider.value = 0;
     }
+    this.replayMode = "tick";
     this.updateReplayDisplay(0);
   }
 
   playReplay() {
+    if (this.replayMode === "chart") {
+      this.playChartReplay();
+      return;
+    }
+
     const ticks = (this.tradeContext && this.tradeContext.ticks) ? this.tradeContext.ticks : [];
     if (ticks.length === 0) return;
 
@@ -862,14 +963,34 @@ class ForensicsController {
     const btnPause = document.getElementById("btnReplayPause");
     if (btnPlay) btnPlay.style.display = "inline-flex";
     if (btnPause) btnPause.style.display = "none";
+
+    // Update chart replay button state
+    const btnChartReplay = document.getElementById("btnChartReplay");
+    if (btnChartReplay && this.replayMode === "chart") {
+      btnChartReplay.textContent = "▶ Chart Replay";
+      btnChartReplay.classList.remove("active-pulse");
+    }
   }
 
   resetReplay() {
     this.pauseReplay();
+
+    if (this.replayMode === "chart") {
+      this.stopChartReplay();
+      return;
+    }
+
     this.seekReplay(0);
   }
 
   stepReplay(delta) {
+    if (this.replayMode === "chart") {
+      this.pauseReplay();
+      this.chartReplayIndex = Math.max(0, Math.min(this.fullCandleData.length - 1, this.chartReplayIndex + delta));
+      this.renderChartReplayFrame(this.chartReplayIndex);
+      return;
+    }
+
     this.pauseReplay();
     const ticks = (this.tradeContext && this.tradeContext.ticks) ? this.tradeContext.ticks : [];
     if (ticks.length === 0) return;
@@ -878,6 +999,14 @@ class ForensicsController {
   }
 
   seekReplay(index) {
+    if (this.replayMode === "chart") {
+      this.chartReplayIndex = index;
+      const slider = document.getElementById("replayScrubSlider");
+      if (slider) slider.value = index;
+      this.renderChartReplayFrame(index);
+      return;
+    }
+
     this.currentTickIndex = index;
     const slider = document.getElementById("replayScrubSlider");
     if (slider) slider.value = index;
@@ -921,6 +1050,259 @@ class ForensicsController {
         inPosPill.className = "status-chip neutral";
       }
     }
+  }
+
+  // =========================================================================
+  // LIVE CHART REPLAY (TradingView-style progressive candle reveal)
+  // =========================================================================
+
+  /**
+   * Starts the live chart replay — clears the chart and progressively reveals
+   * candles one-by-one at the selected speed, creating a "live trading" effect.
+   */
+  startChartReplay() {
+    if (!this.fullCandleData || this.fullCandleData.length === 0) return;
+
+    // If already in chart replay mode and playing, just pause
+    if (this.replayMode === "chart" && this.isPlaying) {
+      this.pauseReplay();
+      return;
+    }
+
+    // If already in chart replay mode and paused, resume from current position
+    if (this.replayMode === "chart" && !this.isPlaying) {
+      this.playChartReplay();
+      return;
+    }
+
+    // Fresh start: switch to chart replay mode
+    this.pauseReplay();
+    this.replayMode = "chart";
+
+    // Find the candle index where the trade entry is (start replay a bit before)
+    const trade = this.tradeContext.trade;
+    const entryTimeSec = Math.floor(trade.open_time_ms / 1000);
+    let startIdx = 0;
+    for (let i = 0; i < this.fullCandleData.length; i++) {
+      if (this.fullCandleData[i].time >= entryTimeSec) {
+        startIdx = Math.max(0, i - 10); // 10 candles before entry
+        break;
+      }
+    }
+
+    // Show initial pre-trade candles
+    this.chartReplayIndex = startIdx;
+
+    // Update scrub slider to use candle count
+    const slider = document.getElementById("replayScrubSlider");
+    if (slider) {
+      slider.min = 0;
+      slider.max = this.fullCandleData.length - 1;
+      slider.value = startIdx;
+    }
+
+    // Render initial frame and start playing
+    this.renderChartReplayFrame(startIdx);
+    this.playChartReplay();
+
+    // Update button UI
+    const btnChartReplay = document.getElementById("btnChartReplay");
+    if (btnChartReplay) {
+      btnChartReplay.textContent = "⏸ Pause Replay";
+      btnChartReplay.classList.add("active-pulse");
+    }
+  }
+
+  /**
+   * Continues the chart replay animation from the current chartReplayIndex.
+   */
+  playChartReplay() {
+    this.isPlaying = true;
+
+    const btnPlay = document.getElementById("btnReplayPlay");
+    const btnPause = document.getElementById("btnReplayPause");
+    if (btnPlay) btnPlay.style.display = "none";
+    if (btnPause) btnPause.style.display = "inline-flex";
+
+    const btnChartReplay = document.getElementById("btnChartReplay");
+    if (btnChartReplay) {
+      btnChartReplay.textContent = "⏸ Pause Replay";
+      btnChartReplay.classList.add("active-pulse");
+    }
+
+    const stepMs = Math.max(30, Math.floor(200 / this.replaySpeed));
+    this.replayInterval = setInterval(() => {
+      if (this.chartReplayIndex >= this.fullCandleData.length - 1) {
+        this.pauseReplay();
+        // Restore full chart when replay ends
+        this.renderChartData();
+        return;
+      }
+      this.chartReplayIndex++;
+      this.renderChartReplayFrame(this.chartReplayIndex);
+
+      // Update scrub slider
+      const slider = document.getElementById("replayScrubSlider");
+      if (slider) slider.value = this.chartReplayIndex;
+    }, stepMs);
+  }
+
+  /**
+   * Renders the chart up to the given candle index, hiding all future candles.
+   * This creates the "live chart" effect where candles appear progressively.
+   */
+  renderChartReplayFrame(upToIndex) {
+    const slicedCandles = this.fullCandleData.slice(0, upToIndex + 1);
+    const slicedVolumes = this.fullVolumeData.slice(0, upToIndex + 1);
+
+    // Set candle + volume data up to current index
+    this.candleSeries.setData(slicedCandles);
+    if (this.volumeSeries) this.volumeSeries.setData(slicedVolumes);
+
+    const maxTime = slicedCandles[slicedCandles.length - 1]?.time || 0;
+
+    // Slice indicators to match
+    if (this.fullIndicators) {
+
+      if (this.fastEmaSeries && this.fullIndicators.ema_fast) {
+        this.fastEmaSeries.setData(this.fullIndicators.ema_fast.filter(d => d.time <= maxTime));
+      }
+      if (this.slowEmaSeries && this.fullIndicators.ema_slow) {
+        this.slowEmaSeries.setData(this.fullIndicators.ema_slow.filter(d => d.time <= maxTime));
+      }
+      if (this.stochKSeries && this.fullIndicators.stoch_rsi) {
+        this.stochKSeries.setData((this.fullIndicators.stoch_rsi.k || []).filter(d => d.time <= maxTime));
+        this.stochDSeries.setData((this.fullIndicators.stoch_rsi.d || []).filter(d => d.time <= maxTime));
+      }
+    }
+
+    // Moving live price line
+    const currentCandle = slicedCandles[slicedCandles.length - 1];
+    if (currentCandle) {
+      // Remove old live price line
+      if (this.chartReplayPriceLine) {
+        try { this.candleSeries.removePriceLine(this.chartReplayPriceLine); } catch(e) {}
+      }
+
+      this.chartReplayPriceLine = this.candleSeries.createPriceLine({
+        price: currentCandle.close,
+        color: currentCandle.close >= currentCandle.open ? "#00f090" : "#ff3366",
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: "LIVE"
+      });
+
+      // Keep the latest candle visible by scrolling
+      this.chart.timeScale().scrollToPosition(2, false);
+    }
+
+    // Build markers only for candles revealed so far
+    if (this.tradeContext) {
+      const trade = this.tradeContext.trade;
+      const entryTimeSec = Math.floor(trade.open_time_ms / 1000);
+      const exitTimeSec = Math.floor(trade.close_time_ms / 1000);
+
+      const markers = [];
+      const isLong = trade.direction === "LONG";
+
+      // Show entry marker only if we've revealed past it
+      if (maxTime >= entryTimeSec) {
+        markers.push({
+          time: entryTimeSec,
+          position: isLong ? "belowBar" : "aboveBar",
+          color: "#00d2ff",
+          shape: isLong ? "arrowUp" : "arrowDown",
+          text: `${trade.direction} ENTRY @ ${trade.entry_price}`
+        });
+      }
+
+      // Show exit marker only if we've revealed past it
+      if (maxTime >= exitTimeSec) {
+        const isWin = trade.realized_pnl_usdt > 0;
+        const isTimeout = trade.exit_reason.includes("TIMEOUT");
+        const exitColor = isWin ? "#00f090" : (isTimeout ? "#ffb800" : "#ff3366");
+        markers.push({
+          time: exitTimeSec,
+          position: isLong ? "aboveBar" : "belowBar",
+          color: exitColor,
+          shape: "circle",
+          text: `EXIT: ${trade.exit_reason} (${trade.exit_price})`
+        });
+      }
+
+      markers.sort((a, b) => a.time - b.time);
+      this.candleSeries.setMarkers(markers);
+    }
+
+    // Update replay display info
+    if (currentCandle && this.tradeContext) {
+      const trade = this.tradeContext.trade;
+      const elapsed = (currentCandle.time - Math.floor(trade.open_time_ms / 1000));
+      const priceEl = document.getElementById("replayCurrentPrice");
+      const elapsedEl = document.getElementById("replayElapsedSec");
+      if (priceEl) priceEl.textContent = currentCandle.close.toFixed(4);
+      if (elapsedEl) elapsedEl.textContent = `${elapsed}s`;
+
+      const isLong = trade.direction === "LONG";
+      const pu = this.tradeContext.strategy_state.price_unit || 0.0001;
+      const delta = isLong ? (currentCandle.close - trade.entry_price) : (trade.entry_price - currentCandle.close);
+      const deltaTicks = (delta / pu).toFixed(1);
+
+      const deltaEl = document.getElementById("replayCurrentDelta");
+      if (deltaEl) {
+        deltaEl.textContent = `${delta >= 0 ? "+" : ""}${deltaTicks} ticks`;
+        deltaEl.className = delta >= 0 ? "mono profit" : "mono loss";
+      }
+
+      const toTp = isLong ? (trade.tp_price - currentCandle.close) : (currentCandle.close - trade.tp_price);
+      const toSl = isLong ? (currentCandle.close - trade.sl_price) : (trade.sl_price - currentCandle.close);
+      const toTpEl = document.getElementById("replayToTp");
+      const toSlEl = document.getElementById("replayToSl");
+      if (toTpEl) toTpEl.textContent = `${(toTp / pu).toFixed(1)}t`;
+      if (toSlEl) toSlEl.textContent = `${(toSl / pu).toFixed(1)}t`;
+
+      const inPosPill = document.getElementById("replayInPositionPill");
+      if (inPosPill) {
+        const entryTimeSec = Math.floor(trade.open_time_ms / 1000);
+        const exitTimeSec = Math.floor(trade.close_time_ms / 1000);
+        if (currentCandle.time >= entryTimeSec && currentCandle.time <= exitTimeSec) {
+          inPosPill.textContent = "IN POSITION";
+          inPosPill.className = "status-chip active-pulse";
+        } else if (currentCandle.time < entryTimeSec) {
+          inPosPill.textContent = "PRE-ENTRY";
+          inPosPill.className = "status-chip neutral";
+        } else {
+          inPosPill.textContent = "POST-EXIT";
+          inPosPill.className = "status-chip neutral";
+        }
+      }
+    }
+  }
+
+  /**
+   * Stops chart replay and restores the full chart view.
+   */
+  stopChartReplay() {
+    this.replayMode = "tick";
+    this.chartReplayIndex = 0;
+
+    // Remove live price line
+    if (this.chartReplayPriceLine) {
+      try { this.candleSeries.removePriceLine(this.chartReplayPriceLine); } catch(e) {}
+      this.chartReplayPriceLine = null;
+    }
+
+    // Restore button
+    const btnChartReplay = document.getElementById("btnChartReplay");
+    if (btnChartReplay) {
+      btnChartReplay.textContent = "▶ Chart Replay";
+      btnChartReplay.classList.remove("active-pulse");
+    }
+
+    // Re-render full chart
+    this.renderChartData();
+    this.initReplaySlider();
   }
 
   // =========================================================================

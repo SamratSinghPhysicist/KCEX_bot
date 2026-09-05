@@ -1786,3 +1786,97 @@ body {
 }
 
 
+/* ===================================================================
+   ALL-TRADES-ON-CHART TOGGLE SWITCH
+   =================================================================== */
+
+.toggle-all-trades-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-left: 0.75rem;
+  user-select: none;
+}
+
+.toggle-all-trades-label input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.toggle-slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: all 0.25s ease;
+}
+
+.toggle-all-trades-label input[type="checkbox"]:checked + .toggle-slider {
+  background: rgba(0, 210, 255, 0.2);
+  border-color: var(--accent-cyan);
+}
+
+.toggle-all-trades-label input[type="checkbox"]:checked + .toggle-slider::after {
+  left: 18px;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 210, 255, 0.5);
+}
+
+.toggle-text {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+  transition: color 0.2s;
+}
+
+.toggle-all-trades-label input[type="checkbox"]:checked ~ .toggle-text {
+  color: var(--accent-cyan);
+}
+
+/* Chart Replay Button */
+.btn-accent {
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(199, 125, 255, 0.15));
+  border: 1px solid rgba(0, 210, 255, 0.5);
+  color: var(--accent-cyan);
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-accent:hover {
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.25), rgba(199, 125, 255, 0.25));
+  border-color: var(--accent-cyan);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
+}
+
+.btn-accent.active-pulse {
+  background: linear-gradient(135deg, rgba(0, 240, 144, 0.15), rgba(0, 210, 255, 0.15));
+  border-color: rgba(0, 240, 144, 0.6);
+  color: #00f090;
+  animation: pulseGreen 1.5s infinite;
+}
+
+/* Replay Divider */
+.replay-divider {
+  display: inline-block;
+  width: 1px;
+  height: 24px;
+  background: var(--border-subtle);
+  margin: 0 0.25rem;
+}
