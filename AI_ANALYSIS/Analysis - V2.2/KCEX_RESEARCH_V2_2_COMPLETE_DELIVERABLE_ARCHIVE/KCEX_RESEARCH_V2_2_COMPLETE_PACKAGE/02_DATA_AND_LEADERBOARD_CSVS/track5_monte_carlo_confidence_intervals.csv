@@ -1,0 +1,4 @@
+Profile_ID,Profile_Name,Asset,iterations,mean_pnl_usdt,median_pnl_usdt,p5_pnl_usdt,p95_pnl_usdt,p99_pnl_usdt,median_max_dd_pct,p95_max_dd_pct,p99_max_dd_pct,worst_case_max_dd_pct,var_95_usdt,cvar_99_usdt,prob_ruin_50_pct,prob_ruin_100_pct
+PROFILE_1_DOGE_RATCHET,DOGE Invert 5t/2t + Optimal Tick Ratchet,DOGE_USDT,10000,4.8725,4.8722,4.6588,5.0896,5.1792,0.012,0.016,0.019,0.026,-0.0,-4.5249,0.0,0.0
+PROFILE_2_DOGE_INV10t2t,DOGE Invert 10t/2t (High-Asymmetry Runner),DOGE_USDT,10000,2.572,2.5708,2.2396,2.9044,3.0508,0.045,0.064,0.076,0.113,-0.0,-2.0257,0.0,0.0
+PROFILE_3_TRUMP_BASE,TRUMP Direct 2t/25% ROE (High-Win-Rate Base),TRUMP_USDT,10000,1.2925,1.2916,1.0352,1.5516,1.6624,0.052,0.078,0.095,0.146,-0.0,-0.8709,0.0,0.0
