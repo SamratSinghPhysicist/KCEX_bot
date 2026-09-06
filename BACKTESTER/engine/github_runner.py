@@ -234,10 +234,11 @@ class GitHubBacktestRunner:
             "capital": str(config.initial_balance_usdt),
             "max_trades": str(config.max_trades),
             "slippage": str(config.slippage_ticks),
+            "invert_signal": "true" if getattr(config, "invert_signal", False) else "false",
             "filters_json": json.dumps(filters_dict)
         }
 
-    def dispatch_workflow(self, inputs: Dict[str, str], ref: str = "main") -> bool:
+    def dispatch_workflow(self, inputs: Dict[str, str], ref: str = "sandbox") -> bool:
         """Sends workflow_dispatch trigger to GitHub API."""
         url = f"{self.api_base}/actions/workflows/{self.WORKFLOW_FILENAME}/dispatches"
         payload = {
