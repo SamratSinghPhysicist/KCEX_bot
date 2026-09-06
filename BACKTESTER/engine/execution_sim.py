@@ -341,11 +341,14 @@ class BacktestExecutionEngine:
         # 1. Determine Entry Price (with slippage)
         # Entry happens at candle close (or next bar open)
         raw_entry = entry_candle.close
-        slippage = self.config.slippage_ticks * pu
+        is_maker = (getattr(self.config, "execution_style", "PURE_MARKET") == "MAKER_HYBRID") or (getattr(self.config, "order_type", "MARKET") == "LIMIT")
+        apply_slip = getattr(self.config, "slippage_enabled", False) or getattr(self.config, "slippage_ticks", 0) > 0
+        slippage_delta = (self.config.slippage_ticks * pu) if (apply_slip and not is_maker) else 0.0
+
         if direction == OrderDirection.LONG:
-            entry_price = round(raw_entry + slippage, ps)
+            entry_price = round(raw_entry + slippage_delta, ps)
         else:
-            entry_price = round(raw_entry - slippage, ps)
+            entry_price = round(raw_entry - slippage_delta, ps)
 
         # 2. Sizing & Margin
         min_vol = int(self.contract.min_volume)
@@ -381,6 +384,7 @@ class BacktestExecutionEngine:
             price_unit=pu,
             precision=ps
         )
+        initial_sl = exact_sl
 
         exit_price = entry_price
         exit_reason = ExitReason.UNKNOWN
@@ -401,33 +405,70 @@ class BacktestExecutionEngine:
             if self.config.use_tick_data:
                 tick_gen = self.tick_streamer.stream_ticks(self.symbol, start_ms=entry_ms)
                 for tick in tick_gen:
+                    # Phase V2.2 Champion Micro-Excursion Tick Ratchet
+                    if getattr(self.config, "ratchet_enabled", False):
+                        favorable_ticks = (tick.price - entry_price) / pu if direction == OrderDirection.LONG else (entry_price - tick.price) / pu
+                        elapsed_sec = (tick.timestamp_ms / 1000.0) - open_time_sec
+
+                        # Tier 1: Stalled >= 10s at >= +1.0t -> Tighten SL to -1 tick
+                        t1_trig = float(getattr(self.config, "ratchet_trigger_ticks", 1.0))
+                        t1_stall = float(getattr(self.config, "ratchet_stall_seconds", 10.0))
+                        t1_tight = float(getattr(self.config, "ratchet_tighten_ticks", 1.0))
+                        if favorable_ticks >= t1_trig and elapsed_sec >= t1_stall:
+                            new_sl = entry_price - (t1_tight * pu) if direction == OrderDirection.LONG else entry_price + (t1_tight * pu)
+                            if (direction == OrderDirection.LONG and new_sl > exact_sl) or (direction == OrderDirection.SHORT and new_sl < exact_sl):
+                                exact_sl = round(new_sl, ps)
+
+                        # Tier 2: Favorable excursion >= +2.5t -> Lock at Breakeven (0.0t)
+                        t2_trig = float(getattr(self.config, "ratchet_breakeven_ticks", 2.5))
+                        if favorable_ticks >= t2_trig:
+                            be_sl = round(entry_price, ps)
+                            if (direction == OrderDirection.LONG and be_sl > exact_sl) or (direction == OrderDirection.SHORT and be_sl < exact_sl):
+                                exact_sl = be_sl
+
                     if direction == OrderDirection.LONG:
-                        # TP hit
+                        # TP hit (Maker limit order fills at exact TP, 0 exit slippage)
                         if tick.price >= exact_tp:
                             exit_price = exact_tp
                             exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                             exit_time_sec = tick.timestamp_ms / 1000.0
                             hit_via_ticks = True
                             break
-                        # SL hit
+                        # SL hit (Market stop order crosses spread)
                         elif tick.price <= exact_sl:
                             exit_price = exact_sl
-                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
+                                exit_price = round(exact_sl - (self.config.slippage_ticks * pu), ps)
+
+                            if abs(exact_sl - entry_price) <= (0.2 * pu):
+                                exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                            elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                                exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                            else:
+                                exit_reason = ExitReason.STOP_LOSS_HIT
                             exit_time_sec = tick.timestamp_ms / 1000.0
                             hit_via_ticks = True
                             break
                     else: # SHORT
-                        # TP hit
+                        # TP hit (Maker limit order fills at exact TP, 0 exit slippage)
                         if tick.price <= exact_tp:
                             exit_price = exact_tp
                             exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                             exit_time_sec = tick.timestamp_ms / 1000.0
                             hit_via_ticks = True
                             break
-                        # SL hit
+                        # SL hit (Market stop order crosses spread)
                         elif tick.price >= exact_sl:
                             exit_price = exact_sl
-                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
+                                exit_price = round(exact_sl + (self.config.slippage_ticks * pu), ps)
+
+                            if abs(exact_sl - entry_price) <= (0.2 * pu):
+                                exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                            elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                                exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                            else:
+                                exit_reason = ExitReason.STOP_LOSS_HIT
                             exit_time_sec = tick.timestamp_ms / 1000.0
                             hit_via_ticks = True
                             break
@@ -485,6 +526,8 @@ class BacktestExecutionEngine:
                             break
                         elif c.low <= exact_sl:
                             exit_price = exact_sl
+                            if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
+                                exit_price = round(exact_sl - (self.config.slippage_ticks * pu), ps)
                             exit_reason = ExitReason.STOP_LOSS_HIT
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx
@@ -498,6 +541,8 @@ class BacktestExecutionEngine:
                             break
                         elif c.high >= exact_sl:
                             exit_price = exact_sl
+                            if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
+                                exit_price = round(exact_sl + (self.config.slippage_ticks * pu), ps)
                             exit_reason = ExitReason.STOP_LOSS_HIT
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx

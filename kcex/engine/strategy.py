@@ -101,6 +101,9 @@ class MasterplanStrategy:
                     max_atr_expansion=getattr(self.config, "smart_max_atr_expansion", 2.2),
                     ema_preset=getattr(self.config, "smart_ema_preset", getattr(self.config, "ema_preset", "5/13")),
                     stoch_preset=getattr(self.config, "smart_stoch_preset", getattr(self.config, "stoch_preset", "FAST_SCALP")),
+                    invert_signal=getattr(self.config, "invert_signal", False),
+                    dynamic_regime_fading=getattr(self.config, "dynamic_regime_fading", False),
+                    adx_fading_cutoff=getattr(self.config, "adx_fading_cutoff", 28.0)
                 )
             elif strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
                 self.sub_strategy = EMACrossoverStrategy(
@@ -130,7 +133,10 @@ class MasterplanStrategy:
                     preferred_direction=pref_dir,
                     cooldown_seconds=self.config.cooldown_seconds,
                     zone_filter=getattr(self.config, "stoch_zone_filter", True),
-                    require_closed_candle=getattr(self.config, "stoch_require_closed_candle", True)
+                    require_closed_candle=getattr(self.config, "stoch_require_closed_candle", True),
+                    invert_signal=getattr(self.config, "invert_signal", False),
+                    dynamic_regime_fading=getattr(self.config, "dynamic_regime_fading", False),
+                    adx_fading_cutoff=getattr(self.config, "adx_fading_cutoff", 28.0)
                 )
 
         self.name = "Masterplan"

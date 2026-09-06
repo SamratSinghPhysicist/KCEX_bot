@@ -103,8 +103,91 @@ def prompt_user_settings():
     print("=" * 78)
     print("💡 Tip: Press [Enter] on any prompt to accept the default from settings.py.\n")
 
-    # 1. Mode
-    print("1. Execution Mode:")
+    # 0. Quantitative Strategy Preset Selection
+    active_preset_name = get_setting("ACTIVE_PRESET", "DOGE_V2_2_RATCHET_CHAMPION").upper()
+    print("0. Strategy Preset Selection:")
+    print("   [1] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
+    print("   [2] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
+    print("   [3] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
+    print("   [4] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
+
+    def_preset_choice = "1"
+    if active_preset_name == "DOGE_ASYMMETRIC_MOMENTUM_10T2T":
+        def_preset_choice = "2"
+    elif active_preset_name == "TRUMP_LEGACY_BASELINE":
+        def_preset_choice = "3"
+    elif active_preset_name == "CUSTOM":
+        def_preset_choice = "4"
+
+    preset_choice = input(f"   Select Preset [default: {def_preset_choice} ({active_preset_name})]: ").strip()
+    if not preset_choice:
+        preset_choice = def_preset_choice
+
+    if preset_choice in ("1", "2", "3"):
+        preset_map = {
+            "1": "DOGE_V2_2_RATCHET_CHAMPION",
+            "2": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
+            "3": "TRUMP_LEGACY_BASELINE"
+        }
+        chosen_preset = preset_map[preset_choice]
+        preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
+        print(f"\n   ✅ Loaded Preset: {preset_cfg.get('name', chosen_preset)}")
+        print(f"      • Symbol: {preset_cfg.get('symbol')}")
+        print(f"      • Take Profit: +{preset_cfg.get('tp_ticks')} ticks | Stop Loss: {preset_cfg.get('sl_ticks')} ticks ({preset_cfg.get('sl_mode')})")
+        print(f"      • Signal Mode: {'INVERTED (Exhaustion Fading)' if preset_cfg.get('invert_signal') else 'DIRECT (Momentum)'}")
+        print(f"      • Execution Style: {preset_cfg.get('execution_style')}")
+        print(f"      • Tick Ratchet: {'ENABLED' if preset_cfg.get('ratchet_enabled') else 'DISABLED'}")
+
+        # Prompt for mode
+        print("\n1. Execution Mode:")
+        print("   [1] LIVE TRADING    -> Real orders submitted to KCEX using wallet balance.")
+        print("   [2] SIMULATED (Dry) -> Virtual orders with real-time live ticker data (0 risk).")
+        mode_str = input(f"   Select Mode [default: {'1 (LIVE)' if default_mode == 'live' else '2 (SIMULATED)'}]: ").strip()
+        mode_val = EngineMode.DRY_RUN if mode_str == "2" else (EngineMode.LIVE if mode_str == "1" else (EngineMode.LIVE if default_mode == "live" else EngineMode.DRY_RUN))
+
+        sym_p = preset_cfg.get("symbol", "DOGE_USDT")
+        v_mode, v_mult = ("MULTIPLIER", 1.0) if "DOGE" in sym_p else ("MULTIPLIER", 2.0)
+
+        print("=" * 78 + "\n")
+        return ExecutionConfig(
+            symbol=sym_p,
+            direction=OrderDirection.LONG,
+            mode=mode_val,
+            leverage=75,
+            is_isolated=True,
+            cooldown_seconds=default_cool,
+            volume_mode=v_mode,
+            volume_multiplier=v_mult,
+            tp_ticks=preset_cfg.get("tp_ticks", 5),
+            dynamic_tp=False,
+            sl_mode=preset_cfg.get("sl_mode", "TICKS"),
+            sl_ticks=preset_cfg.get("sl_ticks", 2),
+            sl_roe_pct=preset_cfg.get("sl_roe_pct", 25.0),
+            max_trades=default_max,
+            strategy_mode=preset_cfg.get("strategy_mode", "STOCH_RSI"),
+            bi_directional=True,
+            invert_signal=preset_cfg.get("invert_signal", True),
+            dynamic_regime_fading=preset_cfg.get("dynamic_regime_fading", False),
+            adx_fading_cutoff=preset_cfg.get("adx_fading_cutoff", 25.0),
+            execution_style=preset_cfg.get("execution_style", "MAKER_HYBRID"),
+            maker_queue_timeout_seconds=preset_cfg.get("maker_queue_timeout_seconds", 10.0),
+            resting_limit_tp=preset_cfg.get("resting_limit_tp", True),
+            ratchet_enabled=preset_cfg.get("ratchet_enabled", True),
+            ratchet_trigger_ticks=preset_cfg.get("ratchet_trigger_ticks", 1.0),
+            ratchet_stall_seconds=preset_cfg.get("ratchet_stall_seconds", 10.0),
+            ratchet_tighten_ticks=preset_cfg.get("ratchet_tighten_ticks", 1.0),
+            ratchet_breakeven_ticks=preset_cfg.get("ratchet_breakeven_ticks", 2.5),
+            slippage_enabled=preset_cfg.get("slippage_enabled", False),
+            slippage_ticks=preset_cfg.get("slippage_ticks", 0),
+            poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
+            logs_dir=get_setting("LOGS_DIR", "logs"),
+            realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
+            outcomes_log_file=get_setting("OUTCOMES_LOG_FILE", "trade_outcomes.txt"),
+            outcomes_jsonl_file=get_setting("OUTCOMES_JSONL_FILE", "trade_outcomes.jsonl")
+        )
+
+    # 1. Mode (Custom Manual Configuration)
+    print("\n1. Execution Mode:")
     print("   [1] LIVE TRADING    -> Real orders submitted to KCEX using wallet balance.")
     print("   [2] SIMULATED (Dry) -> Virtual orders with real-time live ticker data (0 risk).")
     mode_str = input(f"   Select Mode [default: {'1 (LIVE)' if default_mode == 'live' else '2 (SIMULATED)'}]: ").strip()
@@ -166,6 +249,11 @@ def prompt_user_settings():
     default_stoch_bi = get_setting("STOCH_BI_DIRECTIONAL", True)
     default_stoch_zone = get_setting("STOCH_ZONE_FILTER", True)
     default_dir = get_setting("DIRECTION", "LONG").upper()
+    invert_signal_val = get_setting("INVERT_SIGNAL", True)
+    execution_style_val = get_setting("EXECUTION_STYLE", "MAKER_HYBRID")
+    ratchet_enabled_val = get_setting("RATCHET_ENABLED", True)
+    slippage_enabled_val = get_setting("SLIPPAGE_ENABLED", False)
+    slippage_ticks_val = get_setting("SLIPPAGE_TICKS", 0)
 
     print("\n3. Strategy & Signal Engine:")
     print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8)")
@@ -315,6 +403,14 @@ def prompt_user_settings():
             bi_directional_val = True
             dir_val = OrderDirection.LONG
             print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG on oversold cross and SHORT on overbought cross).")
+
+        print("\n   Signal Direction Mode (Paradigm):")
+        print("   [1] DIRECT MOMENTUM            -> Oversold Long / Overbought Short [Default]")
+        print("   [2] INVERTED EXHAUSTION FADING  -> Overbought Long / Oversold Short (Phase V2.1/V2.2 Discovery)")
+        def_inv_choice = "2" if get_setting("INVERT_SIGNAL", True) else "1"
+        inv_str = input(f"   Select Signal Mode [default: {def_inv_choice}]: ").strip()
+        invert_signal_val = True if (inv_str in ("2", "inv", "inverted", "fading") or (not inv_str and def_inv_choice == "2")) else False
+        print(f"   ✓ Signal Mode: {'INVERTED (Exhaustion Fading)' if invert_signal_val else 'DIRECT (Momentum)'}")
 
     # 4. Trade Quantity / Volume
     if default_vol_mode == "CONTRACTS":
@@ -513,13 +609,52 @@ def prompt_user_settings():
                 sl_price_val = None
                 print(f"   ✓ Kept {lev_val}x leverage! Stop loss safely clamped to {max_safe_sl_ticks} ticks.")
 
-    # 7b. Order Execution Type & Slippage Protection
-    default_order_type = get_setting("ORDER_TYPE", "MARKET").upper()
-    print("\n7b. Order Execution Type & Slippage Protection:")
-    print("   [1] MARKET ORDER -> Immediate taker execution [Default]")
-    print("   [2] LIMIT ORDER  -> Post-Only Maker order at best bid/ask with timeout cancellation (Zero slippage)")
-    ot_str = input(f"   Select Order Type [default: {'1 (MARKET)' if default_order_type == 'MARKET' else '2 (LIMIT)'}]: ").strip()
-    order_type_val = "LIMIT" if ot_str in ("2", "LIMIT", "limit") else "MARKET"
+    # 7b. Order Execution Style, Ratchet & Slippage Protection
+    default_exec_style = get_setting("EXECUTION_STYLE", "MAKER_HYBRID").upper()
+    print("\n7b. Order Execution Style & Slippage Protection:")
+    print("   [1] MAKER_HYBRID -> Post-Only Maker limit at bid1/ask1 (10s timeout) + Resting Limit TP [Default]")
+    print("   [2] PURE_MARKET  -> Immediate taker execution")
+    def_exec_num = "1" if default_exec_style == "MAKER_HYBRID" else "2"
+    ot_str = input(f"   Select Execution Style [default: {def_exec_num} ({default_exec_style})]: ").strip()
+    if ot_str in ("2", "market", "pure_market"):
+        execution_style_val = "PURE_MARKET"
+        order_type_val = "MARKET"
+    else:
+        execution_style_val = "MAKER_HYBRID"
+        order_type_val = "LIMIT"
+
+    # Tick Ratchet
+    default_ratchet = get_setting("RATCHET_ENABLED", True)
+    print("\n   Phase V2.2 Champion Micro-Excursion Tick Ratchet:")
+    print("   • Dynamic in-position trailing protection based on millisecond excursion (MFE)")
+    print("   • Tier 1: When MFE >= +1.0t and position stalls >= 10s -> Tightens SL to -1.0t")
+    print("   • Tier 2: When MFE >= +2.5t -> Locks SL to Breakeven (0.0t)")
+    def_r_str = "Y/n" if default_ratchet else "y/N"
+    r_in = input(f"   Enable Tick Ratchet? [{def_r_str}]: ").strip().lower()
+    if r_in in ("y", "yes", "1"):
+        ratchet_enabled_val = True
+    elif r_in in ("n", "no", "0"):
+        ratchet_enabled_val = False
+    else:
+        ratchet_enabled_val = default_ratchet
+
+    # Slippage simulation (primarily for Dry-Run)
+    default_slip_en = get_setting("SLIPPAGE_ENABLED", False)
+    default_slip_t = get_setting("SLIPPAGE_TICKS", 0)
+    print("\n   Adverse Slippage Simulation Engine:")
+    print("   Simulates realistic microsecond spread crossing & queue latency penalties (useful in Dry-Run).")
+    def_slip_str = "Y/n" if default_slip_en else "y/N"
+    s_in = input(f"   Enable Adverse Slippage Engine? [{def_slip_str}]: ").strip().lower()
+    if s_in in ("y", "yes", "1"):
+        slippage_enabled_val = True
+        st_in = input(f"   Adverse slippage distance in ticks [default: {default_slip_t or 1}]: ").strip()
+        slippage_ticks_val = int(st_in) if st_in.isdigit() else (default_slip_t or 1)
+    elif s_in in ("n", "no", "0"):
+        slippage_enabled_val = False
+        slippage_ticks_val = 0
+    else:
+        slippage_enabled_val = default_slip_en
+        slippage_ticks_val = default_slip_t
 
     # 8. Cooldown
     print("\n8. Post-Trade Cooldown:")
@@ -654,6 +789,19 @@ def prompt_user_settings():
         smart_stoch_preset=get_setting("SMART_STOCH_PRESET", "FAST_SCALP"),
         smart_interval=get_setting("SMART_INTERVAL", "Min1"),
         smart_require_closed_candle=get_setting("SMART_REQUIRE_CLOSED_CANDLE", True),
+        invert_signal=invert_signal_val,
+        dynamic_regime_fading=get_setting("DYNAMIC_REGIME_FADING", False),
+        adx_fading_cutoff=get_setting("ADX_FADING_CUTOFF", 25.0),
+        execution_style=execution_style_val,
+        maker_queue_timeout_seconds=get_setting("MAKER_QUEUE_TIMEOUT_SECONDS", 10.0),
+        resting_limit_tp=(execution_style_val == "MAKER_HYBRID"),
+        ratchet_enabled=ratchet_enabled_val,
+        ratchet_trigger_ticks=get_setting("RATCHET_TRIGGER_TICKS", 1.0),
+        ratchet_stall_seconds=get_setting("RATCHET_STALL_SECONDS", 10.0),
+        ratchet_tighten_ticks=get_setting("RATCHET_TIGHTEN_TICKS", 1.0),
+        ratchet_breakeven_ticks=get_setting("RATCHET_BREAKEVEN_TICKS", 2.5),
+        slippage_enabled=slippage_enabled_val,
+        slippage_ticks=slippage_ticks_val,
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -997,6 +1145,88 @@ def parse_args():
         default=None,
         help="Enforce directional bias: BOTH, LONG_ONLY, or SHORT_ONLY"
     )
+    # Phase V2.1 & V2.2 Quantitative Research Presets & Toggles
+    parser.add_argument(
+        "--preset",
+        type=str,
+        default=None,
+        help="Strategy Preset: 'DOGE_V2_2_RATCHET_CHAMPION', 'DOGE_ASYMMETRIC_MOMENTUM_10T2T', 'TRUMP_LEGACY_BASELINE', or 'CUSTOM'"
+    )
+    parser.add_argument(
+        "--invert-signal",
+        action="store_true",
+        default=None,
+        help="Invert Stoch RSI signal direction (Exhaustion Fading mode)"
+    )
+    parser.add_argument(
+        "--no-invert-signal",
+        action="store_false",
+        dest="invert_signal",
+        help="Use direct Stoch RSI signal direction (Momentum Breakout mode)"
+    )
+    parser.add_argument(
+        "--ratchet",
+        action="store_true",
+        dest="ratchet_enabled",
+        default=None,
+        help="Enable Phase V2.2 Champion Micro-Excursion Tick Ratchet (+1.0t/10s -> -1t, +2.5t -> BE)"
+    )
+    parser.add_argument(
+        "--no-ratchet",
+        action="store_false",
+        dest="ratchet_enabled",
+        help="Disable Tick Ratchet trailing stop"
+    )
+    parser.add_argument(
+        "--ratchet-trigger-ticks",
+        type=float,
+        default=None,
+        help="MFE in ticks required for Ratchet Tier 1 tightening (default: 1.0)"
+    )
+    parser.add_argument(
+        "--ratchet-stall-seconds",
+        type=float,
+        default=None,
+        help="Hold duration stall in seconds for Ratchet Tier 1 tightening (default: 10.0)"
+    )
+    parser.add_argument(
+        "--ratchet-tighten-ticks",
+        type=float,
+        default=None,
+        help="Tightened SL distance in ticks (default: 1.0)"
+    )
+    parser.add_argument(
+        "--ratchet-breakeven-ticks",
+        type=float,
+        default=None,
+        help="MFE in ticks required for Ratchet Tier 2 Breakeven lock (default: 2.5)"
+    )
+    parser.add_argument(
+        "--execution-style",
+        type=str,
+        choices=["PURE_MARKET", "MAKER_HYBRID", "pure_market", "maker_hybrid"],
+        default=None,
+        help="Execution style: 'MAKER_HYBRID' (maker limit entry + resting TP) or 'PURE_MARKET' (taker)"
+    )
+    parser.add_argument(
+        "--enable-slippage",
+        action="store_true",
+        dest="slippage_enabled",
+        default=None,
+        help="Enable adverse order execution slippage engine"
+    )
+    parser.add_argument(
+        "--disable-slippage",
+        action="store_false",
+        dest="slippage_enabled",
+        help="Disable adverse order execution slippage engine"
+    )
+    parser.add_argument(
+        "--slippage-ticks",
+        type=int,
+        default=None,
+        help="Integer ticks of adverse friction (e.g. 1, 2, 3)"
+    )
     parser.add_argument(
         "--non-interactive",
         action="store_true",
@@ -1018,8 +1248,14 @@ def main():
         print_banner(EngineMode.LIVE if get_setting("MODE", "live") == "live" else EngineMode.DRY_RUN)
         config = prompt_user_settings()
     else:
-        # Read from flags or fall back to settings.py
-        sym = (args.symbol or get_setting("SYMBOL", "TRUMP_USDT")).upper()
+        # Resolve active strategy preset
+        active_preset_name = (args.preset or get_setting("ACTIVE_PRESET", "DOGE_V2_2_RATCHET_CHAMPION")).upper()
+        preset_cfg = {}
+        if hasattr(settings, "get_active_preset_config"):
+            preset_cfg = settings.get_active_preset_config(active_preset_name)
+
+        # Read from flags or fall back to preset / settings.py
+        sym = (args.symbol or preset_cfg.get("symbol") or get_setting("SYMBOL", "TRUMP_USDT")).upper()
         dir_raw = (args.direction or get_setting("DIRECTION", "LONG")).upper()
         mode_raw = (args.mode or get_setting("MODE", "live")).lower()
 
@@ -1040,7 +1276,7 @@ def main():
 
         vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 2) if vol_mode == "CONTRACTS" else None)
 
-        tp_ticks = args.tp_ticks if args.tp_ticks is not None else get_setting("TP_TICKS", 2)
+        tp_ticks = args.tp_ticks if args.tp_ticks is not None else (preset_cfg.get("tp_ticks") if "tp_ticks" in preset_cfg else get_setting("TP_TICKS", 2))
         if args.fixed_tp:
             dynamic_tp = False
         elif args.dynamic_tp:
@@ -1048,17 +1284,17 @@ def main():
         else:
             dynamic_tp = get_setting("DYNAMIC_TP", False)
 
-        sl_mode = (args.sl_mode or get_setting("SL_MODE", "ROE")).upper()
-        sl_ticks = args.sl_ticks if args.sl_ticks is not None else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None)
+        sl_mode = (args.sl_mode or preset_cfg.get("sl_mode") or get_setting("SL_MODE", "ROE")).upper()
+        sl_ticks = args.sl_ticks if args.sl_ticks is not None else (preset_cfg.get("sl_ticks") if "sl_ticks" in preset_cfg else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None))
         sl_price_pct = args.sl_price_pct if args.sl_price_pct is not None else (get_setting("SL_PRICE_PCT", 0.5) if sl_mode == "PRICE_PCT" else None)
-        sl_roe = args.sl_roe if args.sl_roe is not None else get_setting("SL_ROE_PCT", 25.0)
+        sl_roe = args.sl_roe if args.sl_roe is not None else (preset_cfg.get("sl_roe_pct") if "sl_roe_pct" in preset_cfg else get_setting("SL_ROE_PCT", 25.0))
 
         lev = args.leverage if args.leverage is not None else get_setting("LEVERAGE", 75)
         cooldown = args.cooldown if args.cooldown is not None else get_setting("COOLDOWN_SECONDS", 30.0)
         max_trades = args.max_trades if args.max_trades is not None else get_setting("MAX_TRADES", 3)
         poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.3)
 
-        strat_raw = (args.strategy or get_setting("STRATEGY_MODE", "STOCH_RSI")).upper()
+        strat_raw = (args.strategy or preset_cfg.get("strategy_mode") or get_setting("STRATEGY_MODE", "STOCH_RSI")).upper()
         if args.single_direction:
             bi_directional = False
         elif args.bi_directional:
@@ -1072,6 +1308,21 @@ def main():
                 bi_directional = True
             else:
                 bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
+
+        # Quantitative parameters resolution
+        inv_sig = args.invert_signal if args.invert_signal is not None else preset_cfg.get("invert_signal", get_setting("INVERT_SIGNAL", False))
+        dyn_fading = preset_cfg.get("dynamic_regime_fading", get_setting("DYNAMIC_REGIME_FADING", False))
+        adx_cutoff = preset_cfg.get("adx_fading_cutoff", get_setting("ADX_FADING_CUTOFF", 25.0))
+        exec_style = (args.execution_style or preset_cfg.get("execution_style") or get_setting("EXECUTION_STYLE", "PURE_MARKET")).upper()
+        maker_timeout = preset_cfg.get("maker_queue_timeout_seconds", get_setting("MAKER_QUEUE_TIMEOUT_SECONDS", 10.0))
+        resting_tp = preset_cfg.get("resting_limit_tp", get_setting("RESTING_LIMIT_TP", True))
+        ratch_en = args.ratchet_enabled if args.ratchet_enabled is not None else preset_cfg.get("ratchet_enabled", get_setting("RATCHET_ENABLED", False))
+        ratch_trig = args.ratchet_trigger_ticks if args.ratchet_trigger_ticks is not None else preset_cfg.get("ratchet_trigger_ticks", get_setting("RATCHET_TRIGGER_TICKS", 1.0))
+        ratch_stall = args.ratchet_stall_seconds if args.ratchet_stall_seconds is not None else preset_cfg.get("ratchet_stall_seconds", get_setting("RATCHET_STALL_SECONDS", 10.0))
+        ratch_tight = args.ratchet_tighten_ticks if args.ratchet_tighten_ticks is not None else preset_cfg.get("ratchet_tighten_ticks", get_setting("RATCHET_TIGHTEN_TICKS", 1.0))
+        ratch_be = args.ratchet_breakeven_ticks if args.ratchet_breakeven_ticks is not None else preset_cfg.get("ratchet_breakeven_ticks", get_setting("RATCHET_BREAKEVEN_TICKS", 2.5))
+        slip_en = args.slippage_enabled if args.slippage_enabled is not None else preset_cfg.get("slippage_enabled", get_setting("SLIPPAGE_ENABLED", False))
+        slip_ticks = args.slippage_ticks if args.slippage_ticks is not None else preset_cfg.get("slippage_ticks", get_setting("SLIPPAGE_TICKS", 0))
 
         ema_preset = args.ema_preset or get_setting("EMA_PRESET", "5/13")
         if ema_preset == "9/21":
@@ -1174,6 +1425,19 @@ def main():
             smart_stoch_preset=smart_stoch_preset_val,
             smart_interval=smart_interval_val,
             smart_require_closed_candle=smart_req_closed_val,
+            invert_signal=inv_sig,
+            dynamic_regime_fading=dyn_fading,
+            adx_fading_cutoff=adx_cutoff,
+            execution_style=exec_style,
+            maker_queue_timeout_seconds=maker_timeout,
+            resting_limit_tp=resting_tp,
+            ratchet_enabled=ratch_en,
+            ratchet_trigger_ticks=ratch_trig,
+            ratchet_stall_seconds=ratch_stall,
+            ratchet_tighten_ticks=ratch_tight,
+            ratchet_breakeven_ticks=ratch_be,
+            slippage_enabled=slip_en,
+            slippage_ticks=slip_ticks,
             duration_filter_enabled=args.duration_filter if args.duration_filter is not None else get_setting("DURATION_FILTER_ENABLED", False),
             duration_deep_monitor_seconds=args.duration_deep_monitor if args.duration_deep_monitor is not None else get_setting("DURATION_DEEP_MONITOR_SECONDS", 60.0),
             duration_max_hold_seconds=args.duration_max_hold if args.duration_max_hold is not None else get_setting("DURATION_MAX_HOLD_SECONDS", 90.0),
@@ -1269,8 +1533,25 @@ def main():
     print("==============================================================================")
     print("                      CONFIGURED ENGINE PARAMETERS")
     print("==============================================================================")
+    preset_label = f"{active_preset_name}" if "active_preset_name" in locals() else get_setting("ACTIVE_PRESET", "DOGE_V2_2_RATCHET_CHAMPION")
+    print(f"  • Strategy Preset   : {preset_label}")
     print(f"  • Symbol & Mode     : {config.symbol} | {config.mode.value.upper()} | Direction: {bias_desc}")
     print(f"  • Strategy Engine   : {strat_desc}")
+    sig_mode_str = "INVERTED (Exhaustion Fading)" if getattr(config, "invert_signal", False) else "DIRECT (Momentum)"
+    print(f"  • Signal Paradigm   : {sig_mode_str}")
+    print(f"  • Execution Style   : {getattr(config, 'execution_style', 'PURE_MARKET')}")
+    ratch_desc = (
+        f"ENABLED (T1: +{config.ratchet_trigger_ticks:g}t/{config.ratchet_stall_seconds:.0f}s -> -{config.ratchet_tighten_ticks:g}t, T2: +{config.ratchet_breakeven_ticks:g}t -> BE)"
+        if getattr(config, "ratchet_enabled", False)
+        else "DISABLED"
+    )
+    print(f"  • Tick Ratchet      : {ratch_desc}")
+    slip_desc = (
+        f"ENABLED ({config.slippage_ticks} ticks adverse)"
+        if (getattr(config, "slippage_enabled", False) and config.slippage_ticks > 0)
+        else "DISABLED (0 ticks)"
+    )
+    print(f"  • Slippage Engine   : {slip_desc}")
     print(f"  • Target Leverage   : {config.leverage}x isolated")
     print(f"  • Trade Quantity    : {vol_desc}")
     print(f"    ⚠️  CRITICAL NOTE : Trade Quantity (Volume) != Margin!")

@@ -210,6 +210,18 @@ class GitHubBacktestRunner:
         else:
             strat = "STOCH_RSI"
 
+        quant_dict = {
+            "invert_signal": bool(getattr(config, "invert_signal", False)),
+            "enable_slippage": bool(getattr(config, "slippage_enabled", False)),
+            "slippage_ticks": int(getattr(config, "slippage_ticks", 0)),
+            "ratchet": bool(getattr(config, "ratchet_enabled", False)),
+            "ratchet_trigger_ticks": float(getattr(config, "ratchet_trigger_ticks", 1.0)),
+            "ratchet_stall_seconds": float(getattr(config, "ratchet_stall_seconds", 10.0)),
+            "ratchet_tighten_ticks": float(getattr(config, "ratchet_tighten_ticks", 1.0)),
+            "ratchet_breakeven_ticks": float(getattr(config, "ratchet_breakeven_ticks", 2.5)),
+            "execution_style": str(getattr(config, "execution_style", "PURE_MARKET"))
+        }
+
         return {
             "symbol": sym,
             "timeframe": config.timeframe,
@@ -233,8 +245,8 @@ class GitHubBacktestRunner:
             "leverage": str(config.leverage),
             "capital": str(config.initial_balance_usdt),
             "max_trades": str(config.max_trades),
-            "slippage": str(config.slippage_ticks),
-            "filters_json": json.dumps(filters_dict)
+            "filters_json": json.dumps(filters_dict),
+            "quant_params_json": json.dumps(quant_dict)
         }
 
     def dispatch_workflow(self, inputs: Dict[str, str], ref: str = "main") -> bool:
@@ -479,6 +491,18 @@ class GitHubBacktestRunner:
         if filters.get("direction_bias", "BOTH") != "BOTH":
             regime_parts.append(f"Bias: {filters.get('direction_bias')}")
         print(f"Regime Filters:   {', '.join(regime_parts) if regime_parts else 'DISABLED (Baseline)'}")
+        quant = json.loads(inputs.get("quant_params_json", "{}")) if "quant_params_json" in inputs else {}
+        slip_str = f"ENABLED ({quant.get('slippage_ticks', 0)} ticks adverse)" if quant.get("enable_slippage") else "DISABLED (0 ticks)"
+        print(f"Slippage Engine:  {slip_str}")
+        sig_str = "INVERTED (Exhaustion Fading)" if quant.get("invert_signal") else "DIRECT (Momentum)"
+        print(f"Signal Paradigm:  {sig_str}")
+        ratch_str = (
+            f"ENABLED (T1: +{quant.get('ratchet_trigger_ticks', 1.0)}t/{quant.get('ratchet_stall_seconds', 10.0)}s -> -{quant.get('ratchet_tighten_ticks', 1.0)}t, T2: +{quant.get('ratchet_breakeven_ticks', 2.5)}t -> BE)"
+            if quant.get("ratchet")
+            else "DISABLED"
+        )
+        print(f"Tick Ratchet:     {ratch_str}")
+        print(f"Execution Style:  {quant.get('execution_style', 'PURE_MARKET')}")
         print(f"{Style.CYAN}{'='*78}{Style.RESET}\n")
 
         t_dispatch = time.time()

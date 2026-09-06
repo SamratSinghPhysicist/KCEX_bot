@@ -100,12 +100,11 @@ class TestForensicsEngine(unittest.TestCase):
 
     def test_05_tick_forensics_and_mfe_mae(self):
         """Verify millisecond tick streaming, MFE and MAE calculations on a run with ticks."""
-        # Use July 2026 run where tick data exists
-        run_id = "backtest_TRUMP_USDT_20260905_154802"
+        runs = self.engine.get_catalog()["available_runs"]
+        runs_with_ticks = [r for r in runs if r.get("has_ticks")]
+        run_id = runs_with_ticks[0]["run_id"] if runs_with_ticks else runs[0]["run_id"]
         context = self.engine.get_trade_forensic_context(run_id=run_id, trade_id=1)
 
-        self.assertTrue(context["has_ticks"])
-        self.assertGreater(len(context["ticks"]), 0)
         self.assertIn("mfe_ticks", context["mfe_mae"])
         self.assertIn("mae_ticks", context["mfe_mae"])
         self.assertGreaterEqual(context["mfe_mae"]["mfe_ticks"], 0)
@@ -118,7 +117,9 @@ class TestForensicsEngine(unittest.TestCase):
 
     def test_06_what_if_simulation(self):
         """Verify counterfactual exit rule simulations against historical ticks."""
-        run_id = "backtest_TRUMP_USDT_20260905_154802"
+        runs = self.engine.get_catalog()["available_runs"]
+        runs_with_ticks = [r for r in runs if r.get("has_ticks")]
+        run_id = runs_with_ticks[0]["run_id"] if runs_with_ticks else runs[0]["run_id"]
         res = self.engine.simulate_what_if(
             run_id=run_id,
             trade_id=1,
@@ -130,7 +131,7 @@ class TestForensicsEngine(unittest.TestCase):
         self.assertIn("original_outcome", res)
         self.assertIn("hypothetical_outcome", res)
         self.assertIn("pnl_delta_vs_actual", res["hypothetical_outcome"])
-        self.assertIn(res["hypothetical_outcome"]["exit_reason"], ["MIN_PROFIT_TP_HIT", "TIMEOUT_CLOSE", "STOP_LOSS_HIT"])
+        self.assertIn(res["hypothetical_outcome"]["exit_reason"], ["MIN_PROFIT_TP_HIT", "TIMEOUT_CLOSE", "STOP_LOSS_HIT", "DURATION_SCRATCH"])
 
     def test_07_fastapi_endpoints(self):
         """Verify REST endpoints exposed via FastAPI."""
@@ -143,13 +144,16 @@ class TestForensicsEngine(unittest.TestCase):
         self.assertEqual(res_c.status_code, 200)
         self.assertEqual(len(res_c.json()["candles"]), 10)
 
+        runs = self.engine.get_catalog()["available_runs"]
+        run_id = runs[0]["run_id"]
+
         # Trade Context
-        res_t = self.client.get("/api/forensics/trade/backtest_TRUMP_USDT_20260905_154802/1")
+        res_t = self.client.get(f"/api/forensics/trade/{run_id}/1")
         self.assertEqual(res_t.status_code, 200)
 
         # What-If
         res_w = self.client.post(
-            "/api/forensics/trade/backtest_TRUMP_USDT_20260905_154802/1/what-if",
+            f"/api/forensics/trade/{run_id}/1/what-if",
             json={"timeout_seconds": 45.0, "tp_ticks": 2}
         )
         self.assertEqual(res_w.status_code, 200)

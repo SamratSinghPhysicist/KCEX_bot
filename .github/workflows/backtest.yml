@@ -166,10 +166,10 @@ on:
         default: "0"
         type: string
 
-      slippage:
-        description: "Slippage in ticks"
+      quant_params_json:
+        description: "Quantitative Parameters JSON (inversion, ratchet, slippage, execution style)"
         required: false
-        default: "0"
+        default: "{}"
         type: string
 
       sl_price:
@@ -262,8 +262,8 @@ jobs:
             --leverage "${{ inputs.leverage }}" \
             --capital "${{ inputs.capital }}" \
             --max-trades "${{ inputs.max_trades }}" \
-            --slippage "${{ inputs.slippage }}" \
-            --filters-json '${{ inputs.filters_json }}'
+            --filters-json '${{ inputs.filters_json }}' \
+            --quant-params-json '${{ inputs.quant_params_json }}'
 
       - name: Publish Summary to GitHub Job Summary
         if: always()

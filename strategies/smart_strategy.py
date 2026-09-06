@@ -128,6 +128,10 @@ class SmartStrategy(BaseStrategy):
         stoch_oversold: float = 20.0,
         stoch_overbought: float = 80.0,
         stoch_zone_filter: bool = True,
+        # Phase V2.1 & V2.2 Quantitative Feature Toggles
+        invert_signal: bool = False,
+        dynamic_regime_fading: bool = False,
+        adx_fading_cutoff: float = 28.0,
     ):
         super().__init__(name="SmartStrategy")
         self.market = market
@@ -136,6 +140,9 @@ class SmartStrategy(BaseStrategy):
         self.preferred_direction = preferred_direction
         self.cooldown_seconds = cooldown_seconds
         self.require_closed_candle = require_closed_candle
+        self.invert_signal = invert_signal
+        self.dynamic_regime_fading = dynamic_regime_fading
+        self.adx_fading_cutoff = adx_fading_cutoff
 
         # Regime Gating Thresholds
         self.atr_filter_enabled = atr_filter_enabled
@@ -190,7 +197,10 @@ class SmartStrategy(BaseStrategy):
             cooldown_seconds=self.cooldown_seconds,
             zone_filter=stoch_zone_filter,
             require_closed_candle=self.require_closed_candle,
-            auto_start_feed=auto_start_feed
+            auto_start_feed=auto_start_feed,
+            invert_signal=self.invert_signal,
+            dynamic_regime_fading=self.dynamic_regime_fading,
+            adx_fading_cutoff=self.adx_fading_cutoff
         )
 
     def _refresh_contract_spec(self) -> None:

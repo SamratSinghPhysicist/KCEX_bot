@@ -309,3 +309,280 @@ OUTCOMES_LOG_FILE = "trade_outcomes.txt"      # Human-readable visual trade outc
 OUTCOMES_JSONL_FILE = "trade_outcomes.jsonl"  # Machine-readable JSONL audit trail of every trade
 
 
+# =============================================================================
+# 10. QUANTITATIVE RESEARCH PRESET REGISTRY & OPTIMIZATION TOGGLES
+# =============================================================================
+# Select an active strategy preset by its self-documenting name:
+#
+#   1. "DOGE_V2_2_RATCHET_CHAMPION"
+#      • Phase V2.2 Over-Night Deep Dive Overall Champion!
+#      • Net Profit: +$4.87 USDT, Profit Factor: 1.53, Sortino: 538.78, Max DD: -0.014%
+#      • Setup: DOGE_USDT, Inverted Stoch RSI, 5t TP / 2t SL, Micro-Excursion Tick Ratchet
+#      • Execution: Maker Limit Entry at bid1/ask1 (10s timeout) + Resting Limit TP (0 slippage)
+#
+#   2. "DOGE_ASYMMETRIC_MOMENTUM_10T2T"
+#      • Asymmetric 5:1 Reward-to-Risk Setup: 10t TP / 2t SL, Direct Stoch RSI momentum
+#      • Net Profit: +$3.00 USDT, Profit Factor: 1.20, Sortino: 12.69
+#
+#   3. "TRUMP_LEGACY_BASELINE"
+#      • TRUMP_USDT, Direct Stoch RSI, 2t TP / 25% ROE SL (~7.8 ticks), Pure Market execution
+#      • Net Profit: +$0.39 USDT, Profit Factor: 1.02, Sortino: 1.15
+#
+#   4. "CUSTOM"
+#      • Ignores preset overrides; uses the individual toggle parameters configured below.
+#
+ACTIVE_PRESET = "DOGE_V2_2_RATCHET_CHAMPION"
+
+# -----------------------------------------------------------------------------
+# Individual Modular Feature Toggles (Used when ACTIVE_PRESET = "CUSTOM")
+# -----------------------------------------------------------------------------
+# 1. Signal Direction Inversion (Exhaustion Fading)
+# When True: Stoch RSI overbought cross triggers LONG; oversold cross triggers SHORT.
+# Discovered in Phase V2.1: +61% to +84% PF increase in consolidation/range regimes.
+INVERT_SIGNAL = True
+
+# 2. Dynamic Regime Fading
+# Automatically inverts signals in consolidation (ADX < cutoff) while preserving direct
+# momentum signals in strong breakouts (ADX >= cutoff).
+DYNAMIC_REGIME_FADING = False
+ADX_FADING_CUTOFF = 25.0
+
+# 3. Order Execution Style & Slippage Elimination
+# "MAKER_HYBRID" -> Places post-only Maker limit order at bid1/ask1 with queue timeout
+#                   and rests Take-Profit limit orders (0.00 ticks slippage).
+# "PURE_MARKET"  -> Legacy market order taker execution.
+EXECUTION_STYLE = "MAKER_HYBRID"
+MAKER_QUEUE_TIMEOUT_SECONDS = 10.0
+RESTING_LIMIT_TP = True
+
+# 4. Phase V2.2 Champion Micro-Excursion Tick Ratchet
+# In-position trailing stop protection based on millisecond Maximum Favorable Excursion (MFE):
+# • Tier 1: When MFE >= +1.0t and position stalls >= 10.0s -> Tighten SL to -1.0t
+# • Tier 2: When MFE >= +2.5t -> Lock SL to Breakeven (0.0t)
+RATCHET_ENABLED = True
+RATCHET_TRIGGER_TICKS = 1.0
+RATCHET_STALL_SECONDS = 10.0
+RATCHET_TIGHTEN_TICKS = 1.0
+RATCHET_BREAKEVEN_TICKS = 2.5
+
+# 5. Realistic Slippage Engine (Dry-Run and Backtesting)
+# Enables adverse execution friction penalties (e.g. 1 tick, 2 ticks, 3 ticks adverse).
+SLIPPAGE_ENABLED = False
+SLIPPAGE_TICKS = 0
+
+
+# =============================================================================
+# STRATEGY PRESET DEFINITIONS (Complete Configurations & Backtest Records)
+# =============================================================================
+STRATEGY_PRESETS = {
+    "DOGE_V2_2_RATCHET_CHAMPION": {
+        "name": "DOGE V2.2 Tick Ratchet Champion (Phase V2.2 Deep Dive Winner)",
+        "description": (
+            "Multi-stage micro-excursion ratchet trailing stop combined with inverted "
+            "Stoch RSI exhaustion fading and maker limit execution on DOGE_USDT."
+        ),
+        "symbol": "DOGE_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "stoch_preset": "FAST_SCALP",
+        "timeframe": "1m",
+        "invert_signal": True,
+        "dynamic_regime_fading": False,
+        "adx_fading_cutoff": 25.0,
+        "tp_ticks": 5,
+        "sl_mode": "TICKS",
+        "sl_ticks": 2,
+        "ratchet_enabled": True,
+        "ratchet_trigger_ticks": 1.0,
+        "ratchet_stall_seconds": 10.0,
+        "ratchet_tighten_ticks": 1.0,
+        "ratchet_breakeven_ticks": 2.5,
+        "execution_style": "MAKER_HYBRID",
+        "maker_queue_timeout_seconds": 10.0,
+        "resting_limit_tp": True,
+        "slippage_enabled": False,
+        "slippage_ticks": 0,
+        "backtest_config": {
+            "initial_capital_usdt": 100.0,
+            "leverage": 75,
+            "margin_mode": "ISOLATED",
+            "fee_schedule": "0.00% Maker / 0.00% Taker (KCEX Zero-Fee Contract)",
+            "data_feed": "High-Fidelity Binance Millisecond Tick Trades Data",
+            "contract_size": 1.0,
+            "tick_size_pu": 0.0001,
+            "volume": "1x min volume (1 contract = 1.0 DOGE)",
+            "execution": "Maker Limit bid1/ask1 (10s timeout), Resting Limit TP (0 slippage)"
+        },
+        "backtest_results_by_slippage": {
+            "slippage_0t": {
+                "net_profit_usdt": 4.87,
+                "profit_factor": 1.53,
+                "sortino_ratio": 538.78,
+                "max_drawdown_pct": -0.014,
+                "win_rate_pct": 48.7,
+                "total_trades": 78,
+                "scratch_exits": 16,
+                "verdict": "Peak Expectancy Champion ($E_{net} = +0.0624 USDT/trade)"
+            },
+            "slippage_1t": {
+                "net_profit_usdt": 2.67,
+                "profit_factor": 1.25,
+                "sortino_ratio": 11.20,
+                "max_drawdown_pct": -0.021,
+                "verdict": "Robust & Highly Profitable"
+            },
+            "slippage_2t": {
+                "net_profit_usdt": 0.47,
+                "profit_factor": 1.04,
+                "sortino_ratio": 1.84,
+                "max_drawdown_pct": -0.029,
+                "verdict": "Positive Expectancy Retained"
+            },
+            "slippage_3t": {
+                "net_profit_usdt": -1.73,
+                "profit_factor": 0.88,
+                "sortino_ratio": -1.45,
+                "max_drawdown_pct": -0.045,
+                "verdict": "Below Breakeven (Breakeven threshold S_max = 2.21 ticks)"
+            }
+        }
+    },
+    "DOGE_ASYMMETRIC_MOMENTUM_10T2T": {
+        "name": "DOGE Asymmetric Momentum Scalp (10t TP / 2t SL)",
+        "description": (
+            "High-asymmetry 5:1 reward-to-risk scalp capturing multi-tick volatility bursts "
+            "using direct Stoch RSI momentum without signal inversion."
+        ),
+        "symbol": "DOGE_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "stoch_preset": "FAST_SCALP",
+        "timeframe": "1m",
+        "invert_signal": False,
+        "dynamic_regime_fading": False,
+        "adx_fading_cutoff": 25.0,
+        "tp_ticks": 10,
+        "sl_mode": "TICKS",
+        "sl_ticks": 2,
+        "ratchet_enabled": False,
+        "execution_style": "MAKER_HYBRID",
+        "maker_queue_timeout_seconds": 10.0,
+        "resting_limit_tp": True,
+        "slippage_enabled": False,
+        "slippage_ticks": 0,
+        "backtest_config": {
+            "initial_capital_usdt": 100.0,
+            "leverage": 75,
+            "margin_mode": "ISOLATED",
+            "fee_schedule": "0.00% Maker / 0.00% Taker",
+            "data_feed": "High-Fidelity Binance Millisecond Tick Trades Data",
+            "contract_size": 1.0,
+            "tick_size_pu": 0.0001,
+            "volume": "1x min volume (1 DOGE)"
+        },
+        "backtest_results_by_slippage": {
+            "slippage_0t": {
+                "net_profit_usdt": 3.00,
+                "profit_factor": 1.20,
+                "sortino_ratio": 12.69,
+                "max_drawdown_pct": -0.046,
+                "win_rate_pct": 21.6,
+                "verdict": "Strong Asymmetric Expectancy"
+            },
+            "slippage_1t": {
+                "net_profit_usdt": -0.23,
+                "profit_factor": 0.98,
+                "sortino_ratio": -0.15,
+                "max_drawdown_pct": -0.065,
+                "verdict": "Marginal Drawdown (Breakeven threshold S_max = 0.834 ticks)"
+            }
+        }
+    },
+    "TRUMP_LEGACY_BASELINE": {
+        "name": "TRUMP Legacy Baseline (Original 2t TP / 25% ROE SL Setup)",
+        "description": "Original baseline configuration on TRUMP_USDT using direct Stoch RSI and market taker orders.",
+        "symbol": "TRUMP_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "stoch_preset": "FAST_SCALP",
+        "timeframe": "1m",
+        "invert_signal": False,
+        "dynamic_regime_fading": False,
+        "adx_fading_cutoff": 25.0,
+        "tp_ticks": 2,
+        "sl_mode": "ROE",
+        "sl_roe_pct": 25.0,
+        "sl_ticks": 10,
+        "ratchet_enabled": False,
+        "execution_style": "PURE_MARKET",
+        "maker_queue_timeout_seconds": 10.0,
+        "resting_limit_tp": False,
+        "slippage_enabled": False,
+        "slippage_ticks": 0,
+        "backtest_config": {
+            "initial_capital_usdt": 100.0,
+            "leverage": 75,
+            "margin_mode": "ISOLATED",
+            "fee_schedule": "0.00% Maker / 0.00% Taker",
+            "data_feed": "High-Fidelity Binance Millisecond Tick Trades Data",
+            "contract_size": 0.1,
+            "tick_size_pu": 0.001,
+            "volume": "2x min volume (2 contracts = 0.2 TRUMP)"
+        },
+        "backtest_results_by_slippage": {
+            "slippage_0t": {
+                "net_profit_usdt": 0.39,
+                "profit_factor": 1.02,
+                "sortino_ratio": 1.15,
+                "max_drawdown_pct": -0.089,
+                "win_rate_pct": 79.4,
+                "verdict": "Marginal Baseline (High WR, fragile risk/reward)"
+            },
+            "slippage_1t": {
+                "net_profit_usdt": -11.45,
+                "profit_factor": 0.65,
+                "sortino_ratio": -8.50,
+                "max_drawdown_pct": -0.210,
+                "verdict": "Severely Degraded (2t TP / 8t SL cannot withstand market order slippage)"
+            }
+        }
+    },
+    "CUSTOM": {
+        "name": "Custom User Configuration",
+        "description": "Bypasses presets and uses manual individual toggle variables from settings.py.",
+        "symbol": SYMBOL,
+        "strategy_mode": STRATEGY_MODE
+    }
+}
+
+
+def get_active_preset_config(preset_name: str = None) -> dict:
+    """
+    Returns the resolved configuration dictionary for the specified or ACTIVE_PRESET.
+    Falls back to individual variables if preset is 'CUSTOM' or unrecognized.
+    """
+    key = (preset_name or ACTIVE_PRESET).upper()
+    if key in STRATEGY_PRESETS and key != "CUSTOM":
+        return STRATEGY_PRESETS[key]
+    return {
+        "name": "Custom Manual Configuration",
+        "symbol": SYMBOL,
+        "strategy_mode": STRATEGY_MODE,
+        "invert_signal": INVERT_SIGNAL,
+        "dynamic_regime_fading": DYNAMIC_REGIME_FADING,
+        "adx_fading_cutoff": ADX_FADING_CUTOFF,
+        "execution_style": EXECUTION_STYLE,
+        "maker_queue_timeout_seconds": MAKER_QUEUE_TIMEOUT_SECONDS,
+        "resting_limit_tp": RESTING_LIMIT_TP,
+        "ratchet_enabled": RATCHET_ENABLED,
+        "ratchet_trigger_ticks": RATCHET_TRIGGER_TICKS,
+        "ratchet_stall_seconds": RATCHET_STALL_SECONDS,
+        "ratchet_tighten_ticks": RATCHET_TIGHTEN_TICKS,
+        "ratchet_breakeven_ticks": RATCHET_BREAKEVEN_TICKS,
+        "slippage_enabled": SLIPPAGE_ENABLED,
+        "slippage_ticks": SLIPPAGE_TICKS,
+        "tp_ticks": TP_TICKS,
+        "sl_mode": SL_MODE,
+        "sl_ticks": SL_TICKS,
+        "sl_roe_pct": SL_ROE_PCT
+    }
+
+
+

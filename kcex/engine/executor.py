@@ -423,11 +423,12 @@ class TradeExecutionEngine:
         pu = contract.price_unit
         cs = contract.contract_size
         underlying_qty = vol_contracts * cs
-
+        exec_style = getattr(self.config, "execution_style", "PURE_MARKET") or "PURE_MARKET"
         order_type = getattr(self.config, "order_type", "MARKET") or "MARKET"
-        timeout_sec = getattr(self.config, "limit_order_timeout_seconds", 10.0)
+        is_maker = (str(exec_style).upper() == "MAKER_HYBRID") or (str(order_type).upper() == "LIMIT")
+        timeout_sec = getattr(self.config, "maker_queue_timeout_seconds", getattr(self.config, "limit_order_timeout_seconds", 10.0))
 
-        if str(order_type).upper() == "LIMIT":
+        if is_maker:
             ticker = self.market.get_ticker(symbol)
             last_price = float(ticker.get("lastPrice", 0.0) or 1.0)
             bid1 = float(ticker.get("bid1", 0.0) or last_price)
@@ -669,8 +670,11 @@ class TradeExecutionEngine:
         except Exception as e:
             self.logger.debug("Could not fetch balance after trade: %s", e)
 
-        fee_open_usdt = notional_usdt * contract.taker_fee_rate
-        fee_close_usdt = (underlying_qty * exit_price) * contract.taker_fee_rate
+        fee_open_rate = contract.maker_fee_rate if is_maker else contract.taker_fee_rate
+        is_tp_close = (exit_reason in (ExitReason.MIN_PROFIT_TP_HIT, ExitReason.IMMEDIATE_PROFIT_CLOSE) and getattr(self.config, "resting_limit_tp", False))
+        fee_close_rate = contract.maker_fee_rate if is_tp_close else contract.taker_fee_rate
+        fee_open_usdt = notional_usdt * fee_open_rate
+        fee_close_usdt = (underlying_qty * exit_price) * fee_close_rate
         fee_total_usdt = fee_open_usdt + fee_close_usdt
         fee_total_inr = fee_total_usdt * inr_rate
 
@@ -843,6 +847,7 @@ class TradeExecutionEngine:
         close_order_id = None
         last_seen_price = exact_tp
         exec_price = exact_tp
+        initial_sl = exact_sl
         deep_alert_logged = False
         monitor_start_time = open_time if open_time is not None else time.time()
 
@@ -879,6 +884,38 @@ class TradeExecutionEngine:
             except Exception as e:
                 self.logger.debug("Position check error: %s", e)
 
+            # -----------------------------------------------------------------
+            # Phase V2.2 Champion Micro-Excursion Tick Ratchet
+            # -----------------------------------------------------------------
+            if getattr(self.config, "ratchet_enabled", False) and entry_price is not None:
+                pu = (10 ** -precision)
+                favorable_ticks = (current_price - entry_price) / pu if direction == OrderDirection.LONG else (entry_price - current_price) / pu
+                elapsed_hold = time.time() - monitor_start_time
+
+                # Tier 1: Stalled >= 10s at >= +1.0 tick -> Tighten SL to -1.0 tick
+                t1_ticks = float(getattr(self.config, "ratchet_trigger_ticks", 1.0))
+                t1_stall = float(getattr(self.config, "ratchet_stall_seconds", 10.0))
+                tight_ticks = float(getattr(self.config, "ratchet_tighten_ticks", 1.0))
+                if favorable_ticks >= t1_ticks and elapsed_hold >= t1_stall:
+                    new_sl = entry_price - (tight_ticks * pu) if direction == OrderDirection.LONG else entry_price + (tight_ticks * pu)
+                    if (direction == OrderDirection.LONG and new_sl > exact_sl) or (direction == OrderDirection.SHORT and new_sl < exact_sl):
+                        exact_sl = round(new_sl, precision)
+                        self.logger.info(
+                            f"⚙️ [TICK RATCHET TIER 1] Excursion >= +{t1_ticks:g}t stalled >= {t1_stall:.0f}s. "
+                            f"Stop tightened to -{tight_ticks:g}t ({exact_sl:.{precision}f} USDT)."
+                        )
+
+                # Tier 2: Favorable excursion >= +2.5 ticks -> Lock at Breakeven (0.0 ticks)
+                t2_ticks = float(getattr(self.config, "ratchet_breakeven_ticks", 2.5))
+                if favorable_ticks >= t2_ticks:
+                    be_sl = round(entry_price, precision)
+                    if (direction == OrderDirection.LONG and be_sl > exact_sl) or (direction == OrderDirection.SHORT and be_sl < exact_sl):
+                        exact_sl = be_sl
+                        self.logger.info(
+                            f"🔒 [TICK RATCHET TIER 2] Excursion reached >= +{t2_ticks:g}t. "
+                            f"Stop locked at BREAKEVEN 0.0t ({exact_sl:.{precision}f} USDT). Position is risk-free."
+                        )
+
             # 3. Check if executable price reached Min-Profit TP (bid for LONG, ask for SHORT)
             exec_price = (bid1 if bid1 > 0 else current_price) if direction == OrderDirection.LONG else (ask1 if ask1 > 0 else current_price)
             if self.strategy.is_better_than_min_profit(direction, exec_price, exact_tp, entry_price=entry_price):
@@ -902,6 +939,40 @@ class TradeExecutionEngine:
                     return exec_price, ExitReason.IMMEDIATE_PROFIT_CLOSE, close_order_id
                 except Exception as e:
                     self.logger.warning("Market close error (position may already be closed by TP): %s", e)
+
+            # 3b. Check if dynamic Stop Loss was breached locally
+            sl_breached = (exec_price <= exact_sl) if direction == OrderDirection.LONG else (exec_price >= exact_sl)
+            if sl_breached:
+                # Distinguish between standard SL, ratchet tightened SL, and ratchet breakeven
+                pu = (10 ** -precision)
+                if abs(exact_sl - entry_price) <= (0.2 * pu):
+                    exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                    sl_label = "RATCHET BREAKEVEN"
+                elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                    exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                    sl_label = "RATCHET TIGHTENED SL"
+                else:
+                    exit_reason = ExitReason.STOP_LOSS_HIT
+                    sl_label = "STOP LOSS"
+
+                self.logger.warning(
+                    f"[{sl_label} HIT] Price reached stop at {exec_price:.{precision}f} USDT. Executing market close..."
+                )
+                try:
+                    res = self.trader.close_position(
+                        position_id=position_id or 0,
+                        symbol=symbol,
+                        side=side_str,
+                        vol_contracts=vol_contracts,
+                        leverage=leverage,
+                        is_isolated=self.config.is_isolated,
+                        is_market=True,
+                        price=exec_price
+                    )
+                    close_order_id = str(res.get("data", {}).get("orderId") or "")
+                    return exec_price, exit_reason, close_order_id
+                except Exception as e:
+                    self.logger.warning("Market close error on SL: %s", e)
 
             # 3. Check if position closed via server-side attached TP or SL
             try:
@@ -1005,8 +1076,11 @@ class TradeExecutionEngine:
         ask1 = float(ticker.get("ask1", 0.0) or last_price)
         bid1 = float(ticker.get("bid1", 0.0) or last_price)
 
+        exec_style = getattr(self.config, "execution_style", "PURE_MARKET") or "PURE_MARKET"
         order_type = getattr(self.config, "order_type", "MARKET") or "MARKET"
-        if str(order_type).upper() == "LIMIT":
+        is_maker = (str(exec_style).upper() == "MAKER_HYBRID") or (str(order_type).upper() == "LIMIT")
+
+        if is_maker:
             if direction == OrderDirection.LONG:
                 entry_price = bid1 if bid1 > 0 else last_price
             else:
@@ -1016,6 +1090,16 @@ class TradeExecutionEngine:
                 entry_price = ask1 if ask1 > 0 else last_price
             else:
                 entry_price = bid1 if bid1 > 0 else last_price
+
+        # Realistic Slippage Engine (Dry-Run Entry)
+        # Taker market entries incur adverse spread-crossing slippage
+        # Limit maker entries capture exact bid/ask quote with 0 slippage
+        if getattr(self.config, "slippage_enabled", False) and getattr(self.config, "slippage_ticks", 0) > 0 and not is_maker:
+            slip_delta = self.config.slippage_ticks * pu
+            entry_price = entry_price + slip_delta if direction == OrderDirection.LONG else entry_price - slip_delta
+            self.logger.info(
+                f"[DRY-RUN SLIPPAGE] Applied {self.config.slippage_ticks} tick(s) adverse entry penalty -> Fill: {entry_price:.{contract.price_precision}f} USDT"
+            )
 
         entry_price = round(entry_price, contract.price_precision)
 
@@ -1037,6 +1121,7 @@ class TradeExecutionEngine:
             price_unit=pu,
             precision=contract.price_precision
         )
+        initial_sl = exact_sl
 
         sl_desc = (
             f"-{self.config.sl_ticks} ticks" if self.config.sl_ticks
@@ -1047,11 +1132,11 @@ class TradeExecutionEngine:
         ps = contract.price_precision
         base_coin = contract.base_coin or symbol.split('_')[0]
 
+        exec_desc = "MAKER LIMIT QUEUE (0 Slippage Target)" if is_maker else "MARKET TAKER"
         self.logger.info(
-            f"[DRY-RUN] Simulated Order Filled: Entry = {entry_price:.{ps}f} USDT | "
+            f"[DRY-RUN] Simulated Order Filled ({exec_desc}): Entry = {entry_price:.{ps}f} USDT | "
             f"Min-Profit TP = {exact_tp:.{ps}f} USDT (+{effective_tp_ticks} pu) | SL = {exact_sl:.{ps}f} USDT ({sl_desc})"
         )
-
 
         # 2. Check immediate profit condition at fill
         if self.strategy.is_better_than_min_profit(direction, entry_price, exact_tp):
@@ -1084,10 +1169,41 @@ class TradeExecutionEngine:
                     self.logger.debug("Dry-run ticker fetch error: %s", e)
                     continue
 
+                # -----------------------------------------------------------------
+                # Phase V2.2 Champion Micro-Excursion Tick Ratchet (Dry-Run Mode)
+                # -----------------------------------------------------------------
+                if getattr(self.config, "ratchet_enabled", False):
+                    favorable_ticks = (cur_last - entry_price) / pu if direction == OrderDirection.LONG else (entry_price - cur_last) / pu
+                    elapsed_hold = time.time() - open_time
+
+                    # Tier 1: Stalled >= 10s at >= +1.0 tick -> Tighten SL to -1.0 tick
+                    t1_trig = float(getattr(self.config, "ratchet_trigger_ticks", 1.0))
+                    t1_stall = float(getattr(self.config, "ratchet_stall_seconds", 10.0))
+                    t1_tight = float(getattr(self.config, "ratchet_tighten_ticks", 1.0))
+                    if favorable_ticks >= t1_trig and elapsed_hold >= t1_stall:
+                        new_sl = entry_price - (t1_tight * pu) if direction == OrderDirection.LONG else entry_price + (t1_tight * pu)
+                        if (direction == OrderDirection.LONG and new_sl > exact_sl) or (direction == OrderDirection.SHORT and new_sl < exact_sl):
+                            exact_sl = round(new_sl, ps)
+                            self.logger.info(
+                                f"⚙️ [DRY-RUN TICK RATCHET TIER 1] Excursion >= +{t1_trig:g}t stalled >= {t1_stall:.0f}s. "
+                                f"Stop tightened to -{t1_tight:g}t ({exact_sl:.{ps}f} USDT)."
+                            )
+
+                    # Tier 2: Favorable excursion >= +2.5 ticks -> Lock SL at Breakeven (0.0 ticks)
+                    t2_trig = float(getattr(self.config, "ratchet_breakeven_ticks", 2.5))
+                    if favorable_ticks >= t2_trig:
+                        be_sl = round(entry_price, ps)
+                        if (direction == OrderDirection.LONG and be_sl > exact_sl) or (direction == OrderDirection.SHORT and be_sl < exact_sl):
+                            exact_sl = be_sl
+                            self.logger.info(
+                                f"🔒 [DRY-RUN TICK RATCHET TIER 2] Excursion reached >= +{t2_trig:g}t. "
+                                f"Stop locked at BREAKEVEN 0.0t ({exact_sl:.{ps}f} USDT). Position is risk-free."
+                            )
+
                 # For LONG: Close fills by selling at best bid (bid1) or last trade
                 if direction == OrderDirection.LONG:
                     effective_close_price = cur_bid
-                    # TP check
+                    # TP check (Resting Maker Limit TP fills at exact target)
                     if effective_close_price >= exact_tp or cur_last >= exact_tp:
                         exit_price = exact_tp
                         exit_reason = ExitReason.MIN_PROFIT_TP_HIT
@@ -1098,16 +1214,34 @@ class TradeExecutionEngine:
                     # SL check
                     elif effective_close_price <= exact_sl or cur_last <= exact_sl:
                         exit_price = exact_sl
-                        exit_reason = ExitReason.STOP_LOSS_HIT
+                        # Realistic Slippage on Market Stop-Loss Exits
+                        if getattr(self.config, "slippage_enabled", False) and getattr(self.config, "slippage_ticks", 0) > 0:
+                            slip_delta = self.config.slippage_ticks * pu
+                            exit_price = exact_sl - slip_delta
+                            exit_price = round(exit_price, ps)
+                            self.logger.info(
+                                f"[DRY-RUN SLIPPAGE] Applied {self.config.slippage_ticks} tick(s) adverse stop exit penalty -> Exit: {exit_price:.{ps}f} USDT"
+                            )
+
+                        if abs(exact_sl - entry_price) <= (0.2 * pu):
+                            exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                            label = "RATCHET BREAKEVEN"
+                        elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                            exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                            label = "RATCHET TIGHTENED SL"
+                        else:
+                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            label = "STOP LOSS"
+
                         self.logger.info(
-                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.{ps}f} USDT (Market Bid: {cur_bid:.{ps}f}, Last: {cur_last:.{ps}f})"
+                            f"[DRY-RUN {label} HIT] Market reached SL! Exit: {exit_price:.{ps}f} USDT"
                         )
                         break
 
                 # For SHORT: Close fills by buying back at best ask (ask1) or last trade
                 else:
                     effective_close_price = cur_ask
-                    # TP check
+                    # TP check (Resting Maker Limit TP fills at exact target)
                     if effective_close_price <= exact_tp or cur_last <= exact_tp:
                         exit_price = exact_tp
                         exit_reason = ExitReason.MIN_PROFIT_TP_HIT
@@ -1118,9 +1252,27 @@ class TradeExecutionEngine:
                     # SL check
                     elif effective_close_price >= exact_sl or cur_last >= exact_sl:
                         exit_price = exact_sl
-                        exit_reason = ExitReason.STOP_LOSS_HIT
+                        # Realistic Slippage on Market Stop-Loss Exits
+                        if getattr(self.config, "slippage_enabled", False) and getattr(self.config, "slippage_ticks", 0) > 0:
+                            slip_delta = self.config.slippage_ticks * pu
+                            exit_price = exact_sl + slip_delta
+                            exit_price = round(exit_price, ps)
+                            self.logger.info(
+                                f"[DRY-RUN SLIPPAGE] Applied {self.config.slippage_ticks} tick(s) adverse stop exit penalty -> Exit: {exit_price:.{ps}f} USDT"
+                            )
+
+                        if abs(exact_sl - entry_price) <= (0.2 * pu):
+                            exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                            label = "RATCHET BREAKEVEN"
+                        elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                            exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                            label = "RATCHET TIGHTENED SL"
+                        else:
+                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            label = "STOP LOSS"
+
                         self.logger.info(
-                            f"[DRY-RUN STOP LOSS HIT] Market reached SL! Exit: {exit_price:.{ps}f} USDT (Market Ask: {cur_ask:.{ps}f}, Last: {cur_last:.{ps}f})"
+                            f"[DRY-RUN {label} HIT] Market reached SL! Exit: {exit_price:.{ps}f} USDT"
                         )
                         break
 
@@ -1200,8 +1352,11 @@ class TradeExecutionEngine:
         margin_usdt = notional_usdt / leverage
         margin_inr = margin_usdt * inr_rate
 
-        fee_open_usdt = notional_usdt * contract.taker_fee_rate
-        fee_close_usdt = (underlying_qty * exit_price) * contract.taker_fee_rate
+        fee_open_rate = contract.maker_fee_rate if is_maker else contract.taker_fee_rate
+        is_tp_close = (exit_reason == ExitReason.MIN_PROFIT_TP_HIT and getattr(self.config, "resting_limit_tp", False))
+        fee_close_rate = contract.maker_fee_rate if is_tp_close else contract.taker_fee_rate
+        fee_open_usdt = notional_usdt * fee_open_rate
+        fee_close_usdt = (underlying_qty * exit_price) * fee_close_rate
         fee_total_usdt = fee_open_usdt + fee_close_usdt
         fee_total_inr = fee_total_usdt * inr_rate
 
