@@ -32,6 +32,12 @@ from strategies.filters import (
     compute_atr_series,
     compute_adx_series
 )
+from strategies.smart_strategy import (
+    SmartStrategy,
+    SmartSubStrategy,
+    MarketRegime,
+    compute_chop_series
+)
 
 __all__ = [
     "BaseStrategy",
@@ -45,6 +51,10 @@ __all__ = [
     "STOCH_RSI_PRESETS",
     "compute_rsi_series",
     "compute_stoch_rsi",
+    "SmartStrategy",
+    "SmartSubStrategy",
+    "MarketRegime",
+    "compute_chop_series",
     "BaseFilter",
     "HTFTrendFilter",
     "ADXRegimeFilter",

@@ -1,0 +1,307 @@
+I read all 11 documents in full. Here's the deep read — including a few things about the reports themselves that matter before you act on any of the numbers in them.
+
+## First: how much to trust these reports
+
+Good news: the raw trade counts mostly **do** reconcile. Weeks 1–6 + 7–12 + 13–36 sum to exactly 39,027 (the "full campaign" STOCH_RSI total), and EMA_CROSSOVER-baseline (18,175) + STOCH_RSI-baseline (39,027) = 57,202, matching the cross-strategy doc exactly. That's real internal consistency, which means the underlying backtest engine output is probably genuine, not invented wholesale.
+
+Two things to watch, though:
+
+1. **Small arithmetic slop inside individual docs.** The Week 1–6 report's prose says "the strategy executed 7,294 trades," but its own table sums to 7,543. The Week 7–12 table rows sum to 8,230 but the doc states 8,220. Minor, but it tells you these narrative "dossiers" weren't double-checked against the numbers they're built from — spot-check anything you plan to act on against your actual trade log/DB before trusting it to two decimal places.
+
+2. **The big one: every "Filtered Engine" / "Master Alpha Shield" performance table (PF 3.45–4.37, WR 89–92%) is a projection, not a re-run backtest.** No run ID, explicitly labeled "proposed"/"projected" in the text. These filters were built by reading exactly which historical trades failed and writing rules that would have excluded them — that's in-sample curve-fitting almost by definition. Real forward performance from these exact thresholds will very likely be worse. Treat those numbers as "best case if it works perfectly," not as an expectation.
+
+Everything below leans on the parts that are structurally sound regardless of the exact percentages — math I re-derived myself, and qualitative failure patterns that repeat identically across every report and every strategy variant.
+
+## The one finding that's true no matter what: your R:R isn't fixed, it's a function of price
+
+You're mixing a **fixed-tick target** (+2 ticks) with a **fixed-percent stop** (-25% ROE at 75x). I verified this independently — it's just arithmetic given your known parameters, not backtest-dependent:
+
+```
+sl_ticks = price × 0.25 / 75 / tick_size
+R        = tp_ticks / sl_ticks
+breakeven_WR = 1 / (1 + R)
+```
+
+That gives exactly what the reports show:
+
+Over your 8-month sample, TRUMP_USDT ran from ~$5.70 down to ~$1.40 and back — meaning your "one strategy" was actually operating at four very different breakeven hurdles at different points in the same backtest. That alone explains most of the week-to-week variance every report flagged. **This is the highest-leverage fix available, independent of any entry filter:** decouple TP/SL from raw price. Two ways to do it:
+
+- **Fix the stop in ticks, not %ROE** (e.g., always -8 ticks), so R:R only moves with volatility, not price level.
+- **Or scale your tick target with price** to hold R roughly constant — the code below includes `tp_ticks_for_target_r()`, which computes how many ticks you'd need at the current price to hold a target R (e.g. R≈0.45 → ~69% breakeven instead of 89% at $5, 71% at $1.45 — a much more stable hurdle across the whole price range).
+
+## Cross-cutting failure taxonomy (consistent across every report)
+
+| Failure mode | Share of losses (range across docs) | Mechanism | Fix |
+|---|---|---|---|
+| **Timeout drift** | 65–85% | Stalls at 0/+1 tick, no time-based exit, eventually drifts into full SL | Hard kill switch ~35–45s + breakeven-arm at +1 tick after ~15–20s |
+| **Counter-trend trap** | 11–18% (but 40–65% of $ damage) | Oscillator/cross taken against a strong prevailing trend (ADX high) | Block entries against 200 EMA direction when ADX ≥ ~26 |
+| **Chop whipsaw** | 5–12% | Low-ADX, high-CHOP range causes false crosses/oscillator noise | CHOP ceiling (~55–60) gate, esp. for EMA_CROSSOVER |
+| **Sub-ATR gridlock** | folded into timeout drift | +2 tick target exceeds typical candle range when ATR compresses | Minimum ATR floor (~2.5 ticks) before allowing entries |
+| **Volatility wick-out** | 2–4% | Spread/ATR spike sweeps the stop instantly | Max ATR-expansion-ratio circuit breaker |
+
+The exact thresholds vary doc to doc (ADX gate proposed anywhere from 24 to 30, CHOP ceiling 52–62, kill switch 35–50s) — that spread is itself informative: it means none of these were tightly pinned down, so treat them as starting ranges to tune, not optimized constants.
+
+## Per-strategy modifications
+
+**STOCH_RSI** — its edge is mean-reversion, so its failure mode is fighting trends. Every doc agrees: route it *only* into balanced-range regimes (ADX below the trend gate), veto entries when Stoch is already extreme in the direction that would fight ADX (long when Stoch > 85 in a downtrend context, short when Stoch < 15 in an uptrend context), and don't let it fire at all once ADX crosses into trend territory.
+
+**EMA_CROSSOVER** — its edge is trend continuation, so its failure mode is whipsaw in chop. Route it *only* into strong-trend regimes (ADX above gate, CHOP below ceiling), and add a minimum EMA fast/slow separation before accepting a cross — a "cross" on two EMAs that are basically flat and 0.3 ticks apart is noise, not a signal, and several docs' loss autopsies read exactly like that.
+
+**Combined/ensemble** — the "orthogonal" idea (EMA_CROSSOVER for trend, STOCH_RSI for range, both paused during compression/climax) is theoretically sound trading logic independent of the shaky stats behind it. It's worth pursuing, but it doubles your parameter surface (two strategies × regime thresholds), which means it's also easier to overfit — validate it more carefully than either strategy alone, not less.
+
+I put a consolidated, cleaned-up version of the pre-trade filter pipeline + in-trade lifecycle manager (regime classifier, both strategies' gating, the price-normalization helper, and a breakeven/kill-switch position manager) in the file above — thresholds pulled from the midpoints across all 11 docs, clearly marked as starting points. I ran the payoff math in it and confirmed it reproduces the reports' numbers exactly.
+
+## How to actually validate this before it touches real size
+
+1. Grab the raw trade log for one already-completed run (e.g. the STOCH_RSI no-filter run, `..._060642`) and recompute total trades/WR/PnL yourself with a 10-line pandas script. Confirm it matches the report before trusting anything built on top of it.
+2. Run the actual filter pipeline as code against that same historical data and get a real filtered trade set — compare it to the "3,842 trades / PF 4.37" projection. Expect it to be worse; that's normal, not a bug.
+3. Tune thresholds on one slice of history (say W01–W24) and score on a slice you didn't tune on (W25–W36) — the price swung from $5.70 to $1.40 and back, so make sure both halves span more than one volatility regime.
+4. Shadow-trade the finalized version before sizing up. 2-tick targets on a 75x book are extremely sensitive to fill assumptions a backtest can get subtly wrong even when the signal logic is correct.
+
+
+
+
+"""
+TRUMP_USDT / DOGE_USDT 1m Micro-Scalp — Consolidated Filter & Lifecycle Layer
+==============================================================================
+Synthesized from 11 backtest-analysis documents covering STOCH_RSI and
+EMA_CROSSOVER on TRUMP_USDT (75x isolated, TP +2 ticks, SL -25% ROE).
+
+IMPORTANT — READ BEFORE USING:
+This module encodes the *qualitative* mechanisms that showed up consistently
+across every report (timeout drift, counter-trend entries, sub-ATR gridlock,
+chop whipsaw, volatility wick-outs) and the *midpoints* of the threshold
+ranges those reports proposed. The reports' final "projected" performance
+numbers (PF 3.4-4.4, WR 89-92%) are NOT validated backtest results — they're
+estimates derived by reading which historical trades failed and writing
+rules that would have excluded them (in-sample). Real forward performance
+from these exact thresholds will very likely be worse than advertised.
+
+Before trusting this in size:
+  1. Re-run it as code against your own historical trade log and compare
+     to the *actual* filtered trade set, not the narrative projection.
+  2. Tune thresholds on one slice of history, validate on a slice you
+     didn't tune on (the underlying asset moved from ~$5.70 to ~$1.40
+     and back over the sample — make sure train/test each span more
+     than one volatility regime).
+  3. Shadow-trade before committing capital; 2-tick targets on a 75x
+     book are extremely sensitive to fill/slippage assumptions that a
+     backtest can get wrong even when the signal logic is right.
+"""
+
+from dataclasses import dataclass
+from enum import Enum
+from typing import Optional, Tuple
+
+
+# ---------------------------------------------------------------------------
+# 0. Price-dependent payoff math
+# ---------------------------------------------------------------------------
+# The strategy mixes a FIXED TICK target with a FIXED PERCENT-ROE stop. That
+# makes the realized reward:risk ratio a function of price alone:
+#
+#     target_ROE  = leverage * (tp_ticks * tick_size) / price
+#     sl_price_dx = price * sl_roe / leverage
+#     R           = (tp_ticks * tick_size) / sl_price_dx
+#     breakeven_WR = 1 / (1 + R)
+#
+# At price ~$5.00 this strategy needs an ~89% win rate to break even.
+# At price ~$1.45 it only needs ~71%. Every headline win-rate/PF number in
+# the reports is an average across several *different* R:R regimes.
+
+def payoff_ratio(price: float, tick_size: float, tp_ticks: float,
+                  sl_roe: float, leverage: float) -> Tuple[float, float, float]:
+    """Returns (sl_ticks, reward_to_risk_ratio, breakeven_win_rate)."""
+    sl_price_delta = price * sl_roe / leverage
+    sl_ticks = sl_price_delta / tick_size
+    tp_price_delta = tp_ticks * tick_size
+    r = tp_price_delta / sl_price_delta
+    breakeven_wr = 1.0 / (1.0 + r)
+    return sl_ticks, r, breakeven_wr
+
+
+def tp_ticks_for_target_r(price: float, tick_size: float, sl_roe: float,
+                           leverage: float, target_r: float = 0.45) -> int:
+    """
+    Fix: pick a TP tick-count that keeps R:R roughly constant as price
+    drifts, instead of hardcoding '2 ticks' for every price regime.
+    target_r=0.45 -> breakeven WR ~69%, a much less fragile hurdle than
+    the ~89% the fixed-2-tick design implies at $5.00.
+    """
+    sl_price_delta = price * sl_roe / leverage
+    ticks = (target_r * sl_price_delta) / tick_size
+    return max(1, round(ticks))
+
+
+# ---------------------------------------------------------------------------
+# 1. Market snapshot & regime classification
+# ---------------------------------------------------------------------------
+
+class Regime(Enum):
+    COMPRESSION_HALT = "COMPRESSION_HALT"   # sub-ATR gridlock -> pause
+    CLIMAX_HALT = "CLIMAX_HALT"             # parabolic / vol spike -> pause
+    STRONG_TREND = "STRONG_TREND"           # EMA_CROSSOVER territory
+    BALANCED_RANGE = "BALANCED_RANGE"       # STOCH_RSI territory
+
+
+@dataclass(frozen=True)
+class MarketSnapshot:
+    direction: str          # "LONG" or "SHORT"
+    signal_source: str      # "STOCH_RSI" or "EMA_CROSSOVER"
+    price: float
+    ema_200: float
+    ema_fast: float
+    ema_slow: float
+    adx_14: float
+    atr_14: float
+    atr_baseline: float     # rolling median ATR, for expansion-ratio checks
+    chop_14: float
+    rsi_14: float
+    stoch_k: float
+    volume_surge_ratio: float
+    upper_wick_ratio: float
+    lower_wick_ratio: float
+    tick_size: float = 0.001
+
+
+@dataclass
+class FilterConfig:
+    """
+    Every value below is a starting point pulled from the *midpoint* of
+    what the reports proposed (they did not agree on an exact number for
+    any of these) — re-tune against your own validation split.
+    """
+    min_atr_ticks: float = 2.5          # reports ranged 1.5 - 3.0 ticks
+    max_atr_expansion_ratio: float = 2.2
+    max_chop_pause: float = 60.0
+    max_chop_trend_ok: float = 52.0     # EMA_CROSSOVER wants clean trend
+    adx_trend_gate: float = 26.0        # block counter-trend above this
+    adx_range_ceiling: float = 26.0     # STOCH_RSI routed only below this
+    max_counter_ema_dist_pct: float = 0.40
+    max_parabolic_ext_pct: float = 2.00
+    min_volume_surge: float = 0.80
+    max_volume_climax: float = 4.50
+    max_opposing_wick: float = 0.40
+    stoch_long_overbought_veto: float = 85.0
+    stoch_short_oversold_veto: float = 15.0
+    min_ema_fast_slow_sep_ticks: float = 1.0   # EMA_CROSSOVER: veto flat crosses
+
+    # in-trade lifecycle
+    hard_kill_seconds: float = 40.0     # reports ranged 35 - 50s
+    be_arm_seconds: float = 18.0        # reports ranged 15 - 20s
+    be_arm_mfe_ticks: float = 1.0
+    stale_scratch_seconds: float = 25.0
+
+
+class RegimeClassifier:
+    def __init__(self, cfg: FilterConfig):
+        self.c = cfg
+
+    def classify(self, s: MarketSnapshot) -> Regime:
+        atr_ticks = s.atr_14 / s.tick_size
+        dist_pct = ((s.price - s.ema_200) / s.ema_200) * 100.0
+        atr_expansion = (s.atr_14 / s.atr_baseline) if s.atr_baseline else 1.0
+
+        if atr_ticks < self.c.min_atr_ticks or s.chop_14 >= self.c.max_chop_pause:
+            return Regime.COMPRESSION_HALT
+        if abs(dist_pct) > self.c.max_parabolic_ext_pct or atr_expansion > self.c.max_atr_expansion_ratio:
+            return Regime.CLIMAX_HALT
+        if s.adx_14 >= self.c.adx_trend_gate and s.chop_14 < self.c.max_chop_trend_ok:
+            return Regime.STRONG_TREND
+        return Regime.BALANCED_RANGE
+
+
+# ---------------------------------------------------------------------------
+# 2. Pre-trade filter pipeline
+# ---------------------------------------------------------------------------
+
+class PreTradeFilterPipeline:
+    def __init__(self, cfg: Optional[FilterConfig] = None):
+        self.c = cfg or FilterConfig()
+        self.regime = RegimeClassifier(self.c)
+
+    def evaluate(self, s: MarketSnapshot) -> Tuple[bool, str]:
+        regime = self.regime.classify(s)
+
+        if regime in (Regime.COMPRESSION_HALT, Regime.CLIMAX_HALT):
+            return False, f"REJECT_{regime.value}"
+
+        # Strategy routing: send trend-following signals only into strong
+        # trend, mean-reversion signals only into balanced range.
+        if s.signal_source == "EMA_CROSSOVER" and regime != Regime.STRONG_TREND:
+            return False, "REJECT_EMA_CROSS_OUTSIDE_TREND_REGIME"
+        if s.signal_source == "STOCH_RSI" and regime != Regime.BALANCED_RANGE:
+            return False, "REJECT_STOCH_OUTSIDE_RANGE_REGIME"
+
+        dist_pct = ((s.price - s.ema_200) / s.ema_200) * 100.0
+
+        if s.direction == "LONG":
+            if dist_pct < -self.c.max_counter_ema_dist_pct and s.adx_14 >= self.c.adx_trend_gate:
+                return False, f"REJECT_LONG_COUNTER_TREND: dist={dist_pct:.2f}% adx={s.adx_14:.1f}"
+            if s.signal_source == "STOCH_RSI" and s.stoch_k > self.c.stoch_long_overbought_veto:
+                return False, "REJECT_LONG_STOCH_OVERBOUGHT"
+        else:  # SHORT
+            if dist_pct > self.c.max_counter_ema_dist_pct and s.adx_14 >= self.c.adx_trend_gate:
+                return False, f"REJECT_SHORT_COUNTER_TREND: dist=+{dist_pct:.2f}% adx={s.adx_14:.1f}"
+            if s.signal_source == "STOCH_RSI" and s.stoch_k < self.c.stoch_short_oversold_veto:
+                return False, "REJECT_SHORT_STOCH_OVERSOLD"
+
+        if s.signal_source == "EMA_CROSSOVER":
+            sep_ticks = abs(s.ema_fast - s.ema_slow) / s.tick_size
+            if sep_ticks < self.c.min_ema_fast_slow_sep_ticks:
+                return False, f"REJECT_FLAT_CROSS: sep={sep_ticks:.2f}t"
+
+        if s.volume_surge_ratio < self.c.min_volume_surge:
+            return False, f"REJECT_VOLUME_VACUUM: {s.volume_surge_ratio:.2f}x"
+        if s.volume_surge_ratio > self.c.max_volume_climax:
+            return False, f"REJECT_VOLUME_EXHAUSTION: {s.volume_surge_ratio:.2f}x"
+
+        wick = s.lower_wick_ratio if s.direction == "LONG" else s.upper_wick_ratio
+        if wick > self.c.max_opposing_wick:
+            return False, f"REJECT_OPPOSING_WICK: {wick:.2f}"
+
+        return True, "EXECUTE"
+
+
+# ---------------------------------------------------------------------------
+# 3. In-trade lifecycle manager (replaces the static 90s timeout)
+# ---------------------------------------------------------------------------
+
+class LifecycleAction(Enum):
+    HOLD = "HOLD"
+    MOVE_STOP_TO_BREAKEVEN = "MOVE_STOP_TO_BREAKEVEN"
+    SCRATCH_NOW = "SCRATCH_NOW"
+    HARD_KILL = "HARD_KILL"
+
+
+class PositionLifecycleManager:
+    def __init__(self, cfg: Optional[FilterConfig] = None):
+        self.c = cfg or FilterConfig()
+
+    def evaluate(self, elapsed_seconds: float, mfe_ticks: float,
+                 current_pnl_ticks: float) -> LifecycleAction:
+        if elapsed_seconds >= self.c.hard_kill_seconds:
+            return LifecycleAction.HARD_KILL
+
+        if elapsed_seconds >= self.c.be_arm_seconds and mfe_ticks >= self.c.be_arm_mfe_ticks:
+            if current_pnl_ticks <= 0.0:
+                return LifecycleAction.SCRATCH_NOW
+            return LifecycleAction.MOVE_STOP_TO_BREAKEVEN
+
+        if elapsed_seconds >= self.c.stale_scratch_seconds:
+            if mfe_ticks < 1.0 and current_pnl_ticks < 0.0:
+                return LifecycleAction.SCRATCH_NOW
+
+        return LifecycleAction.HOLD
+
+
+if __name__ == "__main__":
+    # Sanity-check the price-dependent payoff math against the reports.
+    for price in (5.00, 3.20, 2.20, 1.45):
+        sl_ticks, r, be_wr = payoff_ratio(price, tick_size=0.001, tp_ticks=2.0,
+                                           sl_roe=0.25, leverage=75.0)
+        fixed_r_ticks = tp_ticks_for_target_r(price, tick_size=0.001, sl_roe=0.25,
+                                               leverage=75.0, target_r=0.45)
+        print(f"price=${price:5.2f}  sl_ticks={sl_ticks:5.1f}  R=1:{1/r:5.2f}  "
+              f"breakeven_WR={be_wr*100:5.1f}%   ->  price-adjusted TP would be "
+              f"{fixed_r_ticks} ticks to hold R~0.45")

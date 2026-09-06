@@ -1,0 +1,10 @@
+test_category,test_name,parameter_value,trade_count,win_rate_pct,profit_factor,net_pnl_usdt,max_drawdown_pct,description,verdict
+Execution Realism,Slippage 0 tick(s),0,3114,76.1079,1.2742,0.204000,8.3990,Entry executed with 0 tick adverse slippage penalty,SURVIVES
+Execution Realism,Slippage 1 tick(s),1,2828,59.9010,0.5975,-0.456400,650.5682,Entry executed with 1 tick adverse slippage penalty,FAILS
+Execution Realism,Slippage 2 tick(s),2,2828,42.8925,0.3004,-1.129800,1606.5341,Entry executed with 2 tick adverse slippage penalty,FAILS
+Null Benchmark,"Random Walk Null (TP=2, SL=5)",p=0.7143,4436,71.4923,1.0031,0.003960,N/A,Zero-information random entry benchmark under 2t/5t barrier geometry,EDGE_OVER_NULL (+4.68% WR over null)
+Statistical Resampling,"Block Bootstrap (SL=5, 1000 iter)",block=50,3114,76.11,1.2742,0.202956,"95% CI: [0.1396, 0.2671]","95% CI for Net PnL: [0.1396, 0.2671] USDT. P(Loss) = 0.00%",ROBUST_IN_JULY
+Capital Scaling,Account Balance 0.07 USDT,0.07,3114,76.1079,1.2742,0.204000,8.3990,Absolute trade PnL is identical (0.2040 USDT). Drawdown scales down with larger capital.,SCALE_INVARIANT
+Capital Scaling,Account Balance 10.0 USDT,10.0,3114,76.1079,1.2742,0.204000,0.1590,Absolute trade PnL is identical (0.2040 USDT). Drawdown scales down with larger capital.,SCALE_INVARIANT
+Capital Scaling,Account Balance 100.0 USDT,100.0,3114,76.1079,1.2742,0.204000,0.0162,Absolute trade PnL is identical (0.2040 USDT). Drawdown scales down with larger capital.,SCALE_INVARIANT
+Multiple-Testing,Hypothesis Space Search Count,Total Tests = 150+,0,0.0,0.0,0.0,0.0,"Over 50 experiments in Phase 1 + 100+ in Phase 2 across SL, TP, duration, filters. Finding SL=5 was one of 14 tested stops on a single low-volatility month.",HIGH_SELECTION_BIAS_RISK

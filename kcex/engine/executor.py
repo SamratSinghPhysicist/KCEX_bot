@@ -397,6 +397,8 @@ class TradeExecutionEngine:
             card = self.outcome_logger.log_outcome(outcome)
             self.logger.info("\n" + card)
             self.strategy.on_trade_completed(outcome)
+        else:
+            self.strategy.on_trade_rejected()
 
         return outcome
 
@@ -415,29 +417,103 @@ class TradeExecutionEngine:
         est_sl: float,
         open_time: float,
         sub_strategy_name: str
-    ) -> TradeOutcome:
+    ) -> Optional[TradeOutcome]:
         symbol = contract.symbol
         side_str = "LONG" if direction == OrderDirection.LONG else "SHORT"
         pu = contract.price_unit
         cs = contract.contract_size
         underlying_qty = vol_contracts * cs
 
-        self.logger.info("Submitting live MARKET order...")
-        order_res = self.trader.create_order(
-            symbol=symbol,
-            side=side_str,
-            vol_contracts=vol_contracts,
-            order_type="MARKET",
-            leverage=leverage,
-            is_isolated=self.config.is_isolated
-        )
+        order_type = getattr(self.config, "order_type", "MARKET") or "MARKET"
+        timeout_sec = getattr(self.config, "limit_order_timeout_seconds", 10.0)
 
-        data = order_res.get("data", {})
-        order_id = str(data.get("orderId") or "")
-        self.logger.info(f"Live order accepted by KCEX. Order ID: {order_id}")
+        if str(order_type).upper() == "LIMIT":
+            ticker = self.market.get_ticker(symbol)
+            last_price = float(ticker.get("lastPrice", 0.0) or 1.0)
+            bid1 = float(ticker.get("bid1", 0.0) or last_price)
+            ask1 = float(ticker.get("ask1", 0.0) or last_price)
 
-        # Short pause to allow order book fill
-        time.sleep(0.3)
+            # Limit order placed at maker side to capture zero maker fee and avoid 1-tick taker slippage
+            limit_price = bid1 if direction == OrderDirection.LONG else ask1
+            limit_price = round(limit_price, contract.price_precision)
+
+            self.logger.info(
+                f"Submitting live Post-Only LIMIT order at {limit_price:.{contract.price_precision}f} USDT..."
+            )
+            try:
+                order_res = self.trader.create_order(
+                    symbol=symbol,
+                    side=side_str,
+                    vol_contracts=vol_contracts,
+                    order_type="LIMIT",
+                    price=limit_price,
+                    leverage=leverage,
+                    is_isolated=self.config.is_isolated
+                )
+            except Exception as e:
+                self.logger.error("Failed to submit limit order: %s", e)
+                return None
+
+            data = order_res.get("data", {})
+            order_id = str(data.get("orderId") or "")
+            self.logger.info(f"Live LIMIT order accepted by KCEX. Order ID: {order_id}. Waiting up to {timeout_sec}s for fill...")
+
+            # Poll for order fill
+            start_poll = time.time()
+            is_filled = False
+            while (time.time() - start_poll < timeout_sec) and not self._shutdown_requested:
+                time.sleep(0.5)
+                # 1. Check if position has opened
+                open_positions = self.trader.get_open_positions(symbol)
+                for p in open_positions:
+                    h_vol = float(p.get("holdVol", 0) or p.get("vol", 0))
+                    if h_vol > 0:
+                        is_filled = True
+                        break
+                if is_filled:
+                    break
+
+                # 2. Check if order is still resting in open orders
+                try:
+                    open_orders = self.trader.get_open_orders()
+                    order_still_open = any(str(o.get("orderId")) == order_id for o in open_orders)
+                    if not order_still_open:
+                        # Order no longer open, give exchange 300ms to persist position
+                        time.sleep(0.3)
+                        open_positions = self.trader.get_open_positions(symbol)
+                        for p in open_positions:
+                            h_vol = float(p.get("holdVol", 0) or p.get("vol", 0))
+                            if h_vol > 0:
+                                is_filled = True
+                                break
+                        break
+                except Exception as oe:
+                    self.logger.debug("Error checking open orders: %s", oe)
+
+            if not is_filled:
+                self.logger.warning(
+                    f"LIMIT order {order_id} not filled within {timeout_sec}s timeout. Cancelling order to protect execution..."
+                )
+                try:
+                    self.trader.cancel_order(order_id)
+                except Exception as ce:
+                    self.logger.warning("Error cancelling unfilled limit order: %s", ce)
+                return None
+        else:
+            self.logger.info("Submitting live MARKET order...")
+            order_res = self.trader.create_order(
+                symbol=symbol,
+                side=side_str,
+                vol_contracts=vol_contracts,
+                order_type="MARKET",
+                leverage=leverage,
+                is_isolated=self.config.is_isolated
+            )
+            data = order_res.get("data", {})
+            order_id = str(data.get("orderId") or "")
+            self.logger.info(f"Live order accepted by KCEX. Order ID: {order_id}")
+            # Short pause to allow order book fill
+            time.sleep(0.3)
 
         # Reconcile open position to obtain exact entry price and positionId
         entry_price = est_tp - pu if direction == OrderDirection.LONG else est_tp + pu
@@ -921,18 +997,25 @@ class TradeExecutionEngine:
         cs = contract.contract_size
         underlying_qty = vol_contracts * cs
 
-        # 1. Realistic Entry Price from Orderbook Taker Fill:
-        # Long market orders execute against best ask (ask1).
-        # Short market orders execute against best bid (bid1).
+        # 1. Realistic Entry Price:
+        # Market orders: Long executes against best ask (ask1), Short against best bid (bid1)
+        # Limit orders: Long rests at best bid (bid1), Short rests at best ask (ask1)
         ticker = self.market.get_ticker(symbol)
         last_price = float(ticker.get("lastPrice", 0.0) or ticker.get("fairPrice", 1.0))
         ask1 = float(ticker.get("ask1", 0.0) or last_price)
         bid1 = float(ticker.get("bid1", 0.0) or last_price)
 
-        if direction == OrderDirection.LONG:
-            entry_price = ask1 if ask1 > 0 else last_price
+        order_type = getattr(self.config, "order_type", "MARKET") or "MARKET"
+        if str(order_type).upper() == "LIMIT":
+            if direction == OrderDirection.LONG:
+                entry_price = bid1 if bid1 > 0 else last_price
+            else:
+                entry_price = ask1 if ask1 > 0 else last_price
         else:
-            entry_price = bid1 if bid1 > 0 else last_price
+            if direction == OrderDirection.LONG:
+                entry_price = ask1 if ask1 > 0 else last_price
+            else:
+                entry_price = bid1 if bid1 > 0 else last_price
 
         entry_price = round(entry_price, contract.price_precision)
 

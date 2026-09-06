@@ -36,6 +36,7 @@ on:
         options:
           - "STOCH_RSI"
           - "EMA_CROSSOVER"
+          - "SMART_STRATEGY"
 
       ema_preset:
         description: "EMA Preset (if EMA_CROSSOVER)"

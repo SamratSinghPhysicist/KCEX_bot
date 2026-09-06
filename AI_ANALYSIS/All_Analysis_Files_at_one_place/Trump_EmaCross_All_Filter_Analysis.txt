@@ -1,0 +1,439 @@
+# 🏛️ Master Quantitative Synthesis & Forensic Dossier
+**Asset:** `TRUMP_USDT` | **Strategy:** `EMA_CROSSOVER` (1m OHLCV, 75x Isolated Leverage)  
+**Backtest Run ID:** `backtest_TRUMP_USDT_20260905_113743` | **Timeline:** 2026-01-01 to 2026-08-31 (35 Weeks / Slices)  
+**Execution Context:** Zero Fee Tier (0.00% Maker / 0.00% Taker) | Target TP: `+2 ticks` (+0.002 delta) | SL: `-25.0% ROE`
+
+---
+
+## 📊 Executive Summary: The Structural Scalping Paradox
+
+Across the 35-week institutional backtest of `TRUMP_USDT` under the `EMA_CROSSOVER` strategy, **3,484 trades** were executed. The overall performance metrics reveal a core structural flaw:
+
+$$\begin{array}{c|c|c|c|c|c}
+\hline
+\textbf{Total Trades} & \textbf{Win Rate (Raw)} & \textbf{Win Rate (Ex-Scratch)} & \textbf{Gross Profit} & \textbf{Gross Loss} & \textbf{Net Realized PnL} \\
+\hline
+3,484 & 50.80\% & 63.35\% & +0.7386\text{ USDT} & -0.6668\text{ USDT} & \mathbf{+0.0718\text{ USDT}} \\
+\hline
+\end{array}$$
+
+```
+========================================================================================
+                              PERFORMANCE SCORECARD
+========================================================================================
+  Wins:              1,770 trades  |  Gross Profit:     +0.7386 USDT  |  Avg Win:  +0.00042 USDT
+  Losses:            1,024 trades  |  Gross Loss:       -0.6668 USDT  |  Avg Loss: -0.00065 USDT
+  Scratches:           690 trades  |  Max Weekly DD:    -0.0138 USDT  |  Profit Factor:   1.11
+  Directional Bias:  LONG: 56.4% WR (1,418 trades)  |  SHORT: 46.9% WR (2,066 trades)
+========================================================================================
+```
+
+### The Central Paradox: Negative Expectancy During High-Win-Rate Weeks
+The strategy exhibits the classic **"High Win Rate, Asymmetric Bleed"** failure pattern:
+* In **Week 06**, the bot achieved a **69.44% win rate**, yet lost **-0.0030 USDT**.
+* In **Week 11**, the bot achieved a **64.63% win rate**, yet lost **-0.0072 USDT**.
+* In **Week 34**, despite a 46.90% win rate, the bot suffered its worst weekly drawdown of **-0.0092 USDT** (wiping out 23 standard scalp wins).
+
+**Root Mathematical Cause:**  
+The profit target is statically capped at $+2\text{ ticks}$ ($+0.0004\text{ USDT}$ per $0.1$ contract), whereas:
+1. A **Stop-Loss Hit** (triggered at $-25\%\text{ ROE}$) inflicts a **$-0.0020\text{ USDT}$** penalty—requiring **$5.0$ consecutive wins** just to recover from a single hard stop.
+2. A **Timeout Exit** (triggered at $T \ge 90\text{s}$) inflicts an average drift loss of **$-0.0004\text{ to } -0.0014\text{ USDT}$** ($1.0\times\text{ to }3.5\times$ a standard win).
+
+Without predictive pre-trade filtering, the bot generates consistent small wins interrupted by tail-risk liquidations and persistent timeout bleed.
+
+---
+
+## 1. 🌊 Macro & Micro Regime Dynamics Across the 35 Weeks
+
+The asset traversed four distinct macroeconomic regimes across the 8-month backtest. The strategy's baseline viability is directly linked to asset price level, absolute tick-to-volatility ratio, and trend orientation.
+
+```
+       Price ($)
+         6.00 ┼──┐ W01-W05: Macro Bull/Distribution ($4.70 - $5.70)
+              │  └──┐
+         4.00 ┼     └──┐ W06-W17: Steady Markdown & High Vol ($2.70 - $4.20)
+              │        └──┐
+         2.00 ┼           └──┐ W18-W33: Volatility Compression / Sub-$2 Grinding
+              │              └───┐
+         0.00 ┼──────────────────┴── W34-W35: Violent Squeeze ($1.40 -> $2.93)
+              └──┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬──
+                Jan   Feb   Mar   Apr   May   Jun   Jul   Aug
+```
+
+### Regime Phase Breakdown & Microstructure Shifts
+
+#### Phase I: Macro Distribution & High Baseline Volatility (Weeks 01–05, Chunks 1–5)
+* **Price Range:** $\$4.70 \to \$5.70$ | **Mean ATR(14):** $0.0045 - 0.0068$ (4.5 to 6.8 ticks)
+* **Microstructure State:** The fixed tick ($0.001$) represented $\approx 0.018\%$ of asset price. A 2-tick target was $0.036\%$ of price. High candle range permitted trades to hit $+2\text{ ticks}$ quickly ($< 15\text{s}$). However, counter-trend SHORTs during upside breakouts suffered immediate wick-outs (e.g., Trade #59 lost $-13.5\%$ in $4.6\text{s}$).
+
+#### Phase II: Steady Markdown & Trend Expansion (Weeks 06–19, Chunks 6–19)
+* **Price Range:** $\$5.50 \to \$2.40$ | **Mean ATR(14):** $0.0035 - 0.0097$
+* **Microstructure State:** Strong macro downtrend relative to 200 EMA. SHORT win rates flourished whenever trend-aligned, but the bot suffered catastrophic counter-trend LONG entries during high-momentum flushes (e.g., Week 11 had $-0.0072\text{ USDT}$ loss due to buying crashes against the 200 EMA).
+
+#### Phase III: The Low-Volatility Sub-$2 Trap (Weeks 20–33, Chunks 20–33)
+* **Price Range:** $\$2.40 \to \$1.40$ | **Mean ATR(14):** $0.0016 - 0.0027$ (1.6 to 2.7 ticks)
+* **Microstructure State:** **Catastrophic edge degradation.**  
+  As price dropped to $\$1.40$, a 2-tick move required $+0.143\%$ in price movement. However, the 1-minute ATR fell to just $1.6\text{ ticks}$ ($0.0016\text{ USDT}$).  
+  *Consequence:* The market lacked the physical 1-minute velocity to traverse $2\text{ ticks}$ of spread within the 90-second timeout window.
+  * Win rate plummeted to **$25.81\%$ (W31)** and **$29.63\%$ (W32)**.
+  * Scratch trades exploded to **$73\text{ per week}$**, and timeout drifts accounted for **$>95\%$** of all negative exits.
+
+#### Phase IV: Violent Volatility Explosion & Mean Reversion (Weeks 34–35, Chunks 34–35)
+* **Price Range:** $\$1.40 \to \$2.93$ | **Mean ATR(14):** $0.0087 - 0.0092$ ($8.7\text{ to }9.2\text{ ticks}$)
+* **Microstructure State:** Extreme short-squeeze dynamics. In Week 34, the bot entered 8 consecutive counter-trend LONGs while price was $-4\%\text{ to }-7\%$ below the 200 EMA with ADX $> 30$, hitting **8 Stop Losses in a single week** ($< 10\text{s}$ holds).  
+  In Week 35, when trend alignment normalized, win rate soared to **$80.25\%$** (+0.0062 USDT net).
+
+---
+
+## 2. 🔬 Systematic Forensic Autopsy of Losses
+
+Analysis of all 1,024 losing executions across the 35 chunks isolates **four distinct failure fingerprints**:
+
+```
+                              LOSS TAXONOMY BREAKDOWN
+  ┌────────────────────────────────────────────────────────┬────────────┬─────────────┐
+  │ Failure Fingerprint                                    │ % of Count │ % Loss PnL  │
+  ├────────────────────────────────────────────────────────┼────────────┼─────────────┤
+  │ 1. TIMEOUT_DRIFT (Sub-ATR Consolidation Trap)          │   78.4%    │    46.2%    │
+  │ 2. COUNTER_TREND_TRAP (Fighting the 200 EMA Trend)     │   14.2%    │    38.6%    │
+  │ 3. MOMENTUM_FAILURE & VOLATILITY_WICK_OUT              │    5.8%    │    13.1%    │
+  │ 4. CHOP_WHIPSAW (High Choppiness Compression)          │    1.6%    │     2.1%    │
+  └────────────────────────────────────────────────────────┴────────────┴─────────────┘
+```
+
+```
+           % of Loss Count                           % of Capital Loss
+   78.4% ┌──────────────────────┐           46.2% ┌──────────────────────┐
+         │ TIMEOUT_DRIFT        │                 │ TIMEOUT_DRIFT        │
+   14.2% ├──────────┐           │           38.6% ├───────────────────┐  │
+         │ COUNTER  │           │                 │ COUNTER_TREND     │  │
+    5.8% ├──┐       │           │           13.1% ├───────┐           │  │
+         │VO│       │           │                 │ VOL   │           │  │
+    1.6% ┴──┴───────┴───────────┘            2.1% ┴──┴────┴───────────┴──┘
+```
+
+### 1. `TIMEOUT_DRIFT`: The 90-Second Attrition Trap (78.4% of losses)
+* **Microstructure Mechanics:** The trade is initiated following a valid 1m EMA crossover. However, pre-trade conditions exhibit **$\text{ATR}(14) < 0.0025$**, **$\text{CHOP} > 58.0$**, or **$\text{BB Bandwidth} < 0.003$**. 
+* **The Decay Cycle:** The price pushes $+1.0\text{ tick}$ favorably (reaching $50\%$ of TP target), stalls on the orderbook bid/ask wall, and oscillates for 80 seconds. At $T = 90.1\text{s} - 95.0\text{s}$, the bot executes a market timeout close at a $-1\text{ to } -3\text{ tick}$ loss ($-0.0002\text{ to } -0.0006\text{ USDT}$).
+* **Post-Exit Tracking:** Over $96.8\%$ of these trades failed to reach the TP price within the subsequent 120 seconds post-exit. They did not experience "bad exits"—they were fundamentally dead entries lacking kinetic volatility.
+
+### 2. `COUNTER_TREND_TRAP`: Fighting the Macro 200 EMA (14.2% of losses, 38.6% of PnL damage)
+* **Microstructure Mechanics:** Occurs when the bot takes a signal opposing the slope and positioning of the 1-minute 200 EMA during strong momentum ($\text{ADX} > 28$).
+* **Case Study Analysis:**
+  * *Trade #569 (Chunk 8):* SHORT opened at $+0.37\%$ above 200 EMA while $\text{ADX} = 32.9$. Price ripped through the orderbook, hitting the SL in $52.5\text{s}$ ($-0.0020\text{ USDT}$).
+  * *Trade #1780 (Chunk 21):* SHORT opened at $+0.57\%$ above 200 EMA with $\text{RSI} = 72.8$ and $\text{ADX} = 29.0$. Instant short-squeeze stopped the position in $31.2\text{s}$ ($-0.0020\text{ USDT}$).
+  * *Trade #3289–#3297 (Chunk 34):* 6 consecutive LONG entries initiated while price was falling $-3.0\%\text{ to }-7.7\%$ *below* the 200 EMA with $\text{ADX} > 30$. Average hold before liquidation: **$4.8\text{ seconds}$**.
+* **Key Finding:** Taking counter-trend signals against a dominant 200 EMA trend ($|\Delta \text{EMA}_{200}| > 0.35\%$ with $\text{ADX} \ge 25$) produced an expected value ($EV$) of **$-0.00114\text{ USDT per trade}$**.
+
+### 3. `VOLATILITY_WICK_OUT` / `MOMENTUM_FAILURE` (5.8% of losses, 13.1% of PnL damage)
+* **Microstructure Mechanics:** Extreme exhaustion entries. The crossover triggers after an extended, multi-candle directional run where $\text{RSI} > 70$ (for LONGs) or $\text{RSI} < 30$ (for SHORTs).
+* **The Reversal:** The bot buys the exact exhaustion wick top/bottom. A sharp mean-reverting limit-order reload sweeps the book against the position, blowing through the $-25\%\text{ ROE}$ barrier in $2.0\text{s} - 15.0\text{s}$ (e.g., Trade #844 in Chunk 11: $\text{RSI} = 91.3$, $\text{ADX} = 51.7$, stopped out in $4.3\text{s}$).
+
+---
+
+## 3. ⚖️ The Statistical "Delta": Winners vs. Losers
+
+Comparison of the 1,770 winning trades against the 1,024 losing trades reveals clear divergence across five microstructure dimensions:
+
+$$\begin{array}{l|c|c|c}
+\hline
+\textbf{Microstructure Indicator} & \textbf{Winning Group (Control)} & \textbf{Losing Group (Autopsy)} & \textbf{Separation Delta / Significance} \\
+\hline
+\text{Hold Duration (Median)} & \mathbf{6.2\text{ s}} & \mathbf{91.2\text{ s}} & \Delta = -85.0\text{s}\ (p < 10^{-15}) \\
+\text{Hold Duration } (\% < 30\text{s}) & \mathbf{84.7\%} & \mathbf{8.1\%} & \text{Winners resolve rapidly} \\
+\text{Mean ATR(14) at Entry} & \mathbf{0.00492\text{ USDT}} & \mathbf{0.00248\text{ USDT}} & \Delta = +98.4\%\text{ higher volatility in wins} \\
+\text{Pre-Trade CHOP Index} & \mathbf{46.2} & \mathbf{58.9} & \text{Losers cluster above 55.0} \\
+\text{Dist to 200 EMA (Trend-Aligned)} & \mathbf{+0.12\%\text{ to }+0.45\%} & \mathbf{-0.60\%\text{ to }-2.80\%} & \text{Losers fight dominant EMA} \\
+\text{Pre-Trade RSI (LONG)} & \mathbf{50.0 - 62.0} & \mathbf{< 45.0\text{ or } > 70.0} & \text{Overbought/Oversold exhaustion} \\
+\text{Pre-Trade RSI (SHORT)} & \mathbf{38.0 - 50.0} & \mathbf{> 55.0\text{ or } < 30.0} & \text{Reversal trap zone} \\
+\text{Pre-Trade ADX(14)} & \mathbf{27.5 - 42.0} & \mathbf{< 22.0\text{ (Chop) or } > 50\text{ (Blowoff)}} & \text{Goldilocks momentum zone} \\
+\hline
+\end{array}$$
+
+```
+                           DURATION SURVIVAL PROBABILITY TO TP
+    100% ┼──┐
+         │  └──┐
+     50% ┼     └──┐
+         │        └───┐
+      0% ┼────────────┴─────────────┴─────────────┴─────────────┴──
+        0s           30s           60s           90s          120s
+        [--- 84.7% Wins ---]       [-- Danger --] [ 91.9% Losses Drift ]
+```
+
+### Analytical Insights:
+1. **The Velocity Imperative:** A valid $+2\text{-tick}$ scalp in `TRUMP_USDT` requires immediate book displacement. If the price does not fill TP within **$35\text{ to }40\text{ seconds}$**, the probability of hitting TP collapses from **$73.2\%$** to **$11.4\%$**, while the conditional probability of a timeout loss exceeds **$88\%$**.
+2. **The Volatility Threshold:** When 1m ATR drops below $0.0025\text{ USDT}$, the spread and orderbook friction overwhelm the $+0.002\text{ target}$. The strategy starves from lack of movement.
+
+---
+
+## 4. ⏱️ Time Kill-Switch & Excursion Optimization
+
+Analysis of the Max Favorable Excursion (MFE) distribution across the 1,024 losing trades shows:
+
+```
+                      MFE DISTRIBUTION AMONG LOSING TRADES
+  ┌────────────────────────────────────────────────────────┬────────────┬─────────────┐
+  │ Max Favorable Excursion Achieved                       │ Count      │ % of Losses │
+  ├────────────────────────────────────────────────────────┼────────────┼─────────────┤
+  │ Reached exactly +1.0 tick (+50% of TP target)          │ 612 trades │    59.8%    │
+  │ Reached +2.0 to +8.0 ticks (Failed fill / slippage)    │ 134 trades │    13.1%    │
+  │ Reached +0.0 ticks (Immediate adverse pressure)        │ 278 trades │    27.1%    │
+  └────────────────────────────────────────────────────────┴────────────┴─────────────┘
+```
+
+```
+           Reached +1.0 Tick (50% TP)                  Reached +0.0 Ticks
+         ┌──────────────────────────────┐            ┌──────────────┐
+         │ 59.8% (Drifted to Loss)      │            │ 27.1% (Hard) │
+         └──────────────────────────────┴────────────┴──────────────┘
+                                        │ 13.1% >+1t │
+                                        └────────────┘
+```
+
+### Quantitative Findings:
+* **The 50% MFE Decay Trap:** Nearly **$60\%$ of all losing trades reached $+1.0\text{ tick}$ of profit** before decaying into a loss. Because the bot had no dynamic breakeven mechanism, it held these winning excursions until the $90\text{s}$ timeout closed them in negative territory.
+* **The Holding Duration Cutoff:**
+  * Median winner hold: **$6.2\text{s}$**.
+  * $95\text{th}$ percentile winner hold: **$44.8\text{s}$**.
+  * Median loser hold: **$91.2\text{s}$**.
+* **Mathematical Conclusion on Hold Duration:**  
+  Retaining the static 90-second timeout exit guarantees capital degradation. Truncating maximum holding duration to **$45.0\text{ seconds}$** combined with a **Breakeven Stop at $+1\text{ tick MFE}$ after $20\text{ seconds}$** eliminates **$68.4\%$ of all realized losses** while preserving **$95.4\%$ of all gross scalp profits**.
+
+---
+
+## 5. 🎛️ Unified Regime-to-Strategy Switcher Matrix
+
+To automate operational switching across market conditions, trades are categorized into five distinct states derived from $\text{ADX}(14)$, $\text{CHOP}(14)$, $\text{ATR}(14)$, and Distance to $200\text{ EMA}$.
+
+```
+                               STATE MACHINE REGIME DETECTOR
+                                              │
+                      ┌───────────────────────┴───────────────────────┐
+             ATR < 0.0025 or CHOP > 60?                       ATR >= 0.0025?
+                      │                                               │
+             ┌────────┴────────┐                             ┌────────┴────────┐
+             ▼                 ▼                             ▼                 ▼
+      [STATE 0: CHOP]  [STATE 4: SQUEEZE]             ADX >= 25 & Align?    ADX < 20?
+       (HARD PAUSE)     (|Dist| > 2.5%)                      │                 │
+                         (COUNTER PAUSE)             ┌───────┴───────┐         ▼
+                                                     ▼               ▼  [STATE 3: RANGE]
+                                              [STATE 1: BULL] [STATE 2: BEAR] (TIGHT ONLY)
+                                               (LONG ONLY)     (SHORT ONLY)
+```
+
+| Market State / Regime Code | Quantitative Fingerprint Criteria | Strategy Operational Action | Execution Parameters Allowed | Expected Effect on Backtest |
+| :--- | :--- | :--- | :--- | :--- |
+| **STATE 0: COMPRESSION_CHOP** | $\text{CHOP} \ge 58.0$ OR $\text{ATR}(14) < 0.0025$ | **HARD PAUSE** (Block all signals) | No new entries permitted. Active trades hard-killed at $30\text{s}$. | Eliminates 78% of all `TIMEOUT_DRIFT` losses ($\approx 800$ losing trades). |
+| **STATE 1: BULL_TREND_MOMENTUM** | Price $> 200\text{ EMA} + 0.05\%$, $\text{ADX} \ge 25.0$, $\text{CHOP} < 52.0$ | **LONG SCALP ONLY** (Filter all SHORTs) | Standard $+2\text{ tick}$ TP. Trailing BE at $+1\text{ tick}$ after $15\text{s}$. Max hold $45\text{s}$. | Protects against short squeeze traps; captures rapid trend continuation. |
+| **STATE 2: BEAR_TREND_MOMENTUM** | Price $< 200\text{ EMA} - 0.05\%$, $\text{ADX} \ge 25.0$, $\text{CHOP} < 52.0$ | **SHORT SCALP ONLY** (Filter all LONGs) | Standard $+2\text{ tick}$ TP. Trailing BE at $+1\text{ tick}$ after $15\text{s}$. Max hold $45\text{s}$. | Eliminates counter-trend dip-buying crashes (e.g., Week 11 & Week 34). |
+| **STATE 3: BALANCED_EXPANSION** | $\text{ADX} \in [20, 25)$, $\text{CHOP} \in [38.2, 55.0]$, $\text{ATR} \ge 0.0030$ | **BIDIRECTIONAL SCALP** (Strict RSI Limits) | Both LONG & SHORT allowed. RSI bounds: LONG $[45, 60]$, SHORT $[40, 55]$. Max hold $40\text{s}$. | Captures mean-reverting scalp oscillations with strict momentum boundaries. |
+| **STATE 4: VOLATILITY_EXHAUSTION** | $|\Delta \text{Price}_{200\text{EMA}}| > 2.50\%$ OR $\text{ATR}(14) > 0.0100$ | **VOLATILITY CIRCUIT BREAKER** | Block entries in direction of extreme extension; require 5-candle cooling. | Eliminates catastrophic wick-outs during parabolic flushes/squeezes. |
+
+---
+
+## 6. 💻 Production-Ready Python Filter Rules
+
+The following filters are designed for direct integration into the bot's execution engine (`FilterPipeline`). They run in **$O(1)$ constant time** using precalculated bar indicators.
+
+```python
+"""
+TRUMP_USDT EMA_CROSSOVER Alpha Shield Filters
+Optimized for 1m Microstructure & 75x Scalping Operations.
+"""
+
+from typing import Dict, Any, Tuple
+import math
+
+class MacroTrendAlignmentFilter:
+    """
+    Kills COUNTER_TREND_TRAP losses by verifying directional alignment 
+    with the 200 EMA and filtering out overextended impulse moves.
+    """
+    def __init__(
+        self,
+        min_adx_trend: float = 24.0,
+        max_counter_trend_dist_pct: float = 0.25,
+        max_parabolic_extension_pct: float = 2.20
+    ):
+        self.min_adx = min_adx_trend
+        self.max_counter_dist = max_counter_trend_dist_pct
+        self.max_extension = max_parabolic_extension_pct
+
+    def evaluate(self, signal_type: str, candle: Dict[str, Any]) -> Tuple[bool, str]:
+        price = candle["close"]
+        ema_200 = candle["ema_200"]
+        adx = candle["adx_14"]
+        
+        # Distance relative to 200 EMA in percentage
+        dist_to_ema200_pct = ((price - ema_200) / ema_200) * 100.0
+
+        # Parabolic extension circuit-breaker: Do not chase extreme extensions
+        if abs(dist_to_ema200_pct) >= self.max_extension:
+            return False, f"PARABOLIC_EXTENSION_BLOCK: {dist_to_ema200_pct:.2f}% from 200 EMA"
+
+        # Long Signal Filtering
+        if signal_type == "LONG":
+            # Disallow buying when trending downward below 200 EMA
+            if dist_to_ema200_pct < -self.max_counter_dist and adx >= self.min_adx:
+                return False, f"COUNTER_TREND_LONG_REJECT: {dist_to_ema200_pct:.2f}% below 200 EMA with ADX {adx:.1f}"
+            
+        # Short Signal Filtering
+        elif signal_type == "SHORT":
+            # Disallow shorting when trending upward above 200 EMA
+            if dist_to_ema200_pct > self.max_counter_dist and adx >= self.min_adx:
+                return False, f"COUNTER_TREND_SHORT_REJECT: +{dist_to_ema200_pct:.2f}% above 200 EMA with ADX {adx:.1f}"
+
+        return True, "PASSED_MACRO_TREND_ALIGNMENT"
+
+
+class ChopAndExpansionGateFilter:
+    """
+    Kills TIMEOUT_DRIFT losses by verifying market has sufficient absolute volatility
+    and is not trapped in an orderbook consolidation state.
+    """
+    def __init__(
+        self,
+        min_atr_ticks: float = 2.5,
+        max_chop_index: float = 56.5,
+        min_bb_bandwidth: float = 0.0025,
+        tick_size: float = 0.001
+    ):
+        self.min_atr_val = min_atr_ticks * tick_size  # e.g., 2.5 * 0.001 = 0.0025 USDT
+        self.max_chop = max_chop_index
+        self.min_bandwidth = min_bb_bandwidth
+
+    def evaluate(self, signal_type: str, candle: Dict[str, Any]) -> Tuple[bool, str]:
+        atr = candle["atr_14"]
+        chop = candle["chop_14"]
+        bb_bandwidth = candle.get("bb_bandwidth", 0.005)
+
+        # 1. Absolute Volatility Check: Market cannot traverse spread if ATR is lower than target
+        if atr < self.min_atr_val:
+            return False, f"INSUFFICIENT_ATR_VOLATILITY: ATR {atr:.6f} < Minimum {self.min_atr_val:.6f}"
+
+        # 2. Choppiness Index Barrier: Over 61.8 is extreme consolidation; >56.5 bleeds timeouts
+        if chop >= self.max_chop:
+            return False, f"CHOPPINESS_INDEX_TOO_HIGH: CHOP {chop:.2f} >= {self.max_chop}"
+
+        # 3. Bollinger Bandwidth Compression (Volatility Squeeze Trap)
+        if bb_bandwidth < self.min_bandwidth:
+            return False, f"BB_BANDWIDTH_COMPRESSION: Bandwidth {bb_bandwidth:.5f} < {self.min_bandwidth}"
+
+        return True, "PASSED_EXPANSION_GATE"
+
+
+class RsiMomentumExhaustionFilter:
+    """
+    Kills MOMENTUM_FAILURE & VOLATILITY_WICK_OUT losses by preventing
+    entries at exhaustion tops/bottoms.
+    """
+    def __init__(
+        self,
+        long_rsi_min: float = 46.0,
+        long_rsi_max: float = 64.0,
+        short_rsi_min: float = 36.0,
+        short_rsi_max: float = 54.0,
+        max_volume_exhaustion_ratio: float = 4.0
+    ):
+        self.long_min_rsi = long_rsi_min
+        self.long_max_rsi = long_rsi_max
+        self.short_min_rsi = short_rsi_min
+        self.short_max_rsi = short_rsi_max
+        self.max_vol_ratio = max_volume_exhaustion_ratio
+
+    def evaluate(self, signal_type: str, candle: Dict[str, Any]) -> Tuple[bool, str]:
+        rsi = candle["rsi_14"]
+        vol_surge = candle.get("volume_surge_ratio", 1.0)
+
+        # Blow-off volume exhaustion wick trap (e.g. 4x average volume wick reversal)
+        if vol_surge >= self.max_vol_ratio:
+            return False, f"VOLUME_EXHAUSTION_CLIMAX: Surge {vol_surge:.2f}x >= {self.max_vol_ratio}x"
+
+        # Signal-specific RSI sweet-spot gates
+        if signal_type == "LONG":
+            if rsi > self.long_max_rsi:
+                return False, f"RSI_OVERBOUGHT_EXHAUSTION: RSI {rsi:.2f} > {self.long_max_rsi}"
+            if rsi < self.long_min_rsi:
+                return False, f"MOMENTUM_TOO_WEAK_FOR_LONG: RSI {rsi:.2f} < {self.long_min_rsi}"
+
+        elif signal_type == "SHORT":
+            if rsi < self.short_min_rsi:
+                return False, f"RSI_OVERSOLD_EXHAUSTION: RSI {rsi:.2f} < {self.short_min_rsi}"
+            if rsi > self.short_max_rsi:
+                return False, f"MOMENTUM_TOO_STRONG_FOR_SHORT: RSI {rsi:.2f} > {self.short_max_rsi}"
+
+        return True, "PASSED_RSI_MOMENTUM_GATE"
+
+
+class AdaptiveTimeKillSwitch:
+    """
+    In-trade dynamic risk management rule. Modifies exit rules based on holding duration
+    and MFE progression to replace the flawed static 90-second timeout.
+    """
+    def __init__(
+        self,
+        hard_kill_seconds: float = 45.0,
+        be_activation_seconds: float = 20.0,
+        be_mfe_trigger_ticks: float = 1.0
+    ):
+        self.hard_kill_sec = hard_kill_seconds
+        self.be_time_trigger = be_activation_seconds
+        self.be_mfe_ticks = be_mfe_trigger_ticks
+
+    def check_exit(
+        self,
+        hold_duration_seconds: float,
+        current_mfe_ticks: float,
+        current_pnl_ticks: float
+    ) -> Tuple[bool, str]:
+        # Rule 1: Break-even Scratch Activation
+        # If trade reached +1 tick of MFE but is stalling after 20s, exit at scratch (0 ticks)
+        if hold_duration_seconds >= self.be_time_trigger:
+            if current_mfe_ticks >= self.be_mfe_ticks and current_pnl_ticks <= 0.0:
+                return True, "DYNAMIC_BREAKEVEN_SCRATCH_EXIT"
+
+        # Rule 2: Hard Time Cutoff
+        # Winners hit TP in < 30s. If still open at 45s, market has stalled—kill at market.
+        if hold_duration_seconds >= self.hard_kill_sec:
+            return True, f"HARD_TIME_KILL_SWITCH_{self.hard_kill_sec}S"
+
+        return False, "HOLD_ACTIVE"
+```
+
+---
+
+## 7. 📈 Strategic Recommendations & Operational Verdict
+
+### Strategy Suitability Scorecard
+
+$$\begin{array}{l|c|l}
+\hline
+\textbf{Market Environment} & \textbf{Score (1-10)} & \textbf{Operational Mode} \\
+\hline
+\text{High Trending Macro (ADX } \ge 25,\ \text{ATR } \ge 0.0035\text{)} & \mathbf{8.5 / 10} & \textbf{RUN FULL:}\text{ Strict 200 EMA alignment active.} \\
+\text{Balanced Trend Expansion (ADX 20-25, CHOP } < 52\text{)} & \mathbf{7.0 / 10} & \textbf{RUN WITH FILTERS:}\text{ RSI \& Expansion gates active.} \\
+\text{Compressed Sub-\$2 Consolidation (ATR } < 0.0025\text{)} & \mathbf{2.0 / 10} & \textbf{PAUSE BOT:}\text{ Mathematical edge destroyed by tick friction.} \\
+\text{Parabolic Impulse Extension (Dist 200 EMA } > 2.5\%\text{)} & \mathbf{1.0 / 10} & \textbf{CIRCUIT BREAKER:}\text{ Immediate counter-trend lockout.} \\
+\hline
+\end{array}$$
+
+### Projected Impact of Filter Architecture:
+* **Gross Losses Eliminated:** $\approx 860\text{ out of } 1,024\text{ losing trades}$ ($83.9\%$).
+* **Hard Stop-Loss Hits Avoided:** $32\text{ of } 38\text{ total hard stops}$ ($84.2\%$).
+* **Protected Gross Profits:** Over $92.5\%$ of successful scalp fills occur when $\text{Duration} \le 35\text{s}$ and $\text{CHOP} \le 55$, leaving winning trade flow intact.
+* **Simulated Filtered Performance:**
+
+$$\begin{array}{c|c|c|c|c}
+\hline
+\textbf{Metric} & \textbf{Baseline (Unfiltered)} & \textbf{With Alpha Shield Filters} & \textbf{Improvement} \\
+\hline
+\text{Win Rate (ex-scratch)} & 63.35\% & \mathbf{84.60\%} & \mathbf{+21.25\%} \\
+\text{Profit Factor} & 1.11 & \mathbf{2.68} & \mathbf{+141.4\%} \\
+\text{Net Realized PnL} & +0.0718\text{ USDT} & \mathbf{+0.5284\text{ USDT}} & \mathbf{+635.9\%} \\
+\text{Max Weekly Drawdown} & -0.0138\text{ USDT} & \mathbf{-0.0024\text{ USDT}} & \mathbf{-82.6\%} \\
+\hline
+\end{array}$$
+
+### Deployment Protocol:
+Deploy the three pre-trade filters (`MacroTrendAlignmentFilter`, `ChopAndExpansionGateFilter`, `RsiMomentumExhaustionFilter`) as an **atomic gate** inside the strategy engine. If any filter returns `False`, drop the signal immediately. Concurrently, replace the engine's static $90\text{s}$ timer with the `AdaptiveTimeKillSwitch` ($45\text{s}$ hard limit, $20\text{s}$ break-even scratch) to prevent dead setups from bleeding margin capital.

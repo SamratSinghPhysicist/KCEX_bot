@@ -174,9 +174,38 @@ POLL_INTERVAL_SECONDS = 0.2
 # 7. STRATEGY SELECTION & INDICATOR SETTINGS
 # =============================================================================
 # Strategy mode selection:
+#   "SMART_STRATEGY" -> Autonomous Regime-Adaptive Strategy (Switches Momentum EMA / Range Stoch RSI)
 #   "STOCH_RSI"      -> Stochastic RSI Fast Scalp & Reversal Strategy [Default]
 #   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8)
 STRATEGY_MODE = "STOCH_RSI"
+
+# -----------------------------------------------------------------------------
+# Order Execution Type & Slippage Protection
+# -----------------------------------------------------------------------------
+# "MARKET" -> Immediate taker fill (standard execution)
+# "LIMIT"  -> Post-only Maker entry at best bid/ask with timeout cancellation (zero taker slippage)
+ORDER_TYPE = "MARKET"
+LIMIT_ORDER_TIMEOUT_SECONDS = 10.0
+
+# -----------------------------------------------------------------------------
+# Smart Strategy Configuration (Regime-Adaptive Scalping Engine)
+# -----------------------------------------------------------------------------
+# Dynamically classifies 1m market microstructure into 5 regimes:
+# - STRONG_BULL_MOMENTUM / STRONG_BEAR_MOMENTUM -> Routes to EMA Crossover
+# - BALANCED_RANGE                              -> Routes to Stochastic RSI
+# - SUB_ATR_COMPRESSION / VOLATILITY_CLIMAX     -> Pauses execution safely
+SMART_ATR_FILTER_ENABLED = True          # True = blocks entries when volatility is too compressed
+SMART_MIN_ATR_TICKS = 2.5                # Minimum 1m ATR in ticks required for target traversability
+SMART_CHOP_CEILING = 58.0                # Choppiness Index ceiling (above 58.0 = erratic chop)
+SMART_ADX_TREND_THRESHOLD = 26.0         # ADX threshold for strong directional momentum
+SMART_USE_EMA200_FILTER = False          # 200 EMA direction lock (Default OFF per empirical validation)
+SMART_CLIMAX_FILTER_ENABLED = True       # True = suppresses entries during parabolic range surges
+SMART_MAX_ATR_EXPANSION = 2.2            # Candle range > 2.2x ATR is considered climax
+SMART_EMA_PRESET = "5/13"                # Fast/Slow EMA preset when in momentum regime
+SMART_STOCH_PRESET = "FAST_SCALP"        # Stoch RSI preset when in balanced range regime
+SMART_INTERVAL = "Min1"
+SMART_REQUIRE_CLOSED_CANDLE = True
+
 
 # -----------------------------------------------------------------------------
 # EMA Crossover Configuration

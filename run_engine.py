@@ -170,10 +170,13 @@ def prompt_user_settings():
     print("\n3. Strategy & Signal Engine:")
     print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8)")
     print("   [2] STOCHASTIC RSI    -> Fast Scalp & Mean Reversion (%K/%D cross in Oversold/Overbought zones) [Default]")
+    print("   [3] SMART STRATEGY    -> Autonomous Regime-Adaptive Engine (Auto-routes between EMA & Stoch RSI)")
 
     default_strat_choice = "2"
     if default_strat in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
         default_strat_choice = "1"
+    elif default_strat in ("SMART", "SMART_STRATEGY"):
+        default_strat_choice = "3"
     else:
         default_strat_choice = "2"
 
@@ -245,6 +248,18 @@ def prompt_user_settings():
             bi_directional_val = True
             dir_val = OrderDirection.LONG
             print("   ℹ️  Order Direction: Autonomous (Strategy dynamically enters LONG on Golden Cross and SHORT on Death Cross).")
+
+    elif strat_str in ("3", "SMART", "SMART_STRATEGY", "smart", "smart_strategy"):
+        strat_mode_val = "SMART_STRATEGY"
+        bi_directional_val = True
+        dir_val = OrderDirection.LONG
+        print("\n   ✅ Active Smart Strategy: Autonomous Multi-Regime Micro-Scalping")
+        print("      • Classifies 1m candles into 5 microstructure regimes")
+        print("      • Strong Momentum Trends -> Routes to EMA Crossover (5/13)")
+        print("      • Balanced Ranges        -> Routes to Stoch RSI (Fast Scalp)")
+        print("      • Sub-ATR Compression    -> Pauses safely until volatility recovers")
+        print("      • Climax Volatility      -> Pauses safely to avoid spread sweeps")
+        print("      • 200 EMA Filter         -> OFF (Mean-reversion enabled per empirical research)")
 
     else:
         # Default: STOCH_RSI
@@ -498,6 +513,14 @@ def prompt_user_settings():
                 sl_price_val = None
                 print(f"   ✓ Kept {lev_val}x leverage! Stop loss safely clamped to {max_safe_sl_ticks} ticks.")
 
+    # 7b. Order Execution Type & Slippage Protection
+    default_order_type = get_setting("ORDER_TYPE", "MARKET").upper()
+    print("\n7b. Order Execution Type & Slippage Protection:")
+    print("   [1] MARKET ORDER -> Immediate taker execution [Default]")
+    print("   [2] LIMIT ORDER  -> Post-Only Maker order at best bid/ask with timeout cancellation (Zero slippage)")
+    ot_str = input(f"   Select Order Type [default: {'1 (MARKET)' if default_order_type == 'MARKET' else '2 (LIMIT)'}]: ").strip()
+    order_type_val = "LIMIT" if ot_str in ("2", "LIMIT", "limit") else "MARKET"
+
     # 8. Cooldown
     print("\n8. Post-Trade Cooldown:")
     print("   Seconds to pause after position closes before executing the next trade cycle.")
@@ -618,6 +641,19 @@ def prompt_user_settings():
         hourly_filter_enabled=hourly_enabled,
         hourly_blacklist_utc=hourly_bl,
         direction_bias=dir_bias,
+        order_type=order_type_val,
+        limit_order_timeout_seconds=get_setting("LIMIT_ORDER_TIMEOUT_SECONDS", 10.0),
+        smart_atr_filter_enabled=get_setting("SMART_ATR_FILTER_ENABLED", True),
+        smart_min_atr_ticks=get_setting("SMART_MIN_ATR_TICKS", 2.5),
+        smart_chop_ceiling=get_setting("SMART_CHOP_CEILING", 58.0),
+        smart_adx_trend_threshold=get_setting("SMART_ADX_TREND_THRESHOLD", 26.0),
+        smart_use_ema200_filter=get_setting("SMART_USE_EMA200_FILTER", False),
+        smart_climax_filter_enabled=get_setting("SMART_CLIMAX_FILTER_ENABLED", True),
+        smart_max_atr_expansion=get_setting("SMART_MAX_ATR_EXPANSION", 2.2),
+        smart_ema_preset=get_setting("SMART_EMA_PRESET", "5/13"),
+        smart_stoch_preset=get_setting("SMART_STOCH_PRESET", "FAST_SCALP"),
+        smart_interval=get_setting("SMART_INTERVAL", "Min1"),
+        smart_require_closed_candle=get_setting("SMART_REQUIRE_CLOSED_CANDLE", True),
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -731,10 +767,66 @@ def parse_args():
         choices=[
             "ema", "ema_crossover", "EMA", "EMA_CROSSOVER",
             "stoch_rsi", "stochastic_rsi", "STOCH_RSI", "STOCHASTIC_RSI", "stoch", "STOCH",
+            "smart", "smart_strategy", "SMART", "SMART_STRATEGY",
             "microstructure", "cycle", "MICROSTRUCTURE", "CYCLE"
         ],
         default=None,
-        help="Strategy type: 'ema_crossover' [1], 'stoch_rsi' [2], 'microstructure' [3], or 'cycle' [4]"
+        help="Strategy type: 'smart_strategy' [3], 'ema_crossover' [1], 'stoch_rsi' [2]"
+    )
+    parser.add_argument(
+        "--order-type",
+        type=str,
+        choices=["MARKET", "LIMIT", "market", "limit"],
+        default=None,
+        help="Order execution type: 'MARKET' (taker fill) or 'LIMIT' (post-only maker fill)"
+    )
+    parser.add_argument(
+        "--limit-timeout",
+        type=float,
+        default=None,
+        help="Timeout in seconds for unfilled limit order cancellation (default: 10.0)"
+    )
+    parser.add_argument(
+        "--smart-atr-filter",
+        action="store_true",
+        default=None,
+        help="Enable/disable Smart Strategy ATR compression filter"
+    )
+    parser.add_argument(
+        "--smart-min-atr-ticks",
+        type=float,
+        default=None,
+        help="Minimum ATR in ticks for Smart Strategy entry (default: 2.5)"
+    )
+    parser.add_argument(
+        "--smart-chop-ceiling",
+        type=float,
+        default=None,
+        help="Choppiness Index ceiling for Smart Strategy (default: 58.0)"
+    )
+    parser.add_argument(
+        "--smart-adx-trend-threshold",
+        type=float,
+        default=None,
+        help="ADX momentum threshold for Smart Strategy (default: 26.0)"
+    )
+    parser.add_argument(
+        "--smart-ema200-filter",
+        action="store_true",
+        default=None,
+        help="Enable 200 EMA direction lock on Smart Strategy (default: False)"
+    )
+    parser.add_argument(
+        "--smart-climax-filter",
+        action="store_true",
+        default=None,
+        help="Enable volatility climax filter on Smart Strategy (default: True)"
+    )
+    parser.add_argument(
+        "--smart-max-atr-expansion",
+        type=float,
+        default=None,
+        help="Max candle range expansion vs ATR for climax filter (default: 2.2)"
     )
     parser.add_argument(
         "--ema-preset",
@@ -976,6 +1068,8 @@ def main():
                 bi_directional = get_setting("EMA_BI_DIRECTIONAL", True)
             elif strat_raw in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH"):
                 bi_directional = get_setting("STOCH_BI_DIRECTIONAL", True)
+            elif strat_raw in ("SMART", "SMART_STRATEGY"):
+                bi_directional = True
             else:
                 bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
 
@@ -1018,6 +1112,21 @@ def main():
         stoch_interval = args.stoch_interval or get_setting("STOCH_INTERVAL", "Min1")
         stoch_zone = False if args.no_stoch_zone_filter else get_setting("STOCH_ZONE_FILTER", True)
 
+        order_type_val = (args.order_type or get_setting("ORDER_TYPE", "MARKET")).upper()
+        limit_timeout_val = args.limit_timeout if args.limit_timeout is not None else get_setting("LIMIT_ORDER_TIMEOUT_SECONDS", 10.0)
+
+        smart_atr_filter_val = args.smart_atr_filter if args.smart_atr_filter is not None else get_setting("SMART_ATR_FILTER_ENABLED", True)
+        smart_min_atr_ticks_val = args.smart_min_atr_ticks if args.smart_min_atr_ticks is not None else get_setting("SMART_MIN_ATR_TICKS", 2.5)
+        smart_chop_ceiling_val = args.smart_chop_ceiling if args.smart_chop_ceiling is not None else get_setting("SMART_CHOP_CEILING", 58.0)
+        smart_adx_trend_val = args.smart_adx_trend_threshold if args.smart_adx_trend_threshold is not None else get_setting("SMART_ADX_TREND_THRESHOLD", 26.0)
+        smart_ema200_val = args.smart_ema200_filter if args.smart_ema200_filter is not None else get_setting("SMART_USE_EMA200_FILTER", False)
+        smart_climax_val = args.smart_climax_filter if args.smart_climax_filter is not None else get_setting("SMART_CLIMAX_FILTER_ENABLED", True)
+        smart_max_exp_val = args.smart_max_atr_expansion if args.smart_max_atr_expansion is not None else get_setting("SMART_MAX_ATR_EXPANSION", 2.2)
+        smart_ema_preset_val = get_setting("SMART_EMA_PRESET", "5/13")
+        smart_stoch_preset_val = get_setting("SMART_STOCH_PRESET", "FAST_SCALP")
+        smart_interval_val = get_setting("SMART_INTERVAL", "Min1")
+        smart_req_closed_val = get_setting("SMART_REQUIRE_CLOSED_CANDLE", True)
+
         config = ExecutionConfig(
             symbol=sym,
             direction=dir_enum,
@@ -1052,6 +1161,19 @@ def main():
             stoch_interval=stoch_interval,
             stoch_zone_filter=stoch_zone,
             stoch_require_closed_candle=get_setting("STOCH_REQUIRE_CLOSED_CANDLE", True),
+            order_type=order_type_val,
+            limit_order_timeout_seconds=limit_timeout_val,
+            smart_atr_filter_enabled=smart_atr_filter_val,
+            smart_min_atr_ticks=smart_min_atr_ticks_val,
+            smart_chop_ceiling=smart_chop_ceiling_val,
+            smart_adx_trend_threshold=smart_adx_trend_val,
+            smart_use_ema200_filter=smart_ema200_val,
+            smart_climax_filter_enabled=smart_climax_val,
+            smart_max_atr_expansion=smart_max_exp_val,
+            smart_ema_preset=smart_ema_preset_val,
+            smart_stoch_preset=smart_stoch_preset_val,
+            smart_interval=smart_interval_val,
+            smart_require_closed_candle=smart_req_closed_val,
             duration_filter_enabled=args.duration_filter if args.duration_filter is not None else get_setting("DURATION_FILTER_ENABLED", False),
             duration_deep_monitor_seconds=args.duration_deep_monitor if args.duration_deep_monitor is not None else get_setting("DURATION_DEEP_MONITOR_SECONDS", 60.0),
             duration_max_hold_seconds=args.duration_max_hold if args.duration_max_hold is not None else get_setting("DURATION_MAX_HOLD_SECONDS", 90.0),

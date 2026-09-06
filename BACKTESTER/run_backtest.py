@@ -124,9 +124,12 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     print("\n4. Select Strategy:")
     print("   [1] Stochastic RSI       (Fast Scalp & Reversals in extreme zones) [Default / Recommended]")
     print("   [2] EMA Crossover        (Trend-following Golden/Death Crosses)")
+    print("   [3] Smart Strategy       (Autonomous Regime-Adaptive: Momentum EMA + Mean-Reversion Stoch RSI)")
     strat_choice = input("   Select Strategy [default: 1 (Stochastic RSI)]: ").strip()
     if strat_choice == "2":
         strategy_mode = "EMA_CROSSOVER"
+    elif strat_choice == "3":
+        strategy_mode = "SMART_STRATEGY"
     else:
         strategy_mode = "STOCH_RSI"
 
@@ -349,7 +352,17 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         htf_timeframe=htf_tf,
         hourly_filter_enabled=hourly_enabled,
         hourly_blacklist_utc=hourly_bl,
-        direction_bias=dir_bias
+        direction_bias=dir_bias,
+        smart_atr_filter_enabled=True,
+        smart_min_atr_ticks=2.5,
+        smart_chop_ceiling=58.0,
+        smart_adx_trend_threshold=26.0,
+        smart_use_ema200_filter=False,
+        smart_climax_filter_enabled=True,
+        smart_max_atr_expansion=2.2,
+        smart_ema_preset=ema_preset,
+        smart_stoch_preset=stoch_preset,
+        smart_interval=selected_tf,
     )
     return config, target
 
@@ -365,7 +378,16 @@ def main():
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Personal Access Token for workflow dispatch")
     parser.add_argument("--symbol", type=str, default=None, help="Trading pair symbol (e.g. TRUMP_USDT, DOGE_USDT)")
     parser.add_argument("--timeframe", type=str, default="1m", help="Strategy candle timeframe (e.g. 1m, 5m, 15m, 1h, 1d)")
-    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER"], help="Strategy to evaluate")
+    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "SMART_STRATEGY", "SMART", "stoch_rsi", "ema_crossover", "smart_strategy", "smart"], help="Strategy to evaluate")
+    parser.add_argument("--smart-atr-filter", dest="smart_atr_filter", action="store_true", default=None, help="Enable Smart Strategy ATR compression filter")
+    parser.add_argument("--no-smart-atr-filter", dest="smart_atr_filter", action="store_false", help="Disable Smart Strategy ATR compression filter")
+    parser.add_argument("--smart-min-atr-ticks", type=float, default=2.5, help="Minimum ATR in ticks for Smart Strategy entry (default: 2.5)")
+    parser.add_argument("--smart-chop-ceiling", type=float, default=58.0, help="Choppiness Index ceiling for Smart Strategy (default: 58.0)")
+    parser.add_argument("--smart-adx-trend-threshold", type=float, default=26.0, help="ADX momentum threshold for Smart Strategy (default: 26.0)")
+    parser.add_argument("--smart-ema200-filter", action="store_true", default=False, help="Enable 200 EMA direction lock on Smart Strategy (default: False)")
+    parser.add_argument("--smart-climax-filter", dest="smart_climax_filter", action="store_true", default=True, help="Enable volatility climax filter on Smart Strategy (default: True)")
+    parser.add_argument("--no-smart-climax-filter", dest="smart_climax_filter", action="store_false", help="Disable volatility climax filter on Smart Strategy")
+    parser.add_argument("--smart-max-atr-expansion", type=float, default=2.2, help="Max candle range expansion vs ATR for climax filter (default: 2.2)")
     parser.add_argument("--ema-preset", type=str, default="5/13", help="EMA preset (5/13, 9/21, 3/8)")
     parser.add_argument("--stoch-preset", type=str, default="FAST_SCALP", help="Stoch RSI preset")
     parser.add_argument("--start", type=str, default=None, help="Start date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)")
@@ -479,10 +501,12 @@ def main():
             except Exception as e:
                 print(f"[!] Warning: Failed to parse --filters-json: {e}")
 
+        strat_mode = "SMART_STRATEGY" if args.strategy.upper() in ("SMART", "SMART_STRATEGY") else args.strategy.upper()
+
         config = BacktestConfig(
             symbol=sym,
             timeframe=args.timeframe,
-            strategy_mode=args.strategy,
+            strategy_mode=strat_mode,
             ema_preset=args.ema_preset,
             stoch_preset=args.stoch_preset,
             start_time=args.start,
@@ -504,6 +528,16 @@ def main():
             fee_mode=args.fee_mode,
             maker_fee_override=maker_fee,
             taker_fee_override=taker_fee,
+            smart_atr_filter_enabled=args.smart_atr_filter if args.smart_atr_filter is not None else True,
+            smart_min_atr_ticks=args.smart_min_atr_ticks,
+            smart_chop_ceiling=args.smart_chop_ceiling,
+            smart_adx_trend_threshold=args.smart_adx_trend_threshold,
+            smart_use_ema200_filter=args.smart_ema200_filter,
+            smart_climax_filter_enabled=args.smart_climax_filter,
+            smart_max_atr_expansion=args.smart_max_atr_expansion,
+            smart_ema_preset=args.ema_preset,
+            smart_stoch_preset=args.stoch_preset,
+            smart_interval=args.timeframe,
             duration_filter_enabled=dur_enabled,
             duration_deep_monitor_seconds=dur_deep,
             duration_max_hold_seconds=dur_max,

@@ -1,0 +1,1019 @@
+I went through the uploaded dossiers as one research corpus rather than treating each report independently. The strongest conclusion is that your two strategies should **not** be “improved” by adding more filters to each one independently. They should be given **different jobs** inside a regime-aware execution system.
+
+There is a fairly clean architecture hiding inside your results:
+
+> **EMA_CROSSOVER = momentum engine**
+> **STOCH_RSI = rotational / mean-reversion engine**
+> **Neither strategy should operate in dead compression or extreme volatility.**
+
+The evidence for that is considerably stronger than the specific projected PF numbers in the reports.
+
+---
+
+# 1. What your backtests actually discovered
+
+Your experiments have effectively isolated three separate problems.
+
+### Problem A: The entries are often not the main problem
+
+Both strategies can generate a surprisingly high raw win rate when positions are allowed to remain open indefinitely. EMA_CROSSOVER reached 85.34% WR, while STOCH_RSI reached 84.75%. But the payoff asymmetry means those numbers are dangerously close to the mathematical survival boundary.  
+
+For the nominal $0.0004 win versus $0.0020 loss configuration:
+
+$$
+E = W(0.0004)-(1-W)(0.0020)
+$$
+
+so:
+
+$$
+W_{BE}=83.33\%
+$$
+
+That means a strategy with 85% WR isn't swimming in edge. It is walking across a very thin bridge.
+
+And the bridge gets even stranger because your -25% ROE stop is **not a fixed number of ticks**. As TRUMP's price changed, the same ROE stop represented very different absolute price movements. Your dossiers show approximately 16.7 ticks at $5, 10.7 ticks around $3.2, 7.3 ticks around $2.2 and 4.8 ticks around $1.45. 
+
+So your actual strategy geometry is changing with the asset price.
+
+---
+
+### Problem B: The biggest enemy is time
+
+This is the most convincing finding in the entire dataset.
+
+For EMA_CROSSOVER, winning trades had median duration around 8.4 seconds, while losing trades had median duration around 374 seconds in the no-timeout run. The analysis found that once a scalp survives beyond roughly 38-45 seconds, the conditional probability of eventual TP collapses.  
+
+STOCH_RSI shows essentially the same pathology. In one cross-run analysis, the reported conditional expectancy becomes approximately zero around 38-40 seconds and negative thereafter. 
+
+So the important variable is not merely:
+
+`"Did the signal work?"`
+
+It is:
+
+`"Did the signal produce the required displacement quickly?"`
+
+That is a fundamentally different trading system.
+
+---
+
+### Problem C: The fixed 2-tick target becomes physically inappropriate
+
+This appears repeatedly across the dossiers.
+
+When ATR compressed below roughly 0.0025-0.0028, a 2-tick target became larger than, or comparable to, the expected movement of an entire 1-minute candle. During the compression phase, performance collapsed spectacularly.  
+
+The important point is:
+
+**ATR is not merely a risk filter. In your system it is a target-feasibility variable.**
+
+That distinction matters enormously.
+
+---
+
+# 2. Your biggest mistake would be building one giant filter stack
+
+You already ran the experiment.
+
+For EMA_CROSSOVER:
+
+| Architecture       | Trades |     WR |   PF | Net PnL |
+| ------------------ | -----: | -----: | ---: | ------: |
+| No filter          | 18,175 | 85.34% | 1.22 |  +0.814 |
+| 90s duration       | 26,054 | 53.84% | 1.15 |  +0.741 |
+| Static all filters |  3,484 | 50.80% | 1.11 | +0.0718 |
+
+
+
+STOCH_RSI shows the same architectural warning: the raw system had 84.75% WR and PF 1.16, the 90-second variant had 56.41% WR and PF 1.19, while the static filter version had only 57.38% WR and PF 1.08. 
+
+So:
+
+> **More filters ≠ more alpha.**
+
+Your reports are strongest when they identify **failure regimes**, not when they simply pile conditions together.
+
+That leads directly to how I would redesign the systems.
+
+---
+
+# 3. Strategy #1: EMA_CROSSOVER
+
+## New identity
+
+I would turn EMA_CROSSOVER into a **pure momentum continuation scalp**.
+
+I would *not* allow it to compete with STOCH_RSI for range-trading signals.
+
+The reports repeatedly show EMA_CROSSOVER is strongest in clean directional regimes, while its worst behavior occurs in compression and countertrend conditions. 
+
+### EMA's job becomes:
+
+> Detect a genuine directional transition, enter early, demand immediate velocity, and abandon the trade rapidly if velocity does not appear.
+
+That is much cleaner than:
+
+> crossover → trade → wait → hope.
+
+---
+
+# 4. EMA_CROSSOVER entry architecture
+
+### Layer 1: Macro direction
+
+Use the 200 EMA as a **directional permission layer**, not just another indicator.
+
+For strong trends:
+
+**LONG allowed only when**
+
+$$
+Price > EMA_{200}
+$$
+
+**SHORT allowed only when**
+
+$$
+Price < EMA_{200}
+$$
+
+The research repeatedly identifies countertrend trades against the 200 EMA plus elevated ADX as a major source of catastrophic losses. 
+
+For production, I would make this stricter:
+
+### Strong trend state
+
+```text
+ADX >= 26
+CHOP < 52
+ATR >= minimum viable threshold
+```
+
+Then:
+
+```text
+Price > EMA200 -> LONG EMA crosses only
+Price < EMA200 -> SHORT EMA crosses only
+```
+
+This is consistent with the combined regime architecture in your reports. 
+
+---
+
+# 5. Do NOT chase very extended EMA signals
+
+This is subtle.
+
+You discovered that countertrend signals are horrible, but you also discovered that extreme extension itself creates wick-out danger.
+
+The research gives examples of trades several percent away from EMA200 getting destroyed almost instantly. 
+
+Therefore I would divide the trend regime into two pieces.
+
+### Normal momentum
+
+```text
+ADX >= 26
+Price aligned with EMA200
+moderate EMA200 distance
+CHOP < 52
+```
+
+**Trade full-size.**
+
+### Extended / exhausted momentum
+
+```text
+ADX very high
+Price very far from EMA200
+ATR/ATR baseline extremely elevated
+volume extremely elevated
+```
+
+**Do not chase the crossover.**
+
+Wait for a pullback/retest or simply stand aside.
+
+Your reports contain several candidate boundaries around 0.85%, 2.0%, 2.2% and 2.5% depending on the particular analysis.  
+
+I would **not pick one of those numbers as “the true value” yet**. They are candidate thresholds that need an explicit walk-forward sweep.
+
+---
+
+# 6. EMA's entry filter should be velocity-based
+
+This is the biggest improvement I would make.
+
+A crossover alone tells you:
+
+> the short-term relationship between two EMAs changed.
+
+It does **not** tell you whether the market has enough immediate velocity to complete your scalp.
+
+Your winning trades tend to resolve extraordinarily quickly, while stagnant trades become toxic. 
+
+Therefore your EMA signal should require something like:
+
+```text
+EMA cross
++
+macro alignment
++
+viable ATR
++
+acceptable CHOP
++
+acceptable volume
++
+no exhaustion wick
+```
+
+But crucially:
+
+**these should be viewed as a hierarchy, not equal-weight AND conditions.**
+
+I'd structure them:
+
+### Hard vetoes
+
+* ATR below target-feasibility threshold
+* wrong side of EMA200 during strong trend
+* severe CHOP
+* extreme volatility/climax
+* obvious opposing wick/exhaustion
+
+### Soft confirmations
+
+* volume participation
+* RSI location
+* EMA slope
+* distance from EMA200
+* recent candle body strength
+
+This preserves signal density.
+
+---
+
+# 7. EMA exit architecture
+
+This should be completely replaced.
+
+The 90-second timeout is dead.
+
+The evidence suggests the useful region is approximately 35-45 seconds, with several reports converging around 40 seconds. 
+
+My first production candidate would therefore be:
+
+```text
+T = 0s
+    enter
+
+T = 15s
+    inspect MFE
+
+T = 18s
+    if MFE >= +1 tick and trade has retraced:
+        move protection to breakeven
+
+T = 25s
+    if MFE < +1 tick and PnL <= 0:
+        scratch/kill
+
+T = 35s
+    if still not moving decisively:
+        aggressive exit
+
+T = 40s
+    absolute market kill
+```
+
+The reports independently converge on essentially this type of lifecycle, including +1 tick MFE breakeven activation and a 40-second hard kill. 
+
+---
+
+# 8. One change I would make to the proposed EMA architecture
+
+The reports sometimes use:
+
+> “if +1 tick MFE, move stop to breakeven”
+
+I would **not immediately force this on every trade**.
+
+Why?
+
+Because your target itself is +2 ticks.
+
+A trade reaching +1 tick has demonstrated some momentum, but that does not prove the remaining +1 tick is likely. Moving the stop to exact entry could convert many otherwise profitable trades into scratches.
+
+So I would test three variants:
+
+### Variant A
+
+```text
++1 tick MFE after 18s → BE
+```
+
+### Variant B
+
+```text
++1 tick MFE after 15-18s
+→ stop at -0.5 tick / near-entry
+```
+
+### Variant C
+
+```text
++1 tick MFE
+→ trailing stop at +0.25 to +0.5 tick
+```
+
+Do not assume A is automatically superior.
+
+That's an experiment the existing reports did **not** conclusively establish.
+
+---
+
+# 9. EMA target: keep 2 ticks initially, but make it experimental
+
+I would **not immediately replace the +2 tick target**.
+
+Why?
+
+Because your existing data has actually established that the strategy works around that target under sufficient volatility.
+
+What the data establishes is that the target becomes inappropriate when volatility collapses. 
+
+So first test:
+
+```text
+ATR >= threshold
+    -> +2 tick target
+
+ATR < threshold
+    -> no trade
+```
+
+Only after that should you investigate:
+
+```text
+TP = function(ATR)
+```
+
+That prevents two different changes from becoming entangled.
+
+---
+
+# 10. Strategy #2: STOCH_RSI
+
+This one should be redesigned much more aggressively.
+
+## New identity
+
+STOCH_RSI should become your:
+
+> **balanced-range rotational scalp engine**
+
+not your universal reversal engine.
+
+That is probably the single most important modification.
+
+The combined research explicitly reaches the same conclusion: route EMA_CROSSOVER into momentum expansion and STOCH_RSI into balanced rotational ranges. 
+
+---
+
+# 11. STOCH_RSI should be DISABLED in strong trends
+
+This is where your original logic is structurally dangerous.
+
+Your stochastic sees:
+
+```text
+oversold
+```
+
+and interprets it as:
+
+```text
+LONG
+```
+
+But in a strong bearish impulse:
+
+```text
+oversold
+```
+
+can simply mean:
+
+```text
+the market is falling very hard
+```
+
+The dossiers give spectacular examples, including long entries several percent below EMA200 with ADX above 50 that were stopped almost immediately. 
+
+So:
+
+### Strong bullish regime
+
+```text
+STOCH_RSI SHORT = BLOCK
+```
+
+### Strong bearish regime
+
+```text
+STOCH_RSI LONG = BLOCK
+```
+
+Don't merely make those trades smaller.
+
+**Do not take them.**
+
+---
+
+# 12. STOCH_RSI's correct operating regime
+
+I'd initially define:
+
+```text
+ATR >= viable floor
+ADX roughly 18-26
+CHOP roughly 35-58
+```
+
+and route stochastic signals there.
+
+This is close to the regime architecture already derived in your combined dossier. 
+
+The important conceptual point is that STOCH_RSI should be looking for:
+
+> **oscillation inside a functioning market**
+
+not:
+
+> **absolute oscillator extremes regardless of market state.**
+
+---
+
+# 13. Change STOCH_RSI from “extreme = entry” to “extreme + context = entry”
+
+This is crucial.
+
+Your current conceptual logic is approximately:
+
+```text
+K < oversold threshold -> LONG
+K > overbought threshold -> SHORT
+```
+
+I would replace that with:
+
+```text
+RANGE REGIME
++
+STOCH EXTREME
++
+RSI acceptable
++
+price location acceptable
++
+no opposing macro impulse
++
+viable liquidity
+```
+
+The reports contain useful candidate RSI boundaries, such as long 46-64 and short 36-54 in one architecture, and stricter range-specific settings elsewhere. 
+
+But again, **don't hard-code those as truth**.
+
+The correct research procedure is to search the parameter surface and determine whether the edge remains stable across neighboring values.
+
+---
+
+# 14. STOCH_RSI should react differently to ADX than EMA
+
+This is where the two systems should become genuinely different.
+
+### EMA_CROSSOVER
+
+ADX rising:
+
+> **good**
+
+### STOCH_RSI
+
+ADX rising into strong trend:
+
+> **dangerous**
+
+So they should almost be mirror images.
+
+For example:
+
+```text
+ADX < 18
+    -> usually too stagnant
+
+ADX 18-26
+    -> STOCH_RSI hunting ground
+
+ADX >= 26
+    -> gradually suppress STOCH_RSI
+
+ADX very high
+    -> hard disable
+```
+
+That would dramatically reduce the situation where an oscillator tries to fade a liquidation cascade.
+
+---
+
+# 15. STOCH_RSI's time limit should actually be shorter in range mode
+
+This is one place where I would diverge slightly from the generic 40-second architecture.
+
+Your reports already contain a 30-35 second range-specific timeout. 
+
+That makes sense.
+
+A mean-reversion scalp that has not reverted within a short interval is no longer behaving like a mean-reversion scalp.
+
+So I'd test:
+
+```text
+Range STOCH_RSI:
+
+15s -> inspect MFE
+15-18s -> BE protection after +1t
+25s -> kill stagnant underwater trades
+30-35s -> absolute kill
+```
+
+rather than giving it 40-45 seconds.
+
+---
+
+# 16. STOCH_RSI needs a special anti-climax filter
+
+The research repeatedly identifies two dangerous extremes:
+
+### Extremely high volatility
+
+The move is too violent for the small target/stop structure.
+
+### Extremely low volatility
+
+The market cannot traverse the target.
+
+That means STOCH_RSI needs an **operating window**, not just a minimum ATR:
+
+$$
+ATR_{min} \le ATR \le ATR_{max}
+$$
+
+Your reports propose upper volatility ceilings around 0.0085-0.009 or an ATR/baseline expansion above ~2.2x as circuit-breaker territory.  
+
+Again, I would test those rather than blindly deploying them.
+
+---
+
+# 17. The biggest structural modification: build a regime router
+
+This is the part I think is much more important than tweaking either indicator.
+
+Your system should first answer:
+
+> **What kind of market is this?**
+
+Only then should it ask:
+
+> **What does the strategy signal say?**
+
+I would structure it approximately as:
+
+```text
+                        MARKET STATE
+                             │
+             ┌───────────────┼────────────────┐
+             │               │                │
+          DEAD           MOMENTUM          RANGE
+             │               │                │
+          PAUSE        EMA_CROSSOVER      STOCH_RSI
+                             │
+                       ┌─────┴─────┐
+                     BULL         BEAR
+                      │             │
+                   LONG ONLY     SHORT ONLY
+```
+
+And add a fourth state:
+
+```text
+EXTREME VOLATILITY / CLIMAX
+            ↓
+       SYSTEM PAUSE
+```
+
+That architecture is directly consistent with the combined research corpus. 
+
+---
+
+# 18. My recommended first-pass regime matrix
+
+This is the version I would actually backtest next.
+
+| Regime         | Conditions                                             | Strategy  | Direction |
+| -------------- | ------------------------------------------------------ | --------- | --------- |
+| Compression    | ATR < ~0.0025 OR severe CHOP                           | None      | None      |
+| Strong bull    | ADX ≥ ~26, price > EMA200, CHOP acceptable             | EMA       | Long      |
+| Strong bear    | ADX ≥ ~26, price < EMA200, CHOP acceptable             | EMA       | Short     |
+| Balanced range | ADX ~18-26, ATR viable, CHOP moderate                  | STOCH_RSI | Both      |
+| Extreme/climax | ATR extremely elevated / ATR surge / extreme extension | None      | None      |
+
+This isn't presented as a mathematically finalized parameter set. It is the **best hypothesis to test next**, built from the recurring boundaries in your reports. 
+
+---
+
+# 19. Your current 75x leverage architecture deserves a separate redesign
+
+This is actually deeper than either strategy.
+
+Your current configuration couples:
+
+```text
+75x leverage
++
+-25% ROE stop
++
+fixed +2 tick target
+```
+
+That means the absolute stop changes as price changes.
+
+Your own research demonstrates the consequence. The effective payoff profile changes materially across the eight-month period. 
+
+I would therefore separate three things:
+
+### Signal
+
+“How likely is this trade to move?”
+
+### Position risk
+
+“How much USDT am I willing to lose?”
+
+### Leverage
+
+“How much margin is required to express that risk?”
+
+Those should no longer be mathematically entangled.
+
+Eventually I'd like your system to define risk like:
+
+```text
+risk_budget = fixed fraction of account
+stop_distance = market-dependent
+position_size = risk_budget / stop_distance
+leverage = execution constraint
+```
+
+rather than:
+
+```text
+75x -> -25% ROE -> whatever tick distance happens to result
+```
+
+Your current data strongly suggests that the latter is producing undesirable regime-dependent payoff distortion.
+
+This part is my architectural inference from the backtests, rather than something the reports directly validated.
+
+---
+
+# 20. Do not optimize the TP and SL simultaneously yet
+
+This is extremely important scientifically.
+
+You already have several variables changing:
+
+* signal
+* ATR filter
+* CHOP filter
+* ADX filter
+* EMA distance
+* duration
+* BE
+* volume
+* target
+* stop
+* position size
+
+If you change everything at once, you won't know where the improvement came from.
+
+So I would freeze:
+
+```text
+TP = +2 ticks
+SL = current configuration
+```
+
+and first establish:
+
+> **Can the strategy survive purely through regime selection + time management?**
+
+Only afterward should you optimize payoff geometry.
+
+---
+
+# 21. The next experiment I would run for EMA
+
+Do **not** immediately run another giant 50-filter backtest.
+
+Run a controlled ablation matrix:
+
+### E0
+
+Original EMA_CROSSOVER
+
+### E1
+
+E0 + 40s kill
+
+### E2
+
+E1 + MFE-based BE
+
+### E3
+
+E2 + EMA200 direction lock
+
+### E4
+
+E3 + ATR floor
+
+### E5
+
+E4 + CHOP filter
+
+### E6
+
+E5 + volume filter
+
+### E7
+
+E6 + exhaustion protection
+
+Then measure after every step:
+
+```text
+PF
+Expectancy/trade
+Net PnL
+Max DD
+Trade count
+Median winner duration
+Median loser duration
+95th percentile holding time
+Hard-stop rate
+Scratch rate
+PnL by regime
+PnL by week
+PnL by direction
+```
+
+This will tell you which component is actually creating the improvement.
+
+---
+
+# 22. Do the same separately for STOCH_RSI
+
+I'd use:
+
+```text
+S0 = original STOCH_RSI
+S1 = time kill
+S2 = time kill + MFE protection
+S3 = + strong-trend direction veto
+S4 = + ATR floor
+S5 = + CHOP regime
+S6 = + volume/liquidity filter
+S7 = + climax filter
+S8 = complete range-only STOCH
+```
+
+Then compare.
+
+The important thing is that **S8 must be evaluated separately from EMA** rather than judged by aggregate portfolio PnL.
+
+---
+
+# 23. The backtest results suggest an ensemble, not competition
+
+This is probably the most interesting conclusion.
+
+Your two strategies are sufficiently different that forcing one to solve every market environment is unnecessary.
+
+The combined research explicitly identifies them as complementary:
+
+* EMA_CROSSOVER: momentum
+* STOCH_RSI: range/mean reversion
+
+and proposes switching between them based on regime. 
+
+So instead of:
+
+```text
+EMA strategy
+AND
+STOCH strategy
+```
+
+think:
+
+```text
+                   REGIME CLASSIFIER
+                          │
+             ┌────────────┼─────────────┐
+             │            │             │
+          MOMENTUM      RANGE         INVALID
+             │            │             │
+            EMA         STOCH          NONE
+```
+
+That is a much cleaner scientific hypothesis.
+
+---
+
+# 24. One thing in the existing reports I would NOT trust yet
+
+The reports repeatedly project very large improvements such as PF 2.3-3.9 and massive PnL increases after applying the proposed architecture. 
+
+Those numbers are **projections**, not equivalent to a clean new backtest.
+
+That's a very important distinction.
+
+Similarly, some reports quote slightly different trade totals, thresholds and results for what appears to be the same overall experiment. For example, the combined dossiers report different aggregate corpus sizes depending on which runs are included.  
+
+So I would regard:
+
+```text
+the failure mechanisms
+```
+
+as much more trustworthy than:
+
+```text
+the projected production PF.
+```
+
+The next backtest needs to establish the latter independently.
+
+---
+
+# 25. My final recommended architecture
+
+## EMA_CROSSOVER
+
+**Use it as a directional momentum scalper.**
+
+```text
+Signal:
+    EMA crossover
+
+Permission:
+    ATR viable
+    ADX reasonably strong
+    CHOP acceptable
+    price aligned with EMA200
+
+Direction:
+    above EMA200 -> LONG
+    below EMA200 -> SHORT
+
+Block:
+    countertrend
+    severe chop
+    sub-ATR compression
+    extreme volatility
+    extreme extension
+
+Exit:
+    +2t TP initially
+    MFE-based protection around 15-18s
+    stagnant-trade kill around 25s
+    hard kill around 40s
+```
+
+The source evidence supports the time mechanics, EMA alignment, ATR floor and trend-regime concept.  
+
+---
+
+## STOCH_RSI
+
+**Use it as a controlled rotational-range scalper.**
+
+```text
+Signal:
+    Stoch RSI crossover/extreme
+
+Permission:
+    balanced ADX
+    viable ATR
+    acceptable CHOP
+    acceptable RSI context
+    adequate liquidity
+
+Direction:
+    both directions in range
+
+Block:
+    strong trend counter-direction
+    sub-ATR compression
+    severe chop
+    volatility climax
+    macro extension
+
+Exit:
+    +2t TP initially
+    MFE protection around 15-18s
+    stagnation kill around 25s
+    hard kill around 30-35s
+```
+
+The source evidence particularly supports the idea of disabling STOCH_RSI against strong trends and reserving it for balanced conditions.  
+
+---
+
+# 26. The most important change of all
+
+Your current architecture asks:
+
+> **“Did my indicator produce a signal?”**
+
+Your new architecture should ask:
+
+> **“Is this the correct strategy for the current microstructure, and if I enter, does the market demonstrate the required velocity quickly enough?”**
+
+That is the conceptual upgrade.
+
+The backtests strongly suggest that the **signal itself is only one component of the edge**. The real edge appears to be the combination:
+
+$$
+\boxed{
+\text{Regime Selection}
++
+\text{Directional Selection}
++
+\text{Target Feasibility}
++
+\text{Immediate Velocity}
++
+\text{Time-Decay Risk Management}
+}
+$$
+
+And that is why your 90-second version failed despite looking reasonable, while the proposed 35-40 second lifecycle repeatedly emerges from the forensic data. 
+
+### What I would build next
+
+I would **not code the final production bot yet**.
+
+I would build a **Strategy V2 research engine** containing:
+
+```text
+RegimeClassifier
+        ↓
+StrategyRouter
+   ↙          ↘
+EMA V2      STOCH V2
+   ↓          ↓
+Shared Execution Manager
+        ↓
+Telemetry / Attribution
+```
+
+with every decision logged as:
+
+```text
+regime
+signal
+filters_passed
+filters_failed
+MFE path
+MAE path
+time-to-1t
+time-to-2t
+exit reason
+ATR
+ADX
+CHOP
+EMA200 distance
+volume
+PnL
+```
+
+That will let you answer the much more valuable question:
+
+**“Which exact combination of market state + strategy + entry conditions + trade age produces positive expectancy?”**
+
+That is the experiment I would run before touching target/stop optimization.

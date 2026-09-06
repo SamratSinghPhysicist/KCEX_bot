@@ -202,10 +202,18 @@ class GitHubBacktestRunner:
             "direction_bias": getattr(config, "direction_bias", "BOTH") or "BOTH"
         }
 
+        strat = config.strategy_mode.upper() if config.strategy_mode else "STOCH_RSI"
+        if strat in ("SMART", "SMART_STRATEGY"):
+            strat = "SMART_STRATEGY"
+        elif strat in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
+            strat = "EMA_CROSSOVER"
+        else:
+            strat = "STOCH_RSI"
+
         return {
             "symbol": sym,
             "timeframe": config.timeframe,
-            "strategy": config.strategy_mode,
+            "strategy": strat,
             "ema_preset": config.ema_preset or "5/13",
             "stoch_preset": config.stoch_preset or "FAST_SCALP",
             "start_date": start_date,

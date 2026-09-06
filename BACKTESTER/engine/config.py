@@ -63,6 +63,7 @@ class BacktestConfig(ExecutionConfig):
         # Keep interval in sync with timeframe for strategy logic
         self.ema_interval = self.timeframe
         self.stoch_interval = self.timeframe
+        self.smart_interval = self.timeframe
         # Normalize symbol name (e.g. TRUMP_USDT -> TRUMP_USDT)
         if self.symbol:
             self.symbol = self.symbol.upper()

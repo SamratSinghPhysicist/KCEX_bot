@@ -30,7 +30,8 @@ from kcex.engine.strategy import (
     MasterplanStrategy,
     BaseStrategy,
     EMACrossoverStrategy,
-    StochasticRSIStrategy
+    StochasticRSIStrategy,
+    SmartStrategy
 )
 from kcex.market import ContractInfo
 from BACKTESTER.engine.config import BacktestConfig
@@ -124,7 +125,26 @@ class BacktestExecutionEngine:
         strat_upper = str(strat_mode).upper()
         pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
 
-        if strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
+        if strat_upper in ("SMART", "SMART_STRATEGY"):
+            sub_strat = SmartStrategy(
+                market=self.market,
+                symbol=self.symbol,
+                interval=timeframe_to_kcex_interval(self.config.timeframe),
+                preferred_direction=pref_dir,
+                cooldown_seconds=self.config.cooldown_seconds,
+                require_closed_candle=getattr(self.config, "smart_require_closed_candle", True),
+                atr_filter_enabled=getattr(self.config, "smart_atr_filter_enabled", True),
+                min_atr_ticks=getattr(self.config, "smart_min_atr_ticks", 2.5),
+                chop_ceiling=getattr(self.config, "smart_chop_ceiling", 58.0),
+                adx_trend_threshold=getattr(self.config, "smart_adx_trend_threshold", 26.0),
+                use_ema200_filter=getattr(self.config, "smart_use_ema200_filter", False),
+                climax_filter_enabled=getattr(self.config, "smart_climax_filter_enabled", True),
+                max_atr_expansion=getattr(self.config, "smart_max_atr_expansion", 2.2),
+                ema_preset=getattr(self.config, "smart_ema_preset", getattr(self.config, "ema_preset", "5/13")),
+                stoch_preset=getattr(self.config, "smart_stoch_preset", getattr(self.config, "stoch_preset", "FAST_SCALP")),
+                auto_start_feed=False
+            )
+        elif strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
             sub_strat = EMACrossoverStrategy(
                 market=self.market,
                 symbol=self.symbol,

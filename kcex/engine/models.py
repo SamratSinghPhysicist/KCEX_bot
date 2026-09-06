@@ -96,6 +96,22 @@ class ExecutionConfig:
     hourly_filter_enabled: bool = False         # Blacklist low-liquidity UTC hours
     hourly_blacklist_utc: List[int] = field(default_factory=list) # e.g. [2, 3, 4, 5, 17]
     direction_bias: str = "BOTH"                # "BOTH", "LONG_ONLY", or "SHORT_ONLY"
+    # Smart Strategy Configuration (Regime-Adaptive Architecture)
+    smart_atr_filter_enabled: bool = True       # Suppress entries during sub-ATR compression
+    smart_min_atr_ticks: float = 2.5            # Min ATR in ticks required to ensure target feasibility
+    smart_chop_ceiling: float = 58.0            # CHOP index above which market is considered dead consolidation
+    smart_adx_trend_threshold: float = 26.0     # ADX threshold separating trending from ranging regimes
+    smart_use_ema200_filter: bool = False       # Direction lock via 200 EMA (Default OFF per empirical validation)
+    smart_ema200_period: int = 200              # 200 EMA period
+    smart_climax_filter_enabled: bool = True    # Circuit breaker on volatility spikes
+    smart_max_atr_expansion: float = 2.2        # Current ATR / Baseline ATR ceiling
+    smart_ema_preset: str = "5/13"              # Momentum sub-strategy preset
+    smart_stoch_preset: str = "FAST_SCALP"      # Mean-reversion sub-strategy preset
+    smart_interval: str = "Min1"                # Candle interval for Smart Strategy evaluation
+    smart_require_closed_candle: bool = True    # Confirm cross on closed candle
+    # Order Execution Mode (Zero Slippage Architecture)
+    order_type: str = "MARKET"                  # "MARKET" or "LIMIT" (Post-Only Maker)
+    limit_order_timeout_seconds: float = 10.0   # Timeout before canceling unfilled maker orders
     poll_interval_seconds: float = 0.5
     logs_dir: str = "logs"
     realtime_log_file: str = "engine_realtime.log"

@@ -43,6 +43,12 @@ from strategies.stoch_rsi import (
     compute_rsi_series,
     compute_stoch_rsi
 )
+from strategies.smart_strategy import (
+    SmartStrategy,
+    SmartSubStrategy,
+    MarketRegime,
+    compute_chop_series
+)
 
 logger = logging.getLogger("KCEXStrategy")
 
@@ -78,7 +84,25 @@ class MasterplanStrategy:
             strat_upper = str(strat_mode).upper()
             pref_dir = None if getattr(self.config, "bi_directional", True) else self.config.direction
 
-            if strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
+            if strat_upper in ("SMART", "SMART_STRATEGY"):
+                self.sub_strategy = SmartStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    interval=getattr(self.config, "smart_interval", "Min1"),
+                    preferred_direction=pref_dir,
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    require_closed_candle=getattr(self.config, "smart_require_closed_candle", True),
+                    atr_filter_enabled=getattr(self.config, "smart_atr_filter_enabled", True),
+                    min_atr_ticks=getattr(self.config, "smart_min_atr_ticks", 2.5),
+                    chop_ceiling=getattr(self.config, "smart_chop_ceiling", 58.0),
+                    adx_trend_threshold=getattr(self.config, "smart_adx_trend_threshold", 26.0),
+                    use_ema200_filter=getattr(self.config, "smart_use_ema200_filter", False),
+                    climax_filter_enabled=getattr(self.config, "smart_climax_filter_enabled", True),
+                    max_atr_expansion=getattr(self.config, "smart_max_atr_expansion", 2.2),
+                    ema_preset=getattr(self.config, "smart_ema_preset", getattr(self.config, "ema_preset", "5/13")),
+                    stoch_preset=getattr(self.config, "smart_stoch_preset", getattr(self.config, "stoch_preset", "FAST_SCALP")),
+                )
+            elif strat_upper in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
                 self.sub_strategy = EMACrossoverStrategy(
                     market=self.market,
                     symbol=self.config.symbol,
@@ -320,10 +344,14 @@ __all__ = [
     "EMACrossoverSubStrategy",
     "StochasticRSIStrategy",
     "StochasticRSISubStrategy",
+    "SmartStrategy",
+    "SmartSubStrategy",
+    "MarketRegime",
     "EMA_PRESETS",
     "STOCH_RSI_PRESETS",
     "compute_ema_series",
     "compute_rsi_series",
     "compute_stoch_rsi",
+    "compute_chop_series",
     "MasterplanStrategy",
 ]
