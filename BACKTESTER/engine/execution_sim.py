@@ -259,6 +259,14 @@ class BacktestExecutionEngine:
                 if not self.strategy.sub_strategy.trade_in_progress:
                     signal = self.strategy.get_signal()
                     if signal:
+                        if getattr(self.config, "invert_signal", False):
+                            orig_dir = signal.direction
+                            signal.direction = OrderDirection.SHORT if orig_dir == OrderDirection.LONG else OrderDirection.LONG
+                            sub_name = signal.sub_strategy_name or "Strategy"
+                            signal.sub_strategy_name = f"Inverted({sub_name})"
+                            signal.metadata["inverted_signal"] = True
+                            signal.metadata["original_direction"] = orig_dir.value
+
                         # Evaluate against Regime & Trend Filter Pipeline (with sufficient lookback for HTF resampling)
                         history_slice = candles[max(0, candle_idx - 4000):candle_idx + 1]
                         allowed, reject_reason = self.filter_pipeline.evaluate(

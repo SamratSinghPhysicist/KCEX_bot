@@ -47,6 +47,7 @@ class BacktestConfig(ExecutionConfig):
     fee_mode: str = "LIVE"                   # "LIVE", "ZERO", or "MANUAL"
     maker_fee_override: Optional[float] = None
     taker_fee_override: Optional[float] = None
+    invert_signal: bool = False              # If True, inverts entry direction (Buy -> Sell, Sell -> Buy) for fading strategies
 
     # Playback pacing
     # 0.0 = batch processing (as fast as CPU allows)

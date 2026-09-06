@@ -424,6 +424,7 @@ def main():
     parser.add_argument("--hourly-filter", action="store_true", default=False, help="Enable UTC hourly session blacklist")
     parser.add_argument("--hourly-blacklist", type=str, default="", help="Comma-separated UTC hours to block (e.g. 2,3,4,5,17)")
     parser.add_argument("--direction-bias", type=str, default="BOTH", choices=["BOTH", "LONG_ONLY", "SHORT_ONLY"], help="Directional bias: BOTH, LONG_ONLY, or SHORT_ONLY")
+    parser.add_argument("--invert-signal", action="store_true", default=False, help="Invert signal direction (Sell on Buy, Buy on Sell) for fading strategies")
     parser.add_argument("--filters-json", type=str, default=None, help="JSON string containing Trade Optimization and Regime Filter configurations")
 
     args = parser.parse_args()
@@ -550,7 +551,8 @@ def main():
             htf_timeframe=htf_tf,
             hourly_filter_enabled=hourly_enabled,
             hourly_blacklist_utc=hourly_bl,
-            direction_bias=dir_bias
+            direction_bias=dir_bias,
+            invert_signal=args.invert_signal
         )
 
     # Dispatch to appropriate execution target
@@ -580,6 +582,8 @@ def main():
     print(f"Symbol:           {config.symbol}")
     print(f"Timeframe:        {config.timeframe}")
     print(f"Strategy:         {config.strategy_mode}")
+    if getattr(config, "invert_signal", False):
+        print(f"Signal Mode:      INVERTED (Fading Strategy: Long<->Short)")
     print(f"Date Range:       {config.start_time or 'Earliest'} -> {config.end_time or 'Latest'}")
     print(f"Trade Volume:     {vol_desc} ({config.volume_mode})")
     print(f"High-Fid Ticks:   {'ENABLED (Streaming tick trades)' if config.use_tick_data else 'DISABLED (Candle High/Low)'}")

@@ -303,6 +303,7 @@ class BacktestReporter:
             lines.append(f"| **Extreme Zone Filter** | `{'ENABLED' if stoch_zone else 'DISABLED'}` | Suppresses non-extreme neutral whipsaws |")
             lines.append(f"| **Candle Close Confirmation** | `{'ENABLED' if stoch_candle_conf else 'DISABLED'}` | Requires bar to close before emitting cross |")
         lines.append(f"| **Directional Flow Mode** | `{'Autonomous Bi-Directional (LONG & SHORT)' if bi_directional else 'Single-Direction'}` | Order generation policy |")
+        lines.append(f"| **Signal Inversion Mode** | `{'ENABLED (Fading: Long<->Short)' if getattr(config, 'invert_signal', False) else 'DISABLED (Direct)'}` | Signal execution orientation |")
         lines.append("")
 
         lines.append("### Trade Optimization & Regime Filters")

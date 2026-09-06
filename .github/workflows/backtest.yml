@@ -178,6 +178,12 @@ on:
         default: "0.5"
         type: string
 
+      invert_signal:
+        description: "Invert Signal Direction (Sell on Buy, Buy on Sell)"
+        required: false
+        default: false
+        type: boolean
+
       filters_json:
         description: "Filters JSON Configuration (Duration, ADX, HTF 200 EMA, Hourly, Directional Bias)"
         required: false
@@ -239,6 +245,11 @@ jobs:
             TICKS_FLAG="--no-ticks"
           fi
 
+          INVERT_FLAG=""
+          if [ "${{ inputs.invert_signal }}" = "true" ]; then
+            INVERT_FLAG="--invert-signal"
+          fi
+
           python BACKTESTER/run_backtest.py \
             --symbol "${{ inputs.symbol }}" \
             --timeframe "${{ inputs.timeframe }}" \
@@ -248,6 +259,7 @@ jobs:
             --start "${{ inputs.start_date }}" \
             --end "${{ inputs.end_date }}" \
             $TICKS_FLAG \
+            $INVERT_FLAG \
             --fee-mode "${{ inputs.fee_mode }}" \
             --maker-fee "${{ inputs.maker_fee }}" \
             --taker-fee "${{ inputs.taker_fee }}" \
