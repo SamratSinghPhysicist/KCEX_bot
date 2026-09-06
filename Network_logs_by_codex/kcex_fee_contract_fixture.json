@@ -1,0 +1,22 @@
+{
+  "data": [
+    {"symbol":"DOGE_USDT","cs":10,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.0067,"imr":0.0133,"pu":0.00001,"vu":1},
+    {"symbol":"FARTCOIN_USDT","cs":100,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.01,"imr":0.0133,"pu":0.0001,"vu":1},
+    {"symbol":"TRUMP_USDT","cs":0.1,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.01,"imr":0.0133,"pu":0.001,"vu":1},
+    {"symbol":"PEPE_USDT","cs":100000,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.0067,"imr":0.0133,"pu":1e-9,"vu":1},
+    {"symbol":"PENGU_USDT","cs":100,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.01,"imr":0.0133,"pu":0.000001,"vu":1},
+    {"symbol":"BONK_USDT","cs":100000,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.0067,"imr":0.0133,"pu":1e-9,"vu":1},
+    {"symbol":"FARTCOIN_USDT","cs":100,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.01,"imr":0.0133,"pu":0.0001,"vu":1},
+    {"symbol":"SHIB_USDT","cs":100000,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.0067,"imr":0.0133,"pu":1e-9,"vu":1},
+    {"symbol":"SPX_USDT","cs":1,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.01,"imr":0.0133,"pu":0.0001,"vu":1},
+    {"symbol":"WIF_USDT","cs":1,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.01,"imr":0.0133,"pu":0.0001,"vu":1},
+    {"symbol":"FLOKI_USDT","cs":100000,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.0067,"imr":0.0133,"pu":1e-8,"vu":1},
+    {"symbol":"MELANIA_USDT","cs":0.1,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.01,"imr":0.0133,"pu":0.00001,"vu":1},
+    {"symbol":"1000FLOKI_USDT","cs":10,"minV":1,"maxL":100,"tfr":0,"mfr":0,"mmr":0.005,"imr":0.01,"pu":0.00001,"vu":1},
+    {"symbol":"1000PEPE_USDT","cs":100,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.005,"imr":0.0133,"pu":1e-7,"vu":1},
+    {"symbol":"1000SHIB_USDT","cs":100,"minV":1,"maxL":100,"tfr":0,"mfr":0,"mmr":0.005,"imr":0.01,"pu":0.000001,"vu":1},
+    {"symbol":"BABYDOGE_USDT","cs":1000000000,"minV":1,"maxL":75,"tfr":0,"mfr":0,"mmr":0.0067,"imr":0.0133,"pu":1e-13,"vu":1},
+    {"symbol":"BTC_USDT","cs":0.0001,"minV":1,"maxL":125,"tfr":0.0001,"mfr":0,"mmr":0.005,"imr":0.008,"pu":0.1,"vu":1},
+    {"symbol":"ETH_USDT","cs":0.001,"minV":1,"maxL":125,"tfr":0.0001,"mfr":0,"mmr":0.005,"imr":0.008,"pu":0.01,"vu":1}
+  ]
+}

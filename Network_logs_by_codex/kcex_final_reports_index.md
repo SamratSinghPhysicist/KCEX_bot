@@ -19,3 +19,10 @@
 - [DOGE redacted network capture](kcex_doge_futures_observed_network.redacted.ndjson)
 
 Authorization and other session secrets are redacted in every deliverable.
+
+## Fee and pair-screen correction
+
+- [Corrected fee/margin report](kcex_fee_network_capture_report.md)
+- [Corrected qualifying pairs](kcex_fee_screen_corrected_run/zero_fee_75x_margin_le_0.03.json)
+- [All zero-fee symbols](kcex_zero_fee_symbols.txt)
+- [Corrected redacted fee/ticker capture](kcex_fee_network_capture.redacted.ndjson)

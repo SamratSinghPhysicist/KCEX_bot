@@ -1,0 +1,10 @@
+{
+  "pairs": 802,
+  "zero_fee_pairs": 0,
+  "eligible_pairs": 0,
+  "unknown_fee_pairs": 802,
+  "notes": [
+    "minimum_margin_usdt = minimum_volume / max_leverage",
+    "zero-fee screening is disabled for pairs whose fee data is missing"
+  ]
+}

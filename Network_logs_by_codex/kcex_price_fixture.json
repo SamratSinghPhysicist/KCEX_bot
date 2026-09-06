@@ -1,0 +1,8 @@
+{
+  "data": [
+    {"symbol":"FARTCOIN_USDT","lastPrice":0.18,"markPrice":0.1798,"fairPrice":0.1798,"indexPrice":0.1797},
+    {"symbol":"PEPE_USDT","lastPrice":0.000003624,"markPrice":0.000003624,"fairPrice":0.000003624,"indexPrice":0.000003624},
+    {"symbol":"TRUMP_USDT","lastPrice":2.329,"markPrice":2.329,"fairPrice":2.329,"indexPrice":2.329},
+    {"symbol":"DOGE_USDT","lastPrice":0.09034,"markPrice":0.09034,"fairPrice":0.09034,"indexPrice":0.09034}
+  ]
+}

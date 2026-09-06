@@ -1,0 +1,13 @@
+{
+  "pairs": 1698,
+  "zero_fee_pairs": 371,
+  "eligible_pairs": 9,
+  "unknown_fee_pairs": 0,
+  "source": "Fresh Edge capture of contract/detailV2 plus contract/ticker",
+  "notes": [
+    "minimum_notional_usdt = minimum_volume * contract_size * mark_price",
+    "minimum_margin_usdt = minimum_notional_usdt / max_leverage",
+    "mark_price uses fairPrice when available, otherwise lastPrice/indexPrice",
+    "FARTCOIN_USDT is zero-fee and 75x but minimum margin is approximately 0.2397333 USDT"
+  ]
+}

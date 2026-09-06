@@ -1,0 +1,6 @@
+[
+  {"symbol":"DOGE_USDT","maker_fee":0,"taker_fee":0,"max_leverage":75,"minimum_volume":1,"contract_size":10,"mark_price":0.09034,"minimum_notional_usdt":0.9034,"minimum_margin_usdt":0.012045333333333333},
+  {"symbol":"FARTCOIN_USDT","maker_fee":0,"taker_fee":0,"max_leverage":75,"minimum_volume":1,"contract_size":100,"mark_price":0.1798,"minimum_notional_usdt":17.98,"minimum_margin_usdt":0.23973333333333333},
+  {"symbol":"PEPE_USDT","maker_fee":0,"taker_fee":0,"max_leverage":75,"minimum_volume":1,"contract_size":100000,"mark_price":0.000003624,"minimum_notional_usdt":0.3624,"minimum_margin_usdt":0.004832},
+  {"symbol":"TRUMP_USDT","maker_fee":0,"taker_fee":0,"max_leverage":75,"minimum_volume":1,"contract_size":0.1,"mark_price":2.329,"minimum_notional_usdt":0.2329,"minimum_margin_usdt":0.0031053333333333336}
+]
