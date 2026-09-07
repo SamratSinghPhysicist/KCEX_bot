@@ -288,28 +288,40 @@ def interactive_wizard():
         data_types = ["klines", "trades", "bookTicker"]
 
     # 4. Timeframes (if klines included)
+    ALL_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d"]
     timeframes = ["1m"]
     if "klines" in data_types:
         print("\n4. Select Candle Timeframes for OHLCV:")
-        print("   [1] 1m only [Default]")
-        print("   [2] Standard Suite: 1m, 5m, 15m, 1h, 1d")
-        print("   [3] Custom comma-separated (e.g. 1m,3m,5m,15m)")
+        print("   [1] 1m only [Default - Ultra High Frequency]")
+        print("   [2] ALL Timeframes (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d) [Complete Suite]")
+        print("   [3] Standard Multi-TF Suite (1m, 5m, 15m, 1h, 1d)")
+        print("   [4] Custom comma-separated (e.g. 1m,5m,15m,1h)")
         tf_choice = input("   Select [default: 1]: ").strip() or "1"
         if tf_choice == "2":
-            timeframes = ["1m", "5m", "15m", "1h", "1d"]
+            timeframes = ALL_TIMEFRAMES
         elif tf_choice == "3":
+            timeframes = ["1m", "5m", "15m", "1h", "1d"]
+        elif tf_choice == "4":
             raw_tf = input("   Enter timeframes: ").strip()
             timeframes = [t.strip() for t in raw_tf.split(",") if t.strip()]
+        else:
+            timeframes = ["1m"]
 
-    # 5. Date Range Discovery
+    # 5. Date Range Discovery across all selected data types
     print("\n5. Select Date Range (Monthly Archives):")
-    # Discover available date range for primary symbol & data type
-    primary_dt = data_types[0]
-    discovered_s, discovered_e = get_available_s3_date_range(market_type, primary_dt, symbols[0], timeframes[0] if timeframes else "1m")
-    if discovered_s and discovered_e:
-        print(f"   ℹ️  Binance Vision available archive range for {symbols[0]} ({primary_dt}): {discovered_s} to {discovered_e}")
-        def_s = discovered_s
-        def_e = discovered_e
+    primary_symbol = symbols[0]
+    discovered_ranges = {}
+    for dt in data_types:
+        tf_check = timeframes[0] if (dt == "klines" and timeframes) else "1m"
+        s_d, e_d = get_available_s3_date_range(market_type, dt, primary_symbol, tf_check)
+        if s_d and e_d:
+            discovered_ranges[dt] = (s_d, e_d)
+            print(f"   ℹ️  Binance Vision available for {primary_symbol} ({dt}): {s_d} to {e_d}")
+
+    # Determine smart default overlap
+    if discovered_ranges:
+        def_s = max(r[0] for r in discovered_ranges.values())
+        def_e = min(r[1] for r in discovered_ranges.values())
     else:
         def_s = "2024-01"
         def_e = "2024-12"
