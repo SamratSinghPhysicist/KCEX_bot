@@ -349,12 +349,12 @@ DYNAMIC_REGIME_FADING = False
 ADX_FADING_CUTOFF = 25.0
 
 # 3. Order Execution Style & Slippage Elimination
+# "PURE_MARKET"  -> Immediate taker market order execution (Default).
 # "MAKER_HYBRID" -> Places post-only Maker limit order at bid1/ask1 with queue timeout
 #                   and rests Take-Profit limit orders (0.00 ticks slippage).
-# "PURE_MARKET"  -> Legacy market order taker execution.
-EXECUTION_STYLE = "MAKER_HYBRID"
+EXECUTION_STYLE = "PURE_MARKET"
 MAKER_QUEUE_TIMEOUT_SECONDS = 10.0
-RESTING_LIMIT_TP = True
+RESTING_LIMIT_TP = False
 
 # 4. Phase V2.2 Champion Micro-Excursion Tick Ratchet
 # In-position trailing stop protection based on millisecond Maximum Favorable Excursion (MFE):

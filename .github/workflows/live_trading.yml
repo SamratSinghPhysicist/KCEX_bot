@@ -17,6 +17,14 @@ on:
         required: false
         default: "TRUMP_USDT"
         type: string
+      execution_style:
+        description: "Execution style (PURE_MARKET or MAKER_HYBRID)"
+        required: false
+        default: "PURE_MARKET"
+        type: choice
+        options:
+          - PURE_MARKET
+          - MAKER_HYBRID
 
 jobs:
   live-trade:
@@ -49,13 +57,15 @@ jobs:
           RUNTIME_HOURS="${{ inputs.runtime_hours || '3.5' }}"
           RUNTIME_SECONDS=$(python -c "print(int(float('${RUNTIME_HOURS}') * 3600))")
           SYMBOL="${{ inputs.symbol || 'TRUMP_USDT' }}"
+          EXEC_STYLE="${{ inputs.execution_style || 'PURE_MARKET' }}"
 
-          echo "Symbol:        ${SYMBOL}"
-          echo "Runtime Limit: ${RUNTIME_HOURS}h (${RUNTIME_SECONDS}s)"
-          echo "Environment:   GitHub Actions (Run #${{ github.run_number }})"
+          echo "Symbol:          ${SYMBOL}"
+          echo "Execution Style: ${EXEC_STYLE}"
+          echo "Runtime Limit:   ${RUNTIME_HOURS}h (${RUNTIME_SECONDS}s)"
+          echo "Environment:     GitHub Actions (Run #${{ github.run_number }})"
           echo "::endgroup::"
 
-          echo "::notice::🔴 Starting LIVE trading session: ${SYMBOL} | Runtime: ${RUNTIME_HOURS}h"
+          echo "::notice::🔴 Starting LIVE trading session: ${SYMBOL} | Style: ${EXEC_STYLE} | Runtime: ${RUNTIME_HOURS}h"
 
           python run_engine.py \
             --non-interactive \
@@ -73,7 +83,7 @@ jobs:
             --leverage 75 \
             --cooldown 1 \
             --max-trades 0 \
-            --execution-style MAKER_HYBRID \
+            --execution-style "${EXEC_STYLE}" \
             --no-ratchet \
             --disable-slippage \
             --bi-directional \

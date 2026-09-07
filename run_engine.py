@@ -257,7 +257,7 @@ def prompt_user_settings():
     default_stoch_zone = get_setting("STOCH_ZONE_FILTER", True)
     default_dir = get_setting("DIRECTION", "LONG").upper()
     invert_signal_val = get_setting("INVERT_SIGNAL", True)
-    execution_style_val = get_setting("EXECUTION_STYLE", "MAKER_HYBRID")
+    execution_style_val = get_setting("EXECUTION_STYLE", "PURE_MARKET")
     ratchet_enabled_val = get_setting("RATCHET_ENABLED", True)
     slippage_enabled_val = get_setting("SLIPPAGE_ENABLED", False)
     slippage_ticks_val = get_setting("SLIPPAGE_TICKS", 0)
@@ -617,18 +617,18 @@ def prompt_user_settings():
                 print(f"   ✓ Kept {lev_val}x leverage! Stop loss safely clamped to {max_safe_sl_ticks} ticks.")
 
     # 7b. Order Execution Style, Ratchet & Slippage Protection
-    default_exec_style = get_setting("EXECUTION_STYLE", "MAKER_HYBRID").upper()
+    default_exec_style = get_setting("EXECUTION_STYLE", "PURE_MARKET").upper()
     print("\n7b. Order Execution Style & Slippage Protection:")
-    print("   [1] MAKER_HYBRID -> Post-Only Maker limit at bid1/ask1 (10s timeout) + Resting Limit TP [Default]")
-    print("   [2] PURE_MARKET  -> Immediate taker execution")
-    def_exec_num = "1" if default_exec_style == "MAKER_HYBRID" else "2"
+    print("   [1] PURE_MARKET  -> Immediate taker market execution [Default]")
+    print("   [2] MAKER_HYBRID -> Post-Only Maker limit at bid1/ask1 (10s timeout) + Resting Limit TP")
+    def_exec_num = "1" if default_exec_style == "PURE_MARKET" else "2"
     ot_str = input(f"   Select Execution Style [default: {def_exec_num} ({default_exec_style})]: ").strip()
-    if ot_str in ("2", "market", "pure_market"):
-        execution_style_val = "PURE_MARKET"
-        order_type_val = "MARKET"
-    else:
+    if ot_str in ("2", "maker", "maker_hybrid", "MAKER_HYBRID"):
         execution_style_val = "MAKER_HYBRID"
         order_type_val = "LIMIT"
+    else:
+        execution_style_val = "PURE_MARKET"
+        order_type_val = "MARKET"
 
     # Tick Ratchet
     default_ratchet = get_setting("RATCHET_ENABLED", True)
@@ -1211,9 +1211,9 @@ def parse_args():
     parser.add_argument(
         "--execution-style",
         type=str,
+        default="PURE_MARKET",
         choices=["PURE_MARKET", "MAKER_HYBRID", "pure_market", "maker_hybrid"],
-        default=None,
-        help="Execution style: 'MAKER_HYBRID' (maker limit entry + resting TP) or 'PURE_MARKET' (taker)"
+        help="Execution style: 'PURE_MARKET' (immediate taker, default) or 'MAKER_HYBRID' (maker limit entry + resting TP)"
     )
     parser.add_argument(
         "--enable-slippage",
