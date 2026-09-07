@@ -39,9 +39,11 @@ BACKTESTER/Historical_Trades_Data_Binance/
 BACKTESTER/OHLCV_Data_Binance/
 BACKTESTER/reports/*
 !BACKTESTER/reports/.gitkeep
+BACKTESTER/BookTicker_Data_Binance/
 
 # Large AI Research Analysis Dossiers & Archives
 AI_ANALYSIS/
-*.zip
+
+
 
 

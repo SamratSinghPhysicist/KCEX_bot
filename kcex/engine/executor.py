@@ -19,7 +19,10 @@ import time
 import math
 import signal
 import sys
+import os
+import threading
 from typing import Optional, Dict, Any
+from datetime import datetime, timezone
 
 from kcex.config import KCEXConfig
 from kcex.client import KCEXClient, KCEXAPIError
@@ -35,6 +38,7 @@ from kcex.engine.models import (
     ExecutionConfig
 )
 from kcex.engine.logger import DualCurrencyLogger, TradeOutcomeLogger
+from kcex.engine.mongo_logger import MongoTradeLogger
 from kcex.engine.strategy import (
     MasterplanStrategy,
     EMACrossoverStrategy,
@@ -56,7 +60,9 @@ class TradeExecutionEngine:
         market: Optional[KCEXMarket] = None,
         trader: Optional[KCEXTrader] = None,
         risk: Optional[KCEXRiskCalculator] = None,
-        strategy: Optional[MasterplanStrategy] = None
+        strategy: Optional[MasterplanStrategy] = None,
+        mongo_logger: Optional[MongoTradeLogger] = None,
+        runtime_limit_seconds: float = 0
     ):
         self.config = config or ExecutionConfig()
         self.client = client or KCEXClient()
@@ -74,6 +80,15 @@ class TradeExecutionEngine:
             txt_file=f"{self.config.logs_dir}/{self.config.outcomes_log_file}",
             jsonl_file=f"{self.config.logs_dir}/{self.config.outcomes_jsonl_file}"
         )
+
+        # MongoDB Trade Logger (optional, gracefully degrades if unavailable)
+        self.mongo_logger = mongo_logger
+
+        # Runtime limit for GitHub Actions (0 = unlimited)
+        self.runtime_limit_seconds = runtime_limit_seconds
+        self._runtime_start: float = 0.0
+        self._in_active_trade: bool = False
+        self._cancelled_order_count: int = 0
 
         # Strategy Selection
         if strategy is not None:
@@ -261,6 +276,17 @@ class TradeExecutionEngine:
         symbol = contract.symbol
         direction = signal.direction
         is_long = (direction == OrderDirection.LONG)
+
+        # Capture wallet balance BEFORE trade entry (for MongoDB logging)
+        balance_before_usdt = None
+        balance_before_inr = None
+        if self.config.mode == EngineMode.LIVE:
+            try:
+                pre_balances = self.trader.get_usdt_balance()
+                balance_before_usdt = pre_balances.get("available_usdt", 0.0)
+                balance_before_inr = pre_balances.get("available_inr", 0.0)
+            except Exception:
+                pass
         pu = contract.price_unit
         cs = contract.contract_size
         if self.config.leverage > contract.max_leverage:
@@ -363,6 +389,7 @@ class TradeExecutionEngine:
         )
 
         open_time = time.time()
+        self._in_active_trade = True
 
         # =====================================================================
         # SUBMIT ORDER
@@ -392,11 +419,26 @@ class TradeExecutionEngine:
             )
 
 
+        self._in_active_trade = False
+
         if outcome:
+            # Attach balance_before to outcome for MongoDB
+            outcome.balance_before_trade_usdt = balance_before_usdt
+            outcome.balance_before_trade_inr = balance_before_inr
+
             # Output and record outcome
             card = self.outcome_logger.log_outcome(outcome)
             self.logger.info("\n" + card)
             self.strategy.on_trade_completed(outcome)
+
+            # Log to MongoDB (real-time, immediately after verification)
+            if self.mongo_logger and self.config.mode == EngineMode.LIVE:
+                self.mongo_logger.log_executed_trade(
+                    outcome=outcome,
+                    config=self.config,
+                    balance_before_usdt=balance_before_usdt,
+                    balance_before_inr=balance_before_inr
+                )
         else:
             self.strategy.on_trade_rejected()
 
@@ -499,6 +541,41 @@ class TradeExecutionEngine:
                     self.trader.cancel_order(order_id)
                 except Exception as ce:
                     self.logger.warning("Error cancelling unfilled limit order: %s", ce)
+
+                # Log cancelled order to MongoDB
+                self._cancelled_order_count += 1
+                if self.mongo_logger and self.config.mode == EngineMode.LIVE:
+                    try:
+                        cancel_ticker = self.market.get_ticker(symbol)
+                        market_snap = {
+                            "bid1": float(cancel_ticker.get("bid1", 0)),
+                            "ask1": float(cancel_ticker.get("ask1", 0)),
+                            "last_price": float(cancel_ticker.get("lastPrice", 0)),
+                        }
+                    except Exception:
+                        market_snap = {}
+                    cancel_bal_usdt = None
+                    cancel_bal_inr = None
+                    try:
+                        cb = self.trader.get_usdt_balance()
+                        cancel_bal_usdt = cb.get("available_usdt", 0.0)
+                        cancel_bal_inr = cb.get("available_inr", 0.0)
+                    except Exception:
+                        pass
+                    self.mongo_logger.log_cancelled_order(
+                        symbol=symbol,
+                        direction=side_str,
+                        intended_entry_price=limit_price,
+                        order_id=order_id,
+                        timeout_seconds=timeout_sec,
+                        strategy_name=sub_strategy_name,
+                        config=self.config,
+                        market_snapshot=market_snap,
+                        balance_usdt=cancel_bal_usdt,
+                        balance_inr=cancel_bal_inr,
+                        inr_rate=self.market.get_inr_rate()
+                    )
+
                 return None
         else:
             self.logger.info("Submitting live MARKET order...")
@@ -1488,6 +1565,85 @@ class TradeExecutionEngine:
     # MAIN ENGINE RUN LOOP
     # =========================================================================
 
+    def _check_runtime_limit(self) -> bool:
+        """
+        Check if runtime limit has been exceeded.
+        Only triggers shutdown between trade cycles (not during active trades).
+        Returns True if limit exceeded and shutdown should proceed.
+        """
+        if self.runtime_limit_seconds <= 0:
+            return False
+        elapsed = time.time() - self._runtime_start
+        if elapsed >= self.runtime_limit_seconds and not self._in_active_trade:
+            remaining_h = int((elapsed) // 3600)
+            remaining_m = int((elapsed % 3600) // 60)
+            self.logger.warning(
+                f"[RUNTIME LIMIT] Session duration {remaining_h}h {remaining_m}m exceeded "
+                f"limit of {self.runtime_limit_seconds / 3600:.1f}h. Initiating graceful shutdown..."
+            )
+            return True
+        return False
+
+    def _write_github_step_summary(self) -> None:
+        """
+        Write rich markdown session summary to GitHub Actions Step Summary.
+        Only writes if running in GitHub Actions environment.
+        """
+        summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+        if not summary_path:
+            return
+
+        stats = self.outcome_logger.cumulative
+        session_duration = time.time() - self._runtime_start
+        hours = int(session_duration // 3600)
+        minutes = int((session_duration % 3600) // 60)
+
+        pnl_emoji = "🟢" if stats.total_pnl_usdt >= 0 else "🔴"
+        pnl_sign = "+" if stats.total_pnl_usdt >= 0 else ""
+
+        # Get final balance
+        final_bal_usdt = "N/A"
+        final_bal_inr = "N/A"
+        try:
+            if self.config.mode == EngineMode.LIVE:
+                bal = self.trader.get_usdt_balance()
+                final_bal_usdt = f"{bal.get('available_usdt', 0):.4f}"
+                final_bal_inr = f"{bal.get('available_inr', 0):.2f}"
+        except Exception:
+            pass
+
+        run_id = os.getenv("GITHUB_RUN_ID", "N/A")
+        run_num = os.getenv("GITHUB_RUN_NUMBER", "N/A")
+
+        md_lines = [
+            f"## {pnl_emoji} KCEX Live Trading Session Report",
+            "",
+            "| Metric | Value |",
+            "|--------|-------|",
+            f"| **Total Trades** | {stats.total_trades} |",
+            f"| **Wins / Losses / Scratch** | {stats.winning_trades} / {stats.losing_trades} / {stats.scratch_trades} |",
+            f"| **Win Rate** | {stats.win_rate_pct:.1f}% |",
+            f"| **Net PnL** | {pnl_sign}{stats.total_pnl_usdt:.6f} USDT (₹{pnl_sign}{stats.total_pnl_inr:.4f}) |",
+            f"| **Best Trade** | {'+' if stats.best_trade_usdt >= 0 else ''}{stats.best_trade_usdt:.6f} USDT |",
+            f"| **Worst Trade** | {stats.worst_trade_usdt:.6f} USDT |",
+            f"| **Cancelled Orders** | {self._cancelled_order_count} |",
+            f"| **Total Fees** | {stats.total_fees_usdt:.6f} USDT |",
+            f"| **Session Duration** | {hours}h {minutes}m |",
+            f"| **Final Balance** | {final_bal_usdt} USDT (₹{final_bal_inr}) |",
+            f"| **Environment** | GitHub Actions (Run #{run_num}, ID: {run_id}) |",
+            f"| **Symbol** | {self.config.symbol} |",
+            f"| **Strategy** | {self.config.strategy_mode} ({self.config.execution_style}) |",
+            f"| **Leverage** | {self.config.leverage}x |",
+            "",
+        ]
+
+        try:
+            with open(summary_path, "a", encoding="utf-8") as f:
+                f.write("\n".join(md_lines) + "\n")
+            self.logger.info("[GITHUB] ✅ Step summary written to $GITHUB_STEP_SUMMARY")
+        except Exception as e:
+            self.logger.warning(f"[GITHUB] ⚠️ Failed to write step summary: {e}")
+
     def run(self) -> None:
         """
         Main engine execution loop:
@@ -1495,6 +1651,7 @@ class TradeExecutionEngine:
         """
         self.running = True
         self._shutdown_requested = False
+        self._runtime_start = time.time()
 
         # Set up signal handler for Ctrl+C
         def handle_sigint(signum, frame):
@@ -1505,9 +1662,18 @@ class TradeExecutionEngine:
 
         contract = self.pre_flight_checks()
 
+        # Log session start to MongoDB
+        if self.mongo_logger:
+            self.mongo_logger.log_session_start(self.config)
+
         self.strategy.start()
         self.logger.info("Starting Masterplan Automated Execution Loop...")
         self.logger.info(f"Target Trades: {self.config.max_trades if self.config.max_trades > 0 else 'Unlimited'}")
+        if self.runtime_limit_seconds > 0:
+            limit_h = self.runtime_limit_seconds / 3600
+            self.logger.info(f"Runtime Limit: {limit_h:.1f}h ({self.runtime_limit_seconds:.0f}s) — will gracefully stop after this duration")
+        if self.mongo_logger:
+            self.logger.info(f"MongoDB Logging: ENABLED | Session ID: {self.mongo_logger.session_id}")
 
         last_diag_log = 0.0
         try:
@@ -1515,6 +1681,10 @@ class TradeExecutionEngine:
                 # Check max trades
                 if self.config.max_trades > 0 and self.trade_counter >= self.config.max_trades:
                     self.logger.info(f"Reached configured maximum trades limit ({self.config.max_trades}). Stopping.")
+                    break
+
+                # Check runtime limit (only between trade cycles)
+                if self._check_runtime_limit():
                     break
 
                 # Execute single cycle
@@ -1594,3 +1764,38 @@ class TradeExecutionEngine:
             self.logger.info(
                 f"Net Session PnL: {self.logger.format_dual(stats.total_pnl_usdt)}"
             )
+            if self._cancelled_order_count > 0:
+                self.logger.info(f"Cancelled Orders (Limit Timeout): {self._cancelled_order_count}")
+
+            # Log session end to MongoDB
+            if self.mongo_logger:
+                final_bal_usdt = None
+                final_bal_inr = None
+                try:
+                    if self.config.mode == EngineMode.LIVE:
+                        bal = self.trader.get_usdt_balance()
+                        final_bal_usdt = bal.get("available_usdt", 0.0)
+                        final_bal_inr = bal.get("available_inr", 0.0)
+                except Exception:
+                    pass
+
+                self.mongo_logger.log_session_end(
+                    total_trades=stats.total_trades,
+                    winning_trades=stats.winning_trades,
+                    losing_trades=stats.losing_trades,
+                    scratch_trades=stats.scratch_trades,
+                    cancelled_orders=self._cancelled_order_count,
+                    total_pnl_usdt=stats.total_pnl_usdt,
+                    total_pnl_inr=stats.total_pnl_inr,
+                    win_rate=stats.win_rate_pct,
+                    best_trade_usdt=stats.best_trade_usdt,
+                    worst_trade_usdt=stats.worst_trade_usdt,
+                    total_fees_usdt=stats.total_fees_usdt,
+                    total_fees_inr=stats.total_fees_inr,
+                    final_balance_usdt=final_bal_usdt,
+                    final_balance_inr=final_bal_inr
+                )
+                self.mongo_logger.close()
+
+            # Write GitHub Actions Step Summary
+            self._write_github_step_summary()

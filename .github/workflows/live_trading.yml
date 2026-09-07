@@ -1,0 +1,110 @@
+name: KCEX Live Trading Engine
+
+on:
+  schedule:
+    # 6 runs per day, 4 hours apart (UTC)
+    # IST equivalent: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30
+    - cron: '0 0,4,8,12,16,20 * * *'
+  workflow_dispatch:
+    inputs:
+      runtime_hours:
+        description: "Runtime limit in hours (default: 3.5)"
+        required: false
+        default: "3.5"
+        type: string
+      symbol:
+        description: "Trading pair (e.g. TRUMP_USDT, DOGE_USDT)"
+        required: false
+        default: "TRUMP_USDT"
+        type: string
+
+jobs:
+  live-trade:
+    name: "🔴 Live Trading (${{ inputs.symbol || 'TRUMP_USDT' }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 240  # 4h hard cap (buffer beyond 3.5h for trade completion + logging)
+
+    steps:
+      - name: "📦 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🐍 Set up Python 3.13"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: "📥 Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: "🔴 Run Live Trading Engine"
+        env:
+          KCEX_AUTH_TOKEN: ${{ secrets.KCEX_AUTH_TOKEN }}
+          KCEX_USER_DEVICE: ${{ secrets.KCEX_USER_DEVICE }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          echo "::group::🔧 Engine Configuration"
+          RUNTIME_HOURS="${{ inputs.runtime_hours || '3.5' }}"
+          RUNTIME_SECONDS=$(python -c "print(int(float('${RUNTIME_HOURS}') * 3600))")
+          SYMBOL="${{ inputs.symbol || 'TRUMP_USDT' }}"
+
+          echo "Symbol:        ${SYMBOL}"
+          echo "Runtime Limit: ${RUNTIME_HOURS}h (${RUNTIME_SECONDS}s)"
+          echo "Environment:   GitHub Actions (Run #${{ github.run_number }})"
+          echo "::endgroup::"
+
+          echo "::notice::🔴 Starting LIVE trading session: ${SYMBOL} | Runtime: ${RUNTIME_HOURS}h"
+
+          python run_engine.py \
+            --non-interactive \
+            --mode live \
+            --symbol "${SYMBOL}" \
+            --strategy STOCH_RSI \
+            --stoch-preset FAST_SCALP \
+            --no-invert-signal \
+            --volume-mode MULTIPLIER \
+            --volume-multiplier 2.0 \
+            --tp-ticks 2 \
+            --fixed-tp \
+            --sl-mode TICKS \
+            --sl-ticks 5 \
+            --leverage 75 \
+            --cooldown 1 \
+            --max-trades 0 \
+            --execution-style MAKER_HYBRID \
+            --no-ratchet \
+            --disable-slippage \
+            --bi-directional \
+            --runtime-limit "${RUNTIME_SECONDS}" \
+            --mongodb-uri "${MONGODB_URI}"
+
+          echo "::notice::✅ Live trading session completed"
+
+      - name: "📊 Session Summary"
+        if: always()
+        run: |
+          echo "## 📊 Session Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "logs/trade_outcomes.txt" ]; then
+            echo "### Trade Outcomes Log" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -100 logs/trade_outcomes.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "> No trade outcomes recorded in this session." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: "📁 Upload Session Logs"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-session-${{ inputs.symbol || 'TRUMP_USDT' }}-run${{ github.run_number }}-${{ github.run_id }}
+          path: |
+            logs/*.log
+            logs/*.txt
+            logs/*.jsonl
+          if-no-files-found: warn
+          retention-days: 90

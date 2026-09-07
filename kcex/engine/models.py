@@ -8,6 +8,7 @@ and trade outcomes with dual-currency (USDT & INR) representations.
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List
 from enum import Enum
+from datetime import datetime, timezone
 import time
 import os
 
@@ -175,6 +176,16 @@ class ExecutionConfig:
     outcomes_log_file: str = "trade_outcomes.txt"
     outcomes_jsonl_file: str = "trade_outcomes.jsonl"
 
+    def to_config_snapshot(self) -> Dict[str, Any]:
+        """Serializes the full configuration to a MongoDB-friendly dictionary."""
+        snapshot = {}
+        for f in self.__dataclass_fields__:
+            val = getattr(self, f)
+            if isinstance(val, Enum):
+                val = val.value
+            snapshot[f] = val
+        return snapshot
+
 
 
 @dataclass
@@ -226,7 +237,9 @@ class TradeOutcome:
     inr_rate: float = 94.45
     exit_reason: ExitReason = ExitReason.UNKNOWN
     
-    # Live wallet balance after this trade
+    # Live wallet balance before and after this trade
+    balance_before_trade_usdt: Optional[float] = None
+    balance_before_trade_inr: Optional[float] = None
     balance_after_trade_usdt: Optional[float] = None
     balance_after_trade_inr: Optional[float] = None
 
@@ -246,6 +259,63 @@ class TradeOutcome:
     @property
     def is_scratch(self) -> bool:
         return abs(self.realized_pnl_usdt) <= 1e-8
+
+    def to_mongo_dict(self) -> Dict[str, Any]:
+        """Serialize this trade outcome to a MongoDB-friendly dictionary."""
+        return {
+            "type": "EXECUTED",
+            "trade_id": self.trade_id,
+            "symbol": self.symbol,
+            "base_coin": self.base_coin or self.symbol.split("_")[0],
+            "direction": self.direction.value,
+            "sub_strategy_name": self.sub_strategy_name,
+            "mode": self.mode.value,
+            "verified_from_kcex": (self.mode == EngineMode.LIVE),
+            # Contract details
+            "leverage": self.leverage,
+            "vol_contracts": self.vol_contracts,
+            "contract_size": self.contract_size,
+            "underlying_quantity": self.underlying_quantity,
+            # Prices
+            "entry_price": self.entry_price,
+            "exit_price": self.exit_price,
+            "tp_set": self.min_profit_tp_price,
+            "sl_set": self.stop_loss_price,
+            "price_unit": self.price_unit,
+            "price_precision": self.price_precision,
+            # Timing (store as proper datetime objects)
+            "entry_time": datetime.fromtimestamp(self.open_time, tz=timezone.utc),
+            "exit_time": datetime.fromtimestamp(self.close_time, tz=timezone.utc),
+            "duration_seconds": self.duration_seconds,
+            # Financial metrics
+            "notional_value_usdt": self.notional_value_usdt,
+            "notional_value_inr": self.notional_value_inr,
+            "margin_used_usdt": self.margin_used_usdt,
+            "margin_used_inr": self.margin_used_inr,
+            "realized_pnl_usdt": self.realized_pnl_usdt,
+            "realized_pnl_inr": self.realized_pnl_inr,
+            "pnl_percentage": self.pnl_percentage,
+            "roe_percentage": self.roe_percentage,
+            "yield_pct": self.roe_percentage,
+            # Fees
+            "fee_open_usdt": self.fee_open_usdt,
+            "fee_close_usdt": self.fee_close_usdt,
+            "fee_total_usdt": self.fee_total_usdt,
+            "fee_total_inr": self.fee_total_inr,
+            # Exit
+            "exit_reason": self.exit_reason.value,
+            # Balance
+            "balance_before_trade_usdt": self.balance_before_trade_usdt,
+            "balance_before_trade_inr": self.balance_before_trade_inr,
+            "balance_after_trade_usdt": self.balance_after_trade_usdt,
+            "balance_after_trade_inr": self.balance_after_trade_inr,
+            # Server references
+            "order_id": self.order_id,
+            "close_order_id": self.close_order_id,
+            "position_id": self.position_id,
+            # Exchange rate
+            "inr_rate": self.inr_rate,
+        }
 
 
 @dataclass
@@ -286,3 +356,4 @@ class CumulativeStats:
             self.best_trade_usdt = outcome.realized_pnl_usdt
         if outcome.realized_pnl_usdt < self.worst_trade_usdt:
             self.worst_trade_usdt = outcome.realized_pnl_usdt
+

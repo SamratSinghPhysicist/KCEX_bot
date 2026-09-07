@@ -1232,6 +1232,19 @@ def parse_args():
         action="store_true",
         help="Bypass interactive wizard and use default settings immediately"
     )
+    # Runtime limit & MongoDB (for GitHub Actions and automated sessions)
+    parser.add_argument(
+        "--runtime-limit",
+        type=float,
+        default=0,
+        help="Maximum runtime in seconds before graceful shutdown (0 = unlimited). Waits for active trade completion before stopping."
+    )
+    parser.add_argument(
+        "--mongodb-uri",
+        type=str,
+        default=None,
+        help="MongoDB Atlas connection URI for trade logging (falls back to MONGODB_URI env var)"
+    )
     return parser.parse_args()
 
 
@@ -1562,7 +1575,30 @@ def main():
     print("==============================================================================\n")
 
 
-    engine = TradeExecutionEngine(config=config)
+    # Initialize MongoDB Trade Logger (if URI is available)
+    from kcex.engine.mongo_logger import MongoTradeLogger
+    mongodb_uri = None
+    if not is_interactive:
+        mongodb_uri = args.mongodb_uri or os.getenv("MONGODB_URI", "")
+    else:
+        mongodb_uri = os.getenv("MONGODB_URI", "")
+
+    mongo_logger = None
+    if mongodb_uri and config.mode == EngineMode.LIVE:
+        mongo_logger = MongoTradeLogger(mongodb_uri=mongodb_uri)
+        print(f"  • MongoDB Logging  : ENABLED")
+    else:
+        print(f"  • MongoDB Logging  : DISABLED (no URI or not LIVE mode)")
+
+    runtime_limit = 0
+    if not is_interactive:
+        runtime_limit = args.runtime_limit
+
+    engine = TradeExecutionEngine(
+        config=config,
+        mongo_logger=mongo_logger,
+        runtime_limit_seconds=runtime_limit
+    )
     engine.run()
 
 
