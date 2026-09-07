@@ -40,3 +40,8 @@ BACKTESTER/OHLCV_Data_Binance/
 BACKTESTER/reports/*
 !BACKTESTER/reports/.gitkeep
 
+# Large AI Research Analysis Dossiers & Archives
+AI_ANALYSIS/
+*.zip
+
+

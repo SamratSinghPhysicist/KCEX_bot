@@ -581,11 +581,7 @@ STRATEGY_PRESETS = {
         "tp_ticks": 10,
         "sl_mode": "TICKS",
         "sl_ticks": 5,
-        "use_atr_targets": True,
-        "atr_tp_multiplier": 2.0,
-        "atr_sl_multiplier": 1.0,
-        "volume_filter_enabled": True,
-        "volume_filter_multiplier": 1.2,
+        "use_atr_targets": False,
         "ratchet_enabled": True,
         "ratchet_trigger_ticks": 3.0,
         "ratchet_stall_seconds": 10.0,
@@ -597,6 +593,14 @@ STRATEGY_PRESETS = {
         "simulate_intra_tick_liquidation": True,
         "slippage_enabled": True,
         "slippage_ticks": 1,
+        "htf_trend_filter_enabled": True,
+        "htf_timeframe": "15m",
+        "htf_ema_period": 50,
+        "volume_filter_enabled": True,
+        "volume_filter_multiplier": 1.3,
+        "duration_filter_enabled": True,
+        "duration_max_hold_seconds": 90.0,
+        "duration_action": "CLOSE",
         "backtest_config": {
             "initial_capital_usdt": 100.0,
             "leverage": 75,
@@ -609,51 +613,53 @@ STRATEGY_PRESETS = {
         },
         "backtest_results_by_slippage": {
             "slippage_0t": {
-                "net_profit_usdt": 4.12,
-                "profit_factor": 1.35,
-                "win_rate_pct": 58.2,
-                "verdict": "Highly Profitable under Zero Slippage"
+                "net_profit_usdt": 0.0018,
+                "profit_factor": 1.08,
+                "win_rate_pct": 38.21,
+                "total_trades": 123,
+                "verdict": "Modest Alpha under 0T friction (+0.0018 USDT / 1.08 PF / 92% churn reduction)"
             },
             "slippage_1t": {
-                "net_profit_usdt": 1.86,
-                "profit_factor": 1.12,
-                "win_rate_pct": 52.4,
-                "verdict": "Resilient Profitability under 1T Market Slippage"
+                "net_profit_usdt": -0.0294,
+                "profit_factor": 0.30,
+                "win_rate_pct": 24.39,
+                "total_trades": 123,
+                "verdict": "Degraded under 1T Market Order Friction (-0.0294 USDT / 0.30 PF) - Demands Maker Hybrid"
             }
         }
     },
     "DOGE_MARKET_SLIPPAGE_RESILIENT": {
-        "name": "DOGE Market Slippage-Resilient Champion (Taker Entry + Inverted Reversion + Resting TP)",
+        "name": "DOGE Confluence-Gated Market Scalper (10t TP / 4t SL)",
         "description": (
-            "Market taker entry with exhaustion fading (signal inversion) and resting limit TP. "
-            "Dilutes friction with 10t TP / 4t SL, protected by micro-ratchet and volume shock gating."
+            "Market taker entry with 10t TP / 4t SL, 15m HTF 50 EMA trend lock, 1.3x Volume Surge filter, "
+            "and 90s Duration Timeout. Confluence reduces churn by 92%, but pure market execution remains vulnerable to spread-crossing."
         ),
         "symbol": "DOGE_USDT",
         "strategy_mode": "STOCH_RSI",
         "stoch_preset": "FAST_SCALP",
         "timeframe": "1m",
-        "invert_signal": True,  # Mean reversion dominates DOGE per Research V2.2 & V3.1
+        "invert_signal": False,
         "dynamic_regime_fading": False,
         "adx_fading_cutoff": 25.0,
         "tp_ticks": 10,
         "sl_mode": "TICKS",
         "sl_ticks": 4,
-        "use_atr_targets": True,
-        "atr_tp_multiplier": 2.0,
-        "atr_sl_multiplier": 1.0,
-        "volume_filter_enabled": True,
-        "volume_filter_multiplier": 1.2,
-        "ratchet_enabled": True,
-        "ratchet_trigger_ticks": 3.0,
-        "ratchet_stall_seconds": 10.0,
-        "ratchet_tighten_ticks": 1.0,
-        "ratchet_breakeven_ticks": 3.0,
+        "use_atr_targets": False,
+        "ratchet_enabled": False,
         "execution_style": "PURE_MARKET",
         "resting_limit_tp": True,
         "queue_dynamics_enabled": False,
         "simulate_intra_tick_liquidation": True,
         "slippage_enabled": True,
         "slippage_ticks": 1,
+        "htf_trend_filter_enabled": True,
+        "htf_timeframe": "15m",
+        "htf_ema_period": 50,
+        "volume_filter_enabled": True,
+        "volume_filter_multiplier": 1.3,
+        "duration_filter_enabled": True,
+        "duration_max_hold_seconds": 90.0,
+        "duration_action": "CLOSE",
         "backtest_config": {
             "initial_capital_usdt": 100.0,
             "leverage": 75,
@@ -666,16 +672,18 @@ STRATEGY_PRESETS = {
         },
         "backtest_results_by_slippage": {
             "slippage_0t": {
-                "net_profit_usdt": 3.48,
-                "profit_factor": 1.28,
-                "win_rate_pct": 54.1,
-                "verdict": "Robust Inverted Expectancy"
+                "net_profit_usdt": -0.0007,
+                "profit_factor": 0.98,
+                "win_rate_pct": 35.38,
+                "total_trades": 130,
+                "verdict": "Marginal Baseline (-0.0007 USDT / 0.98 PF)"
             },
             "slippage_1t": {
-                "net_profit_usdt": 1.15,
-                "profit_factor": 1.08,
-                "win_rate_pct": 49.3,
-                "verdict": "Resilient Profitability under 1T Market Slippage"
+                "net_profit_usdt": -0.0185,
+                "profit_factor": 0.35,
+                "win_rate_pct": 22.10,
+                "total_trades": 130,
+                "verdict": "Degraded under 1T Market Order Friction (-0.0185 USDT / 0.35 PF) - Demands Maker Hybrid"
             }
         }
     },
