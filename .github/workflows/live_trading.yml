@@ -1,10 +1,10 @@
 name: KCEX Live Trading Engine
 
 on:
-  schedule:
+  #schedule:
     # 6 runs per day, 4 hours apart (UTC)
     # IST equivalent: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30
-    - cron: '0 0,4,8,12,16,20 * * *'
+  #  - cron: '0 0,4,8,12,16,20 * * *'
   workflow_dispatch:
     inputs:
       runtime_hours:
