@@ -42,6 +42,13 @@ class MongoTradeLogger:
         Args:
             mongodb_uri: MongoDB connection string. Falls back to MONGODB_URI env var.
         """
+        if not mongodb_uri and not os.getenv("MONGODB_URI"):
+            try:
+                from kcex.config import load_env_file
+                load_env_file()
+            except Exception:
+                pass
+
         self._uri = mongodb_uri or os.getenv("MONGODB_URI", "")
         self._client = None
         self._db = None

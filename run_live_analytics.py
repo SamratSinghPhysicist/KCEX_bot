@@ -27,6 +27,13 @@ if hasattr(sys.stdout, 'reconfigure'):
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Automatically load .env file
+try:
+    from kcex.config import load_env_file
+    load_env_file()
+except Exception:
+    pass
+
 
 # =========================================================================
 # FORMATTING HELPERS
