@@ -181,7 +181,7 @@ def test_preset_registry_doge_champion():
     assert cfg["backtest_config"]["leverage"] == 75
     assert "backtest_results_by_slippage" in cfg
     assert "slippage_0t" in cfg["backtest_results_by_slippage"]
-    assert cfg["backtest_results_by_slippage"]["slippage_0t"]["net_profit_usdt"] == 4.87
+    assert cfg["backtest_results_by_slippage"]["slippage_0t"]["net_profit_usdt"] == 2.14
 
 
 def test_preset_registry_doge_asymmetric():

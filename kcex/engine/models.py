@@ -135,8 +135,8 @@ class ExecutionConfig:
     resting_limit_tp: bool = False
 
     # 3. Phase V2.2 Champion Micro-Excursion Tick Ratchet
-    # Empirically validated across 192 parameter combinations on 47,812 millisecond trades.
-    # Cuts stop-out capital loss by >46%, expands Net PnL +175%, achieves 538.78 Sortino.
+    # Dynamic trailing stop protection: locks breakeven at +2.5 ticks and tightens stalled
+    # positions at +1.0 tick after 10s to cut stop loss drawdowns.
     ratchet_enabled: bool = False
     ratchet_trigger_ticks: float = 1.0   # Favorable excursion (MFE) required for Tier 1 (+1.0 tick)
     ratchet_stall_seconds: float = 10.0  # Seconds of stall before tightening SL (10.0 seconds)

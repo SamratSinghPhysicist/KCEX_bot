@@ -315,8 +315,9 @@ OUTCOMES_JSONL_FILE = "trade_outcomes.jsonl"  # Machine-readable JSONL audit tra
 # Select an active strategy preset by its self-documenting name:
 #
 #   1. "DOGE_V2_2_RATCHET_CHAMPION"
-#      • Phase V2.2 Over-Night Deep Dive Overall Champion!
-#      • Net Profit: +$4.87 USDT, Profit Factor: 1.53, Sortino: 538.78, Max DD: -0.014%
+#      • Phase V2.2 Full 8-Month Macro Backtest (48,178 trades):
+#      • Net Profit (0T Maker Hybrid): +$2.14 USDT (Profitable with 0 slippage / Maker execution)
+#      • Slippage Sensitivity: 1T (-$4.92 USDT Loss), 2T (-$11.98 USDT Loss), 3T (-$19.04 USDT Loss)
 #      • Setup: DOGE_USDT, Inverted Stoch RSI, 5t TP / 2t SL, Micro-Excursion Tick Ratchet
 #      • Execution: Maker Limit Entry at bid1/ask1 (10s timeout) + Resting Limit TP (0 slippage)
 #
@@ -414,35 +415,33 @@ STRATEGY_PRESETS = {
         },
         "backtest_results_by_slippage": {
             "slippage_0t": {
-                "net_profit_usdt": 4.87,
-                "profit_factor": 1.53,
-                "sortino_ratio": 538.78,
+                "net_profit_usdt": 2.14,
+                "profit_factor": 1.08,
+                "sortino_ratio": 3.82,
                 "max_drawdown_pct": -0.014,
-                "win_rate_pct": 48.7,
-                "total_trades": 78,
-                "scratch_exits": 16,
-                "verdict": "Peak Expectancy Champion ($E_{net} = +0.0624 USDT/trade)"
+                "total_trades": 48178,
+                "verdict": "Profitable Under Zero Slippage / Maker Hybrid (+$2.14 USDT)"
             },
             "slippage_1t": {
-                "net_profit_usdt": 2.67,
-                "profit_factor": 1.25,
-                "sortino_ratio": 11.20,
-                "max_drawdown_pct": -0.021,
-                "verdict": "Robust & Highly Profitable"
+                "net_profit_usdt": -4.92,
+                "profit_factor": 0.86,
+                "sortino_ratio": -1.82,
+                "max_drawdown_pct": -0.049,
+                "verdict": "Unprofitable with 1T Stop Friction (-$4.92 USDT Net Loss) - Demands Maker Execution"
             },
             "slippage_2t": {
-                "net_profit_usdt": 0.47,
-                "profit_factor": 1.04,
-                "sortino_ratio": 1.84,
-                "max_drawdown_pct": -0.029,
-                "verdict": "Positive Expectancy Retained"
+                "net_profit_usdt": -11.98,
+                "profit_factor": 0.72,
+                "sortino_ratio": -3.45,
+                "max_drawdown_pct": -0.120,
+                "verdict": "Negative Expectancy with 2T Friction (-$11.98 USDT Net Loss)"
             },
             "slippage_3t": {
-                "net_profit_usdt": -1.73,
-                "profit_factor": 0.88,
-                "sortino_ratio": -1.45,
-                "max_drawdown_pct": -0.045,
-                "verdict": "Below Breakeven (Breakeven threshold S_max = 2.21 ticks)"
+                "net_profit_usdt": -19.04,
+                "profit_factor": 0.61,
+                "sortino_ratio": -5.12,
+                "max_drawdown_pct": -0.190,
+                "verdict": "High Friction Degradation (-$19.04 USDT Net Loss)"
             }
         }
     },
