@@ -529,12 +529,28 @@ class TradeExecutionEngine:
                 break
 
         # Calculate exact min-profit TP and exact SL from actual filled entry price
+        atr_val = None
+        if getattr(self.config, "use_atr_targets", False):
+            try:
+                c_list = self.market.get_klines(symbol, interval="Min1", limit=30)
+                if len(c_list) >= 15:
+                    from strategies.filters import compute_atr_series
+                    highs = [float(c.high if hasattr(c, "high") else c[2]) for c in c_list]
+                    lows = [float(c.low if hasattr(c, "low") else c[3]) for c in c_list]
+                    closes = [float(c.close if hasattr(c, "close") else c[4]) for c in c_list]
+                    atrs = compute_atr_series(highs, lows, closes, period=14)
+                    if atrs and atrs[-1] > 0:
+                        atr_val = atrs[-1]
+            except Exception:
+                pass
+
         exact_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
             entry_price=entry_price,
             price_unit=pu,
             tp_ticks=self.config.tp_ticks,
-            precision=contract.price_precision
+            precision=contract.price_precision,
+            atr_value=atr_val
         )
         exact_sl = self.strategy.calculate_stop_loss(
             direction=direction,
@@ -544,7 +560,8 @@ class TradeExecutionEngine:
             sl_ticks=self.config.sl_ticks,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
-            precision=contract.price_precision
+            precision=contract.price_precision,
+            atr_value=atr_val
         )
 
         ps = contract.price_precision
@@ -1104,12 +1121,29 @@ class TradeExecutionEngine:
         entry_price = round(entry_price, contract.price_precision)
 
         effective_tp_ticks = target_tp_ticks if target_tp_ticks is not None else self.config.tp_ticks
+
+        atr_val = None
+        if getattr(self.config, "use_atr_targets", False):
+            try:
+                c_list = self.market.get_klines(symbol, interval="Min1", limit=30)
+                if len(c_list) >= 15:
+                    from strategies.filters import compute_atr_series
+                    highs = [float(c.high if hasattr(c, "high") else c[2]) for c in c_list]
+                    lows = [float(c.low if hasattr(c, "low") else c[3]) for c in c_list]
+                    closes = [float(c.close if hasattr(c, "close") else c[4]) for c in c_list]
+                    atrs = compute_atr_series(highs, lows, closes, period=14)
+                    if atrs and atrs[-1] > 0:
+                        atr_val = atrs[-1]
+            except Exception:
+                pass
+
         exact_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
             entry_price=entry_price,
             price_unit=pu,
             tp_ticks=effective_tp_ticks,
-            precision=contract.price_precision
+            precision=contract.price_precision,
+            atr_value=atr_val
         )
         exact_sl = self.strategy.calculate_stop_loss(
             direction=direction,
@@ -1119,7 +1153,8 @@ class TradeExecutionEngine:
             sl_ticks=self.config.sl_ticks,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
-            precision=contract.price_precision
+            precision=contract.price_precision,
+            atr_value=atr_val
         )
         initial_sl = exact_sl
 
@@ -1199,6 +1234,30 @@ class TradeExecutionEngine:
                                 f"🔒 [DRY-RUN TICK RATCHET TIER 2] Excursion reached >= +{t2_trig:g}t. "
                                 f"Stop locked at BREAKEVEN 0.0t ({exact_sl:.{ps}f} USDT). Position is risk-free."
                             )
+
+                # Intra-tick / Intra-poll 75x Maintenance Margin Liquidation Barrier
+                if getattr(self.config, "simulate_intra_tick_liquidation", True) and leverage > 0:
+                    mmr = float(contract.maintenance_margin_ratio or 0.01)
+                    if direction == OrderDirection.LONG:
+                        approx_liq = entry_price * (1.0 - (1.0 / float(leverage)) + mmr)
+                        if cur_last <= approx_liq or cur_bid <= approx_liq:
+                            exit_price = approx_liq
+                            exit_reason = ExitReason.LIQUIDATION_HIT
+                            self.logger.warning(
+                                f"💥 [DRY-RUN 75X LIQUIDATION] Adverse price move breached MMR barrier ({approx_liq:.{ps}f} USDT). "
+                                f"Position Liquidated (-100% Margin Loss)!"
+                            )
+                            break
+                    else:
+                        approx_liq = entry_price * (1.0 + (1.0 / float(leverage)) - mmr)
+                        if cur_last >= approx_liq or cur_ask >= approx_liq:
+                            exit_price = approx_liq
+                            exit_reason = ExitReason.LIQUIDATION_HIT
+                            self.logger.warning(
+                                f"💥 [DRY-RUN 75X LIQUIDATION] Adverse price move breached MMR barrier ({approx_liq:.{ps}f} USDT). "
+                                f"Position Liquidated (-100% Margin Loss)!"
+                            )
+                            break
 
                 # For LONG: Close fills by selling at best bid (bid1) or last trade
                 if direction == OrderDirection.LONG:

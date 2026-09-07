@@ -350,6 +350,26 @@ class BacktestExecutionEngine:
         else:
             entry_price = round(raw_entry - slippage_delta, ps)
 
+        # Queue dynamics check for maker limit orders (Research V3 Queue Dynamics)
+        if is_maker and getattr(self.config, "queue_dynamics_enabled", False) and self.config.use_tick_data:
+            timeout_s = float(getattr(self.config, "maker_queue_timeout_seconds", 10.0))
+            entry_ms = entry_candle.close_time_ms
+            tick_gen = self.tick_streamer.stream_ticks(self.symbol, start_ms=entry_ms)
+            filled = False
+            for tick in tick_gen:
+                t_elapsed = (tick.timestamp_ms - entry_ms) / 1000.0
+                if t_elapsed > timeout_s:
+                    break
+                if direction == OrderDirection.LONG and tick.price <= entry_price:
+                    filled = True
+                    break
+                elif direction == OrderDirection.SHORT and tick.price >= entry_price:
+                    filled = True
+                    break
+            if not filled:
+                # Maker limit order timed out in queue without fill
+                return None, entry_idx
+
         # 2. Sizing & Margin
         min_vol = int(self.contract.min_volume)
         vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
@@ -366,13 +386,26 @@ class BacktestExecutionEngine:
         margin_usdt = notional_usdt / leverage if leverage > 0 else notional_usdt
         open_time_sec = entry_candle.close_time_ms / 1000.0
 
-        # 3. Calculate Exact TP & SL
+        # 3. Calculate Exact TP & SL (supports ATR Dynamic Volatility Targets)
+        atr_val = None
+        if getattr(self.config, "use_atr_targets", False):
+            from strategies.filters import compute_atr_series
+            history = all_candles[max(0, entry_idx - 30):entry_idx + 1]
+            if len(history) >= 15:
+                highs = [c.high for c in history]
+                lows = [c.low for c in history]
+                closes = [c.close for c in history]
+                atrs = compute_atr_series(highs, lows, closes, period=14)
+                if atrs and atrs[-1] > 0:
+                    atr_val = atrs[-1]
+
         exact_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
             entry_price=entry_price,
             price_unit=pu,
             tp_ticks=self.config.tp_ticks,
-            precision=ps
+            precision=ps,
+            atr_value=atr_val
         )
         exact_sl = self.strategy.calculate_stop_loss(
             direction=direction,
@@ -382,7 +415,8 @@ class BacktestExecutionEngine:
             sl_ticks=self.config.sl_ticks,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
-            precision=ps
+            precision=ps,
+            atr_value=atr_val
         )
         initial_sl = exact_sl
 
@@ -425,6 +459,26 @@ class BacktestExecutionEngine:
                             be_sl = round(entry_price, ps)
                             if (direction == OrderDirection.LONG and be_sl > exact_sl) or (direction == OrderDirection.SHORT and be_sl < exact_sl):
                                 exact_sl = be_sl
+
+                    # 75x Maintenance Margin Liquidation Barrier Check
+                    if getattr(self.config, "simulate_intra_tick_liquidation", True) and leverage > 0:
+                        mmr = float(getattr(self.contract, "maintenance_margin_ratio", 0.01) or 0.01)
+                        if direction == OrderDirection.LONG:
+                            liq_p = entry_price * (1.0 - (1.0 / float(leverage)) + mmr)
+                            if tick.price <= liq_p:
+                                exit_price = round(liq_p, ps)
+                                exit_reason = ExitReason.LIQUIDATION_HIT
+                                exit_time_sec = tick.timestamp_ms / 1000.0
+                                hit_via_ticks = True
+                                break
+                        else:
+                            liq_p = entry_price * (1.0 + (1.0 / float(leverage)) - mmr)
+                            if tick.price >= liq_p:
+                                exit_price = round(liq_p, ps)
+                                exit_reason = ExitReason.LIQUIDATION_HIT
+                                exit_time_sec = tick.timestamp_ms / 1000.0
+                                hit_via_ticks = True
+                                break
 
                     if direction == OrderDirection.LONG:
                         # TP hit (Maker limit order fills at exact TP, 0 exit slippage)
@@ -517,6 +571,27 @@ class BacktestExecutionEngine:
             if not hit_via_ticks and self.config.tick_fallback_to_candle:
                 for idx in range(entry_idx + 1, len(all_candles)):
                     c = all_candles[idx]
+
+                    # 75x Maintenance Margin Liquidation Check on Candle High/Low
+                    if getattr(self.config, "simulate_intra_tick_liquidation", True) and leverage > 0:
+                        mmr = float(getattr(self.contract, "maintenance_margin_ratio", 0.01) or 0.01)
+                        if direction == OrderDirection.LONG:
+                            liq_p = entry_price * (1.0 - (1.0 / float(leverage)) + mmr)
+                            if c.low <= liq_p:
+                                exit_price = round(liq_p, ps)
+                                exit_reason = ExitReason.LIQUIDATION_HIT
+                                exit_time_sec = c.close_time_ms / 1000.0
+                                exit_candle_idx = idx
+                                break
+                        else:
+                            liq_p = entry_price * (1.0 + (1.0 / float(leverage)) - mmr)
+                            if c.high >= liq_p:
+                                exit_price = round(liq_p, ps)
+                                exit_reason = ExitReason.LIQUIDATION_HIT
+                                exit_time_sec = c.close_time_ms / 1000.0
+                                exit_candle_idx = idx
+                                break
+
                     if direction == OrderDirection.LONG:
                         if c.high >= exact_tp:
                             exit_price = exact_tp

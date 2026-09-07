@@ -219,7 +219,15 @@ class GitHubBacktestRunner:
             "ratchet_stall_seconds": float(getattr(config, "ratchet_stall_seconds", 10.0)),
             "ratchet_tighten_ticks": float(getattr(config, "ratchet_tighten_ticks", 1.0)),
             "ratchet_breakeven_ticks": float(getattr(config, "ratchet_breakeven_ticks", 2.5)),
-            "execution_style": str(getattr(config, "execution_style", "PURE_MARKET"))
+            "execution_style": str(getattr(config, "execution_style", "PURE_MARKET")),
+            "use_atr_targets": bool(getattr(config, "use_atr_targets", False)),
+            "atr_tp_multiplier": float(getattr(config, "atr_tp_multiplier", 2.0)),
+            "atr_sl_multiplier": float(getattr(config, "atr_sl_multiplier", 1.0)),
+            "volume_filter_enabled": bool(getattr(config, "volume_filter_enabled", False)),
+            "volume_filter_multiplier": float(getattr(config, "volume_filter_multiplier", 1.2)),
+            "queue_dynamics_enabled": bool(getattr(config, "queue_dynamics_enabled", False)),
+            "resting_limit_tp": bool(getattr(config, "resting_limit_tp", False)),
+            "simulate_intra_tick_liquidation": bool(getattr(config, "simulate_intra_tick_liquidation", True))
         }
 
         return {

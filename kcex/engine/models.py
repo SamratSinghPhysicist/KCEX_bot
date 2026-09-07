@@ -25,10 +25,11 @@ class ExitReason(str, Enum):
     MANUAL_CLOSE = "MANUAL_CLOSE"
     TIMEOUT_CLOSE = "TIMEOUT_CLOSE"
     DURATION_SCRATCH = "DURATION_SCRATCH"
-    # Phase V2.1 & V2.2 Quantitative Trailing Stop and Queue Exit Markers
+    # Phase V2.1, V2.2 & V3.1 Quantitative Trailing Stop, Queue Exit and Liquidation Markers
     RATCHET_TIGHTEN_HIT = "RATCHET_TIGHTEN_HIT"        # Exited at tightened -1 tick stop
     RATCHET_BREAKEVEN_HIT = "RATCHET_BREAKEVEN_HIT"    # Exited at 0.0 tick breakeven scratch
     QUEUE_TIMEOUT_CANCELLED = "QUEUE_TIMEOUT_CANCELLED" # Maker limit entry order timed out
+    LIQUIDATION_HIT = "LIQUIDATION_HIT"                # 75x Maintenance margin barrier breached
     UNKNOWN = "UNKNOWN"
 
 
@@ -147,6 +148,26 @@ class ExecutionConfig:
     # When enabled, shifts entry fill and market stop exits adversely by slippage_ticks.
     slippage_enabled: bool = False
     slippage_ticks: int = 1              # Integer ticks of adverse friction (e.g. 1t, 2t, 3t)
+
+    # -------------------------------------------------------------------------
+    # RESEARCH V3 / V3.1 QUANTITATIVE EXTENSIONS (PURELY TOGGLEABLE)
+    # -------------------------------------------------------------------------
+    # 5. ATR-Calibrated Volatility Dynamic Targets (Target Dilution Law)
+    use_atr_targets: bool = False
+    atr_tp_multiplier: float = 2.0
+    atr_sl_multiplier: float = 1.0
+
+    # 6. Volume Shock Filter
+    volume_filter_enabled: bool = False
+    volume_filter_multiplier: float = 1.2
+
+    # 7. Queue Dynamics & Liquidation Checks
+    queue_dynamics_enabled: bool = False
+    simulate_intra_tick_liquidation: bool = False
+
+    # 8. Microstructure & Volatility Parameters
+    microstructure_imbalance_threshold: float = 1.5
+    volatility_regime_period: int = 14
 
     poll_interval_seconds: float = 0.5
     logs_dir: str = "logs"

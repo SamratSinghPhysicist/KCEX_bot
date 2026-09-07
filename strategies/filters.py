@@ -601,6 +601,84 @@ class DirectionalBiasFilter(BaseFilter):
 
 
 # =============================================================================
+# VOLUME SHOCK FILTER (RESEARCH V3.1)
+# =============================================================================
+
+def get_c_vol(c: Any) -> float:
+    if hasattr(c, "volume"):
+        return float(c.volume)
+    elif hasattr(c, "vol"):
+        return float(c.vol)
+    elif isinstance(c, dict):
+        return float(c.get("volume", c.get("vol", 0.0)))
+    elif isinstance(c, (list, tuple)) and len(c) >= 6:
+        return float(c[5])
+    return 0.0
+
+
+class VolumeShockFilter(BaseFilter):
+    """
+    Volume Shock Momentum Filter (Research V3.1).
+    Gates trade signals to ensure sufficient market liquidity and momentum:
+    Current candle volume must be >= multiplier * rolling SMA(volume, period).
+    """
+
+    def __init__(
+        self,
+        enabled: bool = False,
+        multiplier: float = 1.2,
+        period: int = 20
+    ):
+        self._enabled = enabled
+        self.multiplier = float(multiplier)
+        self.period = int(period)
+
+    @property
+    def name(self) -> str:
+        return "VolumeShockFilter"
+
+    @property
+    def is_enabled(self) -> bool:
+        return self._enabled
+
+    def is_allowed(
+        self,
+        signal: TradeSignal,
+        candles: List[Any],
+        current_time: float
+    ) -> Tuple[bool, Optional[str]]:
+        if not self._enabled:
+            return True, None
+
+        if len(candles) < 2:
+            return True, None
+
+        vols = [get_c_vol(c) for c in candles]
+        if not vols or len(vols) < 2:
+            return True, None
+
+        curr_vol = vols[-1]
+        baseline_slice = vols[max(0, len(vols) - 1 - self.period):-1]
+        if not baseline_slice:
+            return True, None
+
+        avg_vol = sum(baseline_slice) / len(baseline_slice)
+        threshold = avg_vol * self.multiplier
+
+        if curr_vol < threshold:
+            return False, f"Volume Shock: Current volume {curr_vol:.1f} < {self.multiplier:.1f}x baseline ({threshold:.1f})"
+
+        return True, None
+
+    def get_parameters(self) -> Dict[str, Any]:
+        return {
+            "volume_filter_enabled": self._enabled,
+            "volume_filter_multiplier": self.multiplier,
+            "volume_filter_period": self.period
+        }
+
+
+# =============================================================================
 # COMPOSITE FILTER PIPELINE
 # =============================================================================
 
@@ -670,5 +748,11 @@ class FilterPipeline:
         # 4. Directional Bias Filter
         dir_bias = getattr(config, "direction_bias", "BOTH")
         pipeline.add_filter(DirectionalBiasFilter(enabled=(dir_bias != "BOTH"), direction_bias=dir_bias))
+
+        # 5. Volume Shock Filter (Research V3.1)
+        vol_enabled = getattr(config, "volume_filter_enabled", False)
+        if vol_enabled:
+            vol_mult = getattr(config, "volume_filter_multiplier", 1.2)
+            pipeline.add_filter(VolumeShockFilter(enabled=vol_enabled, multiplier=vol_mult))
 
         return pipeline

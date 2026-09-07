@@ -38,6 +38,16 @@ from strategies.smart_strategy import (
     MarketRegime,
     compute_chop_series
 )
+from strategies.microstructure_alpha import (
+    VPINCalculator,
+    TickRunLengthDetector,
+    OrderFlowImbalance
+)
+from strategies.volatility_regime import (
+    compute_bollinger_bandwidth,
+    compute_choppiness_index,
+    AdaptiveRegimeSwitcher
+)
 
 __all__ = [
     "BaseStrategy",
@@ -63,4 +73,11 @@ __all__ = [
     "FilterPipeline",
     "compute_atr_series",
     "compute_adx_series",
+    "VPINCalculator",
+    "TickRunLengthDetector",
+    "OrderFlowImbalance",
+    "compute_bollinger_bandwidth",
+    "compute_choppiness_index",
+    "AdaptiveRegimeSwitcher",
 ]
+

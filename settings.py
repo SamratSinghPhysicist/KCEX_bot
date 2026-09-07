@@ -371,6 +371,27 @@ RATCHET_BREAKEVEN_TICKS = 2.5
 SLIPPAGE_ENABLED = False
 SLIPPAGE_TICKS = 0
 
+# 6. Research V3.1 ATR-Calibrated Dynamic Targets
+# Replaces fixed tick offsets with volatility-normalized targets (Target Dilution Law).
+# Dilutes fixed market taker slippage friction: e.g. 10t TP / 5t SL drops BE win rate to 43.75%.
+USE_ATR_TARGETS = False
+ATR_TP_MULTIPLIER = 2.0
+ATR_SL_MULTIPLIER = 1.0
+
+# 7. Volume Shock Momentum Filter
+# Requires trade entry candle volume to exceed rolling volume moving average.
+VOLUME_FILTER_ENABLED = False
+VOLUME_FILTER_MULTIPLIER = 1.2
+
+# 8. Maker Queue Dynamics & Realistic 75x Liquidation
+# Simulates queue timeouts for unfilled maker orders and strict 75x maintenance margin liquidation checks.
+QUEUE_DYNAMICS_ENABLED = False
+SIMULATE_INTRA_TICK_LIQUIDATION = False
+
+# 9. Microstructure & Volatility Regime Settings
+MICROSTRUCTURE_IMBALANCE_THRESHOLD = 1.5
+VOLATILITY_REGIME_PERIOD = 14
+
 
 # =============================================================================
 # STRATEGY PRESET DEFINITIONS (Complete Configurations & Backtest Records)
@@ -543,6 +564,179 @@ STRATEGY_PRESETS = {
             }
         }
     },
+    "TRUMP_MARKET_SLIPPAGE_RESILIENT": {
+        "name": "TRUMP Market Slippage-Resilient Champion (Taker Entry + Resting TP + Target Dilution)",
+        "description": (
+            "Solves market order execution slippage: Uses immediate market taker entry (no queue timeout), "
+            "resting limit TP (0 slippage on winning exits), Target Dilution (10t TP / 5t SL or ATR targets) "
+            "reducing breakeven win rate to 43.75%, and a +3.0t ratchet offset covering spread friction."
+        ),
+        "symbol": "TRUMP_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "stoch_preset": "FAST_SCALP",
+        "timeframe": "1m",
+        "invert_signal": False,  # Direct momentum dominates TRUMP per Research V3.1
+        "dynamic_regime_fading": False,
+        "adx_fading_cutoff": 25.0,
+        "tp_ticks": 10,
+        "sl_mode": "TICKS",
+        "sl_ticks": 5,
+        "use_atr_targets": True,
+        "atr_tp_multiplier": 2.0,
+        "atr_sl_multiplier": 1.0,
+        "volume_filter_enabled": True,
+        "volume_filter_multiplier": 1.2,
+        "ratchet_enabled": True,
+        "ratchet_trigger_ticks": 3.0,
+        "ratchet_stall_seconds": 10.0,
+        "ratchet_tighten_ticks": 1.0,
+        "ratchet_breakeven_ticks": 3.0,
+        "execution_style": "PURE_MARKET",
+        "resting_limit_tp": True,
+        "queue_dynamics_enabled": False,
+        "simulate_intra_tick_liquidation": True,
+        "slippage_enabled": True,
+        "slippage_ticks": 1,
+        "backtest_config": {
+            "initial_capital_usdt": 100.0,
+            "leverage": 75,
+            "margin_mode": "ISOLATED",
+            "fee_schedule": "0.00% Maker / 0.00% Taker",
+            "data_feed": "High-Fidelity Binance Millisecond Tick Trades Data",
+            "contract_size": 0.1,
+            "tick_size_pu": 0.001,
+            "volume": "2x min volume (2 contracts = 0.2 TRUMP)"
+        },
+        "backtest_results_by_slippage": {
+            "slippage_0t": {
+                "net_profit_usdt": 4.12,
+                "profit_factor": 1.35,
+                "win_rate_pct": 58.2,
+                "verdict": "Highly Profitable under Zero Slippage"
+            },
+            "slippage_1t": {
+                "net_profit_usdt": 1.86,
+                "profit_factor": 1.12,
+                "win_rate_pct": 52.4,
+                "verdict": "Resilient Profitability under 1T Market Slippage"
+            }
+        }
+    },
+    "DOGE_MARKET_SLIPPAGE_RESILIENT": {
+        "name": "DOGE Market Slippage-Resilient Champion (Taker Entry + Inverted Reversion + Resting TP)",
+        "description": (
+            "Market taker entry with exhaustion fading (signal inversion) and resting limit TP. "
+            "Dilutes friction with 10t TP / 4t SL, protected by micro-ratchet and volume shock gating."
+        ),
+        "symbol": "DOGE_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "stoch_preset": "FAST_SCALP",
+        "timeframe": "1m",
+        "invert_signal": True,  # Mean reversion dominates DOGE per Research V2.2 & V3.1
+        "dynamic_regime_fading": False,
+        "adx_fading_cutoff": 25.0,
+        "tp_ticks": 10,
+        "sl_mode": "TICKS",
+        "sl_ticks": 4,
+        "use_atr_targets": True,
+        "atr_tp_multiplier": 2.0,
+        "atr_sl_multiplier": 1.0,
+        "volume_filter_enabled": True,
+        "volume_filter_multiplier": 1.2,
+        "ratchet_enabled": True,
+        "ratchet_trigger_ticks": 3.0,
+        "ratchet_stall_seconds": 10.0,
+        "ratchet_tighten_ticks": 1.0,
+        "ratchet_breakeven_ticks": 3.0,
+        "execution_style": "PURE_MARKET",
+        "resting_limit_tp": True,
+        "queue_dynamics_enabled": False,
+        "simulate_intra_tick_liquidation": True,
+        "slippage_enabled": True,
+        "slippage_ticks": 1,
+        "backtest_config": {
+            "initial_capital_usdt": 100.0,
+            "leverage": 75,
+            "margin_mode": "ISOLATED",
+            "fee_schedule": "0.00% Maker / 0.00% Taker",
+            "data_feed": "High-Fidelity Binance Millisecond Tick Trades Data",
+            "contract_size": 1.0,
+            "tick_size_pu": 0.0001,
+            "volume": "1x min volume (1 DOGE)"
+        },
+        "backtest_results_by_slippage": {
+            "slippage_0t": {
+                "net_profit_usdt": 3.48,
+                "profit_factor": 1.28,
+                "win_rate_pct": 54.1,
+                "verdict": "Robust Inverted Expectancy"
+            },
+            "slippage_1t": {
+                "net_profit_usdt": 1.15,
+                "profit_factor": 1.08,
+                "win_rate_pct": 49.3,
+                "verdict": "Resilient Profitability under 1T Market Slippage"
+            }
+        }
+    },
+    "TRUMP_V3_CHAMPION_MAKER_RATCHET": {
+        "name": "TRUMP V3 Maker Hybrid Champion (Queue Dynamics + Micro-Ratchet)",
+        "description": (
+            "Phase V3 champion for TRUMP_USDT: Maker Limit Entry at bid1/ask1 with queue timeout, "
+            "resting limit TP (0 slippage), 6t TP / 3t SL, and 1.5t ratchet lock."
+        ),
+        "symbol": "TRUMP_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "stoch_preset": "FAST_SCALP",
+        "timeframe": "1m",
+        "invert_signal": False,
+        "dynamic_regime_fading": False,
+        "adx_fading_cutoff": 25.0,
+        "tp_ticks": 6,
+        "sl_mode": "TICKS",
+        "sl_ticks": 3,
+        "ratchet_enabled": True,
+        "ratchet_trigger_ticks": 1.5,
+        "ratchet_stall_seconds": 10.0,
+        "ratchet_tighten_ticks": 1.0,
+        "ratchet_breakeven_ticks": 2.5,
+        "execution_style": "MAKER_HYBRID",
+        "maker_queue_timeout_seconds": 10.0,
+        "resting_limit_tp": True,
+        "queue_dynamics_enabled": True,
+        "simulate_intra_tick_liquidation": True,
+        "slippage_enabled": False,
+        "slippage_ticks": 0
+    },
+    "DOGE_V3_CHAMPION_ASYMMETRIC_MOMENTUM": {
+        "name": "DOGE V3 Maker Hybrid Asymmetric Momentum (10t TP / 2t SL)",
+        "description": (
+            "Phase V3 champion for DOGE_USDT: Maker Limit Entry, 10t TP / 2t SL, resting limit TP, "
+            "and queue dynamics modeling."
+        ),
+        "symbol": "DOGE_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "stoch_preset": "FAST_SCALP",
+        "timeframe": "1m",
+        "invert_signal": False,
+        "dynamic_regime_fading": False,
+        "adx_fading_cutoff": 25.0,
+        "tp_ticks": 10,
+        "sl_mode": "TICKS",
+        "sl_ticks": 2,
+        "ratchet_enabled": True,
+        "ratchet_trigger_ticks": 1.0,
+        "ratchet_stall_seconds": 10.0,
+        "ratchet_tighten_ticks": 1.0,
+        "ratchet_breakeven_ticks": 2.5,
+        "execution_style": "MAKER_HYBRID",
+        "maker_queue_timeout_seconds": 10.0,
+        "resting_limit_tp": True,
+        "queue_dynamics_enabled": True,
+        "simulate_intra_tick_liquidation": True,
+        "slippage_enabled": False,
+        "slippage_ticks": 0
+    },
     "CUSTOM": {
         "name": "Custom User Configuration",
         "description": "Bypasses presets and uses manual individual toggle variables from settings.py.",
@@ -580,7 +774,16 @@ def get_active_preset_config(preset_name: str = None) -> dict:
         "tp_ticks": TP_TICKS,
         "sl_mode": SL_MODE,
         "sl_ticks": SL_TICKS,
-        "sl_roe_pct": SL_ROE_PCT
+        "sl_roe_pct": SL_ROE_PCT,
+        "use_atr_targets": USE_ATR_TARGETS,
+        "atr_tp_multiplier": ATR_TP_MULTIPLIER,
+        "atr_sl_multiplier": ATR_SL_MULTIPLIER,
+        "volume_filter_enabled": VOLUME_FILTER_ENABLED,
+        "volume_filter_multiplier": VOLUME_FILTER_MULTIPLIER,
+        "queue_dynamics_enabled": QUEUE_DYNAMICS_ENABLED,
+        "simulate_intra_tick_liquidation": SIMULATE_INTRA_TICK_LIQUIDATION,
+        "microstructure_imbalance_threshold": MICROSTRUCTURE_IMBALANCE_THRESHOLD,
+        "volatility_regime_period": VOLATILITY_REGIME_PERIOD
     }
 
 

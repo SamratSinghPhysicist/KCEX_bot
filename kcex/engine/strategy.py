@@ -192,10 +192,12 @@ class MasterplanStrategy:
         entry_price: float,
         price_unit: float,
         tp_ticks: int = 1,
-        precision: Optional[int] = None
+        precision: Optional[int] = None,
+        atr_value: Optional[float] = None
     ) -> float:
         """
         Calculates the Guaranteed Min-Profit TP Price.
+        Supports fixed tick targets or ATR-calibrated volatility targets (Target Dilution Law).
         For Long:  TP = Entry Price + (tp_ticks * pu)
         For Short: TP = Entry Price - (tp_ticks * pu)
         """
@@ -206,7 +208,14 @@ class MasterplanStrategy:
             except Exception:
                 precision = 4
 
-        tick_offset = tp_ticks * price_unit
+        # Check if ATR dynamic targets are toggled on
+        if atr_value is not None and getattr(self.config, "use_atr_targets", False) and price_unit > 0:
+            atr_mult = float(getattr(self.config, "atr_tp_multiplier", 2.0) or 2.0)
+            effective_tp_ticks = max(1, int(round((atr_value * atr_mult) / price_unit)))
+        else:
+            effective_tp_ticks = tp_ticks
+
+        tick_offset = effective_tp_ticks * price_unit
         if direction == OrderDirection.LONG:
             tp_price = entry_price + tick_offset
         else:
@@ -222,13 +231,15 @@ class MasterplanStrategy:
         sl_ticks: Optional[int] = None,
         sl_price_pct: Optional[float] = None,
         price_unit: Optional[float] = None,
-        precision: Optional[int] = None
+        precision: Optional[int] = None,
+        atr_value: Optional[float] = None
     ) -> float:
         """
         Calculates Stop Loss price supporting multiple modes:
-        1. sl_ticks: Stop loss offset by integer price units (e.g. 10 ticks = 10 * pu).
-        2. sl_price_pct: Stop loss by pure price change % (e.g. 0.5% = 0.005 * entry_price).
-        3. sl_roe_pct (default): Stop loss by ROE % (e.g. 10.0% ROE -> price move = ROE / (100 * leverage)).
+        1. atr_value (when use_atr_targets is enabled): Volatility-normalized SL ticks = (ATR * mult) / pu.
+        2. sl_ticks: Stop loss offset by integer price units (e.g. 10 ticks = 10 * pu).
+        3. sl_price_pct: Stop loss by pure price change % (e.g. 0.5% = 0.005 * entry_price).
+        4. sl_roe_pct (default): Stop loss by ROE % (e.g. 10.0% ROE -> price move = ROE / (100 * leverage)).
         Includes liquidation guard to ensure SL is never placed beyond liquidation price.
         """
         mmr = 0.01
@@ -250,7 +261,11 @@ class MasterplanStrategy:
             precision = 4
 
         # 1. Determine price offset
-        if sl_ticks is not None and sl_ticks > 0:
+        if atr_value is not None and getattr(self.config, "use_atr_targets", False) and price_unit > 0:
+            atr_mult = float(getattr(self.config, "atr_sl_multiplier", 1.0) or 1.0)
+            effective_sl_ticks = max(1, int(round((atr_value * atr_mult) / price_unit)))
+            price_offset = effective_sl_ticks * price_unit
+        elif sl_ticks is not None and sl_ticks > 0:
             price_offset = sl_ticks * price_unit
         elif sl_price_pct is not None and sl_price_pct > 0:
             price_offset = entry_price * (sl_price_pct / 100.0)
