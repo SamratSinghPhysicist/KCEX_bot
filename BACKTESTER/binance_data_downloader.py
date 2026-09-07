@@ -44,6 +44,32 @@ BASE_URL_FUTURES_UM = "https://data.binance.vision/data/futures/um"
 BASE_URL_SPOT = "https://data.binance.vision/data/spot"
 
 
+def get_available_s3_date_range(market_type: str, data_type: str, symbol: str, timeframe: str = "1m") -> Tuple[Optional[str], Optional[str]]:
+    """Discovers exact first and last available monthly archive date from Binance Vision S3 bucket."""
+    symbol_clean = symbol.upper().replace("_", "")
+    prefix = f"data/{market_type}/monthly/{data_type}/{symbol_clean}/"
+    if data_type == "klines":
+        prefix = f"data/{market_type}/monthly/klines/{symbol_clean}/{timeframe}/"
+    s3_url = f"https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?prefix={prefix}"
+    try:
+        r = requests.get(s3_url, timeout=6)
+        if r.status_code == 200:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(r.text)
+            ns = {'s3': 'http://s3.amazonaws.com/doc/2006-03-01/'}
+            keys = [elem.text for elem in root.findall('.//s3:Key', ns) if elem.text and elem.text.endswith('.zip')]
+            if keys:
+                # Extract dates from filenames (e.g. DOGEUSDT-trades-2024-01.zip or DOGEUSDT-1m-2024-01.zip)
+                first_fn = keys[0].split('/')[-1].replace('.zip', '')
+                last_fn = keys[-1].split('/')[-1].replace('.zip', '')
+                first_date = first_fn.split('-')[-2] + '-' + first_fn.split('-')[-1]
+                last_date = last_fn.split('-')[-2] + '-' + last_fn.split('-')[-1]
+                return first_date, last_date
+    except Exception:
+        pass
+    return None, None
+
+
 def generate_monthly_date_list(start_ym: str, end_ym: str) -> List[str]:
     """Generates a list of YYYY-MM strings between start and end (inclusive)."""
     start_dt = datetime.datetime.strptime(start_ym.strip(), "%Y-%m")
@@ -53,7 +79,6 @@ def generate_monthly_date_list(start_ym: str, end_ym: str) -> List[str]:
     months = []
     while current <= end_dt:
         months.append(current.strftime("%Y-%m"))
-        # Move to next month
         year = current.year + (1 if current.month == 12 else 0)
         month = 1 if current.month == 12 else current.month + 1
         current = current.replace(year=year, month=month, day=1)
@@ -276,11 +301,21 @@ def interactive_wizard():
             raw_tf = input("   Enter timeframes: ").strip()
             timeframes = [t.strip() for t in raw_tf.split(",") if t.strip()]
 
-    # 5. Date Range
+    # 5. Date Range Discovery
     print("\n5. Select Date Range (Monthly Archives):")
-    cur_year = datetime.datetime.now().year
-    s_date = input(f"   Start Month (YYYY-MM) [default: {cur_year}-01]: ").strip() or f"{cur_year}-01"
-    e_date = input(f"   End Month   (YYYY-MM) [default: {cur_year}-08]: ").strip() or f"{cur_year}-08"
+    # Discover available date range for primary symbol & data type
+    primary_dt = data_types[0]
+    discovered_s, discovered_e = get_available_s3_date_range(market_type, primary_dt, symbols[0], timeframes[0] if timeframes else "1m")
+    if discovered_s and discovered_e:
+        print(f"   ℹ️  Binance Vision available archive range for {symbols[0]} ({primary_dt}): {discovered_s} to {discovered_e}")
+        def_s = discovered_s
+        def_e = discovered_e
+    else:
+        def_s = "2024-01"
+        def_e = "2024-12"
+
+    s_date = input(f"   Start Month (YYYY-MM) [default: {def_s}]: ").strip() or def_s
+    e_date = input(f"   End Month   (YYYY-MM) [default: {def_e}]: ").strip() or def_e
 
     # 6. Destination Folder
     default_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "BACKTESTER"))
