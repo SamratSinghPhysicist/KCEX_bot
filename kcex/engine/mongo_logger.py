@@ -77,6 +77,15 @@ class MongoTradeLogger:
             return False
 
         try:
+            try:
+                import dns.resolver
+                res = dns.resolver.get_default_resolver()
+                for ns in reversed(["8.8.8.8", "1.1.1.1"]):
+                    if ns not in res.nameservers:
+                        res.nameservers.append(ns)
+            except Exception:
+                pass
+
             from pymongo import MongoClient
             self._client = MongoClient(
                 self._uri,
@@ -345,7 +354,57 @@ class MongoTradeLogger:
     # ANALYTICS QUERIES
     # =========================================================================
 
-    def get_all_trades(self, mode_filter: str = "live") -> List[Dict[str, Any]]:
+    def get_traded_symbols(self, mode_filter: str = "live") -> List[str]:
+        """Fetch distinct symbols of traded pairs from MongoDB."""
+        if not self._connect():
+            return []
+        try:
+            query = {"type": "EXECUTED"}
+            if mode_filter:
+                query["mode"] = mode_filter
+            symbols = self._db[COLLECTION_TRADES].distinct("symbol", query)
+            return sorted([s for s in symbols if s])
+        except Exception as e:
+            logger.warning(f"[MONGO] ⚠️ Failed to fetch traded symbols: {e}")
+            return []
+
+    def get_traded_pairs_summary(self, mode_filter: str = "live") -> List[Dict[str, Any]]:
+        """Fetch distinct traded pairs with trade count, base coin, and net PnL from MongoDB."""
+        if not self._connect():
+            return []
+        try:
+            match_stage = {"type": "EXECUTED"}
+            if mode_filter:
+                match_stage["mode"] = mode_filter
+            pipeline = [
+                {"$match": match_stage},
+                {
+                    "$group": {
+                        "_id": "$symbol",
+                        "symbol": {"$first": "$symbol"},
+                        "base_coin": {"$first": "$base_coin"},
+                        "trade_count": {"$sum": 1},
+                        "pnl_usdt": {"$sum": "$realized_pnl_usdt"},
+                        "pnl_inr": {"$sum": "$realized_pnl_inr"},
+                        "wins": {
+                            "$sum": {
+                                "$cond": [{"$gt": ["$realized_pnl_usdt", 0]}, 1, 0]
+                            }
+                        }
+                    }
+                },
+                {"$sort": {"trade_count": -1}}
+            ]
+            results = list(self._db[COLLECTION_TRADES].aggregate(pipeline))
+            for r in results:
+                if not r.get("base_coin") and r.get("symbol"):
+                    r["base_coin"] = r["symbol"].split("_")[0]
+            return results
+        except Exception as e:
+            logger.warning(f"[MONGO] ⚠️ Failed to fetch traded pairs summary: {e}")
+            return []
+
+    def get_all_trades(self, mode_filter: str = "live", symbol_filter: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch all executed trades from MongoDB, sorted by entry_time."""
         if not self._connect():
             return []
@@ -353,17 +412,31 @@ class MongoTradeLogger:
             query = {"type": "EXECUTED"}
             if mode_filter:
                 query["mode"] = mode_filter
+            if symbol_filter:
+                sym = symbol_filter.strip().upper()
+                query["$or"] = [
+                    {"symbol": sym},
+                    {"symbol": f"{sym}_USDT"},
+                    {"base_coin": sym}
+                ]
             return list(self._db[COLLECTION_TRADES].find(query).sort("entry_time", 1))
         except Exception as e:
             logger.warning(f"[MONGO] ⚠️ Failed to query trades: {e}")
             return []
 
-    def get_all_cancelled_orders(self) -> List[Dict[str, Any]]:
+    def get_all_cancelled_orders(self, symbol_filter: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch all cancelled orders from MongoDB."""
         if not self._connect():
             return []
         try:
-            return list(self._db[COLLECTION_CANCELLED].find().sort("timestamp", 1))
+            query = {}
+            if symbol_filter:
+                sym = symbol_filter.strip().upper()
+                query["$or"] = [
+                    {"symbol": sym},
+                    {"symbol": f"{sym}_USDT"}
+                ]
+            return list(self._db[COLLECTION_CANCELLED].find(query).sort("timestamp", 1))
         except Exception as e:
             logger.warning(f"[MONGO] ⚠️ Failed to query cancelled orders: {e}")
             return []

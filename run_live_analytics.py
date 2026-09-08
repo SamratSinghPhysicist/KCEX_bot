@@ -46,6 +46,9 @@ except Exception:
 
 def fmt_usdt(val: float, sign: bool = True) -> str:
     s = "+" if val > 0 and sign else ""
+    if abs(val) > 0 and abs(val) < 1e-6:
+        from decimal import Decimal
+        return f"{s}{format(Decimal(str(val)), 'f')} USDT"
     return f"{s}{val:.6f} USDT"
 
 def fmt_inr(val: float, sign: bool = True) -> str:
@@ -92,6 +95,167 @@ def fmt_duration(seconds: float) -> str:
     m = int(seconds // 60)
     s = seconds % 60
     return f"{seconds:.1f}s ({m}m {s:.0f}s)"
+
+def fmt_price(val: float, precision: Optional[int] = None) -> str:
+    """
+    Format price without any rounding off, scientific notation, or lost precision.
+    Supports micro-priced coins (e.g. 0.000003618, SHIB, PEPE) of any arbitrary decimal depth.
+    Never truncates significant digits.
+    """
+    if val is None:
+        return "N/A"
+    if val == 0:
+        return "0.00"
+
+    std = str(val)
+    if "e" in std or "E" in std:
+        from decimal import Decimal
+        d = Decimal(std)
+        s = format(d, "f")
+    else:
+        s = std
+
+    parts = s.split(".")
+    int_part = parts[0]
+    dec_part = parts[1] if len(parts) > 1 else ""
+
+    min_dec = precision if (precision is not None and precision > 0) else 2
+    if len(dec_part) < min_dec:
+        dec_part = dec_part.ljust(min_dec, "0")
+        s = int_part + "." + dec_part
+    elif not dec_part:
+        s = int_part + ".00"
+
+    return s
+
+def fmt_qty(val: float) -> str:
+    """Format quantity without truncating micro quantities or adding trailing zero noise."""
+    if val is None or val == 0:
+        return "0"
+    std = str(val)
+    if "e" in std or "E" in std:
+        from decimal import Decimal
+        s = format(Decimal(std), "f")
+    else:
+        s = std
+    if "." in s:
+        parts = s.split(".")
+        dec = parts[1].rstrip("0")
+        if not dec:
+            s = parts[0]
+        else:
+            s = parts[0] + "." + dec
+    return s
+
+def matches_asset(item: Dict[str, Any], asset_filter: Optional[str]) -> bool:
+    """Check if a trade document or cancelled order matches the given asset filter."""
+    if not asset_filter or asset_filter.strip().upper() == "ALL":
+        return True
+    filt = asset_filter.strip().upper()
+    sym = str(item.get("symbol", "")).strip().upper()
+    coin = str(item.get("base_coin", "")).strip().upper()
+    if not coin and sym:
+        coin = sym.split("_")[0]
+
+    if filt in (coin, sym):
+        return True
+    if sym == f"{filt}_USDT" or sym.startswith(f"{filt}_"):
+        return True
+    if filt.endswith("_USDT") and coin == filt[:-5]:
+        return True
+    return False
+
+def filter_trades(trades: List[Dict[str, Any]], asset_filter: Optional[str]) -> List[Dict[str, Any]]:
+    """Filter list of trades by asset."""
+    if not asset_filter or asset_filter.strip().upper() == "ALL":
+        return trades
+    return [t for t in trades if matches_asset(t, asset_filter)]
+
+def filter_cancelled_orders(orders: List[Dict[str, Any]], asset_filter: Optional[str]) -> List[Dict[str, Any]]:
+    """Filter list of cancelled orders by asset."""
+    if not asset_filter or asset_filter.strip().upper() == "ALL":
+        return orders
+    return [o for o in orders if matches_asset(o, asset_filter)]
+
+def select_asset_filter_menu(mongo, all_trades: List[Dict[str, Any]], current_filter: str) -> str:
+    """Display interactive asset filter selection menu with dynamically fetched pairs from MongoDB."""
+    print_header("🪙 SELECT ASSET / TRADED PAIR FILTER")
+    print(f"  Current Active Filter : {current_filter.upper()}\n")
+
+    # Dynamically fetch pairs from MongoDB
+    traded_pairs = []
+    if mongo:
+        try:
+            traded_pairs = mongo.get_traded_pairs_summary(mode_filter="live")
+        except Exception as e:
+            print(f"  ⚠️ Note: Could not fetch aggregate summary from MongoDB: {e}")
+
+    # Fallback to local trades in memory if MongoDB query returned empty
+    if not traded_pairs and all_trades:
+        pair_map = {}
+        for t in all_trades:
+            sym = t.get("symbol", "UNKNOWN")
+            base = t.get("base_coin") or (sym.split("_")[0] if "_" in sym else sym)
+            if sym not in pair_map:
+                pair_map[sym] = {"symbol": sym, "base_coin": base, "trade_count": 0, "pnl_usdt": 0.0, "wins": 0}
+            pair_map[sym]["trade_count"] += 1
+            pnl = t.get("realized_pnl_usdt", 0)
+            pair_map[sym]["pnl_usdt"] += pnl
+            if pnl > 0:
+                pair_map[sym]["wins"] += 1
+        traded_pairs = sorted(pair_map.values(), key=lambda x: -x["trade_count"])
+
+    print("  Dynamically fetched traded pairs from MongoDB:")
+    print("  [1] ALL (Show all trades across all pairs)")
+
+    choice_map = {"1": "ALL", "all": "ALL"}
+    for idx, p in enumerate(traded_pairs, 2):
+        sym = p.get("symbol", "?")
+        coin = p.get("base_coin", sym.split("_")[0])
+        cnt = p.get("trade_count", 0)
+        pnl = p.get("pnl_usdt", 0.0)
+        wins = p.get("wins", 0)
+        wr = (wins / cnt * 100) if cnt > 0 else 0
+        pnl_sign = "+" if pnl > 0 else ""
+
+        print(f"  [{idx}] {coin:<6s} ({sym:<12s}) │ {cnt:>3d} trades │ WR: {wr:>5.1f}% │ Net PnL: {pnl_sign}{pnl:.6f} USDT")
+        choice_map[str(idx)] = sym
+        choice_map[sym.lower()] = sym
+        choice_map[sym.upper()] = sym
+        choice_map[coin.lower()] = sym
+        choice_map[coin.upper()] = sym
+
+    print()
+    try:
+        raw_choice = input(f"  Select option number [1-{len(traded_pairs) + 1}], type coin name (e.g. 'doge', 'trump', 'btc'), or press Enter to keep current: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print()
+        return current_filter
+
+    if not raw_choice:
+        return current_filter
+
+    lower_choice = raw_choice.lower()
+    if lower_choice in choice_map:
+        selected = choice_map[lower_choice]
+        print(f"\n  ✅ Filter set to: {selected.upper()}\n")
+        return selected
+
+    # If the user typed an arbitrary symbol (like 'btc' or 'btc_usdt') not in recent trades:
+    normalized = raw_choice.upper()
+    if not normalized.endswith("_USDT") and "_" not in normalized:
+        normalized_sym = f"{normalized}_USDT"
+    else:
+        normalized_sym = normalized
+
+    print(f"\n  ⚠️ '{raw_choice}' has no recorded trades in MongoDB yet.")
+    confirm = input(f"     Apply filter for '{normalized_sym}' anyway? [y/N]: ").strip().lower()
+    if confirm in ("y", "yes"):
+        print(f"\n  ✅ Filter set to: {normalized_sym}\n")
+        return normalized_sym
+
+    print("\n  Kept current filter.\n")
+    return current_filter
 
 
 BANNER = r"""
@@ -274,12 +438,13 @@ def compute_analytics(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
 # DISPLAY FUNCTIONS
 # =========================================================================
 
-def display_full_summary(analytics: Dict[str, Any]):
+def display_full_summary(analytics: Dict[str, Any], asset_label: str = "ALL"):
     """Display comprehensive analytics summary."""
-    print_header("📊 LIVE BOT PERFORMANCE SUMMARY")
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"📊 LIVE BOT PERFORMANCE SUMMARY{header_suffix}")
 
     if analytics["total_trades"] == 0:
-        print("\n  ⚠️  No trades found in MongoDB.\n")
+        print(f"\n  ⚠️  No trades found{f' for asset {asset_label}' if asset_label != 'ALL' else ' in MongoDB'}.\n")
         return
 
     a = analytics
@@ -350,12 +515,13 @@ def display_full_summary(analytics: Dict[str, Any]):
         print()
 
 
-def display_trade_history(trades: List[Dict[str, Any]]):
+def display_trade_history(trades: List[Dict[str, Any]], asset_label: str = "ALL"):
     """Display rich trade history table with all key telemetry."""
-    print_header(f"📋 TRADE HISTORY ({len(trades)} trades)")
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"📋 TRADE HISTORY ({len(trades)} trades){header_suffix}")
 
     if not trades:
-        print("\n  ⚠️  No trades found.\n")
+        print(f"\n  ⚠️  No trades found{f' for asset {asset_label}' if asset_label != 'ALL' else ''}.\n")
         return
 
     print("\n  Format: Entry & Exit times (IST), Sizing, Margin, TP/SL, PnL, ROE% & Strategy")
@@ -379,6 +545,15 @@ def display_trade_history(trades: List[Dict[str, Any]]):
         tp_set = t.get("tp_set", 0)
         sl_set = t.get("sl_set", 0)
 
+        precision = t.get("price_precision")
+        if precision is None:
+            precision = 5 if "DOGE" in symbol else 4
+
+        entry_p_str = fmt_price(entry_p, precision)
+        exit_p_str = fmt_price(exit_p, precision)
+        tp_set_str = fmt_price(tp_set, precision)
+        sl_set_str = fmt_price(sl_set, precision)
+
         margin_u = t.get("margin_used_usdt", 0)
         margin_i = t.get("margin_used_inr", 0)
         pnl_u = t.get("realized_pnl_usdt", 0)
@@ -395,10 +570,10 @@ def display_trade_history(trades: List[Dict[str, Any]]):
         dir_emoji = "🟢 LONG" if direction == "LONG" else "🔴 SHORT"
 
         print(f"  ─── Trade #{trade_id} │ {symbol} │ {dir_emoji} │ {leverage}x Lev │ {env} │ {verified} ───")
-        print(f"    • Entry Time : {entry_time_str:<26s} │ Entry Price : {entry_p:.4f} USDT")
-        print(f"    • Exit Time  : {exit_time_str:<26s} │ Exit Price  : {exit_p:.4f} USDT  (Duration: {duration_str})")
-        print(f"    • Target TP  : {tp_set:.4f} USDT {'🎯 (Hit!)' if reason == 'MIN_PROFIT_TP_HIT' else ''} │ Stop Loss SL: {sl_set:.4f} USDT")
-        print(f"    • Sizing     : {vol} contracts ({qty:.4f} {base_coin}) │ Margin Used : {margin_u:.6f} USDT (₹{margin_i:.4f})")
+        print(f"    • Entry Time : {entry_time_str:<26s} │ Entry Price : {entry_p_str} USDT")
+        print(f"    • Exit Time  : {exit_time_str:<26s} │ Exit Price  : {exit_p_str} USDT  (Duration: {duration_str})")
+        print(f"    • Target TP  : {tp_set_str} USDT {'🎯 (Hit!)' if reason == 'MIN_PROFIT_TP_HIT' else ''} │ Stop Loss SL: {sl_set_str} USDT")
+        print(f"    • Sizing     : {vol} contracts ({fmt_qty(qty)} {base_coin}) │ Margin Used : {margin_u:.6f} USDT (₹{margin_i:.4f})")
         print(f"    • Outcome    : {pnl_sign}{pnl_u:.6f} USDT ({pnl_sign}₹{pnl_i:.4f}) │ ROE/Yield   : {roe_sign}{roe:.2f}%")
         print(f"    • Strategy   : {strategy:<32s} │ Exit Reason : {reason}")
         print_separator("─", width=110)
@@ -442,7 +617,7 @@ def display_single_trade_card(trade: Dict[str, Any]):
     exit_p = trade.get("exit_price", 0)
     tp_set = trade.get("tp_set", 0)
     sl_set = trade.get("sl_set", 0)
-    precision = trade.get("price_precision", 4)
+    precision = trade.get("price_precision") or (5 if "DOGE" in symbol else 4)
 
     pnl_u = trade.get("realized_pnl_usdt", 0)
     pnl_i = trade.get("realized_pnl_inr", 0)
@@ -490,16 +665,16 @@ def display_single_trade_card(trade: Dict[str, Any]):
     print("  📐 SIZING & LEVERAGE")
     print(f"    • Leverage             : {leverage}x Isolated")
     print(f"    • Volume (Contracts)   : {vol} contracts (Size: {contract_size})")
-    print(f"    • Underlying Quantity  : {qty:.4f} {base_coin}")
+    print(f"    • Underlying Quantity  : {fmt_qty(qty)} {base_coin}")
     print(f"    • Notional Value       : {fmt_dual(notional_u, notional_i, sign=False)}")
     print(f"    • Margin Used          : {fmt_dual(margin_u, margin_i, sign=False)}")
     print()
 
     print("  🎯 PRICE TARGETS & EXECUTION")
-    print(f"    • Entry Price          : {entry_p:.{precision}f} USDT")
-    print(f"    • Exit Price           : {exit_p:.{precision}f} USDT")
-    print(f"    • Take-Profit (TP) Set : {tp_set:.{precision}f} USDT" + (" 🎯 (Target Reached!)" if reason == "MIN_PROFIT_TP_HIT" else ""))
-    print(f"    • Stop-Loss (SL) Set   : {sl_set:.{precision}f} USDT")
+    print(f"    • Entry Price          : {fmt_price(entry_p, precision)} USDT")
+    print(f"    • Exit Price           : {fmt_price(exit_p, precision)} USDT")
+    print(f"    • Take-Profit (TP) Set : {fmt_price(tp_set, precision)} USDT" + (" 🎯 (Target Reached!)" if reason == "MIN_PROFIT_TP_HIT" else ""))
+    print(f"    • Stop-Loss (SL) Set   : {fmt_price(sl_set, precision)} USDT")
     print(f"    • Exit Reason          : {reason}")
     print()
 
@@ -543,12 +718,13 @@ def display_single_trade_card(trade: Dict[str, Any]):
     print()
 
 
-def display_strategy_breakdown(trades: List[Dict[str, Any]]):
+def display_strategy_breakdown(trades: List[Dict[str, Any]], asset_label: str = "ALL"):
     """Display deep strategy and multi-factor performance breakdown."""
-    print_header("🧠 STRATEGY & MULTI-FACTOR BREAKDOWN")
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"🧠 STRATEGY & MULTI-FACTOR BREAKDOWN{header_suffix}")
 
     if not trades:
-        print("\n  ⚠️  No trades found.\n")
+        print(f"\n  ⚠️  No trades found{f' for asset {asset_label}' if asset_label != 'ALL' else ''}.\n")
         return
 
     # Group by Sub-Strategy
@@ -606,18 +782,30 @@ def display_strategy_breakdown(trades: List[Dict[str, Any]]):
         wr = (v["wins"] / v["trades"] * 100) if v["trades"] > 0 else 0
         pnl_s = fmt_usdt(v["pnl_usdt"])
         print(f"    {k:<30s} {v['trades']:>6d} {v['wins']:>5d} {wr:>5.1f}% {pnl_s:>16s}")
+
+    # 4. By Traded Asset / Coin (prominently shown when multiple assets exist)
+    if by_coin and len(by_coin) > 1:
+        print("\n  ▶ 4. Performance by Traded Asset / Coin:")
+        print(f"    {'Asset / Pair':<20s} {'Trades':>6s} {'Wins':>5s} {'WR%':>6s} {'Net PnL (USDT)':>16s} {'Net PnL (INR)':>14s}")
+        print_separator("─", width=90)
+        for k, v in sorted(by_coin.items(), key=lambda x: -x[1]["pnl_usdt"]):
+            wr = (v["wins"] / v["trades"] * 100) if v["trades"] > 0 else 0
+            pnl_s = fmt_usdt(v["pnl_usdt"])
+            pnl_i = fmt_inr(v["pnl_inr"])
+            print(f"    {k:<20s} {v['trades']:>6d} {v['wins']:>5d} {wr:>5.1f}% {pnl_s:>16s} {pnl_i:>14s}")
     print()
 
 
-def display_cancelled_orders(orders: List[Dict[str, Any]]):
+def display_cancelled_orders(orders: List[Dict[str, Any]], asset_label: str = "ALL"):
     """Display cancelled limit orders."""
-    print_header(f"❌ CANCELLED ORDERS LOG ({len(orders)} orders)")
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"❌ CANCELLED ORDERS LOG ({len(orders)} orders){header_suffix}")
 
     if not orders:
-        print("\n  ✅ No cancelled orders recorded.\n")
+        print(f"\n  ✅ No cancelled orders recorded{f' for asset {asset_label}' if asset_label != 'ALL' else ''}.\n")
         return
 
-    print(f"  {'Time (IST)':<22s} {'Symbol':<12s} {'Dir':<6s} {'Price':>10s} {'Timeout':>8s} {'Reason':<25s} {'Env':<5s}")
+    print(f"  {'Time (IST)':<22s} {'Symbol':<12s} {'Dir':<6s} {'Price':>12s} {'Timeout':>8s} {'Reason':<25s} {'Env':<5s}")
     print_separator("─")
 
     for o in orders:
@@ -630,16 +818,20 @@ def display_cancelled_orders(orders: List[Dict[str, Any]]):
         reason = o.get("cancel_reason", "UNKNOWN")
         env = "GH" if o.get("execution_env") == "github_actions" else "LOC"
 
-        print(f"  {time_str:<22s} {symbol:<12s} {direction:<6s} {price:>10.4f} {timeout:>7.1f}s {reason:<25s} {env:<5s}")
+        prec = 5 if "DOGE" in symbol else 4
+        price_str = fmt_price(price, prec)
+
+        print(f"  {time_str:<22s} {symbol:<12s} {direction:<6s} {price_str:>12s} {timeout:>7.1f}s {reason:<25s} {env:<5s}")
     print()
 
 
-def display_daily_breakdown(trades: List[Dict[str, Any]]):
+def display_daily_breakdown(trades: List[Dict[str, Any]], asset_label: str = "ALL"):
     """Display daily PnL breakdown."""
-    print_header("📅 DAILY PnL BREAKDOWN")
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"📅 DAILY PnL BREAKDOWN{header_suffix}")
 
     if not trades:
-        print("\n  ⚠️  No trades found.\n")
+        print(f"\n  ⚠️  No trades found{f' for asset {asset_label}' if asset_label != 'ALL' else ''}.\n")
         return
 
     daily = {}
@@ -714,13 +906,16 @@ def display_live_balance():
         print(f"\n  ❌ Error fetching KCEX balance: {e}\n")
 
 
-def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]]):
+def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]], asset_label: str = "ALL"):
     """Export trade data to CSV files with all 25+ telemetry fields."""
-    print_header("📤 EXPORT TO CSV")
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"📤 EXPORT TO CSV{header_suffix}")
+
+    safe_asset = "".join(c for c in asset_label if c.isalnum() or c in ("_", "-"))
 
     # Export trades
     if trades:
-        filename = "live_trades_export.csv"
+        filename = f"live_trades_{safe_asset}_export.csv" if asset_label != "ALL" else "live_trades_export.csv"
         fields = [
             "trade_id", "entry_time", "exit_time", "duration_seconds", "symbol", "base_coin",
             "direction", "sub_strategy_name", "leverage", "vol_contracts", "contract_size",
@@ -738,7 +933,11 @@ def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]])
                     row = []
                     for field in fields:
                         val = t.get(field, "")
-                        if isinstance(val, datetime):
+                        if field in ("entry_price", "exit_price", "tp_set", "sl_set") and isinstance(val, (int, float)):
+                            val = fmt_price(val, t.get("price_precision"))
+                        elif field == "underlying_quantity" and isinstance(val, (int, float)):
+                            val = fmt_qty(val)
+                        elif isinstance(val, datetime):
                             val = val.isoformat()
                         row.append(str(val) if val is not None else "")
                     f.write(",".join(row) + "\n")
@@ -750,7 +949,7 @@ def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]])
 
     # Export cancelled orders
     if cancelled:
-        filename = "cancelled_orders_export.csv"
+        filename = f"cancelled_orders_{safe_asset}_export.csv" if asset_label != "ALL" else "cancelled_orders_export.csv"
         fields = [
             "timestamp", "symbol", "direction", "intended_entry_price",
             "timeout_seconds", "cancel_reason", "execution_env", "session_id"
@@ -762,7 +961,9 @@ def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]])
                     row = []
                     for field in fields:
                         val = o.get(field, "")
-                        if isinstance(val, datetime):
+                        if field == "intended_entry_price" and isinstance(val, (int, float)):
+                            val = fmt_price(val, o.get("price_precision"))
+                        elif isinstance(val, datetime):
                             val = val.isoformat()
                         row.append(str(val) if val is not None else "")
                     f.write(",".join(row) + "\n")
@@ -777,6 +978,13 @@ def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]])
 # =========================================================================
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="KCEX Live Bot Analytics Dashboard")
+    parser.add_argument("--asset", "-a", type=str, default=None, help="Filter analytics by traded asset (e.g. TRUMP, DOGE, BTC)")
+    args, _ = parser.parse_known_args()
+
+    active_asset = args.asset.strip().upper() if args.asset else "ALL"
+
     print(BANNER)
 
     # Connect to MongoDB
@@ -793,89 +1001,107 @@ def main():
         sys.exit(1)
 
     # Fetch data
-    trades = mongo.get_all_trades(mode_filter="live")
-    cancelled = mongo.get_all_cancelled_orders()
-    trade_count = len(trades)
-    cancel_count = len(cancelled)
+    all_trades = mongo.get_all_trades(mode_filter="live")
+    all_cancelled = mongo.get_all_cancelled_orders()
+    trade_count = len(all_trades)
+    cancel_count = len(all_cancelled)
 
-    print(f"  ✅ Connected | {trade_count} executed trades | {cancel_count} cancelled orders\n")
-
-    # Compute analytics
-    analytics = compute_analytics(trades)
+    print(f"  ✅ Connected | {trade_count} executed trades | {cancel_count} cancelled orders")
+    if active_asset != "ALL":
+        matching_cnt = len(filter_trades(all_trades, active_asset))
+        print(f"  🎯 Asset Filter Active: {active_asset} ({matching_cnt} matching trades)\n")
+    else:
+        print()
 
     while True:
+        filtered_trades = filter_trades(all_trades, active_asset)
+        filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset)
+        analytics = compute_analytics(filtered_trades)
+
         print_separator("═")
-        print("  KCEX LIVE BOT ANALYTICS - MAIN MENU")
+        filter_status = f"🎯 Active Asset: {active_asset}" if active_asset != "ALL" else "🎯 Active Asset: ALL (All Pairs)"
+        count_status = f"{len(filtered_trades)}/{len(all_trades)} trades" if active_asset != "ALL" else f"{len(all_trades)} trades"
+        print(f"  KCEX LIVE BOT ANALYTICS - MAIN MENU  │  {filter_status} ({count_status})")
         print_separator("═")
         print()
         print("  [1] 📊 Full Summary Dashboard (with Strategy & Margin stats)")
         print("  [2] 📋 Trade History Table (all trade cards & telemetry)")
         print("  [3] 🔍 Deep-Dive Single Trade Inspector (view full trade details)")
-        print("  [4] 🧠 Strategy & Multi-Factor Performance Breakdown")
+        print("  [4] 🧠 Strategy & Multi-Factor Performance Breakdown (Asset Breakdown)")
         print("  [5] ❌ Cancelled Orders Log")
         print("  [6] 📅 Daily PnL Breakdown")
         print("  [7] 💰 Live KCEX Account Balance")
         print("  [8] 📤 Export to CSV (all 25+ fields)")
         print("  [9] 🔄 Refresh Data from MongoDB")
+        print(f"  [A] 🪙 Filter by Asset / Traded Pair (Current: {active_asset})")
         print("  [0] 🚪 Exit")
         print()
 
         try:
-            choice = input("  Select option [0-9]: ").strip()
+            choice = input("  Select option [0-9, A]: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\n\n  Goodbye! 👋\n")
             break
 
-        if choice == "1":
-            display_full_summary(analytics)
-        elif choice == "2":
-            display_trade_history(trades)
-        elif choice == "3":
-            if not trades:
-                print("\n  ⚠️  No trades available to inspect.\n")
+        choice_up = choice.upper()
+        if choice_up == "1":
+            display_full_summary(analytics, asset_label=active_asset)
+        elif choice_up == "2":
+            display_trade_history(filtered_trades, asset_label=active_asset)
+        elif choice_up == "3":
+            if not filtered_trades:
+                print(f"\n  ⚠️  No trades available to inspect for asset '{active_asset}'.\n")
             else:
                 try:
-                    inp = input(f"  Enter Trade ID or index (1 to {len(trades)}): ").strip()
+                    inp = input(f"  Enter Trade ID or index (1 to {len(filtered_trades)}): ").strip()
                     if inp:
                         target = None
-                        for t in trades:
+                        for t in filtered_trades:
                             if str(t.get("trade_id")) == inp:
                                 target = t
                                 break
                         if not target:
                             try:
                                 idx = int(inp) - 1
-                                if 0 <= idx < len(trades):
-                                    target = trades[idx]
+                                if 0 <= idx < len(filtered_trades):
+                                    target = filtered_trades[idx]
                             except ValueError:
                                 pass
                         if target:
                             display_single_trade_card(target)
                         else:
-                            print(f"\n  ⚠️  Trade '{inp}' not found.\n")
+                            print(f"\n  ⚠️  Trade '{inp}' not found in active filter.\n")
                 except (KeyboardInterrupt, EOFError):
                     print()
-        elif choice == "4":
-            display_strategy_breakdown(trades)
-        elif choice == "5":
-            display_cancelled_orders(cancelled)
-        elif choice == "6":
-            display_daily_breakdown(trades)
-        elif choice == "7":
+        elif choice_up == "4":
+            display_strategy_breakdown(filtered_trades, asset_label=active_asset)
+        elif choice_up == "5":
+            display_cancelled_orders(filtered_cancelled, asset_label=active_asset)
+        elif choice_up == "6":
+            display_daily_breakdown(filtered_trades, asset_label=active_asset)
+        elif choice_up == "7":
             display_live_balance()
-        elif choice == "8":
-            export_to_csv(trades, cancelled)
-        elif choice == "9":
+        elif choice_up == "8":
+            export_to_csv(filtered_trades, filtered_cancelled, asset_label=active_asset)
+        elif choice_up == "9":
             print("\n  🔄 Refreshing data from MongoDB...")
-            trades = mongo.get_all_trades(mode_filter="live")
-            cancelled = mongo.get_all_cancelled_orders()
-            analytics = compute_analytics(trades)
-            print(f"  ✅ Refreshed | {len(trades)} executed trades | {len(cancelled)} cancelled orders\n")
-        elif choice == "0":
+            all_trades = mongo.get_all_trades(mode_filter="live")
+            all_cancelled = mongo.get_all_cancelled_orders()
+            filtered_trades = filter_trades(all_trades, active_asset)
+            filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset)
+            analytics = compute_analytics(filtered_trades)
+            print(f"  ✅ Refreshed | {len(all_trades)} executed trades | {len(all_cancelled)} cancelled orders")
+            if active_asset != "ALL":
+                print(f"     Active Filter ({active_asset}): {len(filtered_trades)} matching trades\n")
+            else:
+                print()
+        elif choice_up in ("A", "10", "F"):
+            active_asset = select_asset_filter_menu(mongo, all_trades, active_asset)
+        elif choice_up == "0":
             print("\n  Goodbye! 👋\n")
             break
         else:
-            print("\n  ⚠️  Invalid option. Please enter 0-9.\n")
+            print("\n  ⚠️  Invalid option. Please enter 0-9 or A.\n")
 
     mongo.close()
 
