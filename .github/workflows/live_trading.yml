@@ -1,11 +1,10 @@
 name: KCEX Live Trading Engine
 
 on:
-  # Optional: Uncomment the schedule block below to enable continuous 24/7 automated cycles
-  # (Runs every 4 hours, IST: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30)
-  # schedule:
-  #   - cron: '0 0,4,8,12,16,20 * * *'
-
+  schedule:
+    # 6 runs per day, 4 hours apart (UTC)
+    # IST equivalent: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30
+    - cron: '0 0,4,8,12,16,20 * * *'
   workflow_dispatch:
     inputs:
       symbol:
