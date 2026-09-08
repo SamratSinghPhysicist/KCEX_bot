@@ -49,6 +49,10 @@ TF_SECONDS_MAP = {
 }
 
 
+BACKTESTER_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT_DIR = os.path.abspath(os.path.join(BACKTESTER_DIR, ".."))
+
+
 class ForensicsEngine:
     """
     Core research engine powering the Forensic Chart & Replay Lab.
@@ -57,10 +61,37 @@ class ForensicsEngine:
     def __init__(
         self,
         indexer: Optional[ReportIndexer] = None,
-        ohlcv_dir: str = os.path.join("BACKTESTER", "OHLCV_Data_Binance"),
-        trades_dir: str = os.path.join("BACKTESTER", "Historical_Trades_Data_Binance"),
-        reports_dir: str = os.path.join("BACKTESTER", "reports")
+        ohlcv_dir: Optional[str] = None,
+        trades_dir: Optional[str] = None,
+        reports_dir: Optional[str] = None
     ):
+        if ohlcv_dir is None:
+            ohlcv_dir = os.path.join(BACKTESTER_DIR, "OHLCV_Data_Binance")
+        elif not os.path.isabs(ohlcv_dir) and not os.path.isdir(ohlcv_dir):
+            candidate = os.path.join(BACKTESTER_DIR, os.path.basename(ohlcv_dir))
+            if os.path.isdir(candidate):
+                ohlcv_dir = candidate
+            else:
+                ohlcv_dir = os.path.join(ROOT_DIR, ohlcv_dir)
+
+        if trades_dir is None:
+            trades_dir = os.path.join(BACKTESTER_DIR, "Historical_Trades_Data_Binance")
+        elif not os.path.isabs(trades_dir) and not os.path.isdir(trades_dir):
+            candidate = os.path.join(BACKTESTER_DIR, os.path.basename(trades_dir))
+            if os.path.isdir(candidate):
+                trades_dir = candidate
+            else:
+                trades_dir = os.path.join(ROOT_DIR, trades_dir)
+
+        if reports_dir is None:
+            reports_dir = os.path.join(BACKTESTER_DIR, "reports")
+        elif not os.path.isabs(reports_dir) and not os.path.exists(reports_dir):
+            candidate = os.path.join(BACKTESTER_DIR, os.path.basename(reports_dir))
+            if os.path.exists(candidate) or reports_dir in ("reports", os.path.join("BACKTESTER", "reports")):
+                reports_dir = os.path.join(BACKTESTER_DIR, "reports")
+            else:
+                reports_dir = os.path.join(ROOT_DIR, reports_dir)
+
         self.indexer = indexer or ReportIndexer(reports_dir=reports_dir)
         self.ohlcv_dir = ohlcv_dir
         self.trades_dir = trades_dir

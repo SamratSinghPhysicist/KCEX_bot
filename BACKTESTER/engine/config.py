@@ -11,7 +11,8 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, Union
 
 # Ensure root is in sys.path so kcex package is accessible
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+BACKTESTER_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT_DIR = os.path.abspath(os.path.join(BACKTESTER_DIR, ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
@@ -36,9 +37,9 @@ class BacktestConfig(ExecutionConfig):
     inr_rate: float = 94.45
 
     # Data Directories
-    ohlcv_data_dir: str = os.path.join("BACKTESTER", "OHLCV_Data_Binance")
-    trades_data_dir: str = os.path.join("BACKTESTER", "Historical_Trades_Data_Binance")
-    reports_dir: str = os.path.join("BACKTESTER", "reports")
+    ohlcv_data_dir: str = os.path.join(BACKTESTER_DIR, "OHLCV_Data_Binance")
+    trades_data_dir: str = os.path.join(BACKTESTER_DIR, "Historical_Trades_Data_Binance")
+    reports_dir: str = os.path.join(BACKTESTER_DIR, "reports")
 
     # High-fidelity Simulation Options
     use_tick_data: bool = True               # Stream tick-by-tick trades when available for active trades
@@ -69,3 +70,17 @@ class BacktestConfig(ExecutionConfig):
             self.symbol = self.symbol.upper()
             if "DOGE" in self.symbol and self.volume_multiplier == 2.0 and self.volume_mode == "MULTIPLIER":
                 self.volume_multiplier = 1.0
+
+        # Ensure directory paths are resolved correctly regardless of cwd
+        for attr, folder_name in [
+            ("ohlcv_data_dir", "OHLCV_Data_Binance"),
+            ("trades_data_dir", "Historical_Trades_Data_Binance"),
+            ("reports_dir", "reports")
+        ]:
+            val = getattr(self, attr, None)
+            if val and not os.path.isabs(val) and not os.path.exists(val):
+                candidate = os.path.join(BACKTESTER_DIR, os.path.basename(val))
+                if os.path.exists(candidate) or attr == "reports_dir":
+                    setattr(self, attr, candidate)
+                else:
+                    setattr(self, attr, os.path.join(ROOT_DIR, val))

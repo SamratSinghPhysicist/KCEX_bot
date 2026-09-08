@@ -32,6 +32,19 @@ Key Concepts:
 """
 
 import os
+import sys
+
+# Ensure project root is in sys.path
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+# Automatically load environment variables from .env
+try:
+    from kcex.config import load_env_file
+    load_env_file()
+except Exception:
+    pass
 
 # =============================================================================
 # 1. TRADING PAIR & ASSET CONFIGURATION

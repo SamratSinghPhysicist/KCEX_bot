@@ -17,7 +17,8 @@ import argparse
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+BACKTESTER_DIR = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(BACKTESTER_DIR, ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
@@ -73,7 +74,7 @@ def main():
     chunks = manifest.get("chunks", [])
     print(f"✨ Found {len(chunks)} partition slices.\n")
 
-    out_dir = args.out_dir or os.path.join("BACKTESTER", "reports", "exports", f"{run_id}_{args.granularity}_chunks")
+    out_dir = args.out_dir or os.path.join(BACKTESTER_DIR, "reports", "exports", f"{run_id}_{args.granularity}_chunks")
     os.makedirs(out_dir, exist_ok=True)
 
     if args.zip:

@@ -106,18 +106,30 @@ def download_and_extract_zip(url: str, extract_to: str, expected_csv_name: str) 
         return False
 
 
+BACKTESTER_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
 def ensure_market_data(
     symbol: str,
     timeframe: str = "1m",
     start_date: str = "2026-01-01",
     end_date: str = "2026-08-31",
     download_trades: bool = True,
-    base_dir: str = "BACKTESTER"
+    base_dir: Optional[str] = None
 ) -> bool:
     """
     Ensures that OHLCV and (optionally) Trades data exist for the requested
     symbol, timeframe, and date range. If missing, downloads from Binance Vision.
     """
+    if base_dir is None or base_dir == "BACKTESTER":
+        base_dir = BACKTESTER_DIR
+    elif not os.path.isabs(base_dir) and not os.path.exists(base_dir):
+        candidate = os.path.join(BACKTESTER_DIR, os.path.basename(base_dir))
+        if os.path.exists(candidate):
+            base_dir = candidate
+        else:
+            base_dir = os.path.join(ROOT_DIR, base_dir)
+
     canonical = canonicalize_symbol(symbol)
     sym_clean = canonical.replace("_", "")
     norm_tf = normalize_timeframe(timeframe)

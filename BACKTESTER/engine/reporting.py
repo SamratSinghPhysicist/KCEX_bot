@@ -31,12 +31,24 @@ def format_duration(seconds: float) -> str:
         return f"{h}h {m:02d}m {s:02d}s"
 
 
+BACKTESTER_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT_DIR = os.path.abspath(os.path.join(BACKTESTER_DIR, ".."))
+
+
 class BacktestReporter:
     """
     Renders formatted terminal cards and exports trade history reports.
     """
 
-    def __init__(self, reports_dir: str = os.path.join("BACKTESTER", "reports")):
+    def __init__(self, reports_dir: Optional[str] = None):
+        if reports_dir is None:
+            reports_dir = os.path.join(BACKTESTER_DIR, "reports")
+        elif not os.path.isabs(reports_dir) and not os.path.exists(reports_dir):
+            candidate = os.path.join(BACKTESTER_DIR, os.path.basename(reports_dir))
+            if os.path.exists(candidate) or reports_dir in ("reports", os.path.join("BACKTESTER", "reports")):
+                reports_dir = os.path.join(BACKTESTER_DIR, "reports")
+            else:
+                reports_dir = os.path.join(ROOT_DIR, reports_dir)
         self.reports_dir = reports_dir
         os.makedirs(self.reports_dir, exist_ok=True)
 

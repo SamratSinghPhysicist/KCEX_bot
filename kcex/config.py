@@ -14,15 +14,18 @@ import os
 from typing import Optional, Dict, Any
 
 
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+
 def load_env_file(dotenv_path: Optional[str] = None) -> None:
     """
     Lightweight, zero-dependency .env loader.
-    Searches current working directory, workspace root, and config directory.
+    Searches workspace root, current working directory, and config directory.
     """
     if dotenv_path is None:
         candidates = [
+            os.path.join(ROOT_DIR, ".env"),
             os.path.join(os.getcwd(), ".env"),
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"),
             os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
         ]
         for path in candidates:

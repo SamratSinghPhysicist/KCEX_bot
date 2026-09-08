@@ -24,6 +24,13 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# Automatically load .env file
+try:
+    from kcex.config import load_env_file
+    load_env_file()
+except Exception:
+    pass
+
 
 def open_browser_delayed(url: str, delay_seconds: float = 1.2):
     """Opens browser after server has started."""

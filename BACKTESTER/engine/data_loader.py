@@ -154,12 +154,24 @@ def find_byte_offset_for_timestamp(file_path: str, target_ms: int, ts_col_idx: i
     return max(first_record_pos, best_offset)
 
 
+BACKTESTER_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT_DIR = os.path.abspath(os.path.join(BACKTESTER_DIR, ".."))
+
+
 class OHLCVLoader:
     """
     Loads and streams candlestick data from BACKTESTER/OHLCV_Data_Binance.
     """
 
-    def __init__(self, data_dir: str = os.path.join("BACKTESTER", "OHLCV_Data_Binance")):
+    def __init__(self, data_dir: Optional[str] = None):
+        if data_dir is None:
+            data_dir = os.path.join(BACKTESTER_DIR, "OHLCV_Data_Binance")
+        elif not os.path.isabs(data_dir) and not os.path.isdir(data_dir):
+            candidate = os.path.join(BACKTESTER_DIR, os.path.basename(data_dir))
+            if os.path.isdir(candidate):
+                data_dir = candidate
+            else:
+                data_dir = os.path.join(ROOT_DIR, data_dir)
         self.data_dir = data_dir
 
     def resolve_symbol_path(self, symbol: str) -> Optional[str]:
@@ -182,11 +194,17 @@ class OHLCVLoader:
             return []
 
         norm_tf = normalize_timeframe(timeframe)
+        # Check subdirectories for exact or normalized timeframe
         tf_dir = os.path.join(sym_dir, norm_tf)
         if not os.path.isdir(tf_dir):
-            return []
+            tf_dir = os.path.join(sym_dir, timeframe)
+            if not os.path.isdir(tf_dir):
+                return []
 
-        return sorted(glob.glob(os.path.join(tf_dir, "*.csv")))
+        pattern = os.path.join(tf_dir, "*.csv")
+        files = glob.glob(pattern)
+        files.sort()
+        return files
 
     def load_candles(
         self,
@@ -272,7 +290,15 @@ class TickTradeStreamer:
     millions of past rows.
     """
 
-    def __init__(self, data_dir: str = os.path.join("BACKTESTER", "Historical_Trades_Data_Binance")):
+    def __init__(self, data_dir: Optional[str] = None):
+        if data_dir is None:
+            data_dir = os.path.join(BACKTESTER_DIR, "Historical_Trades_Data_Binance")
+        elif not os.path.isabs(data_dir) and not os.path.isdir(data_dir):
+            candidate = os.path.join(BACKTESTER_DIR, os.path.basename(data_dir))
+            if os.path.isdir(candidate):
+                data_dir = candidate
+            else:
+                data_dir = os.path.join(ROOT_DIR, data_dir)
         self.data_dir = data_dir
 
     def resolve_symbol_path(self, symbol: str) -> Optional[str]:

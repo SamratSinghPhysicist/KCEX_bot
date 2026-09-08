@@ -9,8 +9,10 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List
 from enum import Enum
 from datetime import datetime, timezone
-import time
 import os
+import time
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
 
 class OrderDirection(str, Enum):
@@ -171,7 +173,7 @@ class ExecutionConfig:
     volatility_regime_period: int = 14
 
     poll_interval_seconds: float = 0.5
-    logs_dir: str = "logs"
+    logs_dir: str = field(default_factory=lambda: os.path.join(ROOT_DIR, "logs"))
     realtime_log_file: str = "engine_realtime.log"
     outcomes_log_file: str = "trade_outcomes.txt"
     outcomes_jsonl_file: str = "trade_outcomes.jsonl"

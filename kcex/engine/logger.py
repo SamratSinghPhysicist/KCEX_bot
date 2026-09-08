@@ -16,6 +16,9 @@ from typing import Optional, Any
 from kcex.engine.models import TradeOutcome, CumulativeStats
 
 
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+
 class DualCurrencyLogger:
     """
     Real-time logger that outputs to both console and a realtime log file.
@@ -28,6 +31,8 @@ class DualCurrencyLogger:
         inr_rate: float = 94.45,
         log_level: int = logging.INFO
     ):
+        if not os.path.isabs(log_file):
+            log_file = os.path.join(ROOT_DIR, log_file)
         self.log_file = log_file
         self.inr_rate = inr_rate
         self._ensure_dir()
@@ -116,6 +121,10 @@ class TradeOutcomeLogger:
         txt_file: str = "logs/trade_outcomes.txt",
         jsonl_file: str = "logs/trade_outcomes.jsonl"
     ):
+        if not os.path.isabs(txt_file):
+            txt_file = os.path.join(ROOT_DIR, txt_file)
+        if not os.path.isabs(jsonl_file):
+            jsonl_file = os.path.join(ROOT_DIR, jsonl_file)
         self.txt_file = txt_file
         self.jsonl_file = jsonl_file
         self.cumulative = CumulativeStats()

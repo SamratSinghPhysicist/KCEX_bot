@@ -43,7 +43,15 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 # Ensure project root is in path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, ROOT_DIR)
+
+# Automatically load .env file
+try:
+    from kcex.config import load_env_file
+    load_env_file()
+except Exception:
+    pass
 
 # Load defaults from settings.py if available
 try:
