@@ -225,7 +225,13 @@ class TradeExecutionEngine:
         self.logger.info(f"Position Sizing: {vol_summary} [Trade Qty != Margin; Committed Margin = Trade Qty / {self.config.leverage}x leverage]")
         self.logger.info(f"Target Leverage: {self.config.leverage}x isolated")
         self.logger.info(f"Min-Profit Take Profit rule: Entry Price +/- {self.config.tp_ticks} pu (Tick Size)")
-        self.logger.info(f"Stop Loss rule: -{self.config.sl_roe_pct}% ROE on margin")
+        if getattr(self.config, "sl_ticks", None):
+            sl_rule_desc = f"{self.config.sl_ticks} ticks"
+        elif getattr(self.config, "sl_price_pct", None):
+            sl_rule_desc = f"{self.config.sl_price_pct}% price move"
+        else:
+            sl_rule_desc = f"{self.config.sl_roe_pct}% ROE on margin"
+        self.logger.info(f"Stop Loss rule: -{sl_rule_desc}")
         self.logger.info(f"Post-trade cooldown: {self.config.cooldown_seconds}s")
         self.logger.section("PRE-FLIGHT CHECKS PASSED - ENGINE READY")
         return contract

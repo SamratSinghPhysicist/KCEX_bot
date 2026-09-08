@@ -1,22 +1,33 @@
 name: KCEX Live Trading Engine
 
 on:
-  #schedule:
-    # 6 runs per day, 4 hours apart (UTC)
-    # IST equivalent: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30
-  #  - cron: '0 0,4,8,12,16,20 * * *'
+  # Optional: Uncomment the schedule block below to enable continuous 24/7 automated cycles
+  # (Runs every 4 hours, IST: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30)
+  # schedule:
+  #   - cron: '0 0,4,8,12,16,20 * * *'
+
   workflow_dispatch:
     inputs:
-      runtime_hours:
-        description: "Runtime limit in hours (default: 3.5)"
-        required: false
-        default: "3.5"
-        type: string
       symbol:
-        description: "Trading pair (e.g. TRUMP_USDT, DOGE_USDT)"
+        description: "Trading pair symbol"
         required: false
-        default: "TRUMP_USDT"
+        default: "DOGE_USDT"
         type: string
+      tp_ticks:
+        description: "Take-Profit distance in price unit ticks (Fixed)"
+        required: false
+        default: "10"
+        type: string
+      sl_ticks:
+        description: "Stop-Loss distance in price unit ticks"
+        required: false
+        default: "2"
+        type: string
+      invert_signal:
+        description: "Signal Paradigm: Invert signal (Exhaustion Fading)"
+        required: false
+        default: true
+        type: boolean
       execution_style:
         description: "Execution style (PURE_MARKET or MAKER_HYBRID)"
         required: false
@@ -25,10 +36,40 @@ on:
         options:
           - PURE_MARKET
           - MAKER_HYBRID
+      volume_multiplier:
+        description: "Volume multiplier (e.g. 1.0 for 1x min quantity = 1 DOGE contract)"
+        required: false
+        default: "1.0"
+        type: string
+      leverage:
+        description: "Position leverage (Isolated margin)"
+        required: false
+        default: "75"
+        type: string
+      cooldown_seconds:
+        description: "Cooldown seconds between trades"
+        required: false
+        default: "0"
+        type: string
+      enable_ratchet:
+        description: "Enable Micro-Excursion Tick Ratchet"
+        required: false
+        default: false
+        type: boolean
+      runtime_hours:
+        description: "Session runtime limit in hours (default: 3.5h)"
+        required: false
+        default: "3.5"
+        type: string
+      max_trades:
+        description: "Session trade target (0 = unlimited)"
+        required: false
+        default: "0"
+        type: string
 
 jobs:
   live-trade:
-    name: "🔴 Live Trading (${{ inputs.symbol || 'TRUMP_USDT' }})"
+    name: "🔴 Live Trading (${{ inputs.symbol || 'DOGE_USDT' }})"
     runs-on: ubuntu-latest
     timeout-minutes: 240  # 4h hard cap (buffer beyond 3.5h for trade completion + logging)
 
@@ -47,6 +88,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: "🔒 Validate Required Secrets"
+        run: |
+          if [ -z "${{ secrets.KCEX_AUTH_TOKEN }}" ]; then
+            echo "::error::❌ Missing KCEX_AUTH_TOKEN secret in GitHub Repository Settings! Please go to Repo Settings -> Secrets and variables -> Actions and add KCEX_AUTH_TOKEN."
+            exit 1
+          fi
+          echo "✅ KCEX_AUTH_TOKEN secret verified."
+
       - name: "🔴 Run Live Trading Engine"
         env:
           KCEX_AUTH_TOKEN: ${{ secrets.KCEX_AUTH_TOKEN }}
@@ -54,18 +103,47 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: |
           echo "::group::🔧 Engine Configuration"
+          SYMBOL="${{ inputs.symbol || 'DOGE_USDT' }}"
+          TP_TICKS="${{ inputs.tp_ticks || '10' }}"
+          SL_TICKS="${{ inputs.sl_ticks || '2' }}"
+          VOL_MULT="${{ inputs.volume_multiplier || '1.0' }}"
+          LEVERAGE="${{ inputs.leverage || '75' }}"
+          COOLDOWN="${{ inputs.cooldown_seconds || '0' }}"
+          MAX_TRADES="${{ inputs.max_trades || '0' }}"
+          EXEC_STYLE="${{ inputs.execution_style || 'PURE_MARKET' }}"
           RUNTIME_HOURS="${{ inputs.runtime_hours || '3.5' }}"
           RUNTIME_SECONDS=$(python -c "print(int(float('${RUNTIME_HOURS}') * 3600))")
-          SYMBOL="${{ inputs.symbol || 'TRUMP_USDT' }}"
-          EXEC_STYLE="${{ inputs.execution_style || 'PURE_MARKET' }}"
 
-          echo "Symbol:          ${SYMBOL}"
-          echo "Execution Style: ${EXEC_STYLE}"
-          echo "Runtime Limit:   ${RUNTIME_HOURS}h (${RUNTIME_SECONDS}s)"
-          echo "Environment:     GitHub Actions (Run #${{ github.run_number }})"
+          # Signal Paradigm: Inverted (default true) vs Direct
+          INVERT_FLAG="--invert-signal"
+          if [ "${{ inputs.invert_signal }}" = "false" ]; then
+            INVERT_FLAG="--no-invert-signal"
+          fi
+
+          # Tick Ratchet: Disabled (default false) vs Enabled
+          RATCHET_FLAG="--no-ratchet"
+          if [ "${{ inputs.enable_ratchet }}" = "true" ]; then
+            RATCHET_FLAG="--ratchet"
+          fi
+
+          echo "Symbol:            ${SYMBOL}"
+          echo "Strategy Engine:   Stochastic RSI (FAST_SCALP, Min1, OS:20/OB:80)"
+          echo "Direction:         Autonomous (Bi-Directional)"
+          echo "Signal Paradigm:   ${INVERT_FLAG}"
+          echo "Execution Style:   ${EXEC_STYLE}"
+          echo "Take Profit:       +${TP_TICKS} pu ticks (Fixed)"
+          echo "Stop Loss:         -${SL_TICKS} ticks"
+          echo "Position Volume:   ${VOL_MULT}x min quantity"
+          echo "Leverage:          ${LEVERAGE}x isolated"
+          echo "Cooldown:          ${COOLDOWN}s"
+          echo "Ratchet:           ${RATCHET_FLAG}"
+          echo "Slippage Engine:   --disable-slippage"
+          echo "Max Trades:        ${MAX_TRADES} (0 = unlimited)"
+          echo "Runtime Limit:     ${RUNTIME_HOURS}h (${RUNTIME_SECONDS}s)"
+          echo "Environment:       GitHub Actions (Run #${{ github.run_number }})"
           echo "::endgroup::"
 
-          echo "::notice::🔴 Starting LIVE trading session: ${SYMBOL} | Style: ${EXEC_STYLE} | Runtime: ${RUNTIME_HOURS}h"
+          echo "::notice::🔴 Starting LIVE trading session: ${SYMBOL} | Style: ${EXEC_STYLE} | TP: +${TP_TICKS}t | SL: -${SL_TICKS}t | Runtime: ${RUNTIME_HOURS}h"
 
           python run_engine.py \
             --non-interactive \
@@ -73,20 +151,20 @@ jobs:
             --symbol "${SYMBOL}" \
             --strategy STOCH_RSI \
             --stoch-preset FAST_SCALP \
-            --no-invert-signal \
+            --bi-directional \
+            ${INVERT_FLAG} \
             --volume-mode MULTIPLIER \
-            --volume-multiplier 2.0 \
-            --tp-ticks 2 \
+            --volume-multiplier "${VOL_MULT}" \
+            --tp-ticks "${TP_TICKS}" \
             --fixed-tp \
             --sl-mode TICKS \
-            --sl-ticks 5 \
-            --leverage 75 \
-            --cooldown 1 \
-            --max-trades 0 \
+            --sl-ticks "${SL_TICKS}" \
+            --leverage "${LEVERAGE}" \
             --execution-style "${EXEC_STYLE}" \
-            --no-ratchet \
+            ${RATCHET_FLAG} \
             --disable-slippage \
-            --bi-directional \
+            --cooldown "${COOLDOWN}" \
+            --max-trades "${MAX_TRADES}" \
             --runtime-limit "${RUNTIME_SECONDS}" \
             --mongodb-uri "${MONGODB_URI}"
 
@@ -111,7 +189,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: live-session-${{ inputs.symbol || 'TRUMP_USDT' }}-run${{ github.run_number }}-${{ github.run_id }}
+          name: live-session-${{ inputs.symbol || 'DOGE_USDT' }}-run${{ github.run_number }}-${{ github.run_id }}
           path: |
             logs/*.log
             logs/*.txt
