@@ -165,17 +165,46 @@ def matches_asset(item: Dict[str, Any], asset_filter: Optional[str]) -> bool:
         return True
     return False
 
-def filter_trades(trades: List[Dict[str, Any]], asset_filter: Optional[str]) -> List[Dict[str, Any]]:
-    """Filter list of trades by asset."""
-    if not asset_filter or asset_filter.strip().upper() == "ALL":
-        return trades
-    return [t for t in trades if matches_asset(t, asset_filter)]
+def get_signal_mode_for_trade(item: Dict[str, Any]) -> str:
+    """Return the configured strategy signal mode: DIRECT or INVERTED."""
+    cfg = item.get("config_snapshot") or {}
+    if isinstance(cfg, dict):
+        invert_value = cfg.get("invert_signal")
+        if isinstance(invert_value, bool):
+            return "INVERTED" if invert_value else "DIRECT"
 
-def filter_cancelled_orders(orders: List[Dict[str, Any]], asset_filter: Optional[str]) -> List[Dict[str, Any]]:
-    """Filter list of cancelled orders by asset."""
-    if not asset_filter or asset_filter.strip().upper() == "ALL":
-        return orders
-    return [o for o in orders if matches_asset(o, asset_filter)]
+    # Fallback for historical docs or partial snapshots.
+    if item.get("signal_mode"):
+        mode = str(item.get("signal_mode", "")).upper()
+        if mode in {"DIRECT", "INVERTED"}:
+            return mode
+
+    if item.get("invert_signal") is not None:
+        return "INVERTED" if bool(item.get("invert_signal")) else "DIRECT"
+
+    return "DIRECT"
+
+
+def filter_trades(trades: List[Dict[str, Any]], asset_filter: Optional[str], signal_mode: str = "ALL") -> List[Dict[str, Any]]:
+    """Filter list of trades by asset and signal mode."""
+    filtered = trades
+    if asset_filter and asset_filter.strip().upper() != "ALL":
+        filtered = [t for t in filtered if matches_asset(t, asset_filter)]
+    if signal_mode and signal_mode.upper() != "ALL":
+        mode = signal_mode.upper()
+        filtered = [t for t in filtered if get_signal_mode_for_trade(t) == mode]
+    return filtered
+
+
+def filter_cancelled_orders(orders: List[Dict[str, Any]], asset_filter: Optional[str], signal_mode: str = "ALL") -> List[Dict[str, Any]]:
+    """Filter list of cancelled orders by asset and signal mode."""
+    filtered = orders
+    if asset_filter and asset_filter.strip().upper() != "ALL":
+        filtered = [o for o in filtered if matches_asset(o, asset_filter)]
+    if signal_mode and signal_mode.upper() != "ALL":
+        mode = signal_mode.upper()
+        filtered = [o for o in filtered if get_signal_mode_for_trade(o) == mode]
+    return filtered
 
 def select_asset_filter_menu(mongo, all_trades: List[Dict[str, Any]], current_filter: str) -> str:
     """Display interactive asset filter selection menu with dynamically fetched pairs from MongoDB."""
@@ -287,8 +316,12 @@ def print_header(title: str, width: int = 80):
 
 def compute_analytics(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Compute comprehensive analytics from MongoDB trade documents."""
+    empty_signal_mode_breakdown = {
+        "DIRECT": {"count": 0, "wins": 0, "pnl_usdt": 0.0, "pnl_inr": 0.0},
+        "INVERTED": {"count": 0, "wins": 0, "pnl_usdt": 0.0, "pnl_inr": 0.0},
+    }
     if not trades:
-        return {"total_trades": 0}
+        return {"total_trades": 0, "signal_mode_breakdown": empty_signal_mode_breakdown}
 
     total = len(trades)
     wins = [t for t in trades if t.get("realized_pnl_usdt", 0) > 0]
@@ -380,6 +413,20 @@ def compute_analytics(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
     local_trades = [t for t in trades if t.get("execution_env") == "local"]
     gh_trades = [t for t in trades if t.get("execution_env") == "github_actions"]
 
+    # Signal mode breakdown
+    signal_mode_breakdown = {"DIRECT": {"count": 0, "wins": 0, "pnl_usdt": 0.0, "pnl_inr": 0.0}, "INVERTED": {"count": 0, "wins": 0, "pnl_usdt": 0.0, "pnl_inr": 0.0}}
+    for t in trades:
+        mode = get_signal_mode_for_trade(t)
+        if mode not in signal_mode_breakdown:
+            continue
+        signal_mode_breakdown[mode]["count"] += 1
+        pnl_u = t.get("realized_pnl_usdt", 0)
+        pnl_i = t.get("realized_pnl_inr", 0)
+        signal_mode_breakdown[mode]["pnl_usdt"] += pnl_u
+        signal_mode_breakdown[mode]["pnl_inr"] += pnl_i
+        if pnl_u > 0:
+            signal_mode_breakdown[mode]["wins"] += 1
+
     # Time range
     entry_times = [parse_dt(t.get("entry_time")) for t in trades if t.get("entry_time")]
     entry_times = [dt for dt in entry_times if dt is not None]
@@ -428,6 +475,7 @@ def compute_analytics(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
         "github_trades": len(gh_trades),
         "local_pnl_usdt": sum(t.get("realized_pnl_usdt", 0) for t in local_trades),
         "github_pnl_usdt": sum(t.get("realized_pnl_usdt", 0) for t in gh_trades),
+        "signal_mode_breakdown": signal_mode_breakdown,
         # Time range
         "first_trade_time": first_trade,
         "last_trade_time": last_trade,
@@ -513,6 +561,31 @@ def display_full_summary(analytics: Dict[str, Any], asset_label: str = "ALL"):
             pnl_str = fmt_usdt(data["pnl_usdt"])
             print(f"  {reason:<30s} {data['count']:>6d} {pnl_str:>15s}")
         print()
+
+
+def display_signal_mode_breakdown(analytics: Dict[str, Any], asset_label: str = "ALL"):
+    """Display direct-vs-inverted signal mode summary."""
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"📡 SIGNAL MODE BREAKDOWN{header_suffix}")
+
+    breakdown = analytics.get("signal_mode_breakdown", {})
+    if not breakdown:
+        print("\n  No signal mode data available.\n")
+        return
+
+    print(f"  {'Signal Mode':<12s} {'Trades':>7s} {'Wins':>5s} {'WR%':>6s} {'PnL (USDT)':>15s} {'PnL (INR)':>12s}")
+    print_separator("─", width=80)
+    for mode in ["DIRECT", "INVERTED"]:
+        data = breakdown.get(mode, {"count": 0, "wins": 0, "pnl_usdt": 0.0, "pnl_inr": 0.0})
+        count = int(data.get("count", 0))
+        wins = int(data.get("wins", 0))
+        pnl_usdt = float(data.get("pnl_usdt", 0.0))
+        pnl_inr = float(data.get("pnl_inr", 0.0))
+        wr = (wins / count * 100) if count > 0 else 0
+        pnl_u = fmt_usdt(pnl_usdt)
+        pnl_i = fmt_inr(pnl_inr)
+        print(f"  {mode:<12s} {count:>7d} {wins:>5d} {wr:>5.1f}% {pnl_u:>15s} {pnl_i:>12s}")
+    print()
 
 
 def display_trade_history(trades: List[Dict[str, Any]], asset_label: str = "ALL"):
@@ -981,9 +1054,17 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="KCEX Live Bot Analytics Dashboard")
     parser.add_argument("--asset", "-a", type=str, default=None, help="Filter analytics by traded asset (e.g. TRUMP, DOGE, BTC)")
+    parser.add_argument(
+        "--signal-mode",
+        type=str,
+        choices=["ALL", "DIRECT", "INVERTED"],
+        default="ALL",
+        help="Initially filter analytics by signal mode: ALL, DIRECT, or INVERTED",
+    )
     args, _ = parser.parse_known_args()
 
     active_asset = args.asset.strip().upper() if args.asset else "ALL"
+    active_signal_mode = args.signal_mode.upper()
 
     print(BANNER)
 
@@ -1014,14 +1095,15 @@ def main():
         print()
 
     while True:
-        filtered_trades = filter_trades(all_trades, active_asset)
-        filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset)
+        filtered_trades = filter_trades(all_trades, active_asset, active_signal_mode)
+        filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset, active_signal_mode)
         analytics = compute_analytics(filtered_trades)
 
         print_separator("═")
         filter_status = f"🎯 Active Asset: {active_asset}" if active_asset != "ALL" else "🎯 Active Asset: ALL (All Pairs)"
-        count_status = f"{len(filtered_trades)}/{len(all_trades)} trades" if active_asset != "ALL" else f"{len(all_trades)} trades"
-        print(f"  KCEX LIVE BOT ANALYTICS - MAIN MENU  │  {filter_status} ({count_status})")
+        signal_status = f"📡 Signal Mode: {active_signal_mode}" if active_signal_mode != "ALL" else "📡 Signal Mode: ALL"
+        count_status = f"{len(filtered_trades)}/{len(all_trades)} trades" if active_asset != "ALL" or active_signal_mode != "ALL" else f"{len(all_trades)} trades"
+        print(f"  KCEX LIVE BOT ANALYTICS - MAIN MENU  │  {filter_status} │ {signal_status} ({count_status})")
         print_separator("═")
         print()
         print("  [1] 📊 Full Summary Dashboard (with Strategy & Margin stats)")
@@ -1034,11 +1116,13 @@ def main():
         print("  [8] 📤 Export to CSV (all 25+ fields)")
         print("  [9] 🔄 Refresh Data from MongoDB")
         print(f"  [A] 🪙 Filter by Asset / Traded Pair (Current: {active_asset})")
+        print(f"  [S] 📡 Filter by Signal Mode (Current: {active_signal_mode})")
+        print("  [B] 📊 View Signal Mode Breakdown")
         print("  [0] 🚪 Exit")
         print()
 
         try:
-            choice = input("  Select option [0-9, A]: ").strip()
+            choice = input("  Select option [0-9, A, B, S]: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\n\n  Goodbye! 👋\n")
             break
@@ -1091,12 +1175,34 @@ def main():
             filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset)
             analytics = compute_analytics(filtered_trades)
             print(f"  ✅ Refreshed | {len(all_trades)} executed trades | {len(all_cancelled)} cancelled orders")
-            if active_asset != "ALL":
-                print(f"     Active Filter ({active_asset}): {len(filtered_trades)} matching trades\n")
+            if active_asset != "ALL" or active_signal_mode != "ALL":
+                print(f"     Active Filter ({active_asset} / {active_signal_mode}): {len(filtered_trades)} matching trades\n")
             else:
                 print()
         elif choice_up in ("A", "10", "F"):
             active_asset = select_asset_filter_menu(mongo, all_trades, active_asset)
+        elif choice_up in ("S", "SIG", "SIGNAL"):
+            print("\n  Select signal mode for analytics filter:")
+            print("  [1] ALL")
+            print("  [2] DIRECT")
+            print("  [3] INVERTED")
+            try:
+                mode_choice = input("  Choose signal mode [1-3, Enter=keep current]: ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                print()
+                continue
+            if not mode_choice:
+                pass
+            elif mode_choice in ("1", "all"):
+                active_signal_mode = "ALL"
+            elif mode_choice in ("2", "direct"):
+                active_signal_mode = "DIRECT"
+            elif mode_choice in ("3", "inverted", "inv"):
+                active_signal_mode = "INVERTED"
+            else:
+                print("\n  ⚠️  Invalid signal mode choice.\n")
+        elif choice_up == "B":
+            display_signal_mode_breakdown(analytics, asset_label=active_asset)
         elif choice_up == "0":
             print("\n  Goodbye! 👋\n")
             break

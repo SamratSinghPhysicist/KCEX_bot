@@ -1,10 +1,10 @@
 name: KCEX Live Trading Engine
 
 on:
-  #schedule:
+  schedule:
     # 6 runs per day, 4 hours apart (UTC)
     # IST equivalent: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30
-  #  - cron: '0 0,4,8,12,16,20 * * *'
+    - cron: '0 0,4,8,12,16,20 * * *'
   workflow_dispatch:
     inputs:
       symbol:
@@ -23,9 +23,9 @@ on:
         default: "2"
         type: string
       invert_signal:
-        description: "Signal Paradigm: Invert signal (Exhaustion Fading)"
+        description: "Signal Paradigm: Direct signal (Momentum)"
         required: false
-        default: true
+        default: false
         type: boolean
       execution_style:
         description: "Execution style (PURE_MARKET or MAKER_HYBRID)"
@@ -113,10 +113,10 @@ jobs:
           RUNTIME_HOURS="${{ inputs.runtime_hours || '3.5' }}"
           RUNTIME_SECONDS=$(python -c "print(int(float('${RUNTIME_HOURS}') * 3600))")
 
-          # Signal Paradigm: Inverted (default true) vs Direct
-          INVERT_FLAG="--invert-signal"
-          if [ "${{ inputs.invert_signal }}" = "false" ]; then
-            INVERT_FLAG="--no-invert-signal"
+          # Signal Paradigm: Direct (default false) vs Inverted
+          INVERT_FLAG="--no-invert-signal"
+          if [ "${{ inputs.invert_signal }}" = "true" ]; then
+            INVERT_FLAG="--invert-signal"
           fi
 
           # Tick Ratchet: Disabled (default false) vs Enabled
