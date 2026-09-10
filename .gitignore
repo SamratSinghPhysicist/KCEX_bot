@@ -44,6 +44,8 @@ BACKTESTER/BookTicker_Data_Binance/
 # Large AI Research Analysis Dossiers & Archives
 AI_ANALYSIS/
 
-
-
-
+# ML Model Data Cache & Fallback Data
+data/
+ML_1M_MODEL/data_cache/
+ML_1M_MODEL/saved_models/*.pkl
+ML_1M_MODEL/reports/*.csv

@@ -1,0 +1,134 @@
+name: Train & Test 1M ML Trading Model
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "Trading Pair Symbol"
+        required: true
+        default: "TRUMPUSDT"
+        type: choice
+        options:
+          - "TRUMPUSDT"
+          - "DOGEUSDT"
+          - "BTCUSDT"
+
+      start_date:
+        description: "Start Date (YYYY-MM-DD)"
+        required: true
+        default: "2026-06-01"
+        type: string
+
+      end_date:
+        description: "End Date (YYYY-MM-DD)"
+        required: true
+        default: "2026-08-31"
+        type: string
+
+      horizon_bars:
+        description: "Prediction Horizon in 1m Bars (Lookahead window)"
+        required: true
+        default: "10"
+        type: choice
+        options:
+          - "5"
+          - "10"
+          - "15"
+          - "20"
+
+      tp_atr_mult:
+        description: "Dynamic Take Profit ATR Multiplier"
+        required: true
+        default: "2.0"
+        type: string
+
+      sl_atr_mult:
+        description: "Dynamic Stop Loss ATR Multiplier"
+        required: true
+        default: "1.2"
+        type: string
+
+      confidence_threshold:
+        description: "Min Model Probability for Signal (BUY / SELL vs WAIT)"
+        required: true
+        default: "0.55"
+        type: string
+
+jobs:
+  train-and-test-ml-model:
+    name: ML 1M Model (${{ inputs.symbol }} ${{ inputs.start_date }} to ${{ inputs.end_date }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install System Dependencies (OpenMP for LightGBM)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgomp1
+
+      - name: Install Python ML Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ML_1M_MODEL/requirements.txt
+
+      - name: Cache Historical Datasets & Processed Order Flow
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/binance_futures_ohlcv
+            data/binance_futures_trades
+            ML_1M_MODEL/data_cache
+          key: ml-data-${{ inputs.symbol }}-${{ inputs.start_date }}-${{ inputs.end_date }}
+          restore-keys: |
+            ml-data-${{ inputs.symbol }}-${{ inputs.start_date }}-
+            ml-data-${{ inputs.symbol }}-
+            ml-data-
+
+      - name: Execute End-to-End Training & Out-of-Sample Backtesting
+        run: |
+          # Clean previous run reports
+          rm -rf ML_1M_MODEL/reports/* ML_1M_MODEL/saved_models/*
+          mkdir -p ML_1M_MODEL/reports ML_1M_MODEL/saved_models ML_1M_MODEL/data_cache
+
+          python -m ML_1M_MODEL.run_pipeline \
+            --symbol "${{ inputs.symbol }}" \
+            --start "${{ inputs.start_date }}" \
+            --end "${{ inputs.end_date }}" \
+            --horizon "${{ inputs.horizon_bars }}" \
+            --tp-mult "${{ inputs.tp_atr_mult }}" \
+            --sl-mult "${{ inputs.sl_atr_mult }}" \
+            --confidence "${{ inputs.confidence_threshold }}"
+
+      - name: Publish Markdown Results to GitHub Step Summary
+        if: always()
+        run: |
+          REPORT_FILE=$(ls -t ML_1M_MODEL/reports/*_oos_report.md 2>/dev/null | head -n 1)
+          if [ -f "$REPORT_FILE" ]; then
+            cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📦 Generated Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "The trained model binary and out-of-sample trade logs have been uploaded to Artifacts below." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ⚠️ ML Model Run Incomplete" >> $GITHUB_STEP_SUMMARY
+            echo "No summary markdown report was found. Check the step logs above for execution details." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Trained Models, Trade Logs & Metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-model-${{ inputs.symbol }}-h${{ inputs.horizon_bars }}-run${{ github.run_id }}
+          path: |
+            ML_1M_MODEL/saved_models/*
+            ML_1M_MODEL/reports/*
+          if-no-files-found: warn
+          retention-days: 30
