@@ -32,12 +32,12 @@ from .predict import Predictor
 
 def run_pipeline(
     symbol: str = "TRUMPUSDT",
-    start_date: str = "2026-01-01",
+    start_date: str = "2026-06-01",
     end_date: str = "2026-08-31",
-    horizon_bars: int = 10,
-    tp_atr_mult: float = 2.0,
-    sl_atr_mult: float = 1.2,
-    confidence_thresh: float = 0.55,
+    horizon_bars: int = 15,
+    tp_atr_mult: float = 3.0,
+    sl_atr_mult: float = 1.5,
+    confidence_thresh: float = 0.65,
     auto_download: bool = True
 ):
     print("=" * 70)
@@ -133,12 +133,12 @@ def run_pipeline(
 def main():
     parser = argparse.ArgumentParser(description="Master ML 1-Minute Crypto Futures Pipeline")
     parser.add_argument("--symbol", type=str, default="TRUMPUSDT", help="Trading Symbol (TRUMPUSDT, DOGEUSDT)")
-    parser.add_argument("--start", type=str, default="2026-01-01", help="Start Date YYYY-MM-DD")
+    parser.add_argument("--start", type=str, default="2026-06-01", help="Start Date YYYY-MM-DD")
     parser.add_argument("--end", type=str, default="2026-08-31", help="End Date YYYY-MM-DD")
-    parser.add_argument("--horizon", type=int, default=10, help="Forward horizon bars")
-    parser.add_argument("--tp-mult", type=float, default=2.0, help="Take-Profit ATR multiplier")
-    parser.add_argument("--sl-mult", type=float, default=1.2, help="Stop-Loss ATR multiplier")
-    parser.add_argument("--confidence", type=float, default=0.55, help="Confidence threshold")
+    parser.add_argument("--horizon", type=int, default=15, help="Forward horizon bars")
+    parser.add_argument("--tp-mult", type=float, default=3.0, help="Take-Profit ATR multiplier")
+    parser.add_argument("--sl-mult", type=float, default=1.5, help="Stop-Loss ATR multiplier")
+    parser.add_argument("--confidence", type=float, default=0.65, help="Confidence threshold")
     parser.add_argument("--no-auto-download", action="store_true", help="Disable automatic download from Binance Vision")
 
     args = parser.parse_args()

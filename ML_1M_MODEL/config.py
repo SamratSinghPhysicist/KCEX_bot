@@ -93,14 +93,15 @@ class ModelConfig:
     end_date: str = "2026-08-31"
 
     # Prediction horizon & barrier labeling
-    horizon_bars: int = 10              # Look forward N bars (e.g. 10 1m bars = 10 minutes)
-    tp_atr_mult: float = 2.0           # Dynamic Take Profit: 2.0x ATR
-    sl_atr_mult: float = 1.2           # Dynamic Stop Loss: 1.2x ATR
-    min_profit_pct: float = 0.0015     # Minimum profit hurdle to qualify as valid trade (0.15%)
+    horizon_bars: int = 15              # Look forward N bars (15 1m bars = 15 minutes)
+    tp_atr_mult: float = 3.0           # Dynamic Take Profit: 3.0x ATR (high reward-to-risk)
+    sl_atr_mult: float = 1.5           # Dynamic Stop Loss: 1.5x ATR
+    min_profit_pct: float = 0.005      # Minimum profit hurdle (0.5%) to ensure fees/slippage are negligible
 
     # Signal probability thresholds
-    confidence_threshold: float = 0.55  # Minimum model probability to trigger BUY/SELL (otherwise WAIT/HOLD)
-    edge_threshold: float = 0.15        # Minimum gap between winning class prob and runner-up
+    confidence_threshold: float = 0.65  # High-conviction sniper threshold (avoids chop)
+    edge_threshold: float = 0.05        # Margin over alternative classes
+    order_flow_filter: bool = True     # Require order-flow imbalance confirmation
 
     # Execution and Cost Simulation
     maker_fee: float = 0.0             # 0% maker fee on KCEX
@@ -116,9 +117,10 @@ class ModelConfig:
     lgb_params: Dict = field(default_factory=lambda: {
         "objective": "multiclass",
         "num_class": 3,
+        "class_weight": "balanced",
         "metric": "multi_logloss",
         "boosting_type": "gbdt",
-        "learning_rate": 0.03,
+        "learning_rate": 0.04,
         "num_leaves": 31,
         "max_depth": 6,
         "feature_fraction": 0.8,
@@ -126,7 +128,7 @@ class ModelConfig:
         "bagging_freq": 1,
         "min_child_samples": 50,
         "verbosity": -1,
-        "n_estimators": 350,
+        "n_estimators": 250,
         "random_state": 42,
         "n_jobs": -1,
     })

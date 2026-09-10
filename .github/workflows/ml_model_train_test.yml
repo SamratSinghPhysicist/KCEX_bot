@@ -28,7 +28,7 @@ on:
       horizon_bars:
         description: "Prediction Horizon in 1m Bars (Lookahead window)"
         required: true
-        default: "10"
+        default: "15"
         type: choice
         options:
           - "5"
@@ -39,19 +39,19 @@ on:
       tp_atr_mult:
         description: "Dynamic Take Profit ATR Multiplier"
         required: true
-        default: "2.0"
+        default: "3.0"
         type: string
 
       sl_atr_mult:
         description: "Dynamic Stop Loss ATR Multiplier"
         required: true
-        default: "1.2"
+        default: "1.5"
         type: string
 
       confidence_threshold:
         description: "Min Model Probability for Signal (BUY / SELL vs WAIT)"
         required: true
-        default: "0.55"
+        default: "0.65"
         type: string
 
 jobs:

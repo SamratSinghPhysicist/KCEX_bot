@@ -47,11 +47,12 @@ class TradingModel:
             self.classifier = lgb.LGBMClassifier(
                 objective="multiclass",
                 num_class=3,
+                class_weight="balanced",
                 boosting_type="gbdt",
-                learning_rate=self.cfg.lgb_params.get("learning_rate", 0.03),
+                learning_rate=self.cfg.lgb_params.get("learning_rate", 0.04),
                 num_leaves=self.cfg.lgb_params.get("num_leaves", 31),
                 max_depth=self.cfg.lgb_params.get("max_depth", 6),
-                n_estimators=self.cfg.lgb_params.get("n_estimators", 350),
+                n_estimators=self.cfg.lgb_params.get("n_estimators", 250),
                 subsample=self.cfg.lgb_params.get("bagging_fraction", 0.8),
                 colsample_bytree=self.cfg.lgb_params.get("feature_fraction", 0.8),
                 random_state=42,
@@ -63,7 +64,7 @@ class TradingModel:
                 learning_rate=0.03,
                 num_leaves=31,
                 max_depth=6,
-                n_estimators=200,
+                n_estimators=150,
                 random_state=42,
                 n_jobs=-1,
                 verbose=-1
@@ -73,7 +74,7 @@ class TradingModel:
                 learning_rate=0.03,
                 num_leaves=31,
                 max_depth=6,
-                n_estimators=200,
+                n_estimators=150,
                 random_state=42,
                 n_jobs=-1,
                 verbose=-1
@@ -82,21 +83,22 @@ class TradingModel:
             # Fallback to Scikit-Learn HistGradientBoosting
             self.classifier = HistGradientBoostingClassifier(
                 max_iter=200,
-                learning_rate=0.05,
+                learning_rate=0.04,
+                class_weight="balanced",
                 max_leaf_nodes=31,
                 max_depth=6,
                 random_state=42
             )
             self.tp_regressor = HistGradientBoostingRegressor(
                 max_iter=150,
-                learning_rate=0.05,
+                learning_rate=0.04,
                 max_leaf_nodes=31,
                 max_depth=6,
                 random_state=42
             )
             self.sl_regressor = HistGradientBoostingRegressor(
                 max_iter=150,
-                learning_rate=0.05,
+                learning_rate=0.04,
                 max_leaf_nodes=31,
                 max_depth=6,
                 random_state=42
@@ -180,8 +182,16 @@ class TradingModel:
             tp_ticks = 0
             sl_ticks = 0
 
+            # Order Flow Confirmation
+            of_buy_ok = True
+            of_sell_ok = True
+            if getattr(self.cfg, "order_flow_filter", True) and "of_imbalance_ratio" in X.columns:
+                imb = float(X["of_imbalance_ratio"].iloc[i])
+                of_buy_ok = (imb >= -0.05)
+                of_sell_ok = (imb <= 0.05)
+
             # Long Signal Condition
-            if p_buy >= conf_thresh and (p_buy - p_sell) >= edge_thresh:
+            if p_buy >= conf_thresh and (p_buy - max(p_sell, p_wait)) >= edge_thresh and of_buy_ok:
                 action = "BUY"
                 confidence = float(p_buy)
                 action_code = self.cfg.CLASS_BUY
@@ -191,7 +201,7 @@ class TradingModel:
                 sl_ticks = int(round(sl_dist / tick_size))
 
             # Short Signal Condition
-            elif p_sell >= conf_thresh and (p_sell - p_buy) >= edge_thresh:
+            elif p_sell >= conf_thresh and (p_sell - max(p_buy, p_wait)) >= edge_thresh and of_sell_ok:
                 action = "SELL"
                 confidence = float(p_sell)
                 action_code = self.cfg.CLASS_SELL
