@@ -37,7 +37,7 @@ def run_pipeline(
     horizon_bars: int = 15,
     tp_atr_mult: float = 3.0,
     sl_atr_mult: float = 1.5,
-    confidence_thresh: float = 0.65,
+    confidence_thresh: float = 0.70,
     auto_download: bool = True
 ):
     print("=" * 70)
@@ -138,7 +138,7 @@ def main():
     parser.add_argument("--horizon", type=int, default=15, help="Forward horizon bars")
     parser.add_argument("--tp-mult", type=float, default=3.0, help="Take-Profit ATR multiplier")
     parser.add_argument("--sl-mult", type=float, default=1.5, help="Stop-Loss ATR multiplier")
-    parser.add_argument("--confidence", type=float, default=0.65, help="Confidence threshold")
+    parser.add_argument("--confidence", type=float, default=0.70, help="Confidence threshold")
     parser.add_argument("--no-auto-download", action="store_true", help="Disable automatic download from Binance Vision")
 
     args = parser.parse_args()

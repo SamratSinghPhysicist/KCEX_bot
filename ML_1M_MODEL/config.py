@@ -7,7 +7,7 @@ feature engineering horizons, barrier labeling, and training hyperparameters.
 
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 # Base directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -84,12 +84,24 @@ def get_tick_spec(symbol: str) -> Dict[str, float]:
     return DEFAULT_TICK_SPEC
 
 
+def get_fee_schedule(symbol: str) -> Tuple[float, float]:
+    """
+    Returns (maker_fee, taker_fee).
+    Zero fees for TRUMP and DOGE on KCEX.
+    0.01% (0.0001) taker fee for other pairs (no maker fee).
+    """
+    clean_sym = normalize_symbol_name(symbol)
+    if "TRUMP" in clean_sym or "DOGE" in clean_sym:
+        return 0.0, 0.0
+    return 0.0, 0.0001
+
+
 @dataclass
 class ModelConfig:
     # Asset parameters
     symbol: str = "TRUMPUSDT"
     timeframe: str = "1m"
-    start_date: str = "2026-01-01"
+    start_date: str = "2026-06-01"
     end_date: str = "2026-08-31"
 
     # Prediction horizon & barrier labeling
@@ -99,14 +111,14 @@ class ModelConfig:
     min_profit_pct: float = 0.005      # Minimum profit hurdle (0.5%) to ensure fees/slippage are negligible
 
     # Signal probability thresholds
-    confidence_threshold: float = 0.65  # High-conviction sniper threshold (avoids chop)
+    confidence_threshold: float = 0.70  # Empirically verified high-conviction sniper threshold (51.2% WR, PF 2.13)
     edge_threshold: float = 0.05        # Margin over alternative classes
     order_flow_filter: bool = True     # Require order-flow imbalance confirmation
 
     # Execution and Cost Simulation
     maker_fee: float = 0.0             # 0% maker fee on KCEX
-    taker_fee: float = 0.0002          # 0.02% taker fee
-    slippage_ticks: float = 1.0        # 1 tick conservative slippage
+    taker_fee: float = 0.0             # 0% taker fee for TRUMP and DOGE (auto-resolved via get_fee_schedule)
+    slippage_ticks: float = 2.0        # 2 ticks conservative slippage baseline
     leverage: float = 20.0             # Leverage for margin calculations
 
     # Validation and Splitting

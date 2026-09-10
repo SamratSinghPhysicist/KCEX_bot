@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Any, Optional, Tuple
 
-from .config import ModelConfig, REPORTS_DIR, get_tick_spec
+from .config import ModelConfig, REPORTS_DIR, get_tick_spec, get_fee_schedule
 from .model import TradingModel
 
 
@@ -41,9 +41,13 @@ def backtest_out_of_sample(
 
     tick_spec = get_tick_spec(cfg.symbol)
     tick_size = tick_spec["tick_size"]
-    slippage = cfg.slippage_ticks * tick_size
-    fee_rate = cfg.taker_fee
+    base_slip_ticks = cfg.slippage_ticks
+    _, auto_fee = get_fee_schedule(cfg.symbol)
+    fee_rate = cfg.taker_fee if cfg.taker_fee > 0 else auto_fee
     leverage = cfg.leverage
+
+    valid_atrs = atrs[atrs > 0]
+    mean_atr = float(np.mean(valid_atrs)) if len(valid_atrs) > 0 else 0.001
 
     # Generate model decisions for entire test set
     decisions = model.predict_decision(
@@ -78,6 +82,10 @@ def backtest_out_of_sample(
             c = closes[i]
             bars_held = i - entry_idx
 
+            # Dynamic slippage based on current volatility
+            vol_ratio = (atrs[i] / mean_atr) if mean_atr > 0 else 1.0
+            cur_slip = (base_slip_ticks * 2.5 * tick_size) if vol_ratio >= 1.8 else (base_slip_ticks * tick_size)
+
             exit_price = 0.0
             exit_reason = ""
 
@@ -89,7 +97,7 @@ def backtest_out_of_sample(
                     exit_price = sl_price
                     exit_reason = "SL_HIT"
                 elif bars_held >= H:
-                    exit_price = c - slippage
+                    exit_price = c - cur_slip
                     exit_reason = "TIME_EXPIRY"
 
             elif pos_type == "SHORT":
@@ -100,7 +108,7 @@ def backtest_out_of_sample(
                     exit_price = sl_price
                     exit_reason = "SL_HIT"
                 elif bars_held >= H:
-                    exit_price = c + slippage
+                    exit_price = c + cur_slip
                     exit_reason = "TIME_EXPIRY"
 
             if exit_reason:
@@ -148,11 +156,21 @@ def backtest_out_of_sample(
             d = decisions[i]
             act = d["action"]
 
+            # Dynamic entry slippage: scales up to 5-8 ticks during high volatility surges
+            vol_ratio = (atrs[i] / mean_atr) if mean_atr > 0 else 1.0
+            if vol_ratio >= 2.0:
+                cur_slip_ticks = base_slip_ticks * 3.0  # 6 ticks
+            elif vol_ratio >= 1.4:
+                cur_slip_ticks = base_slip_ticks * 1.8  # 3.6 ticks
+            else:
+                cur_slip_ticks = base_slip_ticks        # 2 ticks baseline
+            entry_slip = cur_slip_ticks * tick_size
+
             if act == "BUY":
                 in_position = True
                 pos_type = "LONG"
                 entry_idx = i
-                entry_price = closes[i] + slippage
+                entry_price = closes[i] + entry_slip
                 tp_price = d["suggested_tp"]
                 sl_price = d["suggested_sl"]
                 tp_ticks = d["tp_ticks"]
@@ -163,7 +181,7 @@ def backtest_out_of_sample(
                 in_position = True
                 pos_type = "SHORT"
                 entry_idx = i
-                entry_price = closes[i] - slippage
+                entry_price = closes[i] - entry_slip
                 tp_price = d["suggested_tp"]
                 sl_price = d["suggested_sl"]
                 tp_ticks = d["tp_ticks"]

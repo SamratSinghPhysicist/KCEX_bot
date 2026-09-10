@@ -51,7 +51,7 @@ on:
       confidence_threshold:
         description: "Min Model Probability for Signal (BUY / SELL vs WAIT)"
         required: true
-        default: "0.65"
+        default: "0.70"
         type: string
 
 jobs:

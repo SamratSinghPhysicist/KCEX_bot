@@ -175,11 +175,19 @@ def get_or_create_orderflow_1m(
     Uses cached Parquet if present; otherwise processes the raw trades CSV.
     """
     cache_file = get_cache_path(symbol, year, month)
+    cache_pkl = cache_file.replace(".parquet", ".pkl")
+
     if os.path.exists(cache_file):
         try:
             return pd.read_parquet(cache_file)
-        except Exception as e:
-            print(f"[!] Warning reading cache {cache_file}: {e}, recomputing...")
+        except Exception:
+            pass
+
+    if os.path.exists(cache_pkl):
+        try:
+            return pd.read_pickle(cache_pkl)
+        except Exception:
+            pass
 
     # Look for raw trades CSV
     trades_path = get_trades_file_path(symbol, year, month, auto_download=auto_download)
@@ -188,11 +196,20 @@ def get_or_create_orderflow_1m(
 
     df_1m = aggregate_trades_file_to_1m(trades_path)
     if not df_1m.empty:
+        saved = False
         try:
             df_1m.to_parquet(cache_file, index=False)
             print(f"[+] Saved order-flow cache to {cache_file}")
-        except Exception as e:
-            print(f"[!] Could not write parquet cache {cache_file}: {e}")
+            saved = True
+        except Exception:
+            pass
+
+        if not saved:
+            try:
+                df_1m.to_pickle(cache_pkl)
+                print(f"[+] Saved order-flow cache to {cache_pkl}")
+            except Exception as e:
+                print(f"[!] Could not write cache {cache_pkl}: {e}")
 
     return df_1m
 
