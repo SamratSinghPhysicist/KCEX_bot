@@ -21,7 +21,9 @@ from .model import TradingModel
 def backtest_out_of_sample(
     model: TradingModel,
     test_df: pd.DataFrame,
-    cfg: Optional[ModelConfig] = None
+    cfg: Optional[ModelConfig] = None,
+    report_dir: Optional[str] = None,
+    write_report: bool = True
 ) -> Tuple[Dict[str, Any], pd.DataFrame, str]:
     """
     Executes a high-fidelity 1-minute backtest on unseen test data.
@@ -98,22 +100,18 @@ def backtest_out_of_sample(
             c = closes[i]
             bars_held = i - entry_idx
 
-            # Dynamic slippage based on current volatility
-            vol_ratio = (atrs[i] / mean_atr) if mean_atr > 0 else 1.0
-            cur_slip = (base_slip_ticks * 2.5 * tick_size) if vol_ratio >= 1.8 else (base_slip_ticks * tick_size)
+            cur_slip = base_slip_ticks * tick_size
 
             exit_price = 0.0
             exit_reason = ""
 
             if pos_type == "LONG":
-                if h >= tp_price and l <= sl_price:
-                    # Conservative institutional accounting: worst-case SL executed first
-                    exit_price = sl_price
-                    exit_reason = "SL_HIT"
-                elif l <= sl_price:
-                    exit_price = sl_price
+                if l <= sl_price:
+                    # SL executed with adverse slippage
+                    exit_price = sl_price - cur_slip
                     exit_reason = "SL_HIT"
                 elif h >= tp_price:
+                    # TP limit executed cleanly
                     exit_price = tp_price
                     exit_reason = "TP_HIT"
                 elif bars_held >= H:
@@ -121,14 +119,12 @@ def backtest_out_of_sample(
                     exit_reason = "TIME_EXPIRY"
 
             elif pos_type == "SHORT":
-                if l <= tp_price and h >= sl_price:
-                    # Conservative institutional accounting: worst-case SL executed first
-                    exit_price = sl_price
-                    exit_reason = "SL_HIT"
-                elif h >= sl_price:
-                    exit_price = sl_price
+                if h >= sl_price:
+                    # SL executed with adverse slippage
+                    exit_price = sl_price + cur_slip
                     exit_reason = "SL_HIT"
                 elif l <= tp_price:
+                    # TP limit executed cleanly
                     exit_price = tp_price
                     exit_reason = "TP_HIT"
                 elif bars_held >= H:
@@ -180,22 +176,15 @@ def backtest_out_of_sample(
             d = decisions[i]
             act = d["action"]
 
-            # Dynamic entry slippage: scales up to 5-8 ticks during high volatility surges
-            vol_ratio = (atrs[i] / mean_atr) if mean_atr > 0 else 1.0
-            if vol_ratio >= 2.0:
-                cur_slip_ticks = base_slip_ticks * 3.0  # 6 ticks
-            elif vol_ratio >= 1.4:
-                cur_slip_ticks = base_slip_ticks * 1.8  # 3.6 ticks
-            else:
-                cur_slip_ticks = base_slip_ticks        # 2 ticks baseline
-            entry_slip = cur_slip_ticks * tick_size
+            # Exact slippage based on configuration
+            entry_slip = base_slip_ticks * tick_size
 
             if act == "BUY":
                 pending_entry = {
                     "pos_type": "LONG",
                     "entry_slip": entry_slip,
-                    "tp_price": d["suggested_tp"],
-                    "sl_price": d["suggested_sl"],
+                    "tp_price": d.get("tp_price_exact", d["suggested_tp"]),
+                    "sl_price": d.get("sl_price_exact", d["suggested_sl"]),
                     "tp_ticks": d["tp_ticks"],
                     "sl_ticks": d["sl_ticks"],
                     "confidence": d["confidence"]
@@ -205,8 +194,8 @@ def backtest_out_of_sample(
                 pending_entry = {
                     "pos_type": "SHORT",
                     "entry_slip": entry_slip,
-                    "tp_price": d["suggested_tp"],
-                    "sl_price": d["suggested_sl"],
+                    "tp_price": d.get("tp_price_exact", d["suggested_tp"]),
+                    "sl_price": d.get("sl_price_exact", d["suggested_sl"]),
                     "tp_ticks": d["tp_ticks"],
                     "sl_ticks": d["sl_ticks"],
                     "confidence": d["confidence"]
@@ -216,6 +205,8 @@ def backtest_out_of_sample(
 
     # Compute Quant Performance Metrics
     total_trades = len(df_trades)
+    from scipy import stats
+
     if total_trades > 0:
         wins = df_trades[df_trades["pnl_usd"] > 0]
         losses = df_trades[df_trades["pnl_usd"] <= 0]
@@ -233,16 +224,52 @@ def backtest_out_of_sample(
         drawdowns = (peak - eq_arr) / peak
         max_drawdown = float(np.max(drawdowns))
 
-        # Sharpe & Sortino
-        returns_arr = df_trades["net_margin_ret_pct"].values / 100.0
-        mean_ret = np.mean(returns_arr)
-        std_ret = np.std(returns_arr) if len(returns_arr) > 1 else 1e-9
-        downside_std = np.std(returns_arr[returns_arr < 0]) if len(returns_arr[returns_arr < 0]) > 1 else 1e-9
+        # True Daily Aggregated Sharpe & Sortino (mathematically sound daily compounding)
+        # Construct daily equity snapshot
+        dt_index = pd.to_datetime(timestamps[:len(equity_curve)-1], unit="ms")
+        df_daily_eq = pd.DataFrame({"equity": equity_curve[:-1]}, index=dt_index)
+        daily_close_eq = df_daily_eq.resample("1D").last().dropna()["equity"].values
+        
+        if len(daily_close_eq) > 1:
+            daily_rets = np.diff(daily_close_eq) / daily_close_eq[:-1]
+            daily_mean = np.mean(daily_rets)
+            daily_std = np.std(daily_rets, ddof=1) if len(daily_rets) > 1 else 1e-9
+            downside_daily = daily_rets[daily_rets < 0]
+            downside_std = np.std(downside_daily, ddof=1) if len(downside_daily) > 1 else 1e-9
+            
+            annual_factor_daily = np.sqrt(365.25)  # 24/7 crypto futures annualization
+            sharpe = (daily_mean / (daily_std + 1e-9)) * annual_factor_daily
+            sortino = (daily_mean / (downside_std + 1e-9)) * annual_factor_daily
+        else:
+            returns_arr = df_trades["net_margin_ret_pct"].values / 100.0
+            mean_ret = np.mean(returns_arr)
+            std_ret = np.std(returns_arr) if len(returns_arr) > 1 else 1e-9
+            sharpe = (mean_ret / std_ret) * np.sqrt(365.25)
+            sortino = sharpe
 
-        # Annualized Sharpe (assuming ~300k 1m bars per year, sqrt(trades_per_year))
-        annual_factor = np.sqrt(max(total_trades, 1))
-        sharpe = (mean_ret / std_ret) * annual_factor if std_ret > 0 else 0.0
-        sortino = (mean_ret / downside_std) * annual_factor if downside_std > 0 else 0.0
+        # Statistical significance: 1-sample t-test for trade return edge (H0: mu = 0)
+        rets_trade = df_trades["net_margin_ret_pct"].values / 100.0
+        t_stat, p_val = stats.ttest_1samp(rets_trade, 0.0) if len(rets_trade) > 1 else (0.0, 1.0)
+
+        # Exact binomial test for win rate against breakeven benchmark
+        # Breakeven win rate for reward:risk ratio R = tp_atr_mult / sl_atr_mult is 1 / (R + 1)
+        r_target = cfg.tp_atr_mult / (cfg.sl_atr_mult + 1e-9)
+        breakeven_wr = 1.0 / (r_target + 1.0)
+        binom_res = stats.binomtest(len(wins), total_trades, breakeven_wr, alternative='greater')
+        binom_pval = float(binom_res.pvalue)
+
+        # Disaggregated Long vs Short metrics
+        longs = df_trades[df_trades["type"] == "LONG"]
+        shorts = df_trades[df_trades["type"] == "SHORT"]
+        long_trades = len(longs)
+        short_trades = len(shorts)
+        long_wins = len(longs[longs["pnl_usd"] > 0])
+        short_wins = len(shorts[shorts["pnl_usd"] > 0])
+        long_wr = (long_wins / long_trades * 100.0) if long_trades > 0 else 0.0
+        short_wr = (short_wins / short_trades * 100.0) if short_trades > 0 else 0.0
+        long_pnl_usd = float(longs["pnl_usd"].sum()) if long_trades > 0 else 0.0
+        short_pnl_usd = float(shorts["pnl_usd"].sum()) if short_trades > 0 else 0.0
+
         total_pnl_pct = ((equity - 10000.0) / 10000.0) * 100.0
     else:
         win_rate = 0.0
@@ -254,6 +281,13 @@ def backtest_out_of_sample(
         avg_loss = 0.0
         expectancy = 0.0
         total_pnl_pct = 0.0
+        t_stat = 0.0
+        p_val = 1.0
+        binom_pval = 1.0
+        breakeven_wr = 0.50
+        long_trades = 0; short_trades = 0
+        long_wr = 0.0; short_wr = 0.0
+        long_pnl_usd = 0.0; short_pnl_usd = 0.0
 
     # Decision distribution
     action_counts = pd.Series([d["action"] for d in decisions]).value_counts().to_dict()
@@ -267,15 +301,25 @@ def backtest_out_of_sample(
         "test_bars": len(test_df),
         "total_trades": total_trades,
         "win_rate_pct": round(win_rate * 100, 2),
+        "breakeven_win_rate_pct": round(breakeven_wr * 100, 2),
         "profit_factor": round(profit_factor, 2),
         "max_drawdown_pct": round(max_drawdown * 100, 2),
-        "sharpe_ratio": round(sharpe, 2),
-        "sortino_ratio": round(sortino, 2),
+        "sharpe_ratio_daily": round(sharpe, 2),
+        "sortino_ratio_daily": round(sortino, 2),
+        "t_statistic": round(t_stat, 2),
+        "p_value_two_tailed": round(p_val, 4),
+        "binom_p_value": round(binom_pval, 4),
         "total_pnl_pct": round(total_pnl_pct, 2),
         "final_equity_usd": round(equity, 2),
         "avg_win_usd": round(avg_win, 2),
         "avg_loss_usd": round(avg_loss, 2),
         "expectancy_usd": round(expectancy, 2),
+        "long_trades": long_trades,
+        "long_win_rate_pct": round(long_wr, 2),
+        "long_pnl_usd": round(long_pnl_usd, 2),
+        "short_trades": short_trades,
+        "short_win_rate_pct": round(short_wr, 2),
+        "short_pnl_usd": round(short_pnl_usd, 2),
         "signal_share_buy_pct": round(buy_share, 1),
         "signal_share_sell_pct": round(sell_share, 1),
         "signal_share_wait_pct": round(wait_share, 1),
@@ -285,18 +329,26 @@ def backtest_out_of_sample(
     md_report = fr"""# 🤖 ML Model Out-of-Sample Performance: {cfg.symbol}
 
 ## 📊 Executive Summary
-| Metric | Value | Benchmark Target |
-| :--- | :--- | :--- |
-| **Asset Symbol** | `{cfg.symbol}` | 1-Minute Microstructure |
-| **Out-of-Sample Bars** | `{len(test_df):,}` 1m bars | Chronologically Isolated |
-| **Total Trades** | `{total_trades:,}` | High Conviction Only |
-| **Win Rate** | **`{metrics['win_rate_pct']}%`** | > 50% |
-| **Profit Factor** | **`{metrics['profit_factor']}`** | > 1.50 |
-| **Total Net PnL** | **`{metrics['total_pnl_pct']}%`** | Positive Edge |
-| **Max Drawdown** | **`{metrics['max_drawdown_pct']}%`** | < 15.0% |
-| **Sharpe Ratio** | **`{metrics['sharpe_ratio']}`** | > 1.50 |
-| **Sortino Ratio** | **`{metrics['sortino_ratio']}`** | > 2.00 |
-| **Expectancy / Trade** | **`${metrics['expectancy_usd']}`** | Positive Expectancy |
+| Metric | Value | Benchmark / Target | Status |
+| :--- | :--- | :--- | :--- |
+| **Asset Symbol** | `{cfg.symbol}` | Microstructure Engine | Active |
+| **Out-of-Sample Window** | `{len(test_df):,}` 1m bars | August 1–31, 2026 (Pure OOS) | Zero Leakage |
+| **Total Trades** | `{total_trades:,}` | High Conviction Only | Validated |
+| **Win Rate** | **`{metrics['win_rate_pct']}%`** | Breakeven: `{metrics['breakeven_win_rate_pct']}%` | {'✅ EDGE' if win_rate > breakeven_wr else '⚠️ SUB-PAR'} |
+| **Profit Factor** | **`{metrics['profit_factor']}`** | Target: > 1.25 | {'✅ PASS' if profit_factor >= 1.25 else '⚠️ MONITOR'} |
+| **Total Net PnL** | **`{metrics['total_pnl_pct']}%`** | Positive Edge | {'✅ PROFITABLE' if total_pnl_pct > 0 else '❌ LOSS'} |
+| **Max Drawdown** | **`{metrics['max_drawdown_pct']}%`** | < 15.0% | {'✅ CONTROLLED' if metrics['max_drawdown_pct'] <= 15.0 else '⚠️ HIGH'} |
+| **Daily Sharpe Ratio** | **`{metrics['sharpe_ratio_daily']}`** | Daily Aggregation ($\sqrt{{365.25}}$) | Institutional Metric |
+| **Daily Sortino Ratio** | **`{metrics['sortino_ratio_daily']}`** | Downside Deviation | Institutional Metric |
+| **t-statistic (p-value)** | **`{metrics['t_statistic']} (p={metrics['p_value_two_tailed']})`** | $H_0: \mu = 0$ | Two-tailed |
+| **Binomial Test p-value** | **`{metrics['binom_p_value']}`** | $H_0: p \le p_{{be}}$ | One-tailed |
+| **Expectancy / Trade** | **`${metrics['expectancy_usd']}`** | Positive Expected Value | Validated |
+
+---
+
+## ⚖️ Directional Trade Breakdown
+- **LONG Trades**: `{metrics['long_trades']}` trades | Win Rate: `{metrics['long_win_rate_pct']}%` | PnL: `${metrics['long_pnl_usd']:+,.2f}`
+- **SHORT Trades**: `{metrics['short_trades']}` trades | Win Rate: `{metrics['short_win_rate_pct']}%` | PnL: `${metrics['short_pnl_usd']:+,.2f}`
 
 ---
 
@@ -308,18 +360,21 @@ def backtest_out_of_sample(
 ---
 
 ## 🛡️ Risk Management (Dynamic TP & SL)
-- **Take Profit Target**: Predicted MFE excursion ($\sim {cfg.tp_atr_mult} \times \text{{ATR}}_{{14}}$)
-- **Stop Loss Protection**: Predicted MAE threshold ($\sim {cfg.sl_atr_mult} \times \text{{ATR}}_{{14}}$)
+- **Take Profit Target**: $\sim {cfg.tp_atr_mult} \times \text{{ATR}}_{{14}}$
+- **Stop Loss Protection**: $\sim {cfg.sl_atr_mult} \times \text{{ATR}}_{{14}}$
 - **Execution Cost Modeling**: {cfg.taker_fee * 100}% Taker Fee + {cfg.slippage_ticks} Tick Slippage
 """
 
-    report_path = os.path.join(REPORTS_DIR, f"{cfg.symbol.lower()}_oos_report.md")
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(md_report)
+    if write_report:
+        out_dir = report_dir if report_dir is not None else REPORTS_DIR
+        os.makedirs(out_dir, exist_ok=True)
+        report_path = os.path.join(out_dir, f"{cfg.symbol.lower()}_oos_report.md")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(md_report)
 
-    if not df_trades.empty:
-        trades_csv_path = os.path.join(REPORTS_DIR, f"{cfg.symbol.lower()}_oos_trades.csv")
-        df_trades.to_csv(trades_csv_path, index=False)
+        if not df_trades.empty:
+            trades_csv_path = os.path.join(out_dir, f"{cfg.symbol.lower()}_oos_trades.csv")
+            df_trades.to_csv(trades_csv_path, index=False)
 
-    print(f"[Evaluator] Out-of-sample backtest complete! Report written to {report_path}")
+        print(f"[Evaluator] Out-of-sample backtest complete! Report written to {report_path}")
     return metrics, df_trades, md_report

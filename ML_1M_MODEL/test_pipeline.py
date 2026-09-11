@@ -1,14 +1,7 @@
-"""
-Comprehensive Automated Unit & Pipeline Verification Suite
-===========================================================
-Validates feature extraction, order-flow aggregation, triple-barrier labeling,
-model training, dynamic TP/SL generation, and inference.
-Runs rapidly using synthetic and sample structures to preserve local resources.
-"""
-
 import os
 import sys
 import unittest
+import tempfile
 import numpy as np
 import pandas as pd
 
@@ -80,20 +73,28 @@ class TestMLPipeline(unittest.TestCase):
             horizon_bars=5,
             tp_atr_mult=1.5,
             sl_atr_mult=1.0,
+            split_mode="ratio",
             test_size=0.25,
             embargo_bars=5,
             confidence_threshold=0.45
         )
 
     def test_feature_extraction(self):
-        """Verifies feature extraction shapes and calculations."""
+        """Verifies feature extraction shapes, HTF indicators, and deduplication."""
         df_feats, feature_cols = extract_features(self.df_ohlcv, self.df_orderflow)
         self.assertGreater(len(feature_cols), 25)
         self.assertIn("ret_1m", feature_cols)
         self.assertIn("dist_ema9", feature_cols)
-        self.assertIn("parkinson_vol", feature_cols)
-        self.assertIn("rsi_14", feature_cols)
-        self.assertIn("of_taker_buy_ratio", feature_cols)
+        self.assertIn("trend_score", feature_cols)
+        self.assertIn("trend_htf", feature_cols)
+        self.assertIn("dist_ema15m_21", feature_cols)
+        self.assertIn("dist_ema1h_50", feature_cols)
+        self.assertIn("bb_expansion", feature_cols)
+        self.assertIn("wick_diff", feature_cols)
+        self.assertIn("taker_ratio", feature_cols)
+        self.assertNotIn("of_taker_buy_ratio", feature_cols, "Duplicate taker feature should be removed from feature_cols!")
+        self.assertIn("parkinson_vol", df_feats.columns)
+        self.assertIn("rsi_14", df_feats.columns)
         self.assertEqual(len(df_feats), len(self.df_ohlcv))
 
     def test_triple_barrier_labeling(self):
@@ -108,34 +109,51 @@ class TestMLPipeline(unittest.TestCase):
         self.assertTrue(unique_labels.issubset({0, 1, 2}))
 
     def test_end_to_end_training_and_eval(self):
-        """Verifies model training, predictions, and backtest evaluation."""
-        model, train_df, test_df, metrics = train_model(self.df_ohlcv, self.df_orderflow, self.cfg)
-        self.assertTrue(model.is_trained)
-        self.assertGreater(metrics["train_accuracy"], 0.0)
+        """Verifies model training, predictions, and evaluation inside an isolated temporary directory."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            temp_model_path = os.path.join(tmp_dir, "test_model.pkl")
+            
+            # Train model saving strictly to isolated temporary path
+            model, train_df, test_df, metrics = train_model(
+                self.df_ohlcv, self.df_orderflow, self.cfg,
+                save_model=True, model_save_path=temp_model_path
+            )
+            self.assertTrue(model.is_trained)
+            self.assertTrue(os.path.exists(temp_model_path))
+            self.assertGreater(metrics["train_accuracy"], 0.0)
 
-        # Test inference decisions
-        decisions = model.predict_decision(
-            X=test_df.iloc[:5],
-            current_prices=test_df["close"].iloc[:5].values,
-            current_atrs=test_df["atr_14"].iloc[:5].values,
-            symbol="TRUMPUSDT"
-        )
-        self.assertEqual(len(decisions), 5)
-        for d in decisions:
-            self.assertIn(d["action"], ["BUY", "SELL", "WAIT / HOLD"])
-            self.assertGreaterEqual(d["confidence"], 0.0)
-            self.assertGreater(d["entry_price"], 0.0)
-            if d["action"] in ["BUY", "SELL"]:
-                self.assertGreater(d["suggested_tp"], 0.0)
-                self.assertGreater(d["suggested_sl"], 0.0)
-                self.assertGreater(d["tp_ticks"], 0)
-                self.assertGreater(d["sl_ticks"], 0)
+            # Test loading model back from temporary path
+            loaded_model = TradingModel.load(temp_model_path)
+            self.assertTrue(loaded_model.is_trained)
 
-        # Test Out-Of-Sample Evaluator
-        oos_metrics, df_trades, md_report = backtest_out_of_sample(model, test_df, self.cfg)
-        self.assertIn("win_rate_pct", oos_metrics)
-        self.assertIn("profit_factor", oos_metrics)
-        self.assertTrue(len(md_report) > 100)
+            # Test inference decisions
+            decisions = loaded_model.predict_decision(
+                X=test_df.iloc[:5],
+                current_prices=test_df["close"].iloc[:5].values,
+                current_atrs=test_df["atr_14"].iloc[:5].values,
+                symbol="TRUMPUSDT"
+            )
+            self.assertEqual(len(decisions), 5)
+            for d in decisions:
+                self.assertIn(d["action"], ["BUY", "SELL", "WAIT / HOLD"])
+                self.assertGreaterEqual(d["confidence"], 0.0)
+                self.assertGreater(d["entry_price"], 0.0)
+                if d["action"] in ["BUY", "SELL"]:
+                    self.assertGreater(d["suggested_tp"], 0.0)
+                    self.assertGreater(d["suggested_sl"], 0.0)
+                    self.assertGreater(d["tp_ticks"], 0)
+                    self.assertGreater(d["sl_ticks"], 0)
+
+            # Test Out-Of-Sample Evaluator (isolated inside tmp_dir)
+            oos_metrics, df_trades, md_report = backtest_out_of_sample(
+                loaded_model, test_df, self.cfg, report_dir=tmp_dir
+            )
+            self.assertIn("win_rate_pct", oos_metrics)
+            self.assertIn("profit_factor", oos_metrics)
+            self.assertIn("sharpe_ratio_daily", oos_metrics)
+            self.assertIn("t_statistic", oos_metrics)
+            self.assertIn("binom_p_value", oos_metrics)
+            self.assertTrue(len(md_report) > 100)
 
 
 if __name__ == "__main__":

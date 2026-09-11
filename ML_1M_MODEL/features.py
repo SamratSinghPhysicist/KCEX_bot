@@ -52,156 +52,151 @@ def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     return tr.ewm(span=period, adjust=False).mean()
 
 
-def extract_features(df_ohlcv: pd.DataFrame, df_orderflow: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+def extract_features(
+    df_ohlcv: pd.DataFrame,
+    df_orderflow: Optional[pd.DataFrame] = None
+) -> Tuple[pd.DataFrame, List[str]]:
     """
-    Extracts deep technical indicators and merges order-flow microstructure.
-    Returns feature matrix with aligned timestamp and targets.
+    Extracts high-conviction scale-invariant alpha features and merges order-flow microstructure.
+    Returns:
+    - enriched DataFrame with context columns and indicators
+    - list of predictive feature column names for model training
     """
-    df = df_ohlcv.copy()
-    close = df["close"]
-    high = df["high"]
-    low = df["low"]
-    open_p = df["open"]
-    vol = df["volume"]
+    df = df_ohlcv.copy().reset_index(drop=True)
+    close = df["close"].values
+    high = df["high"].values
+    low = df["low"].values
+    open_p = df["open"].values
+    vol = df["volume"].values
+    n = len(df)
 
-    # 1. Multi-horizon log returns
-    for horizon in [1, 2, 3, 5, 10, 15, 30, 60]:
-        df[f"ret_{horizon}m"] = np.log(close / close.shift(horizon).replace(0, np.nan)).fillna(0.0)
+    # 1. Multi-horizon Volatility Metrics
+    prev_c = np.roll(close, 1)
+    prev_c[0] = close[0]
+    tr = np.maximum(high - low, np.maximum(np.abs(high - prev_c), np.abs(low - prev_c)))
+    atr14 = pd.Series(tr).ewm(span=14, adjust=False).mean().values
+    atr5 = pd.Series(tr).ewm(span=5, adjust=False).mean().values
+    atr30 = pd.Series(tr).ewm(span=30, adjust=False).mean().values
 
-    # 2. Moving Average Dynamics
-    ema9 = calculate_ema(close, 9)
-    ema21 = calculate_ema(close, 21)
-    ema50 = calculate_ema(close, 50)
-    ema200 = calculate_ema(close, 200)
-
-    df["dist_ema9"] = (close - ema9) / ema9
-    df["dist_ema21"] = (close - ema21) / ema21
-    df["dist_ema50"] = (close - ema50) / ema50
-    df["spread_ema9_21"] = (ema9 - ema21) / ema21
-    df["spread_ema50_200"] = (ema50 - ema200) / (ema200 + 1e-9)
-
-    # 3. Volatility Metrics
-    atr5 = calculate_atr(df, 5)
-    atr14 = calculate_atr(df, 14)
-    atr30 = calculate_atr(df, 30)
-
+    # Store for risk calculation and labeling
     df["atr_14"] = atr14
-    df["atr_norm_14"] = atr14 / close
-    df["atr_norm_5"] = atr5 / close
-    df["atr_ratio_5_30"] = atr5 / (atr30 + 1e-9)
 
-    # Parkinson Volatility (High-Low estimator)
-    df["parkinson_vol"] = np.sqrt((np.log(high / low.replace(0, np.nan)) ** 2) / (4 * np.log(2))).fillna(0.0)
+    # 2. Moving Average Trend Dynamics (ATR-Normalized for Stationarity)
+    ema9 = pd.Series(close).ewm(span=9, adjust=False).mean().values
+    ema21 = pd.Series(close).ewm(span=21, adjust=False).mean().values
+    ema50 = pd.Series(close).ewm(span=50, adjust=False).mean().values
+    ema200 = pd.Series(close).ewm(span=200, adjust=False).mean().values
 
-    # Garman-Klass Volatility
-    term1 = 0.5 * (np.log(high / low.replace(0, np.nan)) ** 2)
-    term2 = (2 * np.log(2) - 1) * (np.log(close / open_p.replace(0, np.nan)) ** 2)
-    df["garman_klass_vol"] = np.sqrt(np.maximum(0, term1 - term2)).fillna(0.0)
+    # Higher Timeframe MAs (15m and 1h equivalents on 1m candles)
+    ema15m_21 = pd.Series(close).ewm(span=21 * 15, adjust=False).mean().values
+    ema15m_50 = pd.Series(close).ewm(span=50 * 15, adjust=False).mean().values
+    ema1h_50 = pd.Series(close).ewm(span=50 * 60, adjust=False).mean().values
+    ema1h_200 = pd.Series(close).ewm(span=200 * 60, adjust=False).mean().values
 
-    # Bollinger Bands
-    roll_mean20 = close.rolling(20).mean()
-    roll_std20 = close.rolling(20).std()
-    upper_bb = roll_mean20 + 2 * roll_std20
-    lower_bb = roll_mean20 - 2 * roll_std20
-    df["bb_pct_b"] = ((close - lower_bb) / (upper_bb - lower_bb + 1e-9)).clip(-0.5, 1.5).fillna(0.5)
-    df["bb_bandwidth"] = (upper_bb - lower_bb) / roll_mean20
+    df["dist_ema9"] = (close - ema9) / (atr14 + 1e-9)
+    df["dist_ema21"] = (close - ema21) / (atr14 + 1e-9)
+    df["dist_ema50"] = (close - ema50) / (atr14 + 1e-9)
+    df["dist_ema200"] = (close - ema200) / (atr14 + 1e-9)
+    df["dist_ema15m_21"] = (close - ema15m_21) / (atr14 + 1e-9)
+    df["dist_ema1h_50"] = (close - ema1h_50) / (atr14 + 1e-9)
+    df["spread_9_21"] = (ema9 - ema21) / (atr14 + 1e-9)
+    df["spread_21_50"] = (ema21 - ema50) / (atr14 + 1e-9)
+    df["spread_50_200"] = (ema50 - ema200) / (atr14 + 1e-9)
 
-    # Carter Volatility Squeeze (Bollinger Bands vs Keltner Channels)
-    ema20 = calculate_ema(close, 20)
-    atr20 = calculate_atr(df, 20)
-    kc_upper = ema20 + 1.5 * atr20
-    kc_lower = ema20 - 1.5 * atr20
-    df["squeeze_on"] = ((lower_bb > kc_lower) & (upper_bb < kc_upper)).astype("float32")
-    df["squeeze_off"] = ((upper_bb > kc_upper) | (lower_bb < kc_lower)).astype("float32")
+    # 3. Macro & HTF Trend Alignment Scores
+    df["trend_score"] = (
+        np.sign(close - ema9) +
+        np.sign(ema9 - ema21) +
+        np.sign(ema21 - ema50) +
+        np.sign(ema50 - ema200)
+    ).astype("float32") / 4.0
 
-    # Trend Regime Alignment
-    df["trend_alignment"] = np.where(
-        (close > ema9) & (ema9 > ema21) & (ema21 > ema50), 1.0,
-        np.where((close < ema9) & (ema9 < ema21) & (ema21 < ema50), -1.0, 0.0)
-    ).astype("float32")
+    df["trend_htf"] = (
+        np.sign(close - ema15m_21) +
+        np.sign(ema15m_21 - ema15m_50) +
+        np.sign(ema15m_50 - ema1h_50) +
+        np.sign(ema1h_50 - ema1h_200)
+    ).astype("float32") / 4.0
 
-    # 4. Candlestick Anatomy
-    hl_range = (high - low).replace(0, np.nan)
-    df["hl_range_pct"] = (high - low) / close
-    df["body_ratio"] = (close - open_p).abs() / hl_range
-    df["upper_shadow_ratio"] = (high - np.maximum(open_p, close)) / hl_range
-    df["lower_shadow_ratio"] = (np.minimum(open_p, close) - low) / hl_range
-    df["candle_polarity"] = np.sign(close - open_p)
-    for col in ["body_ratio", "upper_shadow_ratio", "lower_shadow_ratio"]:
-        df[col] = df[col].fillna(0.0)
+    # Macro Regimes for directional gating
+    df["macro_bull"] = (ema1h_50 > ema1h_200) & (ema15m_21 > ema15m_50) & (close > ema1h_50)
+    df["macro_bear"] = (ema1h_50 < ema1h_200) & (ema15m_21 < ema15m_50) & (close < ema1h_50)
 
-    # 5. Momentum Oscillators
-    df["rsi_7"] = calculate_rsi(close, 7)
-    df["rsi_14"] = calculate_rsi(close, 14)
-    stoch_k, stoch_d = calculate_stoch_rsi(close, 14)
-    df["stoch_rsi_k"] = stoch_k
-    df["stoch_rsi_d"] = stoch_d
+    # 4. Volatility Bands & Squeeze Dynamics
+    roll_m20 = pd.Series(close).rolling(20).mean().values
+    roll_s20 = pd.Series(close).rolling(20).std().values
+    upper_bb = roll_m20 + 2 * roll_s20
+    lower_bb = roll_m20 - 2 * roll_s20
+    bb_width = (upper_bb - lower_bb) / (roll_m20 + 1e-9)
+    bb_width_ma20 = pd.Series(bb_width).rolling(20).mean().values
 
-    # MACD
-    ema12 = calculate_ema(close, 12)
-    ema26 = calculate_ema(close, 26)
-    macd_line = ema12 - ema26
-    macd_signal = calculate_ema(macd_line, 9)
-    df["macd_hist_norm"] = (macd_line - macd_signal) / close
+    df["bb_width"] = bb_width
+    df["bb_expansion"] = bb_width / (bb_width_ma20 + 1e-9)
+    df["bb_pct_b"] = ((close - lower_bb) / (upper_bb - lower_bb + 1e-9)).clip(-0.5, 1.5)
+    df["atr_norm"] = atr14 / close
+    df["vol_ratio_5_30"] = atr5 / (atr30 + 1e-9)
 
-    # 6. Volume Anomalies
-    vol_mean20 = vol.rolling(20).mean()
-    vol_std20 = vol.rolling(20).std()
-    df["volume_zscore"] = ((vol - vol_mean20) / (vol_std20 + 1e-9)).clip(-3.0, 5.0).fillna(0.0)
-    df["volume_surge"] = (vol / (vol_mean20 + 1e-9)).clip(0.0, 10.0).fillna(1.0)
-
-    # 7. Merge Order Flow Microstructure (if available)
+    # 5. Microstructure & Order Flow
     if df_orderflow is not None and not df_orderflow.empty:
-        df = pd.merge(df, df_orderflow, on="timestamp", how="left")
-
-        # Fill missing order-flow values with neutral baselines
-        df["of_taker_buy_ratio"] = df["of_taker_buy_ratio"].fillna(0.5)
-        df["of_imbalance_ratio"] = df["of_imbalance_ratio"].fillna(0.0)
-        df["of_trade_count_ratio"] = df["of_trade_count_ratio"].fillna(0.5)
-        df["of_whale_ratio"] = df["of_whale_ratio"].fillna(0.0)
-        df["of_vwap_dev"] = ((close - df["of_vwap"]) / (df["of_vwap"] + 1e-9)).fillna(0.0)
-        df["of_cvd_slope"] = df["of_cvd_slope"].fillna(0.0)
+        if "of_taker_buy_ratio" not in df.columns:
+            df = pd.merge(df, df_orderflow, on="timestamp", how="left")
+        vwap = df["of_vwap"].values if "of_vwap" in df.columns else roll_m20
+        taker_ratio = df["of_taker_buy_ratio"].fillna(0.5).values
+        imbalance = df["of_imbalance_ratio"].fillna(0.0).values
+        cvd_slope = df["of_cvd_slope"].fillna(0.0).values
+        whale_ratio = df["of_whale_ratio"].fillna(0.0).values
     else:
-        # Fallback to OHLCV native taker metrics if present
+        vwap = roll_m20
         if "taker_buy_volume" in df.columns:
-            df["of_taker_buy_ratio"] = (df["taker_buy_volume"] / (vol + 1e-9)).fillna(0.5)
-            df["of_imbalance_ratio"] = ((2 * df["taker_buy_volume"] - vol) / (vol + 1e-9)).fillna(0.0)
+            taker_ratio = (df["taker_buy_volume"] / (vol + 1e-9)).fillna(0.5).values
+            imbalance = ((2 * df["taker_buy_volume"] - vol) / (vol + 1e-9)).fillna(0.0).values
         else:
-            df["of_taker_buy_ratio"] = 0.5
-            df["of_imbalance_ratio"] = 0.0
+            taker_ratio = np.full(n, 0.5)
+            imbalance = np.zeros(n)
+        cvd_slope = np.zeros(n)
+        whale_ratio = np.zeros(n)
 
-        df["of_trade_count_ratio"] = 0.5
-        df["of_whale_ratio"] = 0.0
-        df["of_vwap_dev"] = 0.0
-        df["of_cvd_slope"] = 0.0
+    df["dist_vwap"] = (close - vwap) / (atr14 + 1e-9)
+    df["taker_ratio"] = taker_ratio
+    df["imbalance"] = imbalance
+    df["cvd_slope"] = cvd_slope
+    df["whale_ratio"] = whale_ratio
+    df["of_taker_buy_ratio"] = taker_ratio  # Kept in df for schema compatibility
 
-    # 8. Cyclical Time Features
-    if "datetime" in df.columns:
-        dt = pd.to_datetime(df["datetime"], utc=True)
-    else:
-        dt = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
+    # 6. Volume Intensity
+    vol_ma20 = pd.Series(vol).rolling(20).mean().values
+    df["vol_surge"] = vol / (vol_ma20 + 1e-9)
 
-    minute = dt.dt.minute
-    hour = dt.dt.hour
-    dow = dt.dt.dayofweek
+    # 7. Multi-Horizon Returns
+    df["ret_1m"] = pd.Series(close).pct_change(1).fillna(0.0).values
+    df["ret_3m"] = pd.Series(close).pct_change(3).fillna(0.0).values
+    df["ret_5m"] = pd.Series(close).pct_change(5).fillna(0.0).values
+    df["ret_15m"] = pd.Series(close).pct_change(15).fillna(0.0).values
+    df["ret_60m"] = pd.Series(close).pct_change(60).fillna(0.0).values
 
-    df["sin_minute"] = np.sin(2 * np.pi * minute / 60.0)
-    df["cos_minute"] = np.cos(2 * np.pi * minute / 60.0)
-    df["sin_hour"] = np.sin(2 * np.pi * hour / 24.0)
-    df["cos_hour"] = np.cos(2 * np.pi * hour / 24.0)
-    df["sin_dow"] = np.sin(2 * np.pi * dow / 7.0)
-    df["cos_dow"] = np.cos(2 * np.pi * dow / 7.0)
+    # 8. Rejection Wicks & Flow Absorption
+    hl_r = np.maximum(high - low, 1e-9)
+    lower_wick = (np.minimum(open_p, close) - low) / hl_r
+    upper_wick = (high - np.maximum(open_p, close)) / hl_r
+    df["lower_wick"] = lower_wick
+    df["upper_wick"] = upper_wick
+    df["wick_diff"] = lower_wick - upper_wick
 
-    # Feature column names list (excluding targets and raw prices)
-    exclude_cols = {
-        "timestamp", "datetime", "open", "high", "low", "close", "volume",
-        "quote_volume", "close_time", "ignore", "of_vwap", "of_cvd",
-        "of_cvd_ma5", "of_cvd_ma15", "trades_count", "taker_buy_volume",
-        "taker_buy_quote_volume", "of_buy_volume", "of_sell_volume",
-        "of_delta_volume", "of_trades_count", "of_buy_trades_count",
-        "of_sell_trades_count", "of_avg_trade_size"
-    }
+    # 9. Additional standard indicators to maintain compatibility with test_pipeline
+    df["parkinson_vol"] = np.sqrt((np.log(high / np.maximum(low, 1e-9)) ** 2) / (4 * np.log(2)))
+    df["rsi_14"] = calculate_rsi(pd.Series(close), 14).values
 
-    feature_cols = [c for c in df.columns if c not in exclude_cols and not c.startswith("target_")]
+    # Verified, deduplicated stationary alpha features
+    feature_cols = [
+        "dist_ema9", "dist_ema21", "dist_ema50", "dist_ema200",
+        "dist_ema15m_21", "dist_ema1h_50",
+        "spread_9_21", "spread_21_50", "spread_50_200",
+        "trend_score", "trend_htf", "dist_vwap",
+        "bb_width", "bb_expansion", "bb_pct_b",
+        "taker_ratio", "imbalance", "cvd_slope", "whale_ratio",
+        "vol_surge", "atr_norm", "vol_ratio_5_30",
+        "ret_1m", "ret_3m", "ret_5m", "ret_15m", "ret_60m",
+        "lower_wick", "upper_wick", "wick_diff"
+    ]
 
     return df, feature_cols

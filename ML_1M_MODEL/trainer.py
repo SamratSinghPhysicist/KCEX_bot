@@ -21,13 +21,15 @@ from .model import TradingModel
 def train_model(
     df_ohlcv: pd.DataFrame,
     df_orderflow: Optional[pd.DataFrame] = None,
-    cfg: Optional[ModelConfig] = None
+    cfg: Optional[ModelConfig] = None,
+    save_model: bool = True,
+    model_save_path: Optional[str] = None
 ) -> Tuple[TradingModel, pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
     """
     Executes end-to-end training pipeline with strictly purged out-of-sample split:
     1. Feature engineering
     2. Labeling with triple barriers
-    3. Chronological train/test split with embargo gap
+    3. Chronological or calendar train/test split with embargo gap
     4. Model training
     5. Evaluation on train set
     """
@@ -41,32 +43,55 @@ def train_model(
     print(f"[Trainer] Computing triple barrier targets (horizon={cfg.horizon_bars} bars, TP={cfg.tp_atr_mult}x ATR, SL={cfg.sl_atr_mult}x ATR)...")
     df_dataset = compute_triple_barrier_labels(df_feats, cfg)
 
-    # Step 3: Chronological Split with Embargo
+    # Step 2b: Purge initial warmup bars (2000 bars needed for HTF EMA200 / rolling statistics to stabilize)
+    warmup_bars = 2000 if len(df_dataset) > 5000 else 50
+    if len(df_dataset) > warmup_bars * 2:
+        df_dataset = df_dataset.iloc[warmup_bars:].copy().reset_index(drop=True)
+
+    # Step 3: Calendar Split with Strict Embargo (or Ratio fallback)
     n = len(df_dataset)
-    test_count = int(n * cfg.test_size)
-    train_end = n - test_count - cfg.embargo_bars
+    embargo_ms = cfg.embargo_bars * 60000
 
-    if train_end <= 0:
-        raise ValueError(f"Insufficient data ({n} bars) for train_size with embargo {cfg.embargo_bars}.")
+    use_calendar = False
+    if cfg.split_mode == "calendar" and "timestamp" in df_dataset.columns:
+        test_start_ts = int(pd.Timestamp(cfg.test_start_date).timestamp() * 1000)
+        min_ts = df_dataset["timestamp"].iloc[0]
+        max_ts = df_dataset["timestamp"].iloc[-1]
+        if min_ts < test_start_ts < max_ts:
+            use_calendar = True
 
-    train_df = df_dataset.iloc[:train_end].copy().reset_index(drop=True)
-    test_df = df_dataset.iloc[train_end + cfg.embargo_bars:].copy().reset_index(drop=True)
+    if use_calendar:
+        test_start_ts = int(pd.Timestamp(cfg.test_start_date).timestamp() * 1000)
+        train_mask = (df_dataset["timestamp"] < test_start_ts - embargo_ms)
+        test_mask = (df_dataset["timestamp"] >= test_start_ts)
+        train_df = df_dataset.loc[train_mask].copy().reset_index(drop=True)
+        test_df = df_dataset.loc[test_mask].copy().reset_index(drop=True)
+        print(f"[Trainer] Strict Calendar Split: Train ({cfg.train_start_date} to {cfg.train_end_date})={len(train_df):,} bars, "
+              f"Embargo={cfg.embargo_bars} bars, Test ({cfg.test_start_date} to {cfg.test_end_date})={len(test_df):,} bars.")
+    else:
+        test_count = max(int(n * cfg.test_size), 1)
+        train_end = n - test_count - cfg.embargo_bars
+        if train_end <= 0:
+            train_end = int(n * 0.7)
+            train_df = df_dataset.iloc[:train_end].copy().reset_index(drop=True)
+            test_df = df_dataset.iloc[train_end:].copy().reset_index(drop=True)
+        else:
+            train_df = df_dataset.iloc[:train_end].copy().reset_index(drop=True)
+            test_df = df_dataset.iloc[train_end + cfg.embargo_bars:].copy().reset_index(drop=True)
+        print(f"[Trainer] Ratio Chronological Split: Train={len(train_df):,} bars, Embargo={cfg.embargo_bars} bars, Test={len(test_df):,} bars.")
 
-    print(f"[Trainer] Chronological Split: Train={len(train_df):,} bars, Embargo={cfg.embargo_bars} bars, Test={len(test_df):,} bars.")
+    if len(train_df) == 0 or len(test_df) == 0:
+        raise ValueError(f"Insufficient data split: Train={len(train_df)}, Test={len(test_df)}.")
 
     # Target arrays
     y_train = train_df["target_label"].values
-    tp_target_train = train_df["target_tp_dist"].values
-    sl_target_train = train_df["target_sl_dist"].values
 
     # Step 4: Model Initialization and Fitting
     model = TradingModel(cfg)
-    print(f"[Trainer] Fitting multi-task model on {len(feature_cols)} features...")
+    print(f"[Trainer] Fitting directional classifier on {len(feature_cols)} features...")
     model.fit(
         X_train=train_df,
         y_train=y_train,
-        tp_target_train=tp_target_train,
-        sl_target_train=sl_target_train,
         feature_cols=feature_cols
     )
 
@@ -98,7 +123,8 @@ def train_model(
     for row in top_10[:5]:
         print(f"   - {row['feature']}: {row['importance']:.4f}")
 
-    # Save models
-    model.save()
+    # Save models if requested
+    if save_model:
+        model.save(filepath=model_save_path)
 
     return model, train_df, test_df, metrics

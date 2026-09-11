@@ -1,0 +1,145 @@
+{
+  "symbol": "TRUMPUSDT",
+  "config": {
+    "horizon_bars": 45,
+    "tp_atr_mult": 3.5,
+    "sl_atr_mult": 1.8,
+    "confidence_threshold": 0.45,
+    "confidence_threshold_sell": 0.45,
+    "min_profit_pct": 0.008,
+    "taker_fee": 0.0,
+    "leverage": 20.0,
+    "embargo_bars": 30
+  },
+  "train_metrics": {
+    "train_samples": 85810,
+    "test_samples": 44595,
+    "num_features": 30,
+    "train_accuracy": 0.6879,
+    "train_log_loss": 0.7351,
+    "top_features": [
+      {
+        "feature": "dist_ema15m_21",
+        "importance": 0.000500000000000019
+      },
+      {
+        "feature": "atr_norm",
+        "importance": 0.00016666666666672233
+      },
+      {
+        "feature": "vol_ratio_5_30",
+        "importance": 0.0001666666666666853
+      },
+      {
+        "feature": "dist_ema50",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema21",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema9",
+        "importance": 0.0
+      },
+      {
+        "feature": "bb_expansion",
+        "importance": 0.0
+      },
+      {
+        "feature": "trend_htf",
+        "importance": 0.0
+      },
+      {
+        "feature": "cvd_slope",
+        "importance": 0.0
+      },
+      {
+        "feature": "vol_surge",
+        "importance": 0.0
+      }
+    ]
+  },
+  "oos_metrics": {
+    "symbol": "TRUMPUSDT",
+    "test_bars": 44595,
+    "total_trades": 43,
+    "win_rate_pct": 37.21,
+    "breakeven_win_rate_pct": 33.96,
+    "profit_factor": 1.33,
+    "max_drawdown_pct": 19.79,
+    "sharpe_ratio_daily": 2.27,
+    "sortino_ratio_daily": 6.93,
+    "t_statistic": 0.85,
+    "p_value_two_tailed": 0.399,
+    "binom_p_value": 0.3806,
+    "total_pnl_pct": 24.57,
+    "final_equity_usd": 12457.19,
+    "avg_win_usd": 624.67,
+    "avg_loss_usd": -279.17,
+    "expectancy_usd": 57.14,
+    "long_trades": 41,
+    "long_win_rate_pct": 39.02,
+    "long_pnl_usd": 2852.48,
+    "short_trades": 2,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": -395.29,
+    "signal_share_buy_pct": 0.2,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 99.8
+  },
+  "friction_matrix": [
+    {
+      "slippage_ticks": 1.0,
+      "trades": 43,
+      "win_rate_pct": 37.21,
+      "profit_factor": 1.47,
+      "net_pnl_pct": 33.69,
+      "sharpe_daily": 2.74,
+      "sortino_daily": 10.68,
+      "max_dd_pct": 18.6,
+      "t_stat": 1.09,
+      "p_val": 0.2834,
+      "binom_p": 0.3806
+    },
+    {
+      "slippage_ticks": 2.0,
+      "trades": 43,
+      "win_rate_pct": 37.21,
+      "profit_factor": 1.33,
+      "net_pnl_pct": 24.57,
+      "sharpe_daily": 2.27,
+      "sortino_daily": 6.93,
+      "max_dd_pct": 19.79,
+      "t_stat": 0.85,
+      "p_val": 0.399,
+      "binom_p": 0.3806
+    },
+    {
+      "slippage_ticks": 3.0,
+      "trades": 43,
+      "win_rate_pct": 34.88,
+      "profit_factor": 1.21,
+      "net_pnl_pct": 16.07,
+      "sharpe_daily": 1.77,
+      "sortino_daily": 4.4,
+      "max_dd_pct": 21.17,
+      "t_stat": 0.62,
+      "p_val": 0.5375,
+      "binom_p": 0.5064
+    },
+    {
+      "slippage_ticks": 5.0,
+      "trades": 43,
+      "win_rate_pct": 34.88,
+      "profit_factor": 1.01,
+      "net_pnl_pct": 0.75,
+      "sharpe_daily": 0.67,
+      "sortino_daily": 1.15,
+      "max_dd_pct": 25.83,
+      "t_stat": 0.17,
+      "p_val": 0.8631,
+      "binom_p": 0.5064
+    }
+  ]
+}

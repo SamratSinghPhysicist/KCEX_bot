@@ -29,8 +29,8 @@ def compute_triple_barrier_labels(
     df = df.copy()
     n = len(df)
     H = cfg.horizon_bars
-    tp_mult = cfg.tp_atr_mult
-    sl_mult = cfg.sl_atr_mult
+    tp_mult = getattr(cfg, "label_tp_mult", 2.5)
+    sl_mult = getattr(cfg, "label_sl_mult", 1.8)
     min_profit = cfg.min_profit_pct
 
     closes = df["close"].values

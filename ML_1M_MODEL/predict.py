@@ -17,6 +17,12 @@ import numpy as np
 import pandas as pd
 from typing import Dict, Any, Optional
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from .config import ModelConfig, MODELS_DIR, get_tick_spec
 from .model import TradingModel
 from .features import extract_features
@@ -52,8 +58,8 @@ class Predictor:
         Takes recent 1-minute candles (minimum 60 bars for full feature warmup)
         and returns the trade recommendation for the latest bar.
         """
-        if len(df_ohlcv) < 30:
-            raise ValueError(f"Need at least 30 candles for feature warmup (received {len(df_ohlcv)}).")
+        if len(df_ohlcv) < 200:
+            raise ValueError(f"Need at least 200 candles for full feature warmup (received {len(df_ohlcv)}).")
 
         # Extract features
         df_feats, _ = extract_features(df_ohlcv, df_orderflow)
@@ -146,7 +152,7 @@ def main():
 
     signal = predictor.predict_from_dataframe(df_ohlcv, df_of)
     print("\n" + "=" * 60)
-    print("🎯 LATEST 1-MINUTE ML TRADING RECOMMENDATION")
+    print("[SIGNAL] LATEST 1-MINUTE ML TRADING RECOMMENDATION")
     print("=" * 60)
     print(json.dumps(signal, indent=2))
     print("=" * 60)

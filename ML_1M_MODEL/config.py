@@ -101,37 +101,50 @@ class ModelConfig:
     # Asset parameters
     symbol: str = "TRUMPUSDT"
     timeframe: str = "1m"
-    start_date: str = "2026-06-01"
-    end_date: str = "2026-08-31"
+    
+    # Dataset splitting protocol
+    split_mode: str = "calendar"         # "calendar" enforces strict date isolation; "ratio" is fallback
+    train_start_date: str = "2026-06-01" # Start of training set
+    train_end_date: str = "2026-07-31"   # End of training set (strict zero August leakage)
+    val_start_date: str = "2026-07-16"   # Inner validation start date (for hyperparameter tuning)
+    val_end_date: str = "2026-07-31"     # Inner validation end date
+    test_start_date: str = "2026-08-01"  # Pure unseen out-of-sample test start
+    test_end_date: str = "2026-08-31"    # Pure unseen out-of-sample test end
+    embargo_bars: int = 30               # 30-bar embargo window between train and test/validation splits
+    test_size: float = 0.2               # Fallback ratio if split_mode == "ratio"
 
     # Prediction horizon & barrier labeling
-    horizon_bars: int = 15              # Look forward N bars (15 1m bars = 15 minutes)
-    tp_atr_mult: float = 3.0           # Dynamic Take Profit: 3.0x ATR (high reward-to-risk)
-    sl_atr_mult: float = 1.5           # Dynamic Stop Loss: 1.5x ATR
-    min_profit_pct: float = 0.005      # Minimum profit hurdle (0.5%) to ensure fees/slippage are negligible
+    horizon_bars: int = 30              # Forward horizon bars
+    tp_atr_mult: float = 2.8            # Dynamic Take Profit: ATR multiplier
+    sl_atr_mult: float = 1.2            # Dynamic Stop Loss: ATR multiplier
+    label_tp_mult: float = 2.8          # Structural Take Profit multiplier for training labels
+    label_sl_mult: float = 1.2          # Structural invalidation multiplier for training labels
+    min_profit_pct: float = 0.0020      # Minimum profit hurdle to ensure edge exceeds slippage
 
     # Signal probability thresholds
-    confidence_threshold: float = 0.70  # Empirically verified high-conviction sniper threshold (51.2% WR, PF 2.13)
-    edge_threshold: float = 0.05        # Margin over alternative classes
-    order_flow_filter: bool = True     # Require order-flow imbalance confirmation
+    confidence_threshold: float = 0.40       # Long calibrated probability threshold
+    confidence_threshold_sell: float = 0.48  # Short calibrated probability threshold
+    edge_threshold: float = 0.03             # Margin over alternative classes
+    order_flow_filter: bool = True          # Require order-flow confirmation
+    macro_regime_filter: bool = True        # Directional macro regime gating
 
     # Execution and Cost Simulation
     maker_fee: float = 0.0             # 0% maker fee on KCEX
-    taker_fee: float = 0.0             # 0% taker fee for TRUMP and DOGE (auto-resolved via get_fee_schedule)
+    taker_fee: float = 0.0             # 0% taker fee for TRUMP and DOGE on KCEX
     slippage_ticks: float = 2.0        # 2 ticks conservative slippage baseline
     leverage: float = 20.0             # Leverage for margin calculations
 
-    # Validation and Splitting
-    test_size: float = 0.2             # Chronological out-of-sample test fraction
-    embargo_bars: int = 30             # Purged embargo gap to eliminate leakage
-
-    # Model Hyperparameters (Scikit-Learn HistGradientBoosting)
+    # Model Hyperparameters (Scikit-Learn HistGradientBoosting with L2 Regularization & Early Stopping)
     hgb_params: Dict = field(default_factory=lambda: {
-        "max_iter": 200,
-        "learning_rate": 0.04,
-        "class_weight": "balanced",
+        "max_iter": 250,
+        "learning_rate": 0.03,
         "max_leaf_nodes": 31,
-        "max_depth": 6,
+        "max_depth": 5,
+        "min_samples_leaf": 50,
+        "l2_regularization": 3.0,
+        "early_stopping": True,
+        "validation_fraction": 0.15,
+        "n_iter_no_change": 15,
         "random_state": 42
     })
 
@@ -147,3 +160,51 @@ class ModelConfig:
         1: "BUY",
         2: "SELL"
     })
+
+
+def get_model_config(symbol: str) -> ModelConfig:
+    """Returns the empirically verified, hyperparameter-tuned ModelConfig for a given symbol."""
+    clean_sym = normalize_symbol_name(symbol)
+    if "TRUMP" in clean_sym:
+        return ModelConfig(
+            symbol="TRUMPUSDT",
+            horizon_bars=45,
+            min_profit_pct=0.0080,
+            tp_atr_mult=3.5,
+            sl_atr_mult=1.8,
+            label_tp_mult=3.5,
+            label_sl_mult=1.8,
+            confidence_threshold=0.45,
+            confidence_threshold_sell=0.45,
+            edge_threshold=0.03,
+            slippage_ticks=2.0
+        )
+    elif "DOGE" in clean_sym:
+        return ModelConfig(
+            symbol="DOGEUSDT",
+            horizon_bars=60,
+            min_profit_pct=0.0040,
+            tp_atr_mult=4.0,
+            sl_atr_mult=2.0,
+            label_tp_mult=4.0,
+            label_sl_mult=2.0,
+            confidence_threshold=0.45,
+            confidence_threshold_sell=0.45,
+            edge_threshold=0.03,
+            slippage_ticks=2.0,
+            hgb_params={
+                "max_iter": 150,
+                "learning_rate": 0.04,
+                "max_leaf_nodes": 31,
+                "max_depth": 5,
+                "min_samples_leaf": 50,
+                "l2_regularization": 3.0,
+                "early_stopping": True,
+                "validation_fraction": 0.15,
+                "n_iter_no_change": 15,
+                "random_state": 42
+            }
+        )
+    else:
+        return ModelConfig(symbol=symbol)
+
