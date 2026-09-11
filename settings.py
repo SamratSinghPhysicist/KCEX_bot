@@ -161,7 +161,7 @@ SL_PRICE_PCT = 0.5
 # Position leverage multiplier.
 # Note: At 75x leverage, 25% ROE loss represents a 0.333% price move (approx ~7.8 ticks for TRUMP).
 # In case of conflict between liquidation and SL, 75x leverage is strictly prioritized.
-LEVERAGE = 75
+LEVERAGE = 30
 
 # Margin mode: True for Isolated (openType=1), False for Cross (openType=2).
 # Isolated margin is strongly recommended to restrict risk strictly to position margin.
@@ -176,7 +176,7 @@ COOLDOWN_SECONDS = 10.0
 
 # Maximum number of trades to execute in this session.
 # Set to 0 for UNLIMITED / continuous 24/7 automated operation until stopped.
-MAX_TRADES = 3
+MAX_TRADES = 0
 
 # Ticker polling interval in seconds while actively monitoring an open trade.
 # Faster polling (0.2s - 0.3s) ensures rapid detection of TP hits for immediate market close.

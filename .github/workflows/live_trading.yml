@@ -1,10 +1,10 @@
 name: KCEX Live Trading Engine
 
 on:
-  #schedule:
+  schedule:
     # 6 runs per day, 4 hours apart (UTC)
     # IST equivalent: 05:30, 09:30, 13:30, 17:30, 21:30, 01:30
-  #  - cron: '0 0,4,8,12,16,20 * * *'
+    - cron: '0 0,4,8,12,16,20 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -78,7 +78,7 @@ on:
       cooldown_seconds:
         description: "Cooldown seconds between trades"
         required: false
-        default: "0"
+        default: "10"
         type: string
       enable_ratchet:
         description: "Enable Micro-Excursion Tick Ratchet"
@@ -98,7 +98,7 @@ on:
 
 jobs:
   live-trade:
-    name: "🔴 Live Trading (${{ inputs.symbol || 'DOGE_USDT' }})"
+    name: "🔴 Live Trading (${{ inputs.preset || 'TRUMP_ML_RAPID_SCALPER' }})"
     runs-on: ubuntu-latest
     timeout-minutes: 240  # 4h hard cap (buffer beyond 3.5h for trade completion + logging)
 
@@ -242,7 +242,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: live-session-${{ inputs.symbol || 'DOGE_USDT' }}-run${{ github.run_number }}-${{ github.run_id }}
+          name: live-session-${{ inputs.preset || 'TRUMP_ML_RAPID_SCALPER' }}-run${{ github.run_number }}-${{ github.run_id }}
           path: |
             logs/*.log
             logs/*.txt
