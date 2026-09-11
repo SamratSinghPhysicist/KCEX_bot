@@ -115,8 +115,8 @@ class TradingModel:
             action_code = self.cfg.CLASS_WAIT
             tp_price = 0.0
             sl_price = 0.0
-            tp_ticks = 0
-            sl_ticks = 0
+            tp_ticks = int(round(tp_dist / tick_size))
+            sl_ticks = int(round(sl_dist / tick_size))
 
             # Macro regime and order flow gating
             macro_bull = bool(X["macro_bull"].iloc[i]) if "macro_bull" in X.columns else False
@@ -138,14 +138,17 @@ class TradingModel:
                 # In Bull macro: only Longs allowed. In Bear macro: only Shorts allowed.
                 allow_long = (macro_bull or trend_htf_val >= 0.25) and (trend_1m_val >= -0.25) and (t_ratio >= 0.48)
                 allow_short = (macro_bear or trend_htf_val <= -0.25) and (trend_1m_val <= 0.25) and (t_ratio <= 0.52)
+                squeeze_ok = (bb_exp >= 1.0)
+                wait_factor = 0.65
             else:
-                allow_long = (trend_1m_val >= -0.25)
-                allow_short = (trend_1m_val <= 0.25)
-
-            squeeze_ok = (bb_exp >= 1.0)
+                # Rapid Intraday Scalping Gating: responsive 1m micro-trend and taker flow
+                allow_long = (trend_1m_val >= -0.25) and (t_ratio >= 0.46)
+                allow_short = (trend_htf_val <= 0.0) and (trend_1m_val <= 0.25) and (t_ratio <= 0.54)
+                squeeze_ok = (bb_exp >= 0.95)
+                wait_factor = 0.50
 
             # Long Signal Condition
-            if allow_long and squeeze_ok and p_buy >= conf_thresh_buy and (p_buy - p_sell) >= edge_thresh and p_buy > (p_wait * 0.65):
+            if allow_long and squeeze_ok and p_buy >= conf_thresh_buy and (p_buy - p_sell) >= edge_thresh and p_buy > (p_wait * wait_factor):
                 action = "BUY"
                 confidence = float(p_buy)
                 action_code = self.cfg.CLASS_BUY
@@ -155,7 +158,7 @@ class TradingModel:
                 sl_ticks = int(round(sl_dist / tick_size))
 
             # Short Signal Condition
-            elif allow_short and squeeze_ok and p_sell >= conf_thresh_sell and (p_sell - p_buy) >= edge_thresh and p_sell > (p_wait * 0.65):
+            elif allow_short and squeeze_ok and p_sell >= conf_thresh_sell and (p_sell - p_buy) >= edge_thresh and p_sell > (p_wait * wait_factor):
                 action = "SELL"
                 confidence = float(p_sell)
                 action_code = self.cfg.CLASS_SELL

@@ -31,7 +31,8 @@ from kcex.engine.strategy import (
     BaseStrategy,
     EMACrossoverStrategy,
     StochasticRSIStrategy,
-    SmartStrategy
+    SmartStrategy,
+    MLStrategy
 )
 from kcex.market import ContractInfo
 from BACKTESTER.engine.config import BacktestConfig
@@ -155,6 +156,15 @@ class BacktestExecutionEngine:
                 preferred_direction=pref_dir,
                 cooldown_seconds=self.config.cooldown_seconds,
                 require_closed_candle=getattr(self.config, "ema_require_closed_candle", True),
+                auto_start_feed=False
+            )
+        elif strat_upper in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"):
+            sub_strat = MLStrategy(
+                market=self.market,
+                symbol=self.symbol,
+                interval=timeframe_to_kcex_interval(self.config.timeframe),
+                preferred_direction=pref_dir,
+                cooldown_seconds=self.config.cooldown_seconds,
                 auto_start_feed=False
             )
         else:
@@ -399,11 +409,24 @@ class BacktestExecutionEngine:
                 if atrs and atrs[-1] > 0:
                     atr_val = atrs[-1]
 
+        is_ml_sig = (signal.sub_strategy_name in ("ML_1M_MODEL", "MLStrategy")) or (getattr(self.config, "strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")) or getattr(self.config, "dynamic_tp", False)
+        if is_ml_sig and signal.metadata and "target_ticks" in signal.metadata:
+            effective_tp_ticks = int(signal.metadata["target_ticks"])
+        else:
+            effective_tp_ticks = self.config.tp_ticks
+
+        if is_ml_sig and signal.metadata and "target_sl_ticks" in signal.metadata:
+            effective_sl_ticks = int(signal.metadata["target_sl_ticks"])
+            effective_sl_roe = None
+        else:
+            effective_sl_ticks = self.config.sl_ticks
+            effective_sl_roe = self.config.sl_roe_pct
+
         exact_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
             entry_price=entry_price,
             price_unit=pu,
-            tp_ticks=self.config.tp_ticks,
+            tp_ticks=effective_tp_ticks,
             precision=ps,
             atr_value=atr_val
         )
@@ -411,8 +434,8 @@ class BacktestExecutionEngine:
             direction=direction,
             entry_price=entry_price,
             leverage=leverage,
-            sl_roe_pct=self.config.sl_roe_pct,
-            sl_ticks=self.config.sl_ticks,
+            sl_roe_pct=effective_sl_roe,
+            sl_ticks=effective_sl_ticks,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
             precision=ps,

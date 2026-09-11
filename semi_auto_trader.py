@@ -139,6 +139,7 @@ class TradePreset:
     sl_val: Optional[float] = 25.0  # 25% default ROE SL
     # Execution mode
     mode: EngineMode = EngineMode.LIVE
+    order_type: str = "MARKET"
 
     def summary_lines(self) -> list[str]:
         tp_desc = f"{self.tp_val:g} ticks" if self.tp_mode == "TICKS" else f"{self.tp_val:g}% ROE" if self.tp_mode == "ROE_PCT" else f"{self.tp_val:g}% price move" if self.tp_mode == "PRICE_PCT" else f"{self.tp_val:g} USDT"
@@ -151,7 +152,8 @@ class TradePreset:
             f"  • Leverage      : {colorize(f'{self.leverage}x Isolated', Style.YELLOW)}",
             f"  • Position Size : {colorize(qty_desc, Style.CYAN)}",
             f"  • Take Profit   : {colorize(tp_desc, Style.GREEN)} ({self.tp_mode})",
-            f"  • Stop Loss     : {colorize(sl_desc, Style.RED)} ({self.sl_mode})"
+            f"  • Stop Loss     : {colorize(sl_desc, Style.RED)} ({self.sl_mode})",
+            f"  • Order Type    : {colorize(self.order_type, Style.BOLD)}"
         ]
 
 
@@ -519,6 +521,74 @@ def prompt_stop_loss(
             return chosen_mode, val
         except ValueError:
             print(colorize("Please enter a valid numeric value.", Style.YELLOW))
+
+
+def prompt_order_type(current_order_type: str = "MARKET") -> str:
+    """Prompts for order execution type: MARKET (taker) or LIMIT (maker)."""
+    print(f"\n{Style.BOLD}[5] Order Execution Style:{Style.RESET}")
+    print(f"    1. MARKET (Taker) - Instant fill at current orderbook ask/bid")
+    print(f"    2. LIMIT  (Maker) - Post-only limit entry at top-of-book (0% maker fee, rests in book)")
+    def_choice = "2" if current_order_type.upper() == "LIMIT" else "1"
+    while True:
+        choice = input(f"Choose order execution [1/2] (Default {def_choice}): ").strip()
+        if not choice:
+            return "LIMIT" if def_choice == "2" else "MARKET"
+        if choice in ("1", "market", "MARKET", "taker", "TAKER"):
+            return "MARKET"
+        if choice in ("2", "limit", "LIMIT", "maker", "MAKER"):
+            return "LIMIT"
+        print(colorize("Invalid choice. Enter 1 for MARKET or 2 for LIMIT.", Style.YELLOW))
+
+
+def get_ml_recommendation(symbol: str, market: KCEXMarket) -> Optional[Dict[str, Any]]:
+    """Evaluates the trained ML model for the given symbol if available."""
+    try:
+        from ML_1M_MODEL.predict import Predictor
+        predictor = Predictor(symbol=symbol)
+        klines = market.get_klines(symbol, "Min1", limit=300)
+        if not klines or len(klines) < 200:
+            return None
+        import pandas as pd
+        df = pd.DataFrame([
+            {
+                "timestamp": int(k.get("openTime", 0)),
+                "open": float(k.get("open", 0)),
+                "high": float(k.get("high", 0)),
+                "low": float(k.get("low", 0)),
+                "close": float(k.get("close", 0)),
+                "volume": float(k.get("volume", 0)),
+            }
+            for k in klines
+        ])
+        return predictor.predict_from_dataframe(df)
+    except Exception:
+        return None
+
+
+def display_ai_recommendation_card(rec: Dict[str, Any], contract: ContractInfo) -> None:
+    """Displays formatted ML conviction and dynamic volatility targets."""
+    action = rec.get("action", "WAIT / HOLD")
+    conf = rec.get("confidence", 0.0) * 100.0
+    probs = rec.get("probabilities", {})
+    p_buy = probs.get("BUY", 0.0) * 100.0
+    p_sell = probs.get("SELL", 0.0) * 100.0
+    p_wait = probs.get("WAIT", 0.0) * 100.0
+    tp_t = rec.get("tp_ticks", 0)
+    sl_t = rec.get("sl_ticks", 0)
+    cur_p = rec.get("current_price", 0.0)
+    tp_p = rec.get("tp_price", 0.0)
+    sl_p = rec.get("sl_price", 0.0)
+    prec = contract.price_precision
+
+    act_color = Style.GREEN if action == "BUY" else Style.RED if action == "SELL" else Style.YELLOW
+    print(f"\n{Style.CYAN}------------------------------------------------------------------------------")
+    print(f"       🤖 MACHINE LEARNING ALPHA RECOMMENDATION ({contract.symbol})")
+    print(f"------------------------------------------------------------------------------{Style.RESET}")
+    print(f"  • AI Conviction  : {colorize(action, Style.BOLD + act_color)} ({conf:.1f}% conviction)")
+    print(f"  • Probabilities  : BUY: {p_buy:.1f}% │ SELL: {p_sell:.1f}% │ WAIT: {p_wait:.1f}%")
+    print(f"  • Dynamic Targets: TP: +{tp_t} ticks ({tp_p:.{prec}f} USDT) │ SL: -{sl_t} ticks ({sl_p:.{prec}f} USDT)")
+    print(f"  • Reference Price: {cur_p:.{prec}f} USDT │ R:R Ratio: {rec.get('rr_ratio', 0.0):.2f}")
+    print(f"{Style.CYAN}------------------------------------------------------------------------------{Style.RESET}")
 
 
 # =============================================================================
@@ -1410,17 +1480,31 @@ def execute_single_trade_cycle(
     actual_vol = vol_contracts
 
     if is_live:
-        print(f"\n{Style.CYAN}Submitting live MARKET order to KCEX...{Style.RESET}")
+        is_maker = (preset.order_type.upper() == "LIMIT")
+        order_type_str = "LIMIT" if is_maker else "MARKET"
+        limit_price = None
+        if is_maker:
+            ticker = market.get_ticker(preset.symbol)
+            limit_price = float(ticker.get("bid1", ref_price) if direction == OrderDirection.LONG else ticker.get("ask1", ref_price))
+            limit_price = round(limit_price, ps)
+            print(f"\n{Style.CYAN}Submitting live Post-Only LIMIT order at {limit_price:.{ps}f} USDT to KCEX...{Style.RESET}")
+        else:
+            print(f"\n{Style.CYAN}Submitting live MARKET order to KCEX...{Style.RESET}")
+
         try:
             # Note: Do not attach pre-trade TP/SL. Fill price must be captured first so TP/SL are 100% exact!
-            res = trader.create_order(
-                symbol=preset.symbol,
-                side=side_str,
-                vol_contracts=vol_contracts,
-                order_type="MARKET",
-                leverage=preset.leverage,
-                is_isolated=preset.is_isolated
-            )
+            order_kwargs = {
+                "symbol": preset.symbol,
+                "side": side_str,
+                "vol_contracts": vol_contracts,
+                "order_type": order_type_str,
+                "leverage": preset.leverage,
+                "is_isolated": preset.is_isolated
+            }
+            if is_maker and limit_price is not None:
+                order_kwargs["price"] = limit_price
+
+            res = trader.create_order(**order_kwargs)
             order_id = res.get("data", {}).get("orderId")
             print(f"{Style.GREEN}✓ Order accepted by KCEX! Order ID: {order_id}{Style.RESET}")
         except Exception as e:
@@ -1444,6 +1528,28 @@ def execute_single_trade_cycle(
                     break
             except Exception:
                 pass
+
+        # If not confirmed in open_positions, check if limit order is resting in book
+        if not position_id and is_maker and order_id:
+            print(f"{Style.YELLOW}Limit order #{order_id} resting in orderbook (cancel_if_unfilled=False). Waiting for fill (press Ctrl+C to cancel)...{Style.RESET}")
+            try:
+                while not position_id:
+                    time.sleep(1.0)
+                    positions = trader.get_open_positions(preset.symbol)
+                    for p in positions:
+                        h_vol = float(p.get("holdVol", 0) or p.get("vol", 0))
+                        if h_vol > 0:
+                            position_id = int(p.get("positionId"))
+                            actual_entry_price = float(p.get("openAvgPrice") or p.get("holdAvgPrice") or ref_price)
+                            actual_vol = int(h_vol)
+                            break
+            except KeyboardInterrupt:
+                print(f"\n{Style.YELLOW}Cancelling resting limit order #{order_id}...{Style.RESET}")
+                try:
+                    trader.cancel_order(str(order_id))
+                except Exception as ce:
+                    print(f"Cancel notice: {ce}")
+                return False
 
         # If not confirmed in open_positions, inspect history_orders to see if order was cancelled or rejected
         if not position_id and order_id:
@@ -1485,8 +1591,14 @@ def execute_single_trade_cycle(
             print(f"\n{Style.RED}✗ Could not confirm position fill on KCEX (position was NOT opened). Aborting trade.{Style.RESET}\n")
             return False
     else:
-        print(f"\n{Style.GREEN}✓ [DRY-RUN] Simulated MARKET order executed at current market price!{Style.RESET}")
-        actual_entry_price = ref_price
+        if preset.order_type.upper() == "LIMIT":
+            ticker = market.get_ticker(preset.symbol)
+            limit_p = float(ticker.get("bid1", ref_price) if direction == OrderDirection.LONG else ticker.get("ask1", ref_price))
+            actual_entry_price = round(limit_p, ps)
+            print(f"\n{Style.GREEN}✓ [DRY-RUN] Simulated Post-Only LIMIT order filled at {actual_entry_price:.{ps}f} USDT (Zero Maker Fee)!{Style.RESET}")
+        else:
+            print(f"\n{Style.GREEN}✓ [DRY-RUN] Simulated MARKET order executed at current market price!{Style.RESET}")
+            actual_entry_price = ref_price
 
     # Calculate actual liquidation price on filled entry
     actual_liq = risk.calculate_liquidation_price(
@@ -1668,9 +1780,30 @@ def main():
                 print(f"\n{Style.YELLOW}Modifying settings (press Enter to keep any previous value):{Style.RESET}")
 
         # Fresh or edited configuration setup
-        direction = prompt_direction()
         preset.symbol = prompt_symbol(market, preset.symbol)
         contract = market.get_contract_detail(preset.symbol)
+
+        # Evaluate trained Machine Learning Alpha model if available
+        ml_rec = get_ml_recommendation(preset.symbol, market)
+        applied_ai = False
+        if ml_rec:
+            display_ai_recommendation_card(ml_rec, contract)
+            action = ml_rec.get("action", "WAIT / HOLD")
+            if action in ("BUY", "SELL"):
+                ai_prompt = f"\n{Style.BOLD}Apply AI recommendation for {preset.symbol}? [A=Apply AI / m=Manual] (Default: A): {Style.RESET}"
+                ai_choice = input(ai_prompt).strip().lower()
+                if ai_choice in ("", "a", "apply", "y", "yes"):
+                    direction = OrderDirection.LONG if action == "BUY" else OrderDirection.SHORT
+                    preset.tp_mode = "TICKS"
+                    preset.tp_val = float(ml_rec.get("tp_ticks", 2))
+                    preset.sl_mode = "TICKS"
+                    preset.sl_val = float(ml_rec.get("sl_ticks", 3))
+                    applied_ai = True
+                    print(f"{Style.GREEN}✓ Applied AI Parameters: {direction.value} | TP: +{preset.tp_val:g} ticks | SL: -{preset.sl_val:g} ticks{Style.RESET}")
+
+        if not applied_ai:
+            direction = prompt_direction()
+
         preset.leverage = prompt_leverage(contract, preset.leverage)
         preset.qty_mode, preset.qty_val, _ = prompt_quantity(
             contract=contract,
@@ -1680,22 +1813,25 @@ def main():
             current_qty_mode=preset.qty_mode,
             current_qty_val=preset.qty_val
         )
-        preset.tp_mode, preset.tp_val = prompt_take_profit(
-            contract=contract,
-            direction=direction,
-            leverage=preset.leverage,
-            market=market,
-            current_mode=preset.tp_mode,
-            current_val=preset.tp_val
-        )
-        preset.sl_mode, preset.sl_val = prompt_stop_loss(
-            contract=contract,
-            direction=direction,
-            leverage=preset.leverage,
-            market=market,
-            current_mode=preset.sl_mode,
-            current_val=preset.sl_val
-        )
+        if not applied_ai:
+            preset.tp_mode, preset.tp_val = prompt_take_profit(
+                contract=contract,
+                direction=direction,
+                leverage=preset.leverage,
+                market=market,
+                current_mode=preset.tp_mode,
+                current_val=preset.tp_val
+            )
+            preset.sl_mode, preset.sl_val = prompt_stop_loss(
+                contract=contract,
+                direction=direction,
+                leverage=preset.leverage,
+                market=market,
+                current_mode=preset.sl_mode,
+                current_val=preset.sl_val
+            )
+
+        preset.order_type = prompt_order_type(preset.order_type)
 
         # Execute Trade
         executed = execute_single_trade_cycle(

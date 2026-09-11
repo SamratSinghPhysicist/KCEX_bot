@@ -162,23 +162,43 @@ class ModelConfig:
     })
 
 
-def get_model_config(symbol: str) -> ModelConfig:
+def get_model_config(symbol: str, preset: str = "rapid") -> ModelConfig:
     """Returns the empirically verified, hyperparameter-tuned ModelConfig for a given symbol."""
     clean_sym = normalize_symbol_name(symbol)
     if "TRUMP" in clean_sym:
-        return ModelConfig(
-            symbol="TRUMPUSDT",
-            horizon_bars=45,
-            min_profit_pct=0.0080,
-            tp_atr_mult=3.5,
-            sl_atr_mult=1.8,
-            label_tp_mult=3.5,
-            label_sl_mult=1.8,
-            confidence_threshold=0.45,
-            confidence_threshold_sell=0.45,
-            edge_threshold=0.03,
-            slippage_ticks=2.0
-        )
+        if preset == "macro":
+            return ModelConfig(
+                symbol="TRUMPUSDT",
+                horizon_bars=45,
+                min_profit_pct=0.0080,
+                tp_atr_mult=3.5,
+                sl_atr_mult=1.8,
+                label_tp_mult=3.5,
+                label_sl_mult=1.8,
+                confidence_threshold=0.45,
+                confidence_threshold_sell=0.45,
+                edge_threshold=0.03,
+                macro_regime_filter=True,
+                embargo_bars=45,
+                slippage_ticks=2.0
+            )
+        else:
+            # Rapid Scalping Preset (High Frequency: ~80-100 trades/mo, 10-15m horizons, rapid compounding)
+            return ModelConfig(
+                symbol="TRUMPUSDT",
+                horizon_bars=12,
+                min_profit_pct=0.0028,
+                tp_atr_mult=1.9,
+                sl_atr_mult=1.0,
+                label_tp_mult=1.9,
+                label_sl_mult=1.0,
+                confidence_threshold=0.38,
+                confidence_threshold_sell=0.38,
+                edge_threshold=0.015,
+                macro_regime_filter=False,
+                embargo_bars=20,
+                slippage_ticks=2.0
+            )
     elif "DOGE" in clean_sym:
         return ModelConfig(
             symbol="DOGEUSDT",

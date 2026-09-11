@@ -111,75 +111,131 @@ def prompt_user_settings():
     print("💡 Tip: Press [Enter] on any prompt to accept the default from settings.py.\n")
 
     # 0. Quantitative Strategy Preset Selection
-    active_preset_name = get_setting("ACTIVE_PRESET", "DOGE_V2_2_RATCHET_CHAMPION").upper()
+    active_preset_name = get_setting("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER").upper()
     print("0. Strategy Preset Selection:")
-    print("   [1] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
-    print("   [2] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
-    print("   [3] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
-    print("   [4] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
+    print("   [1] TRUMP_ML_RAPID_SCALPER         -> 1M ML Alpha Engine (+39.9% Net, 1.98 PF, 3.27 Sharpe) [RECOMMENDED]")
+    print("   [2] DOGE_ML_MOMENTUM               -> 1M ML Momentum Classifier for DOGE Futures")
+    print("   [3] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
+    print("   [4] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
+    print("   [5] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
+    print("   [6] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
+
+    preset_map = {
+        "1": "TRUMP_ML_RAPID_SCALPER",
+        "2": "DOGE_ML_MOMENTUM",
+        "3": "DOGE_V2_2_RATCHET_CHAMPION",
+        "4": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
+        "5": "TRUMP_LEGACY_BASELINE",
+        "6": "CUSTOM"
+    }
 
     def_preset_choice = "1"
-    if active_preset_name == "DOGE_ASYMMETRIC_MOMENTUM_10T2T":
-        def_preset_choice = "2"
-    elif active_preset_name == "TRUMP_LEGACY_BASELINE":
-        def_preset_choice = "3"
-    elif active_preset_name == "CUSTOM":
-        def_preset_choice = "4"
+    for k, v in preset_map.items():
+        if v == active_preset_name:
+            def_preset_choice = k
+            break
 
     preset_choice = input(f"   Select Preset [default: {def_preset_choice} ({active_preset_name})]: ").strip()
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3"):
-        preset_map = {
-            "1": "DOGE_V2_2_RATCHET_CHAMPION",
-            "2": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
-            "3": "TRUMP_LEGACY_BASELINE"
-        }
+    if preset_choice in ("1", "2", "3", "4", "5"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
+        is_ml_preset = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+
         print(f"\n   ✅ Loaded Preset: {preset_cfg.get('name', chosen_preset)}")
         print(f"      • Symbol: {preset_cfg.get('symbol')}")
-        print(f"      • Take Profit: +{preset_cfg.get('tp_ticks')} ticks | Stop Loss: {preset_cfg.get('sl_ticks')} ticks ({preset_cfg.get('sl_mode')})")
-        print(f"      • Signal Mode: {'INVERTED (Exhaustion Fading)' if preset_cfg.get('invert_signal') else 'DIRECT (Momentum)'}")
-        print(f"      • Execution Style: {preset_cfg.get('execution_style')}")
-        print(f"      • Tick Ratchet: {'ENABLED' if preset_cfg.get('ratchet_enabled') else 'DISABLED'}")
+        print(f"      • Strategy: {preset_cfg.get('strategy_mode', 'ML_1M')}")
+        if is_ml_preset:
+            print(f"      • Take Profit: Dynamic ATR (~{preset_cfg.get('tp_atr_mult', 1.9)}x ATR) | Stop Loss: Dynamic ATR (~{preset_cfg.get('sl_atr_mult', 1.0)}x ATR)")
+            print(f"      • Signal Mode: DIRECT (Momentum / Machine Learning Alpha)")
+        else:
+            print(f"      • Take Profit: +{preset_cfg.get('tp_ticks', 5)} ticks | Stop Loss: {preset_cfg.get('sl_ticks', 2)} ticks")
+            print(f"      • Signal Mode: {'INVERTED (Exhaustion Fading)' if preset_cfg.get('invert_signal') else 'DIRECT (Momentum)'}")
+        print(f"      • Execution Style: {preset_cfg.get('execution_style', 'PURE_MARKET')}")
+        print(f"      • Target Leverage: {preset_cfg.get('leverage', 30)}x isolated")
 
-        # Prompt for mode
+        # 1. Execution Mode
         print("\n1. Execution Mode:")
         print("   [1] LIVE TRADING    -> Real orders submitted to KCEX using wallet balance.")
         print("   [2] SIMULATED (Dry) -> Virtual orders with real-time live ticker data (0 risk).")
         mode_str = input(f"   Select Mode [default: {'1 (LIVE)' if default_mode == 'live' else '2 (SIMULATED)'}]: ").strip()
         mode_val = EngineMode.DRY_RUN if mode_str == "2" else (EngineMode.LIVE if mode_str == "1" else (EngineMode.LIVE if default_mode == "live" else EngineMode.DRY_RUN))
 
-        sym_p = preset_cfg.get("symbol", "DOGE_USDT")
-        v_mode, v_mult = ("MULTIPLIER", 1.0) if "DOGE" in sym_p else ("MULTIPLIER", 2.0)
+        # 2. Order Execution Style (Maker vs Taker)
+        def_exec_style = preset_cfg.get("execution_style", "PURE_MARKET")
+        def_style_num = "2" if def_exec_style == "MAKER_HYBRID" else "1"
+        print("\n2. Order Execution Style:")
+        print("   [1] MARKET (Taker)  -> Immediate fill at current market price.")
+        print("   [2] LIMIT (Maker)   -> Post-only at best bid/ask (rests in orderbook, 0 taker fees/rebates).")
+        style_str = input(f"   Select Style [default: {def_style_num} ({'LIMIT' if def_style_num == '2' else 'MARKET'})]: ").strip()
+        if style_str in ("2", "LIMIT", "limit", "maker", "MAKER"):
+            chosen_exec_style = "MAKER_HYBRID"
+            chosen_order_type = "LIMIT"
+        else:
+            chosen_exec_style = "PURE_MARKET"
+            chosen_order_type = "MARKET"
+
+        # 3. Position Sizing
+        sym_p = preset_cfg.get("symbol", "TRUMP_USDT")
+        def_vol_mult = float(preset_cfg.get("volume_multiplier", 1.0))
+        print("\n3. Position Sizing (Volume Multiplier):")
+        print(f"   Enter multiplier of minimum contract quantity (1.0 = 1 min contract, 2.0 = 2 min contracts)")
+        print(f"   💡 Note: 1.0x (1 contract) allows smooth trading on low margin / 20x-30x leverage.")
+        vol_input = input(f"   Volume Multiplier [default: {def_vol_mult:g}x]: ").strip()
+        try:
+            vol_mult = float(vol_input) if vol_input else def_vol_mult
+        except ValueError:
+            vol_mult = def_vol_mult
+
+        # 4. Session Trade Target
+        def_max_trades = int(preset_cfg.get("max_trades", 0))
+        print("\n4. Session Trade Target (Max Trades Limit):")
+        print("   Enter maximum trades before stopping (0 = Unlimited / Continuous Scalping)")
+        max_input = input(f"   Max Trades [default: {def_max_trades} ({'Unlimited' if def_max_trades == 0 else str(def_max_trades) + ' trades'})]: ").strip()
+        try:
+            max_trades = int(max_input) if max_input else def_max_trades
+        except ValueError:
+            max_trades = def_max_trades
+
+        # Resolve strategy, TP/SL, and ratchet settings
+        strat_mode = preset_cfg.get("strategy_mode", "ML_1M" if is_ml_preset else "STOCH_RSI")
+        dyn_tp = preset_cfg.get("dynamic_tp", True if is_ml_preset else False)
+        inv_sig = preset_cfg.get("invert_signal", False if is_ml_preset else True)
+        ratch_en = preset_cfg.get("ratchet_enabled", False if is_ml_preset else True)
+        tp_ticks = preset_cfg.get("tp_ticks", 0 if is_ml_preset else 5)
+        sl_ticks = preset_cfg.get("sl_ticks", 0 if is_ml_preset else 2)
+        sl_mode = preset_cfg.get("sl_mode", "TICKS")
+        sl_roe = preset_cfg.get("sl_roe_pct", 25.0)
 
         print("=" * 78 + "\n")
         return ExecutionConfig(
             symbol=sym_p,
             direction=OrderDirection.LONG,
             mode=mode_val,
-            leverage=75,
+            leverage=int(preset_cfg.get("leverage", 30)),
             is_isolated=True,
             cooldown_seconds=default_cool,
-            volume_mode=v_mode,
-            volume_multiplier=v_mult,
-            tp_ticks=preset_cfg.get("tp_ticks", 5),
-            dynamic_tp=False,
-            sl_mode=preset_cfg.get("sl_mode", "TICKS"),
-            sl_ticks=preset_cfg.get("sl_ticks", 2),
-            sl_roe_pct=preset_cfg.get("sl_roe_pct", 25.0),
-            max_trades=default_max,
-            strategy_mode=preset_cfg.get("strategy_mode", "STOCH_RSI"),
+            volume_mode="MULTIPLIER",
+            volume_multiplier=vol_mult,
+            tp_ticks=tp_ticks,
+            dynamic_tp=dyn_tp,
+            sl_mode=sl_mode,
+            sl_ticks=sl_ticks,
+            sl_roe_pct=sl_roe,
+            max_trades=max_trades,
+            strategy_mode=strat_mode,
             bi_directional=True,
-            invert_signal=preset_cfg.get("invert_signal", True),
+            invert_signal=inv_sig,
             dynamic_regime_fading=preset_cfg.get("dynamic_regime_fading", False),
             adx_fading_cutoff=preset_cfg.get("adx_fading_cutoff", 25.0),
-            execution_style=preset_cfg.get("execution_style", "MAKER_HYBRID"),
+            execution_style=chosen_exec_style,
+            order_type=chosen_order_type,
             maker_queue_timeout_seconds=preset_cfg.get("maker_queue_timeout_seconds", 10.0),
-            resting_limit_tp=preset_cfg.get("resting_limit_tp", True),
-            ratchet_enabled=preset_cfg.get("ratchet_enabled", True),
+            cancel_if_unfilled=preset_cfg.get("cancel_if_unfilled", False),
+            resting_limit_tp=preset_cfg.get("resting_limit_tp", True if chosen_exec_style == "MAKER_HYBRID" else False),
+            ratchet_enabled=ratch_en,
             ratchet_trigger_ticks=preset_cfg.get("ratchet_trigger_ticks", 1.0),
             ratchet_stall_seconds=preset_cfg.get("ratchet_stall_seconds", 10.0),
             ratchet_tighten_ticks=preset_cfg.get("ratchet_tighten_ticks", 1.0),
@@ -923,10 +979,11 @@ def parse_args():
             "ema", "ema_crossover", "EMA", "EMA_CROSSOVER",
             "stoch_rsi", "stochastic_rsi", "STOCH_RSI", "STOCHASTIC_RSI", "stoch", "STOCH",
             "smart", "smart_strategy", "SMART", "SMART_STRATEGY",
-            "microstructure", "cycle", "MICROSTRUCTURE", "CYCLE"
+            "microstructure", "cycle", "MICROSTRUCTURE", "CYCLE",
+            "ml", "ml_1m", "ml_model", "ml_1m_model", "ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"
         ],
         default=None,
-        help="Strategy type: 'smart_strategy' [3], 'ema_crossover' [1], 'stoch_rsi' [2]"
+        help="Strategy type: 'ML_1M_MODEL', 'smart_strategy', 'ema_crossover', 'stoch_rsi'"
     )
     parser.add_argument(
         "--order-type",
@@ -940,6 +997,12 @@ def parse_args():
         type=float,
         default=None,
         help="Timeout in seconds for unfilled limit order cancellation (default: 10.0)"
+    )
+    parser.add_argument(
+        "--cancel-unfilled",
+        action="store_true",
+        default=None,
+        help="Cancel unfilled limit orders upon timeout (default: False, orders rest in book)"
     )
     parser.add_argument(
         "--smart-atr-filter",
@@ -1282,17 +1345,17 @@ def main():
         dir_enum = OrderDirection.LONG if dir_raw == "LONG" else OrderDirection.SHORT
         mode_enum = EngineMode.LIVE if mode_raw == "live" else EngineMode.DRY_RUN
 
-        vol_mode = (args.volume_mode or get_setting("VOLUME_MODE", "MULTIPLIER")).upper()
+        vol_mode = (args.volume_mode or preset_cfg.get("volume_mode") or get_setting("VOLUME_MODE", "MULTIPLIER")).upper()
         if args.volume_multiplier is not None:
             vol_mult = args.volume_multiplier
+        elif "volume_multiplier" in preset_cfg:
+            vol_mult = float(preset_cfg["volume_multiplier"])
         elif hasattr(settings, "get_default_quantity_for_symbol"):
             _, vol_mult = settings.get_default_quantity_for_symbol(sym)
-        elif "TRUMP" in sym:
-            vol_mult = 2.0
         elif "DOGE" in sym:
             vol_mult = 1.0
         else:
-            vol_mult = get_setting("VOLUME_MULTIPLIER", 2.0)
+            vol_mult = 1.0 if "ML" in active_preset_name else 2.0
 
         vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 2) if vol_mode == "CONTRACTS" else None)
 
@@ -1302,19 +1365,21 @@ def main():
         elif args.dynamic_tp:
             dynamic_tp = True
         else:
-            dynamic_tp = get_setting("DYNAMIC_TP", False)
+            dynamic_tp = preset_cfg.get("dynamic_tp", get_setting("DYNAMIC_TP", False))
 
         sl_mode = (args.sl_mode or preset_cfg.get("sl_mode") or get_setting("SL_MODE", "ROE")).upper()
         sl_ticks = args.sl_ticks if args.sl_ticks is not None else (preset_cfg.get("sl_ticks") if "sl_ticks" in preset_cfg else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None))
         sl_price_pct = args.sl_price_pct if args.sl_price_pct is not None else (get_setting("SL_PRICE_PCT", 0.5) if sl_mode == "PRICE_PCT" else None)
         sl_roe = args.sl_roe if args.sl_roe is not None else (preset_cfg.get("sl_roe_pct") if "sl_roe_pct" in preset_cfg else get_setting("SL_ROE_PCT", 25.0))
 
-        lev = args.leverage if args.leverage is not None else get_setting("LEVERAGE", 75)
-        cooldown = args.cooldown if args.cooldown is not None else get_setting("COOLDOWN_SECONDS", 30.0)
-        max_trades = args.max_trades if args.max_trades is not None else get_setting("MAX_TRADES", 3)
+        lev = args.leverage if args.leverage is not None else preset_cfg.get("leverage", get_setting("LEVERAGE", 30))
+        cooldown = args.cooldown if args.cooldown is not None else preset_cfg.get("cooldown_seconds", get_setting("COOLDOWN_SECONDS", 10.0))
+        max_trades = args.max_trades if args.max_trades is not None else (preset_cfg.get("max_trades") if "max_trades" in preset_cfg else get_setting("MAX_TRADES", 0))
         poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.3)
 
         strat_raw = (args.strategy or preset_cfg.get("strategy_mode") or get_setting("STRATEGY_MODE", "STOCH_RSI")).upper()
+        is_ml_strat = strat_raw in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+
         if args.single_direction:
             bi_directional = False
         elif args.bi_directional:
@@ -1326,17 +1391,29 @@ def main():
                 bi_directional = get_setting("STOCH_BI_DIRECTIONAL", True)
             elif strat_raw in ("SMART", "SMART_STRATEGY"):
                 bi_directional = True
+            elif is_ml_strat:
+                bi_directional = True
             else:
                 bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
 
+        # For ML strategy, ensure dynamic TP is enabled, ratchet disabled, and direct signal by default
+        if is_ml_strat and not args.fixed_tp:
+            dynamic_tp = True
+
         # Quantitative parameters resolution
-        inv_sig = args.invert_signal if args.invert_signal is not None else preset_cfg.get("invert_signal", get_setting("INVERT_SIGNAL", False))
+        if is_ml_strat and args.invert_signal is None and "invert_signal" not in preset_cfg:
+            inv_sig = False
+        else:
+            inv_sig = args.invert_signal if args.invert_signal is not None else preset_cfg.get("invert_signal", get_setting("INVERT_SIGNAL", False))
         dyn_fading = preset_cfg.get("dynamic_regime_fading", get_setting("DYNAMIC_REGIME_FADING", False))
         adx_cutoff = preset_cfg.get("adx_fading_cutoff", get_setting("ADX_FADING_CUTOFF", 25.0))
         exec_style = (args.execution_style or preset_cfg.get("execution_style") or get_setting("EXECUTION_STYLE", "PURE_MARKET")).upper()
         maker_timeout = preset_cfg.get("maker_queue_timeout_seconds", get_setting("MAKER_QUEUE_TIMEOUT_SECONDS", 10.0))
         resting_tp = preset_cfg.get("resting_limit_tp", get_setting("RESTING_LIMIT_TP", True))
-        ratch_en = args.ratchet_enabled if args.ratchet_enabled is not None else preset_cfg.get("ratchet_enabled", get_setting("RATCHET_ENABLED", False))
+        if is_ml_strat and getattr(args, "ratchet", None) is None and "ratchet_enabled" not in preset_cfg:
+            ratch_en = False
+        else:
+            ratch_en = args.ratchet_enabled if hasattr(args, "ratchet_enabled") and args.ratchet_enabled is not None else preset_cfg.get("ratchet_enabled", get_setting("RATCHET_ENABLED", False))
         ratch_trig = args.ratchet_trigger_ticks if args.ratchet_trigger_ticks is not None else preset_cfg.get("ratchet_trigger_ticks", get_setting("RATCHET_TRIGGER_TICKS", 1.0))
         ratch_stall = args.ratchet_stall_seconds if args.ratchet_stall_seconds is not None else preset_cfg.get("ratchet_stall_seconds", get_setting("RATCHET_STALL_SECONDS", 10.0))
         ratch_tight = args.ratchet_tighten_ticks if args.ratchet_tighten_ticks is not None else preset_cfg.get("ratchet_tighten_ticks", get_setting("RATCHET_TIGHTEN_TICKS", 1.0))
@@ -1385,6 +1462,7 @@ def main():
 
         order_type_val = (args.order_type or get_setting("ORDER_TYPE", "MARKET")).upper()
         limit_timeout_val = args.limit_timeout if args.limit_timeout is not None else get_setting("LIMIT_ORDER_TIMEOUT_SECONDS", 10.0)
+        cancel_unfilled_val = args.cancel_unfilled if args.cancel_unfilled is not None else get_setting("CANCEL_IF_UNFILLED", False)
 
         smart_atr_filter_val = args.smart_atr_filter if args.smart_atr_filter is not None else get_setting("SMART_ATR_FILTER_ENABLED", True)
         smart_min_atr_ticks_val = args.smart_min_atr_ticks if args.smart_min_atr_ticks is not None else get_setting("SMART_MIN_ATR_TICKS", 2.5)
@@ -1434,6 +1512,7 @@ def main():
             stoch_require_closed_candle=get_setting("STOCH_REQUIRE_CLOSED_CANDLE", True),
             order_type=order_type_val,
             limit_order_timeout_seconds=limit_timeout_val,
+            cancel_if_unfilled=cancel_unfilled_val,
             smart_atr_filter_enabled=smart_atr_filter_val,
             smart_min_atr_ticks=smart_min_atr_ticks_val,
             smart_chop_ceiling=smart_chop_ceiling_val,
@@ -1517,8 +1596,12 @@ def main():
     is_ema = config.strategy_mode in ("EMA", "EMA_CROSSOVER")
     is_stoch = config.strategy_mode in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH")
     is_micro = config.strategy_mode == "MICROSTRUCTURE"
+    is_ml = config.strategy_mode in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
 
-    if is_ema:
+    if is_ml:
+        strat_desc = "Machine Learning 1-Minute Multi-Horizon Alpha (Autonomous Bi-Directional)"
+        bias_desc = "Autonomous (AI Dynamic Signal)"
+    elif is_ema:
         preset_info = getattr(config, "ema_preset", "5/13")
         interval_info = getattr(config, "ema_interval", "Min1")
         if config.bi_directional:
@@ -1548,7 +1631,21 @@ def main():
         strat_desc = f"Directional Cycle ({config.direction.value})"
         bias_desc = config.direction.value
 
-    tp_mode_desc = "(Dynamic via signals: 1-3 pu)" if config.dynamic_tp else f"(Fixed: strictly {config.tp_ticks} pu)"
+    if is_ml:
+        tp_display = "Dynamic ATR (~1.9x ATR, calibrated dynamically per signal)"
+        sl_display = "Dynamic ATR (~1.0x ATR, calibrated dynamically per signal)"
+        sig_mode_str = "DIRECT (Momentum / Machine Learning Alpha)"
+        ratch_desc = "DISABLED (Preserves full ML expansion targets)" if not getattr(config, "ratchet_enabled", False) else f"ENABLED (T1: +{config.ratchet_trigger_ticks:g}t -> -{config.ratchet_tighten_ticks:g}t, T2: +{config.ratchet_breakeven_ticks:g}t -> BE)"
+    else:
+        tp_mode_desc = "(Dynamic via signals: 1-3 pu)" if config.dynamic_tp else f"(Fixed: strictly {config.tp_ticks} pu)"
+        tp_display = f"+{config.tp_ticks} pu ticks {tp_mode_desc}"
+        sl_display = f"-{sl_desc}"
+        sig_mode_str = "INVERTED (Exhaustion Fading)" if getattr(config, "invert_signal", False) else "DIRECT (Momentum)"
+        ratch_desc = (
+            f"ENABLED (T1: +{config.ratchet_trigger_ticks:g}t/{config.ratchet_stall_seconds:.0f}s -> -{config.ratchet_tighten_ticks:g}t, T2: +{config.ratchet_breakeven_ticks:g}t -> BE)"
+            if getattr(config, "ratchet_enabled", False)
+            else "DISABLED"
+        )
 
     print("==============================================================================")
     print("                      CONFIGURED ENGINE PARAMETERS")
@@ -1557,14 +1654,8 @@ def main():
     print(f"  • Strategy Preset   : {preset_label}")
     print(f"  • Symbol & Mode     : {config.symbol} | {config.mode.value.upper()} | Direction: {bias_desc}")
     print(f"  • Strategy Engine   : {strat_desc}")
-    sig_mode_str = "INVERTED (Exhaustion Fading)" if getattr(config, "invert_signal", False) else "DIRECT (Momentum)"
     print(f"  • Signal Paradigm   : {sig_mode_str}")
-    print(f"  • Execution Style   : {getattr(config, 'execution_style', 'PURE_MARKET')}")
-    ratch_desc = (
-        f"ENABLED (T1: +{config.ratchet_trigger_ticks:g}t/{config.ratchet_stall_seconds:.0f}s -> -{config.ratchet_tighten_ticks:g}t, T2: +{config.ratchet_breakeven_ticks:g}t -> BE)"
-        if getattr(config, "ratchet_enabled", False)
-        else "DISABLED"
-    )
+    print(f"  • Execution Style   : {getattr(config, 'execution_style', 'PURE_MARKET')} ({getattr(config, 'order_type', 'MARKET')})")
     print(f"  • Tick Ratchet      : {ratch_desc}")
     slip_desc = (
         f"ENABLED ({config.slippage_ticks} ticks adverse)"
@@ -1576,8 +1667,8 @@ def main():
     print(f"  • Trade Quantity    : {vol_desc}")
     print(f"    ⚠️  CRITICAL NOTE : Trade Quantity (Volume) != Margin!")
     print(f"                       Margin deducted = Trade Quantity / {config.leverage}x leverage")
-    print(f"  • Min-Profit TP     : +{config.tp_ticks} pu ticks {tp_mode_desc}")
-    print(f"  • Stop Loss         : -{sl_desc}")
+    print(f"  • Min-Profit TP     : {tp_display}")
+    print(f"  • Stop Loss         : {sl_display}")
     print(f"  • Cooldown          : {config.cooldown_seconds}s | Max Trades: {'Unlimited' if config.max_trades == 0 else config.max_trades}")
     print("==============================================================================\n")
 

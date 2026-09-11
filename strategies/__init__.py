@@ -48,10 +48,16 @@ from strategies.volatility_regime import (
     compute_choppiness_index,
     AdaptiveRegimeSwitcher
 )
+from strategies.ml_strategy import (
+    MLStrategy,
+    MLSubStrategy
+)
 
 __all__ = [
     "BaseStrategy",
     "BaseSubStrategy",
+    "MLStrategy",
+    "MLSubStrategy",
     "EMACrossoverStrategy",
     "EMACrossoverSubStrategy",
     "EMA_PRESETS",

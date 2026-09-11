@@ -77,24 +77,28 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     available_symbols = list(catalog.keys())
 
     # 0. Strategy Preset Selection
-    active_preset_name = getattr(settings, "ACTIVE_PRESET", "TRUMP_MARKET_SLIPPAGE_RESILIENT").upper()
+    active_preset_name = getattr(settings, "ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER").upper()
     print("\n0. Strategy Preset Selection:")
-    print("   [1] TRUMP_MARKET_SLIPPAGE_RESILIENT -> Market Taker Entry + Resting TP (+10t/-5t + Ratchet + ATR targets + Resilient) [NEW]")
-    print("   [2] DOGE_MARKET_SLIPPAGE_RESILIENT  -> Market Taker Entry + Inverted Reversion + Resting TP (+10t/-4t + Resilient) [NEW]")
-    print("   [3] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
-    print("   [4] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
-    print("   [5] TRUMP_V3_CHAMPION_MAKER_RATCHET -> Phase V3 Maker Hybrid Champion for TRUMP (6t TP / 3t SL + Ratchet)")
-    print("   [6] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
-    print("   [7] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
+    print("   [1] TRUMP_ML_RAPID_SCALPER          -> Machine Learning 1M Alpha (Multi-Horizon HistGBDT + Dynamic ATR TP/SL) [AI CHAMPION]")
+    print("   [2] DOGE_ML_MOMENTUM               -> Machine Learning 1M Momentum (HistGBDT Multi-Horizon + Volatility Scaling) [AI CHAMPION]")
+    print("   [3] TRUMP_MARKET_SLIPPAGE_RESILIENT -> Market Taker Entry + Resting TP (+10t/-5t + Ratchet + ATR targets + Resilient)")
+    print("   [4] DOGE_MARKET_SLIPPAGE_RESILIENT  -> Market Taker Entry + Inverted Reversion + Resting TP (+10t/-4t + Resilient)")
+    print("   [5] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
+    print("   [6] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
+    print("   [7] TRUMP_V3_CHAMPION_MAKER_RATCHET -> Phase V3 Maker Hybrid Champion for TRUMP (6t TP / 3t SL + Ratchet)")
+    print("   [8] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
+    print("   [9] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
 
     preset_map = {
-        "1": "TRUMP_MARKET_SLIPPAGE_RESILIENT",
-        "2": "DOGE_MARKET_SLIPPAGE_RESILIENT",
-        "3": "DOGE_V2_2_RATCHET_CHAMPION",
-        "4": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
-        "5": "TRUMP_V3_CHAMPION_MAKER_RATCHET",
-        "6": "TRUMP_LEGACY_BASELINE",
-        "7": "CUSTOM"
+        "1": "TRUMP_ML_RAPID_SCALPER",
+        "2": "DOGE_ML_MOMENTUM",
+        "3": "TRUMP_MARKET_SLIPPAGE_RESILIENT",
+        "4": "DOGE_MARKET_SLIPPAGE_RESILIENT",
+        "5": "DOGE_V2_2_RATCHET_CHAMPION",
+        "6": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
+        "7": "TRUMP_V3_CHAMPION_MAKER_RATCHET",
+        "8": "TRUMP_LEGACY_BASELINE",
+        "9": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -107,7 +111,7 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4", "5", "6"):
+    if preset_choice in ("1", "2", "3", "4", "5", "6", "7", "8"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
 
@@ -204,29 +208,33 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             maker_fee = (float(m_input) / 100.0) if m_input else 0.0
             taker_fee = (float(t_input) / 100.0) if t_input else 0.0001
 
-        v_mode, v_mult = ("MULTIPLIER", 1.0) if "DOGE" in p_sym else ("MULTIPLIER", 2.0)
+        is_ml = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+        v_mult = float(preset_cfg.get("volume_multiplier", 1.0 if is_ml else (1.0 if "DOGE" in p_sym else 2.0)))
+        lev_val = int(preset_cfg.get("leverage", 30 if is_ml else 75))
+
         config = BacktestConfig(
             symbol=p_sym,
             timeframe=p_tf,
-            strategy_mode=preset_cfg.get("strategy_mode", "STOCH_RSI"),
+            strategy_mode=preset_cfg.get("strategy_mode", "ML_1M" if is_ml else "STOCH_RSI"),
             stoch_preset=preset_cfg.get("stoch_preset", "FAST_SCALP"),
             start_time=start_val,
             end_time=end_val,
-            volume_mode=v_mode,
+            volume_mode="MULTIPLIER",
             volume_multiplier=v_mult,
-            tp_ticks=preset_cfg.get("tp_ticks", 5),
+            tp_ticks=preset_cfg.get("tp_ticks", 0 if is_ml else 5),
+            dynamic_tp=preset_cfg.get("dynamic_tp", True if is_ml else False),
             sl_mode=preset_cfg.get("sl_mode", "TICKS"),
-            sl_ticks=preset_cfg.get("sl_ticks", 2),
+            sl_ticks=preset_cfg.get("sl_ticks", 0 if is_ml else 2),
             sl_roe_pct=preset_cfg.get("sl_roe_pct", 25.0),
-            leverage=75,
+            leverage=lev_val,
             initial_balance_usdt=100.0,
             max_trades=0,
             use_tick_data=True,
             fee_mode=fee_mode,
             maker_fee_override=maker_fee,
             taker_fee_override=taker_fee,
-            invert_signal=preset_cfg.get("invert_signal", True),
-            ratchet_enabled=preset_cfg.get("ratchet_enabled", True),
+            invert_signal=preset_cfg.get("invert_signal", False if is_ml else True),
+            ratchet_enabled=preset_cfg.get("ratchet_enabled", False if is_ml else True),
             ratchet_trigger_ticks=preset_cfg.get("ratchet_trigger_ticks", 1.0),
             ratchet_stall_seconds=preset_cfg.get("ratchet_stall_seconds", 10.0),
             ratchet_tighten_ticks=preset_cfg.get("ratchet_tighten_ticks", 1.0),
@@ -621,7 +629,7 @@ def main():
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Personal Access Token for workflow dispatch")
     parser.add_argument("--symbol", type=str, default=None, help="Trading pair symbol (e.g. TRUMP_USDT, DOGE_USDT)")
     parser.add_argument("--timeframe", type=str, default="1m", help="Strategy candle timeframe (e.g. 1m, 5m, 15m, 1h, 1d)")
-    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "SMART_STRATEGY", "SMART", "stoch_rsi", "ema_crossover", "smart_strategy", "smart"], help="Strategy to evaluate")
+    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "SMART_STRATEGY", "SMART", "stoch_rsi", "ema_crossover", "smart_strategy", "smart", "ML_1M_MODEL", "ML_1M", "ML", "ml_1m_model", "ml_1m", "ml"], help="Strategy to evaluate")
     parser.add_argument("--smart-atr-filter", dest="smart_atr_filter", action="store_true", default=None, help="Enable Smart Strategy ATR compression filter")
     parser.add_argument("--no-smart-atr-filter", dest="smart_atr_filter", action="store_false", help="Disable Smart Strategy ATR compression filter")
     parser.add_argument("--smart-min-atr-ticks", type=float, default=2.5, help="Minimum ATR in ticks for Smart Strategy entry (default: 2.5)")
@@ -815,14 +823,34 @@ def main():
         if "strategy_mode" in preset_cfg and args.strategy == "STOCH_RSI":
             strat_mode = preset_cfg["strategy_mode"]
 
+        is_ml_strat = strat_mode in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+
         # Resolve parameters from preset if specified, allowing CLI overrides
         tp_ticks = args.tp_ticks if (args.tp_ticks != 2 or "tp_ticks" not in preset_cfg) else preset_cfg["tp_ticks"]
         sl_mode = args.sl_mode if (args.sl_mode != "ROE" or "sl_mode" not in preset_cfg) else preset_cfg["sl_mode"]
         sl_ticks = args.sl_ticks if (args.sl_ticks != 10 or "sl_ticks" not in preset_cfg) else preset_cfg["sl_ticks"]
         sl_roe = args.sl_roe if (args.sl_roe != 25.0 or "sl_roe_pct" not in preset_cfg) else preset_cfg["sl_roe_pct"]
-        invert_sig = args.invert_signal or preset_cfg.get("invert_signal", False)
+
+        if is_ml_strat:
+            if not args.invert_signal and "invert_signal" not in preset_cfg:
+                invert_sig = False
+            else:
+                invert_sig = args.invert_signal or preset_cfg.get("invert_signal", False)
+            if not args.ratchet_enabled and "ratchet_enabled" not in preset_cfg:
+                ratchet_en = False
+            else:
+                ratchet_en = args.ratchet_enabled or preset_cfg.get("ratchet_enabled", False)
+            dynamic_tp = preset_cfg.get("dynamic_tp", True)
+            if args.volume_multiplier is None and "volume_multiplier" not in preset_cfg:
+                vol_mult = 1.0
+            lev_to_use = args.leverage if args.leverage != 75 else int(preset_cfg.get("leverage", 30))
+        else:
+            invert_sig = args.invert_signal or preset_cfg.get("invert_signal", False)
+            ratchet_en = args.ratchet_enabled or preset_cfg.get("ratchet_enabled", False)
+            dynamic_tp = preset_cfg.get("dynamic_tp", False)
+            lev_to_use = args.leverage
+
         exec_style = args.execution_style if (args.execution_style != "PURE_MARKET" or "execution_style" not in preset_cfg) else preset_cfg["execution_style"]
-        ratchet_en = args.ratchet_enabled or preset_cfg.get("ratchet_enabled", False)
         r_trig = args.ratchet_trigger_ticks if (args.ratchet_trigger_ticks != 1.0 or "ratchet_trigger_ticks" not in preset_cfg) else preset_cfg["ratchet_trigger_ticks"]
         r_stall = args.ratchet_stall_seconds if (args.ratchet_stall_seconds != 10.0 or "ratchet_stall_seconds" not in preset_cfg) else preset_cfg["ratchet_stall_seconds"]
         r_tight = args.ratchet_tighten_ticks if (args.ratchet_tighten_ticks != 1.0 or "ratchet_tighten_ticks" not in preset_cfg) else preset_cfg["ratchet_tighten_ticks"]
@@ -832,20 +860,13 @@ def main():
         use_atr = args.use_atr_targets if args.use_atr_targets is not None else preset_cfg.get("use_atr_targets", False)
         atr_tp_mult = args.atr_tp_multiplier if (args.atr_tp_multiplier != 2.0 or "atr_tp_multiplier" not in preset_cfg) else preset_cfg["atr_tp_multiplier"]
         atr_sl_mult = args.atr_sl_multiplier if (args.atr_sl_multiplier != 1.0 or "atr_sl_multiplier" not in preset_cfg) else preset_cfg["atr_sl_multiplier"]
-        vol_filter_en = args.volume_filter_enabled if args.volume_filter_enabled is not None else preset_cfg.get("volume_filter_enabled", False)
-        vol_filter_mult = args.volume_filter_multiplier if (args.volume_filter_multiplier != 1.2 or "volume_filter_multiplier" not in preset_cfg) else preset_cfg["volume_filter_multiplier"]
+        vol_filt = args.volume_filter_enabled if args.volume_filter_enabled is not None else preset_cfg.get("volume_filter_enabled", False)
+        vol_filt_mult = args.volume_filter_multiplier if (args.volume_filter_multiplier != 1.2 or "volume_filter_multiplier" not in preset_cfg) else preset_cfg["volume_filter_multiplier"]
         queue_dyn = args.queue_dynamics_enabled if args.queue_dynamics_enabled is not None else preset_cfg.get("queue_dynamics_enabled", False)
-        resting_tp = args.resting_limit_tp if args.resting_limit_tp is not None else preset_cfg.get("resting_limit_tp", (exec_style == "MAKER_HYBRID"))
+        resting_tp = args.resting_limit_tp if args.resting_limit_tp is not None else preset_cfg.get("resting_limit_tp", False)
         sim_liq = args.simulate_intra_tick_liquidation if args.simulate_intra_tick_liquidation is not None else preset_cfg.get("simulate_intra_tick_liquidation", True)
 
-        # Resolve slippage toggle & magnitude
-        if args.slippage_ticks is not None:
-            slip_ticks = args.slippage_ticks
-        elif args.slippage > 0:
-            slip_ticks = args.slippage
-        else:
-            slip_ticks = preset_cfg.get("slippage_ticks", 0)
-
+        slip_ticks = args.slippage_ticks if args.slippage_ticks is not None else (args.slippage if args.slippage else preset_cfg.get("slippage_ticks", 0))
         if args.slippage_enabled is not None:
             slip_enabled = args.slippage_enabled
         elif "slippage_enabled" in preset_cfg:
@@ -865,11 +886,12 @@ def main():
             volume_contracts=vol_contracts,
             volume_multiplier=vol_mult,
             tp_ticks=tp_ticks,
+            dynamic_tp=dynamic_tp,
             sl_mode=sl_mode,
             sl_ticks=sl_ticks,
             sl_roe_pct=sl_roe,
             sl_price_pct=args.sl_price,
-            leverage=args.leverage,
+            leverage=lev_to_use,
             initial_balance_usdt=args.capital,
             max_trades=args.max_trades,
             use_tick_data=args.use_tick_data,

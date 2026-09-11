@@ -120,6 +120,7 @@ class ExecutionConfig:
     # Order Execution Mode (Zero Slippage Architecture)
     order_type: str = "MARKET"                  # "MARKET" or "LIMIT" (Post-Only Maker)
     limit_order_timeout_seconds: float = 10.0   # Timeout before canceling unfilled maker orders
+    cancel_if_unfilled: bool = False            # If False, limit orders rest in orderbook until filled
     # -------------------------------------------------------------------------
     # RESEARCH V2 / V2.1 / V2.2 QUANTITATIVE FEATURE TOGGLES & ENHANCEMENTS
     # -------------------------------------------------------------------------
@@ -250,6 +251,15 @@ class TradeOutcome:
     close_order_id: Optional[str] = None
     position_id: Optional[int] = None
 
+    # Machine Learning Strategy Telemetry
+    ml_confidence: Optional[float] = None
+    ml_prob_buy: Optional[float] = None
+    ml_prob_sell: Optional[float] = None
+    ml_prob_wait: Optional[float] = None
+    ml_tp_ticks: Optional[int] = None
+    ml_sl_ticks: Optional[int] = None
+    ml_atr_14: Optional[float] = None
+
     @property
     def is_profit(self) -> bool:
         return self.realized_pnl_usdt > 0.0
@@ -317,6 +327,14 @@ class TradeOutcome:
             "position_id": self.position_id,
             # Exchange rate
             "inr_rate": self.inr_rate,
+            # Machine Learning Telemetry
+            "ml_confidence": self.ml_confidence,
+            "ml_prob_buy": self.ml_prob_buy,
+            "ml_prob_sell": self.ml_prob_sell,
+            "ml_prob_wait": self.ml_prob_wait,
+            "ml_tp_ticks": self.ml_tp_ticks,
+            "ml_sl_ticks": self.ml_sl_ticks,
+            "ml_atr_14": self.ml_atr_14,
         }
 
 

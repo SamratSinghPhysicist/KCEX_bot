@@ -214,6 +214,8 @@ class GitHubBacktestRunner:
             strat = "SMART_STRATEGY"
         elif strat in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
             strat = "EMA_CROSSOVER"
+        elif strat in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"):
+            strat = "ML_1M_MODEL"
         else:
             strat = "STOCH_RSI"
 

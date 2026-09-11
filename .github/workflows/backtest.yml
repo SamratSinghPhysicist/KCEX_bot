@@ -31,9 +31,10 @@ on:
       strategy:
         description: "Strategy"
         required: true
-        default: "STOCH_RSI"
+        default: "ML_1M_MODEL"
         type: choice
         options:
+          - "ML_1M_MODEL"
           - "STOCH_RSI"
           - "EMA_CROSSOVER"
           - "SMART_STRATEGY"

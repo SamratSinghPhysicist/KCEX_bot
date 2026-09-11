@@ -177,11 +177,22 @@ class TradeOutcomeLogger:
             f"Min-Profit TP Target: {outcome.min_profit_tp_price:.{ps}f} USDT (Offset: +{tp_ticks} pu / +{tp_offset:.{ps}f} USDT)",
             f"Stop Loss Level    : {outcome.stop_loss_price:.{ps}f} USDT (Offset: -{sl_ticks} pu / -{sl_offset:.{ps}f} USDT | -{sl_pct:.3f}% price | -{sl_roe:.1f}% ROE)",
             f"Exit Reason        : {outcome.exit_reason.value}",
+        ]
+
+        if getattr(outcome, "ml_confidence", None) is not None:
+            p_b = getattr(outcome, "ml_prob_buy", 0.0) or 0.0
+            p_s = getattr(outcome, "ml_prob_sell", 0.0) or 0.0
+            p_w = getattr(outcome, "ml_prob_wait", 0.0) or 0.0
+            card_lines.append(
+                f"ML Model Alpha     : Conviction {outcome.ml_confidence:.1%} | P(BUY)={p_b:.1%} | P(SELL)={p_s:.1%} | P(WAIT)={p_w:.1%}"
+            )
+
+        card_lines.extend([
             "------------------------------------------------------------------------------",
             f"REALIZED PnL       : {pnl_sign}{outcome.realized_pnl_usdt:.6f} USDT ({pnl_sign}INR {outcome.realized_pnl_inr:.4f})",
             f"Return on Equity   : {roe_sign}{outcome.roe_percentage:.2f}% (Price move: {pnl_sign}{outcome.pnl_percentage:.3f}%)",
             f"Trading Fees       : {outcome.fee_total_usdt:.6f} USDT (INR {outcome.fee_total_inr:.4f}) {fee_badge}",
-        ]
+        ])
 
         if outcome.balance_after_trade_usdt is not None:
             card_lines.append(
@@ -243,6 +254,13 @@ class TradeOutcomeLogger:
                 "inr_rate": outcome.inr_rate,
                 "order_id": outcome.order_id,
                 "position_id": outcome.position_id,
+                "ml_confidence": getattr(outcome, "ml_confidence", None),
+                "ml_prob_buy": getattr(outcome, "ml_prob_buy", None),
+                "ml_prob_sell": getattr(outcome, "ml_prob_sell", None),
+                "ml_prob_wait": getattr(outcome, "ml_prob_wait", None),
+                "ml_tp_ticks": getattr(outcome, "ml_tp_ticks", None),
+                "ml_sl_ticks": getattr(outcome, "ml_sl_ticks", None),
+                "ml_atr_14": getattr(outcome, "ml_atr_14", None),
                 "cumulative_trades": self.cumulative.total_trades,
                 "cumulative_win_rate": self.cumulative.win_rate_pct,
                 "cumulative_net_pnl_usdt": self.cumulative.total_pnl_usdt,

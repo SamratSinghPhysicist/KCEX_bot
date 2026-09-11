@@ -185,26 +185,68 @@ def get_signal_mode_for_trade(item: Dict[str, Any]) -> str:
     return "DIRECT"
 
 
-def filter_trades(trades: List[Dict[str, Any]], asset_filter: Optional[str], signal_mode: str = "ALL") -> List[Dict[str, Any]]:
-    """Filter list of trades by asset and signal mode."""
+def matches_strategy(item: Dict[str, Any], strategy_filter: str) -> bool:
+    if not strategy_filter or strategy_filter.upper() == "ALL":
+        return True
+    target = strategy_filter.upper()
+    sub_strat = str(item.get("sub_strategy_name", "")).upper()
+    cfg = item.get("config_snapshot") or {}
+    strat_mode = str(cfg.get("strategy_mode", "")).upper()
+    if target in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"):
+        return ("ML" in sub_strat) or ("ML" in strat_mode) or (item.get("ml_confidence") is not None)
+    return (target in sub_strat) or (target in strat_mode)
+
+
+def filter_trades(trades: List[Dict[str, Any]], asset_filter: Optional[str], signal_mode: str = "ALL", strategy_filter: str = "ALL") -> List[Dict[str, Any]]:
+    """Filter list of trades by asset, signal mode, and strategy."""
     filtered = trades
     if asset_filter and asset_filter.strip().upper() != "ALL":
         filtered = [t for t in filtered if matches_asset(t, asset_filter)]
     if signal_mode and signal_mode.upper() != "ALL":
         mode = signal_mode.upper()
         filtered = [t for t in filtered if get_signal_mode_for_trade(t) == mode]
+    if strategy_filter and strategy_filter.upper() != "ALL":
+        filtered = [t for t in filtered if matches_strategy(t, strategy_filter)]
     return filtered
 
 
-def filter_cancelled_orders(orders: List[Dict[str, Any]], asset_filter: Optional[str], signal_mode: str = "ALL") -> List[Dict[str, Any]]:
-    """Filter list of cancelled orders by asset and signal mode."""
+def filter_cancelled_orders(orders: List[Dict[str, Any]], asset_filter: Optional[str], signal_mode: str = "ALL", strategy_filter: str = "ALL") -> List[Dict[str, Any]]:
+    """Filter list of cancelled orders by asset, signal mode, and strategy."""
     filtered = orders
     if asset_filter and asset_filter.strip().upper() != "ALL":
         filtered = [o for o in filtered if matches_asset(o, asset_filter)]
     if signal_mode and signal_mode.upper() != "ALL":
         mode = signal_mode.upper()
         filtered = [o for o in filtered if get_signal_mode_for_trade(o) == mode]
+    if strategy_filter and strategy_filter.upper() != "ALL":
+        filtered = [o for o in filtered if matches_strategy(o, strategy_filter)]
     return filtered
+
+
+def select_strategy_filter_menu(current_filter: str) -> str:
+    """Display interactive strategy filter selection menu."""
+    print_header("🎯 SELECT STRATEGY FILTER")
+    print(f"  Current Active Filter : {current_filter.upper()}\n")
+    print("  [1] ALL (All Strategies)")
+    print("  [2] ML_1M_MODEL (Machine Learning Alpha 1M)")
+    print("  [3] STOCH_RSI (Stochastic RSI Mean-Reversion)")
+    print("  [4] EMA_CROSSOVER (EMA Trend Crossover)")
+    print("  [5] SMART_STRATEGY (Adaptive Microstructure)")
+    print()
+    try:
+        choice = input("  Select option [1-5, Enter=keep current]: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        return current_filter
+    mapping = {
+        "1": "ALL",
+        "2": "ML_1M_MODEL",
+        "3": "STOCH_RSI",
+        "4": "EMA_CROSSOVER",
+        "5": "SMART_STRATEGY"
+    }
+    selected = mapping.get(choice, current_filter)
+    print(f"\n  ✅ Strategy filter set to: {selected.upper()}\n")
+    return selected
 
 def select_asset_filter_menu(mongo, all_trades: List[Dict[str, Any]], current_filter: str) -> str:
     """Display interactive asset filter selection menu with dynamically fetched pairs from MongoDB."""
@@ -588,6 +630,84 @@ def display_signal_mode_breakdown(analytics: Dict[str, Any], asset_label: str = 
     print()
 
 
+def display_ml_telemetry(trades: List[Dict[str, Any]], asset_label: str = "ALL"):
+    """Display dedicated AI & Machine Learning Alpha model telemetry."""
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"🤖 MACHINE LEARNING MODEL BOT TELEMETRY{header_suffix}")
+
+    ml_trades = [
+        t for t in trades 
+        if t.get("ml_confidence") is not None or "ML" in str(t.get("sub_strategy_name", "")).upper()
+    ]
+    if not ml_trades:
+        print("\n  ⚠️  No Machine Learning trades found in the current selection.")
+        print("     To log ML trades, run live trading or backtests with '--strategy ML_1M_MODEL'.\n")
+        return
+
+    wins = [t for t in ml_trades if t.get("realized_pnl_usdt", 0) > 0]
+    losses = [t for t in ml_trades if t.get("realized_pnl_usdt", 0) < 0]
+    total_cnt = len(ml_trades)
+    win_cnt = len(wins)
+    loss_cnt = len(losses)
+    wr = (win_cnt / total_cnt * 100) if total_cnt > 0 else 0.0
+
+    total_pnl_u = sum(t.get("realized_pnl_usdt", 0) for t in ml_trades)
+    total_pnl_i = sum(t.get("realized_pnl_inr", 0) for t in ml_trades)
+    gross_win = sum(t.get("realized_pnl_usdt", 0) for t in wins)
+    gross_loss = abs(sum(t.get("realized_pnl_usdt", 0) for t in losses))
+    pf = (gross_win / gross_loss) if gross_loss > 0 else (float("inf") if gross_win > 0 else 0.0)
+
+    # ML Specific Confidence Metrics
+    conf_wins = [float(t["ml_confidence"]) * 100 for t in wins if t.get("ml_confidence") is not None]
+    conf_losses = [float(t["ml_confidence"]) * 100 for t in losses if t.get("ml_confidence") is not None]
+    all_confs = [float(t["ml_confidence"]) * 100 for t in ml_trades if t.get("ml_confidence") is not None]
+
+    avg_conf_win = (sum(conf_wins) / len(conf_wins)) if conf_wins else 0.0
+    avg_conf_loss = (sum(conf_losses) / len(conf_losses)) if conf_losses else 0.0
+    avg_conf_all = (sum(all_confs) / len(all_confs)) if all_confs else 0.0
+
+    # Dynamic target distances
+    tp_ticks_list = [float(t["ml_tp_ticks"]) for t in ml_trades if t.get("ml_tp_ticks") is not None]
+    sl_ticks_list = [float(t["ml_sl_ticks"]) for t in ml_trades if t.get("ml_sl_ticks") is not None]
+    avg_tp = (sum(tp_ticks_list) / len(tp_ticks_list)) if tp_ticks_list else 0.0
+    avg_sl = (sum(sl_ticks_list) / len(sl_ticks_list)) if sl_ticks_list else 0.0
+
+    avg_dur = (sum(t.get("duration_seconds", 0) for t in ml_trades) / total_cnt) if total_cnt > 0 else 0.0
+
+    pnl_sign = "+" if total_pnl_u > 0 else ""
+    pf_str = f"{pf:.2f}" if pf != float("inf") else "∞"
+
+    print(f"  Total ML Trades           : {total_cnt} ({win_cnt} Wins / {loss_cnt} Losses)")
+    print(f"  ML Model Win Rate         : {wr:.2f}%")
+    print(f"  Net Realized PnL          : {pnl_sign}{total_pnl_u:.6f} USDT ({pnl_sign}₹{total_pnl_i:.4f})")
+    print(f"  Profit Factor             : {pf_str}")
+    print(f"  Avg Trade Duration        : {fmt_duration(avg_dur)}")
+    print_separator("─", width=80)
+    print(f"  Average Model Conviction  : {avg_conf_all:.1f}%")
+    print(f"  Conviction on Wins        : {avg_conf_win:.1f}%")
+    print(f"  Conviction on Losses      : {avg_conf_loss:.1f}%")
+    print(f"  Avg Dynamic TP Distance   : {avg_tp:.1f} ticks")
+    print(f"  Avg Dynamic SL Distance   : {avg_sl:.1f} ticks")
+    print_separator("─", width=80)
+
+    # Recent ML Trades Table
+    print("  Recent ML Model Predictions & Outcomes:")
+    print(f"  {'ID':<5s} {'Symbol':<11s} {'Dir':<6s} {'Conf%':>6s} {'P(BUY)':>7s} {'P(SELL)':>7s} {'TP/SL':>9s} {'PnL (USDT)':>12s} {'Reason':<16s}")
+    print_separator("─", width=80)
+    for t in ml_trades[-10:]:
+        tid = str(t.get("trade_id", "?"))
+        sym = str(t.get("symbol", "?"))
+        d = str(t.get("direction", "?"))
+        c = f"{float(t.get('ml_confidence', 0.0))*100:.1f}%" if t.get("ml_confidence") is not None else "N/A"
+        pb = f"{float(t.get('ml_prob_buy', 0.0))*100:.0f}%" if t.get("ml_prob_buy") is not None else "-"
+        ps = f"{float(t.get('ml_prob_sell', 0.0))*100:.0f}%" if t.get("ml_prob_sell") is not None else "-"
+        tpsl = f"{t.get('ml_tp_ticks', '-')}/{t.get('ml_sl_ticks', '-')}"
+        pnl = fmt_usdt(t.get("realized_pnl_usdt", 0.0))
+        r = str(t.get("exit_reason", "UNKNOWN"))[:15]
+        print(f"  #{tid:<4s} {sym:<11s} {d:<6s} {c:>6s} {pb:>7s} {ps:>7s} {tpsl:>9s} {pnl:>12s} {r:<16s}")
+    print()
+
+
 def display_trade_history(trades: List[Dict[str, Any]], asset_label: str = "ALL"):
     """Display rich trade history table with all key telemetry."""
     header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
@@ -757,6 +877,20 @@ def display_single_trade_card(trade: Dict[str, Any]):
     print(f"    • Price Move PnL%      : {pnl_sign}{pnl_pct:.4f}%")
     print(f"    • Trading Fees Paid    : {fmt_dual(fees_u, fees_i, sign=False)}")
     print()
+
+    if trade.get("ml_confidence") is not None:
+        conf = float(trade.get("ml_confidence", 0.0)) * 100.0
+        p_buy = float(trade.get("ml_prob_buy", 0.0)) * 100.0
+        p_sell = float(trade.get("ml_prob_sell", 0.0)) * 100.0
+        p_wait = float(trade.get("ml_prob_wait", 0.0)) * 100.0
+        ml_tp = trade.get("ml_tp_ticks", "N/A")
+        ml_sl = trade.get("ml_sl_ticks", "N/A")
+        ml_atr = trade.get("ml_atr_14", "N/A")
+        print("  🤖 MACHINE LEARNING MODEL TELEMETRY")
+        print(f"    • ML Confidence        : {conf:.2f}%")
+        print(f"    • Class Probabilities  : BUY: {p_buy:.1f}% │ SELL: {p_sell:.1f}% │ WAIT: {p_wait:.1f}%")
+        print(f"    • Dynamic Targets      : TP: {ml_tp} ticks │ SL: {ml_sl} ticks │ ATR(14): {ml_atr}")
+        print()
 
     if bal_before_u is not None and bal_after_u is not None:
         bal_diff = bal_after_u - bal_before_u
@@ -997,7 +1131,9 @@ def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]],
             "realized_pnl_usdt", "realized_pnl_inr", "roe_percentage", "pnl_percentage",
             "fee_total_usdt", "fee_total_inr", "exit_reason", "balance_before_trade_usdt",
             "balance_after_trade_usdt", "order_id", "close_order_id", "position_id",
-            "execution_env", "session_id", "github_run_id"
+            "execution_env", "session_id", "github_run_id",
+            "ml_confidence", "ml_prob_buy", "ml_prob_sell", "ml_prob_wait",
+            "ml_tp_ticks", "ml_sl_ticks", "ml_atr_14"
         ]
         try:
             with open(filename, "w", encoding="utf-8") as f:
@@ -1055,6 +1191,12 @@ def main():
     parser = argparse.ArgumentParser(description="KCEX Live Bot Analytics Dashboard")
     parser.add_argument("--asset", "-a", type=str, default=None, help="Filter analytics by traded asset (e.g. TRUMP, DOGE, BTC)")
     parser.add_argument(
+        "--strategy",
+        type=str,
+        default="ALL",
+        help="Filter analytics by strategy: ALL, ML_1M_MODEL, STOCH_RSI, EMA_CROSSOVER, SMART_STRATEGY"
+    )
+    parser.add_argument(
         "--signal-mode",
         type=str,
         choices=["ALL", "DIRECT", "INVERTED"],
@@ -1064,6 +1206,7 @@ def main():
     args, _ = parser.parse_known_args()
 
     active_asset = args.asset.strip().upper() if args.asset else "ALL"
+    active_strategy = args.strategy.strip().upper() if args.strategy else "ALL"
     active_signal_mode = args.signal_mode.upper()
 
     print(BANNER)
@@ -1095,15 +1238,16 @@ def main():
         print()
 
     while True:
-        filtered_trades = filter_trades(all_trades, active_asset, active_signal_mode)
-        filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset, active_signal_mode)
+        filtered_trades = filter_trades(all_trades, active_asset, active_signal_mode, active_strategy)
+        filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset, active_signal_mode, active_strategy)
         analytics = compute_analytics(filtered_trades)
 
         print_separator("═")
-        filter_status = f"🎯 Active Asset: {active_asset}" if active_asset != "ALL" else "🎯 Active Asset: ALL (All Pairs)"
-        signal_status = f"📡 Signal Mode: {active_signal_mode}" if active_signal_mode != "ALL" else "📡 Signal Mode: ALL"
-        count_status = f"{len(filtered_trades)}/{len(all_trades)} trades" if active_asset != "ALL" or active_signal_mode != "ALL" else f"{len(all_trades)} trades"
-        print(f"  KCEX LIVE BOT ANALYTICS - MAIN MENU  │  {filter_status} │ {signal_status} ({count_status})")
+        filter_status = f"🎯 Asset: {active_asset}" if active_asset != "ALL" else "🎯 Asset: ALL"
+        strat_status = f"🧠 Strategy: {active_strategy}" if active_strategy != "ALL" else "🧠 Strategy: ALL"
+        signal_status = f"📡 Signal: {active_signal_mode}" if active_signal_mode != "ALL" else "📡 Signal: ALL"
+        count_status = f"{len(filtered_trades)}/{len(all_trades)} trades" if (active_asset != "ALL" or active_signal_mode != "ALL" or active_strategy != "ALL") else f"{len(all_trades)} trades"
+        print(f"  KCEX LIVE BOT ANALYTICS - MAIN MENU  │  {filter_status} │ {strat_status} │ {signal_status} ({count_status})")
         print_separator("═")
         print()
         print("  [1] 📊 Full Summary Dashboard (with Strategy & Margin stats)")
@@ -1113,8 +1257,10 @@ def main():
         print("  [5] ❌ Cancelled Orders Log")
         print("  [6] 📅 Daily PnL Breakdown")
         print("  [7] 💰 Live KCEX Account Balance")
-        print("  [8] 📤 Export to CSV (all 25+ fields)")
+        print("  [8] 📤 Export to CSV (all 30+ fields including ML)")
         print("  [9] 🔄 Refresh Data from MongoDB")
+        print(f"  [M] 🤖 ML Model Bot Performance Telemetry [AI CHAMPION]")
+        print(f"  [F] 🧠 Filter by Strategy (Current: {active_strategy})")
         print(f"  [A] 🪙 Filter by Asset / Traded Pair (Current: {active_asset})")
         print(f"  [S] 📡 Filter by Signal Mode (Current: {active_signal_mode})")
         print("  [B] 📊 View Signal Mode Breakdown")
@@ -1122,7 +1268,7 @@ def main():
         print()
 
         try:
-            choice = input("  Select option [0-9, A, B, S]: ").strip()
+            choice = input("  Select option [0-9, M, F, A, B, S]: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\n\n  Goodbye! 👋\n")
             break
@@ -1171,15 +1317,19 @@ def main():
             print("\n  🔄 Refreshing data from MongoDB...")
             all_trades = mongo.get_all_trades(mode_filter="live")
             all_cancelled = mongo.get_all_cancelled_orders()
-            filtered_trades = filter_trades(all_trades, active_asset)
-            filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset)
+            filtered_trades = filter_trades(all_trades, active_asset, active_signal_mode, active_strategy)
+            filtered_cancelled = filter_cancelled_orders(all_cancelled, active_asset, active_signal_mode, active_strategy)
             analytics = compute_analytics(filtered_trades)
             print(f"  ✅ Refreshed | {len(all_trades)} executed trades | {len(all_cancelled)} cancelled orders")
-            if active_asset != "ALL" or active_signal_mode != "ALL":
-                print(f"     Active Filter ({active_asset} / {active_signal_mode}): {len(filtered_trades)} matching trades\n")
+            if active_asset != "ALL" or active_signal_mode != "ALL" or active_strategy != "ALL":
+                print(f"     Active Filter ({active_asset} / {active_strategy} / {active_signal_mode}): {len(filtered_trades)} matching trades\n")
             else:
                 print()
-        elif choice_up in ("A", "10", "F"):
+        elif choice_up in ("M", "ML"):
+            display_ml_telemetry(filtered_trades, asset_label=active_asset)
+        elif choice_up in ("F", "STRAT", "STRATEGY"):
+            active_strategy = select_strategy_filter_menu(active_strategy)
+        elif choice_up in ("A", "10", "PAIR", "COIN"):
             active_asset = select_asset_filter_menu(mongo, all_trades, active_asset)
         elif choice_up in ("S", "SIG", "SIGNAL"):
             print("\n  Select signal mode for analytics filter:")

@@ -7,20 +7,30 @@ on:
   #  - cron: '0 0,4,8,12,16,20 * * *'
   workflow_dispatch:
     inputs:
+      strategy:
+        description: "Strategy Engine"
+        required: false
+        default: "ML_1M_MODEL"
+        type: choice
+        options:
+          - ML_1M_MODEL
+          - STOCH_RSI
+          - EMA_CROSSOVER
+          - SMART_STRATEGY
       symbol:
         description: "Trading pair symbol"
         required: false
-        default: "DOGE_USDT"
+        default: "TRUMP_USDT"
         type: string
       tp_ticks:
-        description: "Take-Profit distance in price unit ticks (Fixed)"
+        description: "Take-Profit distance in price unit ticks (Fixed if not ML)"
         required: false
         default: "10"
         type: string
       sl_ticks:
-        description: "Stop-Loss distance in price unit ticks"
+        description: "Stop-Loss distance in price unit ticks (Fixed if not ML)"
         required: false
-        default: "2"
+        default: "3"
         type: string
       invert_signal:
         description: "Signal Paradigm: Direct signal (Momentum)"
@@ -36,14 +46,14 @@ on:
           - PURE_MARKET
           - MAKER_HYBRID
       volume_multiplier:
-        description: "Volume multiplier (e.g. 1.0 for 1x min quantity = 1 DOGE contract)"
+        description: "Volume multiplier (e.g. 1.0 for 1x min quantity)"
         required: false
         default: "1.0"
         type: string
       leverage:
-        description: "Position leverage (Isolated margin)"
+        description: "Position leverage (Isolated margin, recommended 20-30x for ML)"
         required: false
-        default: "75"
+        default: "30"
         type: string
       cooldown_seconds:
         description: "Cooldown seconds between trades"
@@ -102,11 +112,12 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: |
           echo "::group::🔧 Engine Configuration"
-          SYMBOL="${{ inputs.symbol || 'DOGE_USDT' }}"
+          STRATEGY="${{ inputs.strategy || 'ML_1M_MODEL' }}"
+          SYMBOL="${{ inputs.symbol || 'TRUMP_USDT' }}"
           TP_TICKS="${{ inputs.tp_ticks || '10' }}"
-          SL_TICKS="${{ inputs.sl_ticks || '2' }}"
-          VOL_MULT="${{ inputs.volume_multiplier || '1.0' }}"
-          LEVERAGE="${{ inputs.leverage || '75' }}"
+          SL_TICKS="${{ inputs.sl_ticks || '3' }}"
+          VOL_MULT="${{ inputs.volume_multiplier || '2.0' }}"
+          LEVERAGE="${{ inputs.leverage || '30' }}"
           COOLDOWN="${{ inputs.cooldown_seconds || '0' }}"
           MAX_TRADES="${{ inputs.max_trades || '0' }}"
           EXEC_STYLE="${{ inputs.execution_style || 'PURE_MARKET' }}"
@@ -125,12 +136,18 @@ jobs:
             RATCHET_FLAG="--ratchet"
           fi
 
+          # Dynamic TP for ML vs Fixed TP for heuristic strategies
+          TP_FLAG="--fixed-tp"
+          if [ "${STRATEGY}" = "ML_1M_MODEL" ]; then
+            TP_FLAG="--dynamic-tp"
+          fi
+
           echo "Symbol:            ${SYMBOL}"
-          echo "Strategy Engine:   Stochastic RSI (FAST_SCALP, Min1, OS:20/OB:80)"
+          echo "Strategy Engine:   ${STRATEGY}"
           echo "Direction:         Autonomous (Bi-Directional)"
           echo "Signal Paradigm:   ${INVERT_FLAG}"
           echo "Execution Style:   ${EXEC_STYLE}"
-          echo "Take Profit:       +${TP_TICKS} pu ticks (Fixed)"
+          echo "Take Profit:       +${TP_TICKS} pu ticks (${TP_FLAG})"
           echo "Stop Loss:         -${SL_TICKS} ticks"
           echo "Position Volume:   ${VOL_MULT}x min quantity"
           echo "Leverage:          ${LEVERAGE}x isolated"
@@ -142,20 +159,20 @@ jobs:
           echo "Environment:       GitHub Actions (Run #${{ github.run_number }})"
           echo "::endgroup::"
 
-          echo "::notice::🔴 Starting LIVE trading session: ${SYMBOL} | Style: ${EXEC_STYLE} | TP: +${TP_TICKS}t | SL: -${SL_TICKS}t | Runtime: ${RUNTIME_HOURS}h"
+          echo "::notice::🔴 Starting LIVE trading session: ${SYMBOL} | Strategy: ${STRATEGY} | Style: ${EXEC_STYLE} | TP: +${TP_TICKS}t | SL: -${SL_TICKS}t | Runtime: ${RUNTIME_HOURS}h"
 
           python run_engine.py \
             --non-interactive \
             --mode live \
             --symbol "${SYMBOL}" \
-            --strategy STOCH_RSI \
+            --strategy "${STRATEGY}" \
             --stoch-preset FAST_SCALP \
             --bi-directional \
             ${INVERT_FLAG} \
             --volume-mode MULTIPLIER \
             --volume-multiplier "${VOL_MULT}" \
             --tp-ticks "${TP_TICKS}" \
-            --fixed-tp \
+            ${TP_FLAG} \
             --sl-mode TICKS \
             --sl-ticks "${SL_TICKS}" \
             --leverage "${LEVERAGE}" \

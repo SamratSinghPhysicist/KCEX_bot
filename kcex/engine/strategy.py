@@ -49,6 +49,10 @@ from strategies.smart_strategy import (
     MarketRegime,
     compute_chop_series
 )
+from strategies.ml_strategy import (
+    MLStrategy,
+    MLSubStrategy
+)
 
 logger = logging.getLogger("KCEXStrategy")
 
@@ -116,6 +120,17 @@ class MasterplanStrategy:
                     preferred_direction=pref_dir,
                     cooldown_seconds=self.config.cooldown_seconds,
                     require_closed_candle=getattr(self.config, "ema_require_closed_candle", True)
+                )
+            elif strat_upper in ("ML", "ML_MODEL", "ML_1M", "ML_1M_MODEL"):
+                self.sub_strategy = MLStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    timeframe=getattr(self.config, "timeframe", "1m"),
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    confidence_threshold=getattr(self.config, "confidence_threshold", None),
+                    confidence_threshold_sell=getattr(self.config, "confidence_threshold_sell", None),
+                    edge_threshold=getattr(self.config, "edge_threshold", None),
+                    preferred_direction=pref_dir
                 )
             else:
                 # Default to Stochastic RSI
@@ -361,6 +376,8 @@ class MasterplanStrategy:
 __all__ = [
     "BaseStrategy",
     "BaseSubStrategy",
+    "MLStrategy",
+    "MLSubStrategy",
     "EMACrossoverStrategy",
     "EMACrossoverSubStrategy",
     "StochasticRSIStrategy",

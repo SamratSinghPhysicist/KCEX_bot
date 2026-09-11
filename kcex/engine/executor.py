@@ -42,7 +42,9 @@ from kcex.engine.mongo_logger import MongoTradeLogger
 from kcex.engine.strategy import (
     MasterplanStrategy,
     EMACrossoverStrategy,
-    StochasticRSIStrategy
+    StochasticRSIStrategy,
+    SmartStrategy,
+    MLStrategy
 )
 from strategies.filters import FilterPipeline
 
@@ -108,6 +110,21 @@ class TradeExecutionEngine:
                     preferred_direction=pref_dir,
                     cooldown_seconds=self.config.cooldown_seconds,
                     require_closed_candle=getattr(self.config, "ema_require_closed_candle", True)
+                )
+            elif strat_upper in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"):
+                sub_strat = MLStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    timeframe="1m",
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    preferred_direction=pref_dir
+                )
+            elif strat_upper in ("SMART", "SMART_STRATEGY"):
+                sub_strat = SmartStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    preferred_direction=pref_dir,
+                    cooldown_seconds=self.config.cooldown_seconds
                 )
             else:
                 sub_strat = StochasticRSIStrategy(
@@ -224,14 +241,19 @@ class TradeExecutionEngine:
 
         self.logger.info(f"Position Sizing: {vol_summary} [Trade Qty != Margin; Committed Margin = Trade Qty / {self.config.leverage}x leverage]")
         self.logger.info(f"Target Leverage: {self.config.leverage}x isolated")
-        self.logger.info(f"Min-Profit Take Profit rule: Entry Price +/- {self.config.tp_ticks} pu (Tick Size)")
-        if getattr(self.config, "sl_ticks", None):
-            sl_rule_desc = f"{self.config.sl_ticks} ticks"
-        elif getattr(self.config, "sl_price_pct", None):
-            sl_rule_desc = f"{self.config.sl_price_pct}% price move"
+        is_ml_strat = getattr(self.config, "strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+        if is_ml_strat or getattr(self.config, "dynamic_tp", False):
+            self.logger.info("Min-Profit Take Profit rule: Dynamic ATR Target (~1.9x ATR, calibrated per signal)")
+            self.logger.info("Stop Loss rule: Dynamic ATR Stop (~1.0x ATR, calibrated per signal)")
         else:
-            sl_rule_desc = f"{self.config.sl_roe_pct}% ROE on margin"
-        self.logger.info(f"Stop Loss rule: -{sl_rule_desc}")
+            self.logger.info(f"Min-Profit Take Profit rule: Entry Price +/- {self.config.tp_ticks} pu (Tick Size)")
+            if getattr(self.config, "sl_ticks", None):
+                sl_rule_desc = f"{self.config.sl_ticks} ticks"
+            elif getattr(self.config, "sl_price_pct", None):
+                sl_rule_desc = f"{self.config.sl_price_pct}% price move"
+            else:
+                sl_rule_desc = f"{self.config.sl_roe_pct}% ROE on margin"
+            self.logger.info(f"Stop Loss rule: -{sl_rule_desc}")
         self.logger.info(f"Post-trade cooldown: {self.config.cooldown_seconds}s")
         self.logger.section("PRE-FLIGHT CHECKS PASSED - ENGINE READY")
         return contract
@@ -324,12 +346,20 @@ class TradeExecutionEngine:
         self.logger.section(f"EXECUTING TRADE #{trade_id} [{direction.value}] - {symbol}")
 
         # Determine effective TP ticks:
-        # If dynamic_tp is enabled, use the signal's target_ticks (from confluence strength)
-        # Otherwise, strictly enforce the user's configured tp_ticks (e.g. 1 pu)
-        if getattr(self.config, "dynamic_tp", False) and "target_ticks" in signal.metadata:
+        # If dynamic_tp is enabled or ML strategy emitted target_ticks:
+        is_ml_sig = signal.sub_strategy_name in ("ML_1M_MODEL", "MLStrategy")
+        if (getattr(self.config, "dynamic_tp", False) or is_ml_sig) and "target_ticks" in signal.metadata:
             target_tp_ticks = int(signal.metadata["target_ticks"])
         else:
             target_tp_ticks = int(self.config.tp_ticks)
+
+        # Determine effective SL:
+        if is_ml_sig and "target_sl_ticks" in signal.metadata:
+            sl_ticks_to_use = int(signal.metadata["target_sl_ticks"])
+            sl_roe_to_use = None
+        else:
+            sl_ticks_to_use = self.config.sl_ticks
+            sl_roe_to_use = self.config.sl_roe_pct
 
         if "agreeing_signals" in signal.metadata:
             agreeing = signal.metadata.get("agreeing_signals", [])
@@ -341,6 +371,12 @@ class TradeExecutionEngine:
             self.logger.info(
                 f"[MICROSTRUCTURE TRIGGER] Confluence: {agreeing} | Target TP: {tp_desc} | "
                 f"OBI z={obi_z:+.2f} | Delta z={delta_z:+.2f} (rec={rec:.2f}) | VAMP z={vamp_z:+.2f}"
+            )
+        elif is_ml_sig:
+            conf_val = signal.metadata.get("confidence", 0.0)
+            rr_val = signal.metadata.get("risk_reward_ratio", 2.0)
+            self.logger.info(
+                f"[ML ALPHA TRIGGER] Confidence: {conf_val:.1%} | Target TP: +{target_tp_ticks}t | SL: -{sl_ticks_to_use}t | R:R={rr_val}"
             )
 
         # Get fresh market snapshot
@@ -365,8 +401,8 @@ class TradeExecutionEngine:
             direction=direction,
             entry_price=ref_price,
             leverage=leverage,
-            sl_roe_pct=self.config.sl_roe_pct,
-            sl_ticks=self.config.sl_ticks,
+            sl_roe_pct=sl_roe_to_use,
+            sl_ticks=sl_ticks_to_use,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
             precision=ps
@@ -431,6 +467,16 @@ class TradeExecutionEngine:
             # Attach balance_before to outcome for MongoDB
             outcome.balance_before_trade_usdt = balance_before_usdt
             outcome.balance_before_trade_inr = balance_before_inr
+
+            # Propagate ML Strategy Telemetry to outcome and MongoDB
+            if "confidence" in signal.metadata:
+                outcome.ml_confidence = signal.metadata.get("confidence")
+                outcome.ml_prob_buy = signal.metadata.get("prob_buy")
+                outcome.ml_prob_sell = signal.metadata.get("prob_sell")
+                outcome.ml_prob_wait = signal.metadata.get("prob_wait")
+                outcome.ml_tp_ticks = signal.metadata.get("target_ticks")
+                outcome.ml_sl_ticks = signal.metadata.get("target_sl_ticks")
+                outcome.ml_atr_14 = signal.metadata.get("atr_14")
 
             # Output and record outcome
             card = self.outcome_logger.log_outcome(outcome)
@@ -540,49 +586,64 @@ class TradeExecutionEngine:
                     self.logger.debug("Error checking open orders: %s", oe)
 
             if not is_filled:
-                self.logger.warning(
-                    f"LIMIT order {order_id} not filled within {timeout_sec}s timeout. Cancelling order to protect execution..."
-                )
-                try:
-                    self.trader.cancel_order(order_id)
-                except Exception as ce:
-                    self.logger.warning("Error cancelling unfilled limit order: %s", ce)
-
-                # Log cancelled order to MongoDB
-                self._cancelled_order_count += 1
-                if self.mongo_logger and self.config.mode == EngineMode.LIVE:
-                    try:
-                        cancel_ticker = self.market.get_ticker(symbol)
-                        market_snap = {
-                            "bid1": float(cancel_ticker.get("bid1", 0)),
-                            "ask1": float(cancel_ticker.get("ask1", 0)),
-                            "last_price": float(cancel_ticker.get("lastPrice", 0)),
-                        }
-                    except Exception:
-                        market_snap = {}
-                    cancel_bal_usdt = None
-                    cancel_bal_inr = None
-                    try:
-                        cb = self.trader.get_usdt_balance()
-                        cancel_bal_usdt = cb.get("available_usdt", 0.0)
-                        cancel_bal_inr = cb.get("available_inr", 0.0)
-                    except Exception:
-                        pass
-                    self.mongo_logger.log_cancelled_order(
-                        symbol=symbol,
-                        direction=side_str,
-                        intended_entry_price=limit_price,
-                        order_id=order_id,
-                        timeout_seconds=timeout_sec,
-                        strategy_name=sub_strategy_name,
-                        config=self.config,
-                        market_snapshot=market_snap,
-                        balance_usdt=cancel_bal_usdt,
-                        balance_inr=cancel_bal_inr,
-                        inr_rate=self.market.get_inr_rate()
+                cancel_unfilled = getattr(self.config, "cancel_if_unfilled", False)
+                if cancel_unfilled:
+                    self.logger.warning(
+                        f"LIMIT order {order_id} not filled within {timeout_sec}s timeout. Cancelling order to protect execution..."
                     )
+                    try:
+                        self.trader.cancel_order(order_id)
+                    except Exception as ce:
+                        self.logger.warning("Error cancelling unfilled limit order: %s", ce)
 
-                return None
+                    # Log cancelled order to MongoDB
+                    self._cancelled_order_count += 1
+                    if self.mongo_logger and self.config.mode == EngineMode.LIVE:
+                        try:
+                            cancel_ticker = self.market.get_ticker(symbol)
+                            market_snap = {
+                                "bid1": float(cancel_ticker.get("bid1", 0)),
+                                "ask1": float(cancel_ticker.get("ask1", 0)),
+                                "last_price": float(cancel_ticker.get("lastPrice", 0)),
+                            }
+                        except Exception:
+                            market_snap = {}
+                        cancel_bal_usdt = None
+                        cancel_bal_inr = None
+                        try:
+                            cb = self.trader.get_usdt_balance()
+                            cancel_bal_usdt = cb.get("available_usdt", 0.0)
+                            cancel_bal_inr = cb.get("available_inr", 0.0)
+                        except Exception:
+                            pass
+                        self.mongo_logger.log_cancelled_order(
+                            symbol=symbol,
+                            direction=side_str,
+                            intended_entry_price=limit_price,
+                            order_id=order_id,
+                            timeout_seconds=timeout_sec,
+                            strategy_name=sub_strategy_name,
+                            config=self.config,
+                            market_snapshot=market_snap,
+                            balance_usdt=cancel_bal_usdt,
+                            balance_inr=cancel_bal_inr,
+                            inr_rate=self.market.get_inr_rate()
+                        )
+                    return None
+                else:
+                    self.logger.info(
+                        f"LIMIT order {order_id} resting in book (cancel_if_unfilled=False). Waiting for fill..."
+                    )
+                    while not is_filled and not self._shutdown_requested:
+                        time.sleep(1.0)
+                        open_positions = self.trader.get_open_positions(symbol)
+                        for p in open_positions:
+                            h_vol = float(p.get("holdVol", 0) or p.get("vol", 0))
+                            if h_vol > 0:
+                                is_filled = True
+                                break
+                    if not is_filled:
+                        return None
         else:
             self.logger.info("Submitting live MARKET order...")
             order_res = self.trader.create_order(
@@ -950,6 +1011,7 @@ class TradeExecutionEngine:
         initial_sl = exact_sl
         deep_alert_logged = False
         monitor_start_time = open_time if open_time is not None else time.time()
+        last_heartbeat_time = 0.0
 
         while not self._shutdown_requested:
             time.sleep(self.config.poll_interval_seconds)
@@ -1016,8 +1078,30 @@ class TradeExecutionEngine:
                             f"Stop locked at BREAKEVEN 0.0t ({exact_sl:.{precision}f} USDT). Position is risk-free."
                         )
 
-            # 3. Check if executable price reached Min-Profit TP (bid for LONG, ask for SHORT)
+            # Executable price (bid for LONG, ask for SHORT)
             exec_price = (bid1 if bid1 > 0 else current_price) if direction == OrderDirection.LONG else (ask1 if ask1 > 0 else current_price)
+
+            # Periodic Real-Time Position Telemetry
+            now = time.time()
+            if (now - last_heartbeat_time) >= 3.5:
+                last_heartbeat_time = now
+                pu = (10 ** -precision)
+                dist_tp_ticks = (exact_tp - exec_price) / pu if direction == OrderDirection.LONG else (exec_price - exact_tp) / pu
+                dist_sl_ticks = (exec_price - exact_sl) / pu if direction == OrderDirection.LONG else (exact_sl - exec_price) / pu
+                if entry_price and entry_price > 0:
+                    u_diff = (exec_price - entry_price) if direction == OrderDirection.LONG else (entry_price - exec_price)
+                    u_ticks = u_diff / pu
+                    u_roe = (u_diff / entry_price) * leverage * 100.0
+                else:
+                    u_ticks = 0.0
+                    u_roe = 0.0
+                elapsed_hold = now - monitor_start_time
+                self.logger.info(
+                    f"📊 [LIVE POSITION] Price: {exec_price:.{precision}f} USDT | Target TP: {exact_tp:.{precision}f} ({dist_tp_ticks:+.1f}t) | "
+                    f"Stop SL: {exact_sl:.{precision}f} ({dist_sl_ticks:+.1f}t) | Unrealized: {u_ticks:+.1f}t ({u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
+                )
+
+            # 3. Check if executable price reached Min-Profit TP (bid for LONG, ask for SHORT)
             if self.strategy.is_better_than_min_profit(direction, exec_price, exact_tp, entry_price=entry_price):
                 op_sym = ">=" if direction == OrderDirection.LONG else "<="
                 self.logger.info(
@@ -1467,15 +1551,25 @@ class TradeExecutionEngine:
                                 f"[DRY-RUN DURATION TIGHTEN] Trade open {elapsed:.1f}s. SL tightened to entry {exact_sl:.{ps}f} USDT."
                             )
 
-                # Periodic status report every ~4 seconds
+                # Periodic status report every ~3.5 seconds
                 poll_interval = max(0.1, self.config.poll_interval_seconds)
-                status_freq = int(max(1, 4.0 / poll_interval))
+                status_freq = int(max(1, 3.5 / poll_interval))
                 if poll_count % status_freq == 0:
                     u_diff = (effective_close_price - entry_price) if direction == OrderDirection.LONG else (entry_price - effective_close_price)
-                    u_pnl = underlying_qty * u_diff
+                    u_ticks = u_diff / pu if pu > 0 else 0.0
+                    u_pnl_usdt = underlying_qty * u_diff
+                    inr_rate = self.market.get_inr_rate()
+                    u_pnl_inr = u_pnl_usdt * inr_rate
+                    notional_u = underlying_qty * entry_price
+                    margin_u = notional_u / leverage if leverage > 0 else 1.0
+                    u_roe = (u_pnl_usdt / margin_u) * 100.0 if margin_u > 0 else 0.0
+                    dist_tp_ticks = (exact_tp - effective_close_price) / pu if direction == OrderDirection.LONG else (effective_close_price - exact_tp) / pu
+                    dist_sl_ticks = (effective_close_price - exact_sl) / pu if direction == OrderDirection.LONG else (exact_sl - effective_close_price) / pu
+                    elapsed_hold = time.time() - open_time
                     self.logger.info(
-                        f"[DRY-RUN MONITOR] Price: {effective_close_price:.{ps}f} USDT | TP: {exact_tp:.{ps}f} | SL: {exact_sl:.{ps}f} | "
-                        f"Unrealized PnL: {'+' if u_pnl >= 0 else ''}{u_pnl:.6f} USDT"
+                        f"📊 [DRY-RUN POSITION] Price: {effective_close_price:.{ps}f} USDT | Target TP: {exact_tp:.{ps}f} ({dist_tp_ticks:+.1f}t) | "
+                        f"Stop SL: {exact_sl:.{ps}f} ({dist_sl_ticks:+.1f}t) | "
+                        f"Unrealized: {u_ticks:+.1f}t ({u_pnl_usdt:+.4f} USDT / INR {u_pnl_inr:+.2f} | {u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
                     )
 
             if self._shutdown_requested and exit_reason == ExitReason.UNKNOWN:

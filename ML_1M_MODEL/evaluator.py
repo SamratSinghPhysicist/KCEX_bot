@@ -85,10 +85,10 @@ def backtest_out_of_sample(
             entry_slip = pending_entry["entry_slip"]
             entry_price = (opens[i] + entry_slip) if pos_type == "LONG" else (opens[i] - entry_slip)
             entry_idx = i
-            tp_price = pending_entry["tp_price"]
-            sl_price = pending_entry["sl_price"]
             tp_ticks = pending_entry["tp_ticks"]
             sl_ticks = pending_entry["sl_ticks"]
+            tp_price = entry_price + (tp_ticks * tick_size) if pos_type == "LONG" else entry_price - (tp_ticks * tick_size)
+            sl_price = entry_price - (sl_ticks * tick_size) if pos_type == "LONG" else entry_price + (sl_ticks * tick_size)
             confidence = pending_entry["confidence"]
             in_position = True
             pending_entry = None
@@ -234,12 +234,13 @@ def backtest_out_of_sample(
             daily_rets = np.diff(daily_close_eq) / daily_close_eq[:-1]
             daily_mean = np.mean(daily_rets)
             daily_std = np.std(daily_rets, ddof=1) if len(daily_rets) > 1 else 1e-9
-            downside_daily = daily_rets[daily_rets < 0]
-            downside_std = np.std(downside_daily, ddof=1) if len(downside_daily) > 1 else 1e-9
+            # True classical downside semi-deviation relative to MAR = 0 across all observations
+            downside_diff = np.minimum(0.0, daily_rets)
+            downside_dev = np.sqrt(np.mean(downside_diff ** 2)) if len(downside_diff) > 0 else 1e-9
             
             annual_factor_daily = np.sqrt(365.25)  # 24/7 crypto futures annualization
             sharpe = (daily_mean / (daily_std + 1e-9)) * annual_factor_daily
-            sortino = (daily_mean / (downside_std + 1e-9)) * annual_factor_daily
+            sortino = (daily_mean / (downside_dev + 1e-9)) * annual_factor_daily
         else:
             returns_arr = df_trades["net_margin_ret_pct"].values / 100.0
             mean_ret = np.mean(returns_arr)
