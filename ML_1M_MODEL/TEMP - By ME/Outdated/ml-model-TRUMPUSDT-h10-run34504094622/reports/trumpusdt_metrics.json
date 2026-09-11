@@ -1,0 +1,78 @@
+{
+  "symbol": "TRUMPUSDT",
+  "config": {
+    "horizon_bars": 10,
+    "tp_atr_mult": 2.0,
+    "sl_atr_mult": 1.2,
+    "confidence_threshold": 0.55,
+    "taker_fee": 0.0002,
+    "leverage": 20.0
+  },
+  "train_metrics": {
+    "train_samples": 105946,
+    "test_samples": 26494,
+    "num_features": 45,
+    "train_accuracy": 0.5624,
+    "train_log_loss": 0.9242,
+    "top_features": [
+      {
+        "feature": "spread_ema50_200",
+        "importance": 2609
+      },
+      {
+        "feature": "atr_14",
+        "importance": 2085
+      },
+      {
+        "feature": "bb_bandwidth",
+        "importance": 1463
+      },
+      {
+        "feature": "sin_hour",
+        "importance": 1384
+      },
+      {
+        "feature": "cos_hour",
+        "importance": 1301
+      },
+      {
+        "feature": "ret_60m",
+        "importance": 1282
+      },
+      {
+        "feature": "atr_ratio_5_30",
+        "importance": 1231
+      },
+      {
+        "feature": "atr_norm_14",
+        "importance": 1189
+      },
+      {
+        "feature": "of_cvd_slope",
+        "importance": 1004
+      },
+      {
+        "feature": "sin_minute",
+        "importance": 986
+      }
+    ]
+  },
+  "oos_metrics": {
+    "symbol": "TRUMPUSDT",
+    "test_bars": 26494,
+    "total_trades": 2730,
+    "win_rate_pct": 37.33,
+    "profit_factor": 0.32,
+    "max_drawdown_pct": 99.78,
+    "sharpe_ratio": -9.46,
+    "sortino_ratio": -16.1,
+    "total_pnl_pct": -99.78,
+    "final_equity_usd": 22.43,
+    "avg_win_usd": 4.66,
+    "avg_loss_usd": -8.61,
+    "expectancy_usd": -3.65,
+    "signal_share_buy_pct": 0.0,
+    "signal_share_sell_pct": 33.2,
+    "signal_share_wait_pct": 66.8
+  }
+}
