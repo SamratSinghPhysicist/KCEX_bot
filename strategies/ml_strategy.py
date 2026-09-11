@@ -29,7 +29,7 @@ from ML_1M_MODEL.config import MODELS_DIR, normalize_symbol_name, get_model_conf
 from ML_1M_MODEL.model import TradingModel
 from ML_1M_MODEL.features import extract_features
 
-logger = logging.getLogger("MLStrategy")
+logger = logging.getLogger("KCEXEngine")
 
 
 class MLStrategy(BaseStrategy):

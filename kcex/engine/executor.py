@@ -1842,6 +1842,19 @@ class TradeExecutionEngine:
                                 f"[HUNTING ENTRY] {ws_status} | Bid/Ask: {b_bid} / {b_ask} (Spread: {diag.get('spread_ticks', 0):.1f} pu) | "
                                 f"OBI z={diag.get('obi_z', 0):+.2f} | Delta z={diag.get('delta_z', 0):+.2f} | VAMP z={diag.get('vamp_z', 0):+.2f}"
                             )
+                        elif diag and (diag.get("strategy") == "ML_1M_MODEL" or "last_prediction" in diag):
+                            last_p = diag.get("last_prediction") or {}
+                            if last_p:
+                                p_buy = last_p.get("prob_buy", 0.0)
+                                p_sell = last_p.get("prob_sell", 0.0)
+                                p_wait = last_p.get("prob_wait", 0.0)
+                                act = last_p.get("action", "WAIT")
+                                conf = last_p.get("confidence", 0.0)
+                                rem_cd = diag.get("remaining_cooldown_sec", 0.0)
+                                self.logger.info(
+                                    f"[HUNTING ENTRY] ML 1M Radar ({contract.symbol}) | Action: {act} (Conviction: {conf:.1%}) | "
+                                    f"P(BUY): {p_buy:.1%} | P(SELL): {p_sell:.1%} | P(WAIT): {p_wait:.1%} | Cooldown: {rem_cd:.1f}s"
+                                )
 
                 time.sleep(0.3)
 
