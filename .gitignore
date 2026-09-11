@@ -47,7 +47,8 @@ AI_ANALYSIS/
 # ML Model Data Cache & Fallback Data
 data/
 ML_1M_MODEL/data_cache/
-ML_1M_MODEL/saved_models/*.pkl
+# ML trained model artifacts are tracked for live execution on GitHub Actions
+!ML_1M_MODEL/saved_models/*.pkl
 ML_1M_MODEL/reports/*.csv
 ML_1M_MODEL/reports/*.md
 !ML_1M_MODEL/reports/.gitkeep
