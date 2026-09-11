@@ -1,10 +1,10 @@
 """
 ML Trading Model Architecture
 =============================
-Multi-task model architecture combining:
-1. Multi-class Gradient Boosting Classifier for Action (BUY, SELL, WAIT/HOLD)
-2. Excursion Regressors for Dynamic Take-Profit and Stop-Loss distances
-Supports LightGBM with automated Scikit-Learn HistGradientBoosting fallback.
+Multi-task model architecture powered 100% by Scikit-Learn:
+1. HistGradientBoostingClassifier for Multi-Class Action (BUY, SELL, WAIT/HOLD)
+2. HistGradientBoostingRegressor for Dynamic Take-Profit and Stop-Loss distances
+Guarantees 100% environment parity between local development and GitHub Actions.
 """
 
 import os
@@ -13,16 +13,9 @@ import json
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Tuple, Optional, Any
+from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 
 from .config import ModelConfig, MODELS_DIR, get_tick_spec
-
-# Attempt LightGBM import, fallback to scikit-learn HistGradientBoosting
-USE_LIGHTGBM = False
-try:
-    import lightgbm as lgb
-    USE_LIGHTGBM = True
-except ImportError:
-    from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 
 
 class TradingModel:
@@ -42,67 +35,30 @@ class TradingModel:
         self._init_models()
 
     def _init_models(self):
-        """Initializes classifiers and regressors using LightGBM or Scikit-Learn."""
-        if USE_LIGHTGBM:
-            self.classifier = lgb.LGBMClassifier(
-                objective="multiclass",
-                num_class=3,
-                class_weight="balanced",
-                boosting_type="gbdt",
-                learning_rate=self.cfg.lgb_params.get("learning_rate", 0.04),
-                num_leaves=self.cfg.lgb_params.get("num_leaves", 31),
-                max_depth=self.cfg.lgb_params.get("max_depth", 6),
-                n_estimators=self.cfg.lgb_params.get("n_estimators", 250),
-                subsample=self.cfg.lgb_params.get("bagging_fraction", 0.8),
-                colsample_bytree=self.cfg.lgb_params.get("feature_fraction", 0.8),
-                random_state=42,
-                n_jobs=-1,
-                verbose=-1
-            )
-            self.tp_regressor = lgb.LGBMRegressor(
-                objective="regression",
-                learning_rate=0.03,
-                num_leaves=31,
-                max_depth=6,
-                n_estimators=150,
-                random_state=42,
-                n_jobs=-1,
-                verbose=-1
-            )
-            self.sl_regressor = lgb.LGBMRegressor(
-                objective="regression",
-                learning_rate=0.03,
-                num_leaves=31,
-                max_depth=6,
-                n_estimators=150,
-                random_state=42,
-                n_jobs=-1,
-                verbose=-1
-            )
-        else:
-            # Fallback to Scikit-Learn HistGradientBoosting
-            self.classifier = HistGradientBoostingClassifier(
-                max_iter=200,
-                learning_rate=0.04,
-                class_weight="balanced",
-                max_leaf_nodes=31,
-                max_depth=6,
-                random_state=42
-            )
-            self.tp_regressor = HistGradientBoostingRegressor(
-                max_iter=150,
-                learning_rate=0.04,
-                max_leaf_nodes=31,
-                max_depth=6,
-                random_state=42
-            )
-            self.sl_regressor = HistGradientBoostingRegressor(
-                max_iter=150,
-                learning_rate=0.04,
-                max_leaf_nodes=31,
-                max_depth=6,
-                random_state=42
-            )
+        """Initializes classifiers and regressors using standard Scikit-Learn."""
+        hgb_params = getattr(self.cfg, "hgb_params", {})
+        self.classifier = HistGradientBoostingClassifier(
+            max_iter=hgb_params.get("max_iter", 200),
+            learning_rate=hgb_params.get("learning_rate", 0.04),
+            class_weight="balanced",
+            max_leaf_nodes=hgb_params.get("max_leaf_nodes", 31),
+            max_depth=hgb_params.get("max_depth", 6),
+            random_state=42
+        )
+        self.tp_regressor = HistGradientBoostingRegressor(
+            max_iter=150,
+            learning_rate=0.04,
+            max_leaf_nodes=31,
+            max_depth=6,
+            random_state=42
+        )
+        self.sl_regressor = HistGradientBoostingRegressor(
+            max_iter=150,
+            learning_rate=0.04,
+            max_leaf_nodes=31,
+            max_depth=6,
+            random_state=42
+        )
 
     def fit(
         self,
@@ -256,7 +212,7 @@ class TradingModel:
             "sl_regressor": self.sl_regressor,
             "feature_cols": self.feature_cols,
             "config": self.cfg,
-            "use_lightgbm": USE_LIGHTGBM,
+            "framework": "scikit-learn",
         }
         with open(path, "wb") as f:
             pickle.dump(bundle, f)

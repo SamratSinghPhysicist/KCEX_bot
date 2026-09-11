@@ -125,24 +125,14 @@ class ModelConfig:
     test_size: float = 0.2             # Chronological out-of-sample test fraction
     embargo_bars: int = 30             # Purged embargo gap to eliminate leakage
 
-    # Model Hyperparameters (LightGBM)
-    lgb_params: Dict = field(default_factory=lambda: {
-        "objective": "multiclass",
-        "num_class": 3,
-        "class_weight": "balanced",
-        "metric": "multi_logloss",
-        "boosting_type": "gbdt",
+    # Model Hyperparameters (Scikit-Learn HistGradientBoosting)
+    hgb_params: Dict = field(default_factory=lambda: {
+        "max_iter": 200,
         "learning_rate": 0.04,
-        "num_leaves": 31,
+        "class_weight": "balanced",
+        "max_leaf_nodes": 31,
         "max_depth": 6,
-        "feature_fraction": 0.8,
-        "bagging_fraction": 0.8,
-        "bagging_freq": 1,
-        "min_child_samples": 50,
-        "verbosity": -1,
-        "n_estimators": 250,
-        "random_state": 42,
-        "n_jobs": -1,
+        "random_state": 42
     })
 
     # Class ID mapping
