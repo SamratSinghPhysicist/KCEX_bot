@@ -187,15 +187,30 @@ class TradingModel:
 
         return decisions
 
-    def get_feature_importances(self) -> pd.DataFrame:
-        """Returns sorted feature importances of the directional classifier."""
+    def get_feature_importances(
+        self,
+        X_val: Optional[pd.DataFrame] = None,
+        y_val: Optional[np.ndarray] = None
+    ) -> pd.DataFrame:
+        """
+        Returns sorted feature importances of the directional classifier.
+        Computes genuine permutation importance on validation data when provided.
+        """
         if not self.is_trained:
             return pd.DataFrame()
 
-        if hasattr(self.classifier, "feature_importances_"):
+        if X_val is not None and y_val is not None and len(X_val) > 0:
+            from sklearn.inspection import permutation_importance
+            n_sample = min(2000, len(X_val))
+            idx = np.random.RandomState(42).choice(len(X_val), n_sample, replace=False)
+            X_sample = X_val[self.feature_cols].iloc[idx].replace([np.inf, -np.inf], np.nan).fillna(0.0).values
+            y_sample = y_val[idx]
+            result = permutation_importance(self.classifier, X_sample, y_sample, n_repeats=3, random_state=42, n_jobs=-1)
+            importances = result.importances_mean
+        elif hasattr(self.classifier, "feature_importances_"):
             importances = self.classifier.feature_importances_
         else:
-            importances = np.ones(len(self.feature_cols))
+            importances = np.zeros(len(self.feature_cols))
 
         df_imp = pd.DataFrame({
             "feature": self.feature_cols,

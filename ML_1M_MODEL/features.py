@@ -106,6 +106,20 @@ def extract_features(df_ohlcv: pd.DataFrame, df_orderflow: Optional[pd.DataFrame
     df["bb_pct_b"] = ((close - lower_bb) / (upper_bb - lower_bb + 1e-9)).clip(-0.5, 1.5).fillna(0.5)
     df["bb_bandwidth"] = (upper_bb - lower_bb) / roll_mean20
 
+    # Carter Volatility Squeeze (Bollinger Bands vs Keltner Channels)
+    ema20 = calculate_ema(close, 20)
+    atr20 = calculate_atr(df, 20)
+    kc_upper = ema20 + 1.5 * atr20
+    kc_lower = ema20 - 1.5 * atr20
+    df["squeeze_on"] = ((lower_bb > kc_lower) & (upper_bb < kc_upper)).astype("float32")
+    df["squeeze_off"] = ((upper_bb > kc_upper) | (lower_bb < kc_lower)).astype("float32")
+
+    # Trend Regime Alignment
+    df["trend_alignment"] = np.where(
+        (close > ema9) & (ema9 > ema21) & (ema21 > ema50), 1.0,
+        np.where((close < ema9) & (ema9 < ema21) & (ema21 < ema50), -1.0, 0.0)
+    ).astype("float32")
+
     # 4. Candlestick Anatomy
     hl_range = (high - low).replace(0, np.nan)
     df["hl_range_pct"] = (high - low) / close
@@ -163,9 +177,9 @@ def extract_features(df_ohlcv: pd.DataFrame, df_orderflow: Optional[pd.DataFrame
 
     # 8. Cyclical Time Features
     if "datetime" in df.columns:
-        dt = df["datetime"]
+        dt = pd.to_datetime(df["datetime"], utc=True)
     else:
-        dt = pd.to_datetime(df["timestamp"], unit="ms")
+        dt = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
 
     minute = dt.dt.minute
     hour = dt.dt.hour

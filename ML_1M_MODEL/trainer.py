@@ -76,8 +76,12 @@ def train_model(
     train_acc = float(accuracy_score(y_train, train_preds))
     train_loss = float(log_loss(y_train, train_probs))
 
-    # Feature importances
-    imp_df = model.get_feature_importances()
+    # Genuine permutation feature importances on validation slice
+    val_slice = min(2000, len(train_df))
+    imp_df = model.get_feature_importances(
+        X_val=train_df.tail(val_slice),
+        y_val=y_train[-val_slice:]
+    )
     top_10 = imp_df.head(10).to_dict(orient="records")
 
     metrics = {

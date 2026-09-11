@@ -216,12 +216,12 @@ def load_ohlcv_range(
     df_full["timestamp"] = df_full["timestamp"].astype("int64")
     df_full = df_full.drop_duplicates(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
 
-    # Date filtering
-    s_ts = int(datetime.datetime.strptime(start_date[:10], "%Y-%m-%d").timestamp() * 1000)
-    e_ts = int(datetime.datetime.strptime(end_date[:10] + " 23:59:59", "%Y-%m-%d %H:%M:%S").timestamp() * 1000)
+    # Date filtering with strict UTC timezone enforcement
+    s_ts = int(datetime.datetime.strptime(start_date[:10], "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
+    e_ts = int(datetime.datetime.strptime(end_date[:10] + " 23:59:59", "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
 
     df_filtered = df_full[(df_full["timestamp"] >= s_ts) & (df_full["timestamp"] <= e_ts)].reset_index(drop=True)
-    df_filtered["datetime"] = pd.to_datetime(df_filtered["timestamp"], unit="ms")
+    df_filtered["datetime"] = pd.to_datetime(df_filtered["timestamp"], unit="ms", utc=True)
 
-    print(f"[DataLoader] Successfully loaded {len(df_filtered)} 1m candles for {sym} ({start_date} to {end_date})")
+    print(f"[DataLoader] Successfully loaded {len(df_filtered)} 1m candles for {sym} ({start_date} to {end_date} UTC)")
     return df_filtered

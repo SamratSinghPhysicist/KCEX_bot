@@ -33,6 +33,7 @@ def backtest_out_of_sample(
     cfg = cfg or model.cfg
     print(f"[Evaluator] Running out-of-sample backtest on {len(test_df):,} test bars...")
 
+    opens = test_df["open"].values
     closes = test_df["close"].values
     highs = test_df["high"].values
     lows = test_df["low"].values
@@ -70,12 +71,27 @@ def backtest_out_of_sample(
     tp_ticks = 0
     sl_ticks = 0
     confidence = 0.0
+    pending_entry = None  # Enforces execution latency: bar i signal fills on bar i+1 open
 
     n = len(test_df)
     H = cfg.horizon_bars
 
     for i in range(n):
-        # 1. Manage active position
+        # 1. Execute pending entry from previous bar's signal at bar i open
+        if pending_entry is not None and not in_position:
+            pos_type = pending_entry["pos_type"]
+            entry_slip = pending_entry["entry_slip"]
+            entry_price = (opens[i] + entry_slip) if pos_type == "LONG" else (opens[i] - entry_slip)
+            entry_idx = i
+            tp_price = pending_entry["tp_price"]
+            sl_price = pending_entry["sl_price"]
+            tp_ticks = pending_entry["tp_ticks"]
+            sl_ticks = pending_entry["sl_ticks"]
+            confidence = pending_entry["confidence"]
+            in_position = True
+            pending_entry = None
+
+        # 2. Manage active position on bar i
         if in_position:
             h = highs[i]
             l = lows[i]
@@ -90,23 +106,31 @@ def backtest_out_of_sample(
             exit_reason = ""
 
             if pos_type == "LONG":
-                if h >= tp_price:
-                    exit_price = tp_price
-                    exit_reason = "TP_HIT"
+                if h >= tp_price and l <= sl_price:
+                    # Conservative institutional accounting: worst-case SL executed first
+                    exit_price = sl_price
+                    exit_reason = "SL_HIT"
                 elif l <= sl_price:
                     exit_price = sl_price
                     exit_reason = "SL_HIT"
+                elif h >= tp_price:
+                    exit_price = tp_price
+                    exit_reason = "TP_HIT"
                 elif bars_held >= H:
                     exit_price = c - cur_slip
                     exit_reason = "TIME_EXPIRY"
 
             elif pos_type == "SHORT":
-                if l <= tp_price:
-                    exit_price = tp_price
-                    exit_reason = "TP_HIT"
+                if l <= tp_price and h >= sl_price:
+                    # Conservative institutional accounting: worst-case SL executed first
+                    exit_price = sl_price
+                    exit_reason = "SL_HIT"
                 elif h >= sl_price:
                     exit_price = sl_price
                     exit_reason = "SL_HIT"
+                elif l <= tp_price:
+                    exit_price = tp_price
+                    exit_reason = "TP_HIT"
                 elif bars_held >= H:
                     exit_price = c + cur_slip
                     exit_reason = "TIME_EXPIRY"
@@ -151,8 +175,8 @@ def backtest_out_of_sample(
 
         equity_curve.append(equity)
 
-        # 2. Check for new trade signal if flat
-        if not in_position and i < n - H:
+        # 3. Check for new trade signal at bar i close if flat
+        if not in_position and pending_entry is None and i < n - 1:
             d = decisions[i]
             act = d["action"]
 
@@ -167,26 +191,26 @@ def backtest_out_of_sample(
             entry_slip = cur_slip_ticks * tick_size
 
             if act == "BUY":
-                in_position = True
-                pos_type = "LONG"
-                entry_idx = i
-                entry_price = closes[i] + entry_slip
-                tp_price = d["suggested_tp"]
-                sl_price = d["suggested_sl"]
-                tp_ticks = d["tp_ticks"]
-                sl_ticks = d["sl_ticks"]
-                confidence = d["confidence"]
+                pending_entry = {
+                    "pos_type": "LONG",
+                    "entry_slip": entry_slip,
+                    "tp_price": d["suggested_tp"],
+                    "sl_price": d["suggested_sl"],
+                    "tp_ticks": d["tp_ticks"],
+                    "sl_ticks": d["sl_ticks"],
+                    "confidence": d["confidence"]
+                }
 
             elif act == "SELL":
-                in_position = True
-                pos_type = "SHORT"
-                entry_idx = i
-                entry_price = closes[i] - entry_slip
-                tp_price = d["suggested_tp"]
-                sl_price = d["suggested_sl"]
-                tp_ticks = d["tp_ticks"]
-                sl_ticks = d["sl_ticks"]
-                confidence = d["confidence"]
+                pending_entry = {
+                    "pos_type": "SHORT",
+                    "entry_slip": entry_slip,
+                    "tp_price": d["suggested_tp"],
+                    "sl_price": d["suggested_sl"],
+                    "tp_ticks": d["tp_ticks"],
+                    "sl_ticks": d["sl_ticks"],
+                    "confidence": d["confidence"]
+                }
 
     df_trades = pd.DataFrame(trades)
 
