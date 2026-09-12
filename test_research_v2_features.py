@@ -167,39 +167,34 @@ def test_ratchet_trailing_stop_in_dry_run():
 # 3. SELF-DOCUMENTING PRESETS REGISTRY TESTS
 # =============================================================================
 
-def test_preset_registry_doge_champion():
-    """Verify DOGE_V2_2_RATCHET_CHAMPION has full quantitative configuration & backtest data."""
-    cfg = settings.get_active_preset_config("DOGE_V2_2_RATCHET_CHAMPION")
+def test_preset_registry_trump_ml():
+    """Verify TRUMP_ML_RAPID_SCALPER has full quantitative configuration."""
+    cfg = settings.get_active_preset_config("TRUMP_ML_RAPID_SCALPER")
+    assert cfg is not None
+    assert cfg["symbol"] == "TRUMP_USDT"
+    assert "strategy_mode" in cfg
+    assert cfg["execution_style"] == "PURE_MARKET"
+
+
+def test_preset_registry_doge_ml():
+    """Verify DOGE_ML_MOMENTUM configuration."""
+    cfg = settings.get_active_preset_config("DOGE_ML_MOMENTUM")
     assert cfg is not None
     assert cfg["symbol"] == "DOGE_USDT"
-    assert cfg["tp_ticks"] == 5
-    assert cfg["sl_ticks"] == 2
-    assert cfg["ratchet_enabled"] is True
-    assert cfg["invert_signal"] is True
-    assert cfg["execution_style"] == "MAKER_HYBRID"
-    assert "backtest_config" in cfg
-    assert cfg["backtest_config"]["leverage"] == 75
-    assert "backtest_results_by_slippage" in cfg
-    assert "slippage_0t" in cfg["backtest_results_by_slippage"]
-    assert cfg["backtest_results_by_slippage"]["slippage_0t"]["net_profit_usdt"] == 2.14
 
 
-def test_preset_registry_doge_asymmetric():
-    """Verify DOGE_ASYMMETRIC_MOMENTUM_10T2T configuration."""
-    cfg = settings.get_active_preset_config("DOGE_ASYMMETRIC_MOMENTUM_10T2T")
-    assert cfg["symbol"] == "DOGE_USDT"
-    assert cfg["tp_ticks"] == 10
-    assert cfg["sl_ticks"] == 2
-    assert cfg["invert_signal"] is False
+def test_preset_registry_order_block_demand():
+    """Verify TRUMP_ORDER_BLOCK_DEMAND and DOGE_ORDER_BLOCK_DEMAND configuration."""
+    t_cfg = settings.get_active_preset_config("TRUMP_ORDER_BLOCK_DEMAND")
+    assert t_cfg is not None
+    assert t_cfg["symbol"] == "TRUMP_USDT"
+    assert t_cfg["strategy_mode"] == "ORDER_BLOCK_DEMAND"
+    assert t_cfg["partial_tp_ratio"] == 0.5
 
-
-def test_preset_registry_trump_legacy():
-    """Verify TRUMP_LEGACY_BASELINE configuration."""
-    cfg = settings.get_active_preset_config("TRUMP_LEGACY_BASELINE")
-    assert cfg["symbol"] == "TRUMP_USDT"
-    assert cfg["tp_ticks"] == 2
-    assert cfg["sl_mode"] == "ROE"
-    assert cfg["execution_style"] == "PURE_MARKET"
+    d_cfg = settings.get_active_preset_config("DOGE_ORDER_BLOCK_DEMAND")
+    assert d_cfg is not None
+    assert d_cfg["symbol"] == "DOGE_USDT"
+    assert d_cfg["strategy_mode"] == "ORDER_BLOCK_DEMAND"
 
 
 def test_preset_registry_custom():

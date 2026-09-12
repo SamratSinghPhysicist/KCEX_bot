@@ -23,9 +23,6 @@ on:
         options:
           - TRUMP_ML_RAPID_SCALPER
           - DOGE_ML_MOMENTUM
-          - DOGE_V2_2_RATCHET_CHAMPION
-          - DOGE_ASYMMETRIC_MOMENTUM_10T2T
-          - TRUMP_LEGACY_BASELINE
           - TRUMP_ORDER_BLOCK_DEMAND
           - DOGE_ORDER_BLOCK_DEMAND
           - CUSTOM

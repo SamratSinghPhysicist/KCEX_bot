@@ -26,7 +26,8 @@ if hasattr(sys.stdout, 'reconfigure'):
         pass
 
 # Ensure project root is in path
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+BACKTESTER_DIR = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(BACKTESTER_DIR, ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
@@ -79,30 +80,18 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     # 0. Strategy Preset Selection
     active_preset_name = getattr(settings, "ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER").upper()
     print("\n0. Strategy Preset Selection:")
-    print("   [1] TRUMP_ML_RAPID_SCALPER          -> Machine Learning 1M Alpha (Multi-Horizon HistGBDT + Dynamic ATR TP/SL) [AI CHAMPION]")
-    print("   [2] DOGE_ML_MOMENTUM               -> Machine Learning 1M Momentum (HistGBDT Multi-Horizon + Volatility Scaling) [AI CHAMPION]")
-    print("   [3] TRUMP_MARKET_SLIPPAGE_RESILIENT -> Market Taker Entry + Resting TP (+10t/-5t + Ratchet + ATR targets + Resilient)")
-    print("   [4] DOGE_MARKET_SLIPPAGE_RESILIENT  -> Market Taker Entry + Inverted Reversion + Resting TP (+10t/-4t + Resilient)")
-    print("   [5] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
-    print("   [6] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
-    print("   [7] TRUMP_V3_CHAMPION_MAKER_RATCHET -> Phase V3 Maker Hybrid Champion for TRUMP (6t TP / 3t SL + Ratchet)")
-    print("   [8] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
-    print("   [9] TRUMP_ORDER_BLOCK_DEMAND     -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
-    print("   [10] DOGE_ORDER_BLOCK_DEMAND     -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
-    print("   [11] CUSTOM / MANUAL SETUP       -> Step-by-step custom wizard configuration")
+    print("   [1] TRUMP_ML_RAPID_SCALPER       -> Machine Learning 1M Alpha (Multi-Horizon HistGBDT + Dynamic ATR TP/SL) [AI CHAMPION]")
+    print("   [2] DOGE_ML_MOMENTUM            -> Machine Learning 1M Momentum (HistGBDT Multi-Horizon + Volatility Scaling) [AI CHAMPION]")
+    print("   [3] TRUMP_ORDER_BLOCK_DEMAND     -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
+    print("   [4] DOGE_ORDER_BLOCK_DEMAND      -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
+    print("   [5] CUSTOM / MANUAL SETUP        -> Step-by-step custom wizard configuration")
 
     preset_map = {
         "1": "TRUMP_ML_RAPID_SCALPER",
         "2": "DOGE_ML_MOMENTUM",
-        "3": "TRUMP_MARKET_SLIPPAGE_RESILIENT",
-        "4": "DOGE_MARKET_SLIPPAGE_RESILIENT",
-        "5": "DOGE_V2_2_RATCHET_CHAMPION",
-        "6": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
-        "7": "TRUMP_V3_CHAMPION_MAKER_RATCHET",
-        "8": "TRUMP_LEGACY_BASELINE",
-        "9": "TRUMP_ORDER_BLOCK_DEMAND",
-        "10": "DOGE_ORDER_BLOCK_DEMAND",
-        "11": "CUSTOM"
+        "3": "TRUMP_ORDER_BLOCK_DEMAND",
+        "4": "DOGE_ORDER_BLOCK_DEMAND",
+        "5": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -115,7 +104,7 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
+    if preset_choice in ("1", "2", "3", "4"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
 
@@ -674,7 +663,7 @@ def main():
     parser.add_argument("--disable-slippage", dest="slippage_enabled", action="store_false", help="Disable adverse order execution slippage (0 slippage)")
     parser.add_argument("--slippage-ticks", dest="slippage_ticks", type=int, default=None, help="Integer ticks of adverse friction (e.g. 1, 2, 3)")
     # Phase V2.1 & V2.2 Quantitative Feature Flags
-    parser.add_argument("--preset", type=str, default=None, help="Strategy preset name to load (e.g. TRUMP_MARKET_SLIPPAGE_RESILIENT, DOGE_MARKET_SLIPPAGE_RESILIENT)")
+    parser.add_argument("--preset", type=str, default=None, help="Strategy preset name to load (e.g. TRUMP_ML_RAPID_SCALPER, DOGE_ML_MOMENTUM, TRUMP_ORDER_BLOCK_DEMAND, DOGE_ORDER_BLOCK_DEMAND)")
     parser.add_argument("--invert-signal", action="store_true", default=False, help="Invert Stoch RSI signal direction (Exhaustion Fading mode)")
     parser.add_argument("--ratchet", dest="ratchet_enabled", action="store_true", default=False, help="Enable Phase V2.2 Champion Micro-Excursion Tick Ratchet (+1.0t/10s -> -1t, +2.5t -> BE)")
     parser.add_argument("--ratchet-trigger-ticks", type=float, default=1.0, help="MFE in ticks required for Ratchet Tier 1 tightening (default: 1.0)")

@@ -43,44 +43,20 @@ from BACKTESTER.engine.execution_sim import BacktestExecutionEngine
 # 1. STRATEGY PRESET REGISTRY TESTS
 # =============================================================================
 
-def test_v3_and_v3_1_presets_registered():
-    """Verify all new V3 & V3.1 presets exist in STRATEGY_PRESETS and resolve completely."""
+def test_active_presets_registered():
+    """Verify active presets exist in STRATEGY_PRESETS and resolve completely."""
     expected_presets = [
-        "TRUMP_MARKET_SLIPPAGE_RESILIENT",
-        "DOGE_MARKET_SLIPPAGE_RESILIENT",
-        "TRUMP_V3_CHAMPION_MAKER_RATCHET",
-        "DOGE_V3_CHAMPION_ASYMMETRIC_MOMENTUM",
-        "DOGE_V2_2_RATCHET_CHAMPION",
-        "TRUMP_LEGACY_BASELINE"
+        "TRUMP_ML_RAPID_SCALPER",
+        "DOGE_ML_MOMENTUM",
+        "TRUMP_ORDER_BLOCK_DEMAND",
+        "DOGE_ORDER_BLOCK_DEMAND",
     ]
     for p in expected_presets:
         assert p in settings.STRATEGY_PRESETS, f"Preset {p} missing from STRATEGY_PRESETS"
         cfg = settings.get_active_preset_config(p)
         assert cfg is not None
         assert "symbol" in cfg
-        assert "tp_ticks" in cfg
-        assert "sl_ticks" in cfg
         assert "execution_style" in cfg
-
-
-def test_market_slippage_resilient_preset_specs():
-    """Verify market slippage resilient presets satisfy the Target Dilution Law and user mandate."""
-    trump_cfg = settings.get_active_preset_config("TRUMP_MARKET_SLIPPAGE_RESILIENT")
-    assert trump_cfg["symbol"] == "TRUMP_USDT"
-    assert trump_cfg["execution_style"] == "PURE_MARKET"
-    assert trump_cfg["resting_limit_tp"] is True
-    assert trump_cfg["tp_ticks"] >= 10  # Target Dilution: >= 10 ticks profit target
-    assert trump_cfg["sl_ticks"] <= 5   # Tight risk containment: <= 5 ticks stop
-    assert trump_cfg["ratchet_enabled"] is True
-    assert trump_cfg["ratchet_trigger_ticks"] >= 3.0  # Offsets taker spread friction
-    assert trump_cfg["use_atr_targets"] is True
-    assert trump_cfg["volume_filter_enabled"] is True
-
-    doge_cfg = settings.get_active_preset_config("DOGE_MARKET_SLIPPAGE_RESILIENT")
-    assert doge_cfg["symbol"] == "DOGE_USDT"
-    assert doge_cfg["execution_style"] == "PURE_MARKET"
-    assert doge_cfg["resting_limit_tp"] is True
-    assert doge_cfg["invert_signal"] is True  # Mean reversion dominates DOGE
 
 
 # =============================================================================

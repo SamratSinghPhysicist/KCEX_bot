@@ -113,24 +113,18 @@ def prompt_user_settings():
     # 0. Quantitative Strategy Preset Selection
     active_preset_name = get_setting("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER").upper()
     print("0. Strategy Preset Selection:")
-    print("   [1] TRUMP_ML_RAPID_SCALPER         -> 1M ML Alpha Engine (+39.9% Net, 1.98 PF, 3.27 Sharpe) [RECOMMENDED]")
-    print("   [2] DOGE_ML_MOMENTUM               -> 1M ML Momentum Classifier for DOGE Futures")
-    print("   [3] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
-    print("   [4] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
-    print("   [5] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
-    print("   [6] TRUMP_ORDER_BLOCK_DEMAND       -> 🏛️ Vivek Yadav SMC Order Block + Demand Block (1:1 Partial TP + BE + 1:2 Runner)")
-    print("   [7] DOGE_ORDER_BLOCK_DEMAND        -> 🏛️ Vivek Yadav SMC Order Block + Demand Block for DOGE")
-    print("   [8] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
+    print("   [1] TRUMP_ML_RAPID_SCALPER   -> 1M ML Alpha Engine (+39.9% Net, 1.98 PF, 3.27 Sharpe) [RECOMMENDED]")
+    print("   [2] DOGE_ML_MOMENTUM         -> 1M ML Momentum Classifier for DOGE Futures")
+    print("   [3] TRUMP_ORDER_BLOCK_DEMAND -> 🏛️ Vivek Yadav SMC Order Block + Demand Block (1:1 Partial TP + BE + 1:2 Runner)")
+    print("   [4] DOGE_ORDER_BLOCK_DEMAND  -> 🏛️ Vivek Yadav SMC Order Block + Demand Block for DOGE")
+    print("   [5] CUSTOM / MANUAL SETUP    -> Step-by-step custom wizard configuration")
 
     preset_map = {
         "1": "TRUMP_ML_RAPID_SCALPER",
         "2": "DOGE_ML_MOMENTUM",
-        "3": "DOGE_V2_2_RATCHET_CHAMPION",
-        "4": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
-        "5": "TRUMP_LEGACY_BASELINE",
-        "6": "TRUMP_ORDER_BLOCK_DEMAND",
-        "7": "DOGE_ORDER_BLOCK_DEMAND",
-        "8": "CUSTOM"
+        "3": "TRUMP_ORDER_BLOCK_DEMAND",
+        "4": "DOGE_ORDER_BLOCK_DEMAND",
+        "5": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -143,7 +137,7 @@ def prompt_user_settings():
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4", "5", "6", "7"):
+    if preset_choice in ("1", "2", "3", "4"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
         is_ml_preset = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
@@ -1421,7 +1415,7 @@ def main():
         config = prompt_user_settings()
     else:
         # Resolve active strategy preset
-        active_preset_name = (args.preset or get_setting("ACTIVE_PRESET", "DOGE_V2_2_RATCHET_CHAMPION")).upper()
+        active_preset_name = (args.preset or get_setting("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER")).upper()
         preset_cfg = {}
         if hasattr(settings, "get_active_preset_config"):
             preset_cfg = settings.get_active_preset_config(active_preset_name)
@@ -1742,7 +1736,7 @@ def main():
     print("==============================================================================")
     print("                      CONFIGURED ENGINE PARAMETERS")
     print("==============================================================================")
-    preset_label = f"{active_preset_name}" if "active_preset_name" in locals() else get_setting("ACTIVE_PRESET", "DOGE_V2_2_RATCHET_CHAMPION")
+    preset_label = f"{active_preset_name}" if "active_preset_name" in locals() else get_setting("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER")
     print(f"  • Strategy Preset   : {preset_label}")
     print(f"  • Symbol & Mode     : {config.symbol} | {config.mode.value.upper()} | Direction: {bias_desc}")
     print(f"  • Strategy Engine   : {strat_desc}")

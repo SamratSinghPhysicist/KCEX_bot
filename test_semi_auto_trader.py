@@ -50,7 +50,7 @@ class TestSemiAutoTrader(unittest.TestCase):
         self.assertIn(preset.tp_mode, ["TICKS", "ROE_PCT", "PRICE_PCT", "ABSOLUTE"])
 
         summary = preset.summary_lines()
-        self.assertEqual(len(summary), 5)
+        self.assertEqual(len(summary), 6)
 
     def test_compute_target_prices_long(self):
         # Long entry at 2.0000, pu = 0.001, leverage = 20
