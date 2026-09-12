@@ -356,7 +356,7 @@ ACTIVE_PRESET = "TRUMP_ML_RAPID_SCALPER"
 # 1. Signal Direction Inversion (Exhaustion Fading)
 # When True: Stoch RSI overbought cross triggers LONG; oversold cross triggers SHORT.
 # Discovered in Phase V2.1: +61% to +84% PF increase in consolidation/range regimes.
-INVERT_SIGNAL = True
+INVERT_SIGNAL = False
 
 # 2. Dynamic Regime Fading
 # Automatically inverts signals in consolidation (ADX < cutoff) while preserving direct
@@ -376,7 +376,7 @@ RESTING_LIMIT_TP = False
 # In-position trailing stop protection based on millisecond Maximum Favorable Excursion (MFE):
 # • Tier 1: When MFE >= +1.0t and position stalls >= 10.0s -> Tighten SL to -1.0t
 # • Tier 2: When MFE >= +2.5t -> Lock SL to Breakeven (0.0t)
-RATCHET_ENABLED = True
+RATCHET_ENABLED = False
 RATCHET_TRIGGER_TICKS = 1.0
 RATCHET_STALL_SECONDS = 10.0
 RATCHET_TIGHTEN_TICKS = 1.0
@@ -510,6 +510,8 @@ STRATEGY_PRESETS = {
         "max_sl_ticks": 35,
         "execution_style": "PURE_MARKET",
         "resting_limit_tp": True,
+        "invert_signal": False,
+        "ratchet_enabled": False,
         "slippage_enabled": False,
         "slippage_ticks": 0
     },
@@ -539,6 +541,8 @@ STRATEGY_PRESETS = {
         "max_sl_ticks": 30,
         "execution_style": "PURE_MARKET",
         "resting_limit_tp": True,
+        "invert_signal": False,
+        "ratchet_enabled": False,
         "slippage_enabled": False,
         "slippage_ticks": 0
     },

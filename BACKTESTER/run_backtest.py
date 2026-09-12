@@ -202,22 +202,23 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             taker_fee = (float(t_input) / 100.0) if t_input else 0.0001
 
         is_ml = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+        is_smc = "ORDER_BLOCK" in chosen_preset or "DEMAND" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "SMC")
         v_mult = float(preset_cfg.get("volume_multiplier", 1.0 if is_ml else (1.0 if "DOGE" in p_sym else 2.0)))
-        lev_val = int(preset_cfg.get("leverage", 30 if is_ml else 75))
+        lev_val = int(preset_cfg.get("leverage", 30 if is_ml else (25 if is_smc else 75)))
 
         config = BacktestConfig(
             symbol=p_sym,
             timeframe=p_tf,
-            strategy_mode=preset_cfg.get("strategy_mode", "ML_1M" if is_ml else "STOCH_RSI"),
+            strategy_mode=preset_cfg.get("strategy_mode", "ML_1M" if is_ml else ("ORDER_BLOCK_DEMAND" if is_smc else "STOCH_RSI")),
             stoch_preset=preset_cfg.get("stoch_preset", "FAST_SCALP"),
             start_time=start_val,
             end_time=end_val,
             volume_mode="MULTIPLIER",
             volume_multiplier=v_mult,
-            tp_ticks=preset_cfg.get("tp_ticks", 0 if is_ml else 5),
-            dynamic_tp=preset_cfg.get("dynamic_tp", True if is_ml else False),
+            tp_ticks=preset_cfg.get("tp_ticks", 0 if is_ml else (10 if is_smc else 5)),
+            dynamic_tp=preset_cfg.get("dynamic_tp", True if (is_ml or is_smc) else False),
             sl_mode=preset_cfg.get("sl_mode", "TICKS"),
-            sl_ticks=preset_cfg.get("sl_ticks", 0 if is_ml else 2),
+            sl_ticks=preset_cfg.get("sl_ticks", 0 if is_ml else (5 if is_smc else 2)),
             sl_roe_pct=preset_cfg.get("sl_roe_pct", 25.0),
             leverage=lev_val,
             initial_balance_usdt=100.0,
@@ -226,13 +227,13 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             fee_mode=fee_mode,
             maker_fee_override=maker_fee,
             taker_fee_override=taker_fee,
-            invert_signal=preset_cfg.get("invert_signal", False if is_ml else True),
-            ratchet_enabled=preset_cfg.get("ratchet_enabled", False if is_ml else True),
+            invert_signal=preset_cfg.get("invert_signal", False),
+            ratchet_enabled=preset_cfg.get("ratchet_enabled", False),
             ratchet_trigger_ticks=preset_cfg.get("ratchet_trigger_ticks", 1.0),
             ratchet_stall_seconds=preset_cfg.get("ratchet_stall_seconds", 10.0),
             ratchet_tighten_ticks=preset_cfg.get("ratchet_tighten_ticks", 1.0),
             ratchet_breakeven_ticks=preset_cfg.get("ratchet_breakeven_ticks", 2.5),
-            execution_style=preset_cfg.get("execution_style", "MAKER_HYBRID"),
+            execution_style=preset_cfg.get("execution_style", "PURE_MARKET"),
             maker_queue_timeout_seconds=preset_cfg.get("maker_queue_timeout_seconds", 10.0),
             resting_limit_tp=preset_cfg.get("resting_limit_tp", True),
             slippage_enabled=slip_enabled,

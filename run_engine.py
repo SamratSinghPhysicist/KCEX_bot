@@ -257,12 +257,12 @@ def prompt_user_settings():
             max_trades = def_max_trades
 
         # Resolve strategy, TP/SL, and ratchet settings
-        strat_mode = preset_cfg.get("strategy_mode", "ML_1M" if is_ml_preset else "STOCH_RSI")
-        dyn_tp = preset_cfg.get("dynamic_tp", True if is_ml_preset else False)
-        inv_sig = preset_cfg.get("invert_signal", False if is_ml_preset else True)
-        ratch_en = preset_cfg.get("ratchet_enabled", False if is_ml_preset else True)
-        tp_ticks = preset_cfg.get("tp_ticks", 0 if is_ml_preset else 5)
-        sl_ticks = preset_cfg.get("sl_ticks", 0 if is_ml_preset else 2)
+        strat_mode = preset_cfg.get("strategy_mode", "ML_1M" if is_ml_preset else ("ORDER_BLOCK_DEMAND" if is_smc_preset else "STOCH_RSI"))
+        dyn_tp = preset_cfg.get("dynamic_tp", True if (is_ml_preset or is_smc_preset) else False)
+        inv_sig = preset_cfg.get("invert_signal", False)
+        ratch_en = preset_cfg.get("ratchet_enabled", False)
+        tp_ticks = preset_cfg.get("tp_ticks", 0 if is_ml_preset else (10 if is_smc_preset else 5))
+        sl_ticks = preset_cfg.get("sl_ticks", 0 if is_ml_preset else (5 if is_smc_preset else 2))
         sl_mode = preset_cfg.get("sl_mode", "TICKS")
         sl_roe = preset_cfg.get("sl_roe_pct", 25.0)
 
@@ -1487,7 +1487,7 @@ def main():
             dynamic_tp = True
 
         # Quantitative parameters resolution
-        if is_ml_strat and args.invert_signal is None and "invert_signal" not in preset_cfg:
+        if (is_ml_strat or is_smc_strat) and args.invert_signal is None and "invert_signal" not in preset_cfg:
             inv_sig = False
         else:
             inv_sig = args.invert_signal if args.invert_signal is not None else preset_cfg.get("invert_signal", get_setting("INVERT_SIGNAL", False))
@@ -1496,7 +1496,7 @@ def main():
         exec_style = (args.execution_style or preset_cfg.get("execution_style") or get_setting("EXECUTION_STYLE", "PURE_MARKET")).upper()
         maker_timeout = preset_cfg.get("maker_queue_timeout_seconds", get_setting("MAKER_QUEUE_TIMEOUT_SECONDS", 10.0))
         resting_tp = preset_cfg.get("resting_limit_tp", get_setting("RESTING_LIMIT_TP", True))
-        if is_ml_strat and getattr(args, "ratchet", None) is None and "ratchet_enabled" not in preset_cfg:
+        if (is_ml_strat or is_smc_strat) and getattr(args, "ratchet", None) is None and "ratchet_enabled" not in preset_cfg:
             ratch_en = False
         else:
             ratch_en = args.ratchet_enabled if hasattr(args, "ratchet_enabled") and args.ratchet_enabled is not None else preset_cfg.get("ratchet_enabled", get_setting("RATCHET_ENABLED", False))
