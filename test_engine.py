@@ -25,6 +25,7 @@ if hasattr(sys.stdout, 'reconfigure'):
         pass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import settings
 
 from kcex.market import ContractInfo
 from kcex import (
@@ -420,6 +421,8 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             mode=EngineMode.DRY_RUN,
             volume_mode="CONTRACTS",
             volume_contracts=1,
+            sl_mode="TICKS",
+            sl_ticks=10,
             cooldown_seconds=1.0,
             max_trades=1,
             logs_dir=self.test_log_dir,
@@ -502,6 +505,8 @@ class TestEngineExecutionDryRun(unittest.TestCase):
             mode=EngineMode.DRY_RUN,
             volume_mode="CONTRACTS",
             volume_contracts=1,
+            sl_mode="TICKS",
+            sl_ticks=10,
             cooldown_seconds=1.0,
             max_trades=1,
             logs_dir=self.test_log_dir,
@@ -510,8 +515,8 @@ class TestEngineExecutionDryRun(unittest.TestCase):
         engine = create_test_engine(config=config)
         contract = engine.pre_flight_checks()
 
-        # For SHORT: Entry at bid1 = 2.350. SL is ~2.353 (3 pu away with 10% ROE on 75x).
-        # Ticker stays below SL at 2.351 (should NOT trigger SL), then jumps past SL to 2.355.
+        # For SHORT: Entry at bid1 = 2.350. SL is ~2.360 (+10 ticks).
+        # Ticker stays below SL at 2.351 (should NOT trigger SL), then jumps past SL to 2.370.
         ticker_sequence = [
             {"symbol": "TRUMP_USDT", "lastPrice": 2.350, "bid1": 2.350, "ask1": 2.350},
             {"symbol": "TRUMP_USDT", "lastPrice": 2.351, "bid1": 2.351, "ask1": 2.351},
@@ -621,6 +626,56 @@ class TestVolumeSizingAndExposure(unittest.TestCase):
         self.assertAlmostEqual(outcome.underlying_quantity, 5 * contract.contract_size)
         expected_margin = outcome.notional_value_usdt / outcome.leverage
         self.assertAlmostEqual(outcome.margin_used_usdt, expected_margin, places=4)
+
+    def test_stoch_rsi_preset_configuration(self):
+        """Verifies that TRUMP_STOCH_RSI preset resolves all user parameters correctly."""
+        cfg = settings.get_active_preset_config("TRUMP_STOCH_RSI")
+        self.assertEqual(cfg["symbol"], "TRUMP_USDT")
+        self.assertEqual(cfg["strategy_mode"], "STOCH_RSI")
+        self.assertEqual(cfg["leverage"], 10)
+        self.assertEqual(cfg["volume_multiplier"], 50.0)
+        self.assertEqual(cfg["margin_fallback_pct"], 25.0)
+        self.assertEqual(cfg["tp_ticks"], 2)
+        self.assertEqual(cfg["sl_ticks"], 150)
+        self.assertEqual(cfg["cooldown_seconds"], 0.0)
+
+    def test_dynamic_margin_fallback(self):
+        """Verifies that when required margin exceeds wallet balance, 25% margin fallback applies."""
+        config = ExecutionConfig(
+            symbol="TRUMP_USDT",
+            direction=OrderDirection.LONG,
+            mode=EngineMode.DRY_RUN,
+            leverage=10,
+            volume_mode="MULTIPLIER",
+            volume_multiplier=50.0,  # 50 contracts requested
+            margin_fallback_pct=25.0,
+            simulated_balance_usdt=1.0,  # 1.0 USDT available (insufficient for 50 contracts @ $2.50 = 1.25 USDT margin)
+            logs_dir=self.test_log_dir,
+            poll_interval_seconds=0.05
+        )
+        engine = create_test_engine(config=config)
+        contract = engine.pre_flight_checks()
+
+        ticks = [
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.500, "bid1": 2.500, "ask1": 2.500},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.500, "bid1": 2.500, "ask1": 2.500},
+            {"symbol": "TRUMP_USDT", "lastPrice": 2.502, "bid1": 2.502, "ask1": 2.503}
+        ]
+        tick_call = [0]
+        def mock_ticker(sym):
+            idx = min(tick_call[0], len(ticks) - 1)
+            tick_call[0] += 1
+            return ticks[idx]
+        engine.market.get_ticker = mock_ticker
+
+        outcome = engine.execute_single_trade_cycle(contract)
+        self.assertIsNotNone(outcome)
+        # Sizing with 25% fallback: 25% of 1.0 USDT = 0.25 USDT target margin.
+        # Notional = 0.25 * 10 = 2.50 USDT.
+        # Contracts = int(2.50 / (0.1 * 2.50)) = 10 contracts.
+        self.assertEqual(outcome.vol_contracts, 10)
+        self.assertLess(outcome.margin_used_usdt, 1.0)
+
 
 
 class TestGeneralizationMultiCoin(unittest.TestCase):

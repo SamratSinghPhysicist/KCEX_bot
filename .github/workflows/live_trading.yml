@@ -16,11 +16,12 @@ on:
           - live
           - dry-run
       preset:
-        description: "Strategy Preset (e.g. TRUMP_ML_RAPID_SCALPER or CUSTOM)"
+        description: "Strategy Preset (e.g. TRUMP_STOCH_RSI, TRUMP_ML_RAPID_SCALPER or CUSTOM)"
         required: false
-        default: "TRUMP_ML_RAPID_SCALPER"
+        default: "TRUMP_STOCH_RSI"
         type: choice
         options:
+          - TRUMP_STOCH_RSI
           - TRUMP_ML_RAPID_SCALPER
           - DOGE_ML_MOMENTUM
           - TRUMP_ORDER_BLOCK_DEMAND
@@ -29,12 +30,12 @@ on:
       strategy:
         description: "Strategy Engine (used if CUSTOM preset)"
         required: false
-        default: "ML_1M_MODEL"
+        default: "STOCH_RSI"
         type: choice
         options:
+          - STOCH_RSI
           - ML_1M_MODEL
           - ORDER_BLOCK_DEMAND
-          - STOCH_RSI
           - EMA_CROSSOVER
           - SMART_STRATEGY
       symbol:
@@ -45,12 +46,12 @@ on:
       tp_ticks:
         description: "Take-Profit distance in price unit ticks (Fixed if not ML)"
         required: false
-        default: "10"
+        default: "2"
         type: string
       sl_ticks:
         description: "Stop-Loss distance in price unit ticks (Fixed if not ML)"
         required: false
-        default: "3"
+        default: "150"
         type: string
       invert_signal:
         description: "Signal Paradigm: Direct signal (Momentum)"
@@ -66,19 +67,19 @@ on:
           - PURE_MARKET
           - MAKER_HYBRID
       volume_multiplier:
-        description: "Volume multiplier (e.g. 1.0 for 1x min quantity)"
+        description: "Volume multiplier (e.g. 50.0 for 50x min quantity)"
         required: false
-        default: "1.0"
+        default: "50.0"
         type: string
       leverage:
-        description: "Position leverage (Isolated margin, recommended 20-30x for ML)"
+        description: "Position leverage (Isolated margin, default 10x)"
         required: false
-        default: "30"
+        default: "10"
         type: string
       cooldown_seconds:
         description: "Cooldown seconds between trades"
         required: false
-        default: "10"
+        default: "0"
         type: string
       enable_ratchet:
         description: "Enable Micro-Excursion Tick Ratchet"
@@ -98,7 +99,7 @@ on:
 
 jobs:
   live-trade:
-    name: "🔴 Live Trading (${{ inputs.preset || 'TRUMP_ML_RAPID_SCALPER' }})"
+    name: "🔴 Live Trading (${{ inputs.preset || 'TRUMP_STOCH_RSI' }})"
     runs-on: ubuntu-latest
     timeout-minutes: 240  # 4h hard cap (buffer beyond 3.5h for trade completion + logging)
 
@@ -134,13 +135,13 @@ jobs:
         run: |
           echo "::group::🔧 Engine Configuration"
           MODE="${{ inputs.mode || 'live' }}"
-          PRESET="${{ inputs.preset || 'TRUMP_ML_RAPID_SCALPER' }}"
-          STRATEGY="${{ inputs.strategy || 'ML_1M_MODEL' }}"
+          PRESET="${{ inputs.preset || 'TRUMP_STOCH_RSI' }}"
+          STRATEGY="${{ inputs.strategy || 'STOCH_RSI' }}"
           SYMBOL="${{ inputs.symbol || 'TRUMP_USDT' }}"
-          TP_TICKS="${{ inputs.tp_ticks || '10' }}"
-          SL_TICKS="${{ inputs.sl_ticks || '3' }}"
-          VOL_MULT="${{ inputs.volume_multiplier || '1.0' }}"
-          LEVERAGE="${{ inputs.leverage || '30' }}"
+          TP_TICKS="${{ inputs.tp_ticks || '2' }}"
+          SL_TICKS="${{ inputs.sl_ticks || '150' }}"
+          VOL_MULT="${{ inputs.volume_multiplier || '50.0' }}"
+          LEVERAGE="${{ inputs.leverage || '10' }}"
           COOLDOWN="${{ inputs.cooldown_seconds || '0' }}"
           MAX_TRADES="${{ inputs.max_trades || '0' }}"
           EXEC_STYLE="${{ inputs.execution_style || 'PURE_MARKET' }}"
@@ -242,7 +243,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: live-session-${{ inputs.preset || 'TRUMP_ML_RAPID_SCALPER' }}-run${{ github.run_number }}-${{ github.run_id }}
+          name: live-session-${{ inputs.preset || 'TRUMP_STOCH_RSI' }}-run${{ github.run_number }}-${{ github.run_id }}
           path: |
             logs/*.log
             logs/*.txt

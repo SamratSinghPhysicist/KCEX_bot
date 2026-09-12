@@ -57,19 +57,21 @@ class ExecutionConfig:
     symbol: str = field(default_factory=lambda: os.getenv("KCEX_SYMBOL", "TRUMP_USDT"))
     direction: OrderDirection = OrderDirection.LONG
     mode: EngineMode = EngineMode.DRY_RUN
-    leverage: int = 75
+    leverage: int = 10
     is_isolated: bool = True
-    cooldown_seconds: float = 30.0
+    cooldown_seconds: float = 0.0
     tp_ticks: int = 2               # Number of pu (tick size) away from entry (fixed TP)
     dynamic_tp: bool = False        # False = strictly enforce tp_ticks; True = allow dynamic 1..3 pu scaling
-    sl_mode: str = "ROE"            # "ROE", "TICKS", or "PRICE_PCT"
+    sl_mode: str = "TICKS"          # "ROE", "TICKS", or "PRICE_PCT"
     sl_roe_pct: float = 25.0        # -25.0% ROE (Return on Equity/Margin)
-    sl_ticks: Optional[int] = None  # Number of pu ticks away from entry
+    sl_ticks: Optional[int] = 150   # Number of pu ticks away from entry
     sl_price_pct: Optional[float] = None # Price move percentage away from entry
     # Trade Quantity / Volume settings (Note: Trade Quantity is NOT margin. Margin = Trade Quantity / Leverage)
     volume_mode: str = "MULTIPLIER"       # "MIN", "MULTIPLIER", or "CONTRACTS"
-    volume_multiplier: float = 2.0        # x times min_volume (e.g. 2.0 = 2x min quantity for TRUMP)
-    volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 2)
+    volume_multiplier: float = 50.0       # x times min_volume (e.g. 50.0 = 50x min quantity for TRUMP)
+    volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 50)
+    margin_fallback_pct: float = 25.0     # Percentage of available margin to use if requested volume exceeds balance
+    simulated_balance_usdt: Optional[float] = None # Simulated wallet balance for dry-run/testing
     max_trades: int = 0                   # 0 = unlimited
     # Strategy selection
     strategy_mode: str = "STOCH_RSI"      # "STOCH_RSI" or "EMA_CROSSOVER"

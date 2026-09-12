@@ -305,8 +305,8 @@ class TradeExecutionEngine:
         direction = signal.direction
         is_long = (direction == OrderDirection.LONG)
 
-        # Capture wallet balance BEFORE trade entry (for MongoDB logging)
-        balance_before_usdt = None
+        # Capture wallet balance BEFORE trade entry (for MongoDB logging and margin sizing)
+        balance_before_usdt = getattr(self.config, "simulated_balance_usdt", None)
         balance_before_inr = None
         if self.config.mode == EngineMode.LIVE:
             try:
@@ -414,6 +414,29 @@ class TradeExecutionEngine:
             price_unit=pu,
             precision=ps
         )
+
+        # Dynamic Margin Sizing & Fallback Validation
+        if balance_before_usdt is not None and balance_before_usdt > 0:
+            initial_req_margin = (underlying_qty * ref_price) / leverage
+            if initial_req_margin > balance_before_usdt:
+                fallback_pct = float(getattr(self.config, "margin_fallback_pct", 25.0) or 25.0)
+                target_margin = (fallback_pct / 100.0) * balance_before_usdt
+                target_notional = target_margin * leverage
+                if cs * ref_price > 0:
+                    scaled_contracts = int(target_notional / (cs * ref_price))
+                    target_contracts = max(min_vol, scaled_contracts)
+                else:
+                    target_contracts = min_vol
+
+                self.logger.warning(
+                    f"⚠️ Insufficient Margin: Required {initial_req_margin:.4f} USDT for {vol_spec_desc} "
+                    f"exceeds available balance ({balance_before_usdt:.4f} USDT). "
+                    f"Applying {fallback_pct:g}% available margin fallback: sizing to {target_contracts} contract(s) "
+                    f"(~{((target_contracts * cs * ref_price) / leverage):.4f} USDT margin)."
+                )
+                vol_contracts = target_contracts
+                underlying_qty = vol_contracts * cs
+                vol_spec_desc = f"{vol_contracts} contract(s) ({fallback_pct:g}% margin fallback)"
 
         notional_est_usdt = underlying_qty * ref_price
         notional_est_inr = notional_est_usdt * inr_rate

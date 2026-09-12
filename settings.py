@@ -92,24 +92,29 @@ MODE = "live"
 #   "CONTRACTS"  -> Execute an exact integer number of contracts (e.g. 1, 2, 5).
 VOLUME_MODE = "MULTIPLIER"  # "MIN", "MULTIPLIER", or "CONTRACTS"
 
-# Default volume sizing: 2x min for TRUMP_USDT, 1x min for DOGE_USDT
-VOLUME_MULTIPLIER = 2.0
+# Default volume sizing: 50x min for TRUMP_USDT
+VOLUME_MULTIPLIER = 50.0
+
+# Dynamic Margin Fallback Percentage:
+# In case wallet available margin is insufficient for requested volume,
+# scale position size to use this percentage of available margin.
+MARGIN_FALLBACK_PCT = 25.0
 
 # If VOLUME_MODE == "CONTRACTS":
 # Exact number of contracts (must be >= contract min_volume, which is 1 for TRUMP)
-VOLUME_CONTRACTS = 2
+VOLUME_CONTRACTS = 50
 
 
 def get_default_quantity_for_symbol(symbol: str) -> tuple[str, float]:
     """
     Returns default (volume_mode, volume_value) tailored per symbol:
-    - TRUMP_USDT: 2x minimum volume (2 contracts / 2.0x multiplier)
+    - TRUMP_USDT: 50x minimum volume (50 contracts / 50.0x multiplier)
     - DOGE_USDT : 1x minimum volume (1 contract / 1.0x multiplier)
     - Others    : 1.0x minimum multiplier
     """
     s = str(symbol).upper()
     if "TRUMP" in s:
-        return ("MULTIPLIER", 2.0)
+        return ("MULTIPLIER", 50.0)
     elif "DOGE" in s:
         return ("MULTIPLIER", 1.0)
     return ("MULTIPLIER", 1.0)
@@ -134,17 +139,15 @@ DYNAMIC_TP = False
 # 4. STOP-LOSS (SL) RULES & MODES
 # =============================================================================
 # Choose how the Stop Loss distance is determined:
-#   "ROE"       -> Return on Equity / Margin loss percentage (e.g. 25.0% loss on margin) [Default]
-#   "TICKS"     -> Fixed number of price units / ticks away from entry
+#   "ROE"       -> Return on Equity / Margin loss percentage (e.g. 25.0% loss on margin)
+#   "TICKS"     -> Fixed number of price units / ticks away from entry [Default]
 #   "PRICE_PCT" -> Direct asset price movement percentage (e.g. 0.5% price drop)
-SL_MODE = "ROE"
+SL_MODE = "TICKS"
 
 # Setting for SL_MODE = "TICKS":
 # Number of pu (tick size) away from entry price.
-#   10 ticks = 0.0100 USDT offset (~0.42% price move) -> safe at <= 40x leverage
-#   15 ticks = 0.0150 USDT offset (~0.64% price move) -> safe at <= 30x leverage
-#   20 ticks = 0.0200 USDT offset (~0.85% price move) -> safe at <= 25x leverage
-SL_TICKS = 10
+#   150 ticks = 0.1500 USDT offset (~6.38% price move for TRUMP) -> safe at 10x leverage
+SL_TICKS = 150
 
 # Setting for SL_MODE = "ROE":
 # Percentage of margin committed to risk (e.g. 25.0 means max 25% loss of margin).
@@ -159,9 +162,7 @@ SL_PRICE_PCT = 0.5
 # 5. LEVERAGE & MARGIN SETTINGS
 # =============================================================================
 # Position leverage multiplier.
-# Note: At 75x leverage, 25% ROE loss represents a 0.333% price move (approx ~7.8 ticks for TRUMP).
-# In case of conflict between liquidation and SL, 75x leverage is strictly prioritized.
-LEVERAGE = 30
+LEVERAGE = 10
 
 # Margin mode: True for Isolated (openType=1), False for Cross (openType=2).
 # Isolated margin is strongly recommended to restrict risk strictly to position margin.
@@ -172,7 +173,8 @@ IS_ISOLATED = True
 # 6. CYCLE TIMING & SESSION LIMITS
 # =============================================================================
 # Cooldown period in seconds to wait after a trade closes before opening the next trade.
-COOLDOWN_SECONDS = 10.0
+# Zero cooldown between trades per user configuration.
+COOLDOWN_SECONDS = 0.0
 
 # Maximum number of trades to execute in this session.
 # Set to 0 for UNLIMITED / continuous 24/7 automated operation until stopped.
@@ -192,7 +194,7 @@ POLL_INTERVAL_SECONDS = 0.2
 #   "SMART_STRATEGY" -> Autonomous Regime-Adaptive Strategy (Switches Momentum EMA / Range Stoch RSI)
 #   "STOCH_RSI"      -> Stochastic RSI Fast Scalp & Reversal Strategy
 #   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8)
-STRATEGY_MODE = "ORDER_BLOCK_DEMAND"
+STRATEGY_MODE = "STOCH_RSI"
 
 # -----------------------------------------------------------------------------
 # Order Execution Type & Slippage Protection
@@ -335,20 +337,28 @@ OUTCOMES_JSONL_FILE = "trade_outcomes.jsonl"  # Machine-readable JSONL audit tra
 #      • August 2026 Pure Out-of-Sample Performance: +39.94% Net Return, 1.98 PF, 3.27 Sharpe.
 #      • Setup: TRUMP_USDT, 12-bar horizon, Dynamic ATR TP (~1.9x) / SL (~1.0x).
 #
-#   2. "DOGE_ML_MOMENTUM"
+#   1. "TRUMP_STOCH_RSI" [DEFAULT FOR LIVE TRADING]
+#      • Stochastic RSI Fast Scalper on TRUMP_USDT (0% fee).
+#      • 10x leverage, 50x min contract volume with 25% available margin fallback.
+#      • +2 ticks TP, -150 ticks SL, 0s cooldown.
+#
+#   2. "TRUMP_ML_RAPID_SCALPER"
+#      • Empirically Verified 1M ML Engine (HistGradientBoosting).
+#
+#   3. "DOGE_ML_MOMENTUM"
 #      • Machine Learning 1M Momentum on DOGE_USDT with volatility scaling.
 #
-#   3. "TRUMP_ORDER_BLOCK_DEMAND"
+#   4. "TRUMP_ORDER_BLOCK_DEMAND"
 #      • Smart Money Concepts (Vivek Yadav): Strict body-close BOS, wick-to-wick OB,
 #        3-5 candle Demand/Supply blocks + FVG, 1:1 Partial TP + Breakeven Lock + 1:2 Runner.
 #
-#   4. "DOGE_ORDER_BLOCK_DEMAND"
+#   5. "DOGE_ORDER_BLOCK_DEMAND"
 #      • Smart Money Concepts on DOGE_USDT with 0% KCEX fees.
 #
-#   5. "CUSTOM"
+#   6. "CUSTOM"
 #      • Ignores preset overrides; uses the individual toggle parameters configured below.
 #
-ACTIVE_PRESET = "TRUMP_ML_RAPID_SCALPER"
+ACTIVE_PRESET = "TRUMP_STOCH_RSI"
 
 # -----------------------------------------------------------------------------
 # Individual Modular Feature Toggles (Used when ACTIVE_PRESET = "CUSTOM")
@@ -413,6 +423,45 @@ VOLATILITY_REGIME_PERIOD = 14
 # STRATEGY PRESET DEFINITIONS (Complete Configurations & Backtest Records)
 # =============================================================================
 STRATEGY_PRESETS = {
+    "TRUMP_STOCH_RSI": {
+        "name": "TRUMP Stochastic RSI Scalper",
+        "description": (
+            "Stochastic RSI Scalper on TRUMP_USDT (0% KCEX fee). "
+            "10x leverage, 50x min contract volume with 25% available margin fallback, "
+            "+2 ticks TP, -150 ticks SL, 0s cooldown."
+        ),
+        "symbol": "TRUMP_USDT",
+        "strategy_mode": "STOCH_RSI",
+        "timeframe": "1m",
+        "leverage": 10,
+        "volume_mode": "MULTIPLIER",
+        "volume_multiplier": 50.0,
+        "margin_fallback_pct": 25.0,
+        "tp_ticks": 2,
+        "dynamic_tp": False,
+        "sl_mode": "TICKS",
+        "sl_ticks": 150,
+        "cooldown_seconds": 0.0,
+        "max_trades": 0,
+        "stoch_preset": "FAST_SCALP",
+        "stoch_rsi_period": 9,
+        "stoch_period": 9,
+        "stoch_k_period": 3,
+        "stoch_d_period": 3,
+        "stoch_oversold": 20.0,
+        "stoch_overbought": 80.0,
+        "stoch_interval": "Min1",
+        "stoch_zone_filter": True,
+        "stoch_require_closed_candle": True,
+        "bi_directional": True,
+        "execution_style": "PURE_MARKET",
+        "order_type": "MARKET",
+        "cancel_if_unfilled": False,
+        "invert_signal": False,
+        "ratchet_enabled": False,
+        "slippage_enabled": False,
+        "slippage_ticks": 0
+    },
     "TRUMP_ML_RAPID_SCALPER": {
         "name": "TRUMP 1M ML Rapid Scalper (HistGradientBoosting Alpha Engine)",
         "description": (
@@ -585,7 +634,8 @@ def get_active_preset_config(preset_name: str = None) -> dict:
         "sl_mode": SL_MODE,
         "sl_ticks": SL_TICKS,
         "sl_roe_pct": SL_ROE_PCT,
-        "volume_multiplier": 1.0,
+        "volume_multiplier": VOLUME_MULTIPLIER,
+        "margin_fallback_pct": MARGIN_FALLBACK_PCT,
         "max_trades": 0,
         "use_atr_targets": USE_ATR_TARGETS,
         "atr_tp_multiplier": ATR_TP_MULTIPLIER,

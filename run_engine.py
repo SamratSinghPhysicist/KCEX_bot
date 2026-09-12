@@ -1415,7 +1415,7 @@ def main():
         config = prompt_user_settings()
     else:
         # Resolve active strategy preset
-        active_preset_name = (args.preset or get_setting("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER")).upper()
+        active_preset_name = (args.preset or get_setting("ACTIVE_PRESET", "TRUMP_STOCH_RSI")).upper()
         preset_cfg = {}
         if hasattr(settings, "get_active_preset_config"):
             preset_cfg = settings.get_active_preset_config(active_preset_name)
@@ -1572,6 +1572,7 @@ def main():
             volume_mode=vol_mode,
             volume_multiplier=vol_mult or 1.0,
             volume_contracts=vol_contracts,
+            margin_fallback_pct=preset_cfg.get("margin_fallback_pct", get_setting("MARGIN_FALLBACK_PCT", 25.0)),
             tp_ticks=tp_ticks,
             dynamic_tp=dynamic_tp,
             sl_mode=sl_mode,

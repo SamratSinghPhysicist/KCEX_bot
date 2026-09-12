@@ -9,6 +9,7 @@ on:
         default: "TRUMP_ML_RAPID_SCALPER"
         type: choice
         options:
+          - TRUMP_STOCH_RSI
           - TRUMP_ML_RAPID_SCALPER
           - DOGE_ML_MOMENTUM
           - TRUMP_ORDER_BLOCK_DEMAND
