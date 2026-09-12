@@ -194,6 +194,8 @@ def matches_strategy(item: Dict[str, Any], strategy_filter: str) -> bool:
     strat_mode = str(cfg.get("strategy_mode", "")).upper()
     if target in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"):
         return ("ML" in sub_strat) or ("ML" in strat_mode) or (item.get("ml_confidence") is not None)
+    if target in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND", "SMC"):
+        return ("ORDER_BLOCK" in sub_strat) or ("DEMAND" in sub_strat) or ("ORDER_BLOCK" in strat_mode) or (item.get("smc_zone_id") is not None)
     return (target in sub_strat) or (target in strat_mode)
 
 
@@ -229,20 +231,22 @@ def select_strategy_filter_menu(current_filter: str) -> str:
     print(f"  Current Active Filter : {current_filter.upper()}\n")
     print("  [1] ALL (All Strategies)")
     print("  [2] ML_1M_MODEL (Machine Learning Alpha 1M)")
-    print("  [3] STOCH_RSI (Stochastic RSI Mean-Reversion)")
-    print("  [4] EMA_CROSSOVER (EMA Trend Crossover)")
-    print("  [5] SMART_STRATEGY (Adaptive Microstructure)")
+    print("  [3] ORDER_BLOCK_DEMAND (Smart Money Concepts - Vivek Yadav)")
+    print("  [4] STOCH_RSI (Stochastic RSI Mean-Reversion)")
+    print("  [5] EMA_CROSSOVER (EMA Trend Crossover)")
+    print("  [6] SMART_STRATEGY (Adaptive Microstructure)")
     print()
     try:
-        choice = input("  Select option [1-5, Enter=keep current]: ").strip()
+        choice = input("  Select option [1-6, Enter=keep current]: ").strip()
     except (KeyboardInterrupt, EOFError):
         return current_filter
     mapping = {
         "1": "ALL",
         "2": "ML_1M_MODEL",
-        "3": "STOCH_RSI",
-        "4": "EMA_CROSSOVER",
-        "5": "SMART_STRATEGY"
+        "3": "ORDER_BLOCK_DEMAND",
+        "4": "STOCH_RSI",
+        "5": "EMA_CROSSOVER",
+        "6": "SMART_STRATEGY"
     }
     selected = mapping.get(choice, current_filter)
     print(f"\n  ✅ Strategy filter set to: {selected.upper()}\n")
@@ -708,6 +712,111 @@ def display_ml_telemetry(trades: List[Dict[str, Any]], asset_label: str = "ALL")
     print()
 
 
+def display_order_block_demand_telemetry(trades: List[Any], asset_label: str = "ALL"):
+    """Display dedicated Smart Money Concepts (Order Block + Demand Block) telemetry."""
+    header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
+    print_header(f"🏛️ ORDER BLOCK + DEMAND BLOCK STRATEGY TELEMETRY [SMC]{header_suffix}")
+
+    # Normalize trades list to handle both dicts and TradeOutcome objects
+    norm_trades = []
+    for t in trades:
+        if hasattr(t, "to_dict"):
+            norm_trades.append(t.to_dict())
+        elif isinstance(t, dict):
+            norm_trades.append(t)
+        else:
+            norm_trades.append(getattr(t, "__dict__", {}))
+    trades = norm_trades
+
+    smc_trades = [
+        t for t in trades
+        if t.get("smc_zone_id") is not None
+        or "ORDER_BLOCK" in str(t.get("sub_strategy_name", "")).upper()
+        or "DEMAND" in str(t.get("sub_strategy_name", "")).upper()
+        or "ORDER_BLOCK" in str(t.get("config_snapshot", {}).get("strategy_mode", "")).upper()
+    ]
+    if not smc_trades:
+        print("\n  ⚠️  No Smart Money Concepts (Order Block + Demand) trades found in current selection.")
+        print("     To log SMC trades, run live trading or backtests with '--strategy ORDER_BLOCK_DEMAND'")
+        print("     or select presets TRUMP_ORDER_BLOCK_DEMAND / DOGE_ORDER_BLOCK_DEMAND.\n")
+        return
+
+    wins = [t for t in smc_trades if t.get("realized_pnl_usdt", 0) > 0]
+    losses = [t for t in smc_trades if t.get("realized_pnl_usdt", 0) < 0]
+    scratches = [t for t in smc_trades if t.get("realized_pnl_usdt", 0) == 0]
+    total_cnt = len(smc_trades)
+    win_cnt = len(wins)
+    loss_cnt = len(losses)
+    wr = (win_cnt / total_cnt * 100) if total_cnt > 0 else 0.0
+
+    total_pnl_u = sum(t.get("realized_pnl_usdt", 0) for t in smc_trades)
+    total_pnl_i = sum(t.get("realized_pnl_inr", 0) for t in smc_trades)
+    gross_win = sum(t.get("realized_pnl_usdt", 0) for t in wins)
+    gross_loss = abs(sum(t.get("realized_pnl_usdt", 0) for t in losses))
+    pf = (gross_win / gross_loss) if gross_loss > 0 else (float("inf") if gross_win > 0 else 0.0)
+
+    # 1:1 Partial TP & 1:2 Target hit stats
+    partial_tp_hits = [t for t in smc_trades if t.get("smc_partial_tp_hit") or "PARTIAL" in str(t.get("exit_reason", "")).upper()]
+    full_tp_hits = [t for t in smc_trades if t.get("exit_reason") == "MIN_PROFIT_TP_HIT"]
+    be_exits = [t for t in smc_trades if "BREAKEVEN" in str(t.get("exit_reason", "")).upper()]
+    sl_hits = [t for t in smc_trades if t.get("exit_reason") == "STOP_LOSS_HIT"]
+
+    partial_rate = (len(partial_tp_hits) / total_cnt * 100) if total_cnt > 0 else 0.0
+    runner_rate = (len(full_tp_hits) / total_cnt * 100) if total_cnt > 0 else 0.0
+
+    # Zone types breakdown
+    demand_trades = [t for t in smc_trades if "DEMAND" in str(t.get("smc_zone_type", "")).upper() or t.get("direction") == "LONG"]
+    supply_trades = [t for t in smc_trades if "SUPPLY" in str(t.get("smc_zone_type", "")).upper() or t.get("direction") == "SHORT"]
+
+    avg_dur = (sum(t.get("duration_seconds", 0) for t in smc_trades) / total_cnt) if total_cnt > 0 else 0.0
+
+    pnl_sign = "+" if total_pnl_u > 0 else ""
+    pf_str = f"{pf:.2f}" if pf != float("inf") else "∞"
+
+    print(f"  Total SMC Trades          : {total_cnt} ({win_cnt} Wins / {loss_cnt} Losses / {len(scratches)} Scratches)")
+    print(f"  SMC Win Rate              : {wr:.2f}%")
+    print(f"  Net Realized PnL          : {pnl_sign}{total_pnl_u:.6f} USDT ({pnl_sign}₹{total_pnl_i:.4f})")
+    print(f"  Profit Factor             : {pf_str}")
+    print(f"  Avg Trade Duration        : {fmt_duration(avg_dur)}")
+    print_separator("─", width=84)
+    print("  🎯 1:1 Partial TP & 1:2 R:R Runner Execution Telemetry:")
+    print(f"    • 1:1 Partial TP Hit Rate: {len(partial_tp_hits)}/{total_cnt} ({partial_rate:.1f}%) [Secured 1R + SL to Breakeven]")
+    print(f"    • 1:2 Target Reached     : {len(full_tp_hits)}/{total_cnt} ({runner_rate:.1f}%) [Full 2R Target Captured]")
+    print(f"    • Breakeven Stops Hit    : {len(be_exits)} trades (Risk-Free Scratches / +1 Tick Profit)")
+    print(f"    • Full Stop Losses Hit   : {len(sl_hits)} trades")
+    print_separator("─", width=84)
+    print("  🧱 Zone Mitigation Performance:")
+    dem_pnl = sum(t.get("realized_pnl_usdt", 0) for t in demand_trades)
+    dem_wins = len([t for t in demand_trades if t.get("realized_pnl_usdt", 0) > 0])
+    dem_wr = (dem_wins / len(demand_trades) * 100) if demand_trades else 0.0
+    sup_pnl = sum(t.get("realized_pnl_usdt", 0) for t in supply_trades)
+    sup_wins = len([t for t in supply_trades if t.get("realized_pnl_usdt", 0) > 0])
+    sup_wr = (sup_wins / len(supply_trades) * 100) if supply_trades else 0.0
+    print(f"    • Demand Blocks (LONGs)  : {len(demand_trades)} trades │ Win Rate: {dem_wr:.1f}% │ Net PnL: {fmt_usdt(dem_pnl)}")
+    print(f"    • Supply Blocks (SHORTs) : {len(supply_trades)} trades │ Win Rate: {sup_wr:.1f}% │ Net PnL: {fmt_usdt(sup_pnl)}")
+    print_separator("─", width=84)
+
+    # Recent SMC Trades Table
+    print("  Recent Order Block / Demand Trades:")
+    print(f"  {'ID':<5s} {'Symbol':<11s} {'Dir':<6s} {'Zone Type':<13s} {'1:1 Target':>11s} {'1:2 Target':>11s} {'1:1 Hit?':>8s} {'PnL (USDT)':>12s} {'Exit Reason':<16s}")
+    print_separator("─", width=88)
+    for t in smc_trades[-10:]:
+        tid = str(t.get("trade_id", "?"))
+        sym = str(t.get("symbol", "?"))
+        raw_d = t.get("direction", "?")
+        d = (raw_d.value if hasattr(raw_d, "value") else str(raw_d)).replace("OrderDirection.", "")
+        zt = str(t.get("smc_zone_type") or ("DEMAND" if d == "LONG" else "SUPPLY"))[:12]
+        prec = t.get("price_precision") or (5 if "DOGE" in sym else 4)
+        t1 = fmt_price(t.get("smc_target_1to1") or t.get("tp_set", 0), prec)
+        t2 = fmt_price(t.get("smc_target_1to2") or t.get("tp_set", 0), prec)
+        hit_str = "YES ✅" if t.get("smc_partial_tp_hit") else "NO ❌"
+        pnl = fmt_usdt(t.get("realized_pnl_usdt", 0.0))
+        raw_r = t.get("exit_reason", "UNKNOWN")
+        r = (raw_r.value if hasattr(raw_r, "value") else str(raw_r)).replace("ExitReason.", "")[:15]
+        print(f"  #{tid:<4s} {sym:<11s} {d:<6s} {zt:<13s} {t1:>11s} {t2:>11s} {hit_str:>8s} {pnl:>12s} {r:<16s}")
+    print()
+
+
 def display_trade_history(trades: List[Dict[str, Any]], asset_label: str = "ALL"):
     """Display rich trade history table with all key telemetry."""
     header_suffix = f" [Asset: {asset_label.upper()}]" if asset_label != "ALL" else ""
@@ -890,6 +999,28 @@ def display_single_trade_card(trade: Dict[str, Any]):
         print(f"    • ML Confidence        : {conf:.2f}%")
         print(f"    • Class Probabilities  : BUY: {p_buy:.1f}% │ SELL: {p_sell:.1f}% │ WAIT: {p_wait:.1f}%")
         print(f"    • Dynamic Targets      : TP: {ml_tp} ticks │ SL: {ml_sl} ticks │ ATR(14): {ml_atr}")
+        print()
+
+    if trade.get("smc_zone_id") is not None or "ORDER_BLOCK" in str(sub_strategy).upper() or "DEMAND" in str(sub_strategy).upper():
+        z_id = trade.get("smc_zone_id", "N/A")
+        z_type = trade.get("smc_zone_type", "N/A")
+        z_high = trade.get("smc_zone_high", 0.0)
+        z_low = trade.get("smc_zone_low", 0.0)
+        fvg = trade.get("smc_fvg_size", "N/A")
+        t_1to1 = trade.get("smc_target_1to1", 0.0)
+        t_1to2 = trade.get("smc_target_1to2", 0.0)
+        part_hit = "✅ Hit (50% closed at 1:1, SL locked at Breakeven)" if trade.get("smc_partial_tp_hit") else "❌ No (Single target or stopped before 1:1)"
+        print("  🏛️ SMART MONEY CONCEPTS (SMC) TELEMETRY")
+        print(f"    • Mitigated Zone       : {z_type} (Zone #{z_id})")
+        if z_high and z_low:
+            print(f"    • Zone Boundaries      : High: {fmt_price(z_high, precision)} USDT │ Low: {fmt_price(z_low, precision)} USDT")
+        if fvg not in ("N/A", None):
+            print(f"    • Fair Value Gap (FVG) : {fvg} ticks imbalance")
+        if t_1to1:
+            print(f"    • 1:1 Target Price     : {fmt_price(t_1to1, precision)} USDT")
+        if t_1to2:
+            print(f"    • 1:2 Target Price     : {fmt_price(t_1to2, precision)} USDT")
+        print(f"    • 1:1 Partial TP Hit   : {part_hit}")
         print()
 
     if bal_before_u is not None and bal_after_u is not None:
@@ -1133,7 +1264,9 @@ def export_to_csv(trades: List[Dict[str, Any]], cancelled: List[Dict[str, Any]],
             "balance_after_trade_usdt", "order_id", "close_order_id", "position_id",
             "execution_env", "session_id", "github_run_id",
             "ml_confidence", "ml_prob_buy", "ml_prob_sell", "ml_prob_wait",
-            "ml_tp_ticks", "ml_sl_ticks", "ml_atr_14"
+            "ml_tp_ticks", "ml_sl_ticks", "ml_atr_14",
+            "smc_zone_id", "smc_zone_type", "smc_zone_high", "smc_zone_low",
+            "smc_fvg_size", "smc_target_1to1", "smc_target_1to2", "smc_partial_tp_hit"
         ]
         try:
             with open(filename, "w", encoding="utf-8") as f:
@@ -1260,6 +1393,7 @@ def main():
         print("  [8] 📤 Export to CSV (all 30+ fields including ML)")
         print("  [9] 🔄 Refresh Data from MongoDB")
         print(f"  [M] 🤖 ML Model Bot Performance Telemetry [AI CHAMPION]")
+        print(f"  [O] 🏛️ Order Block + Demand Strategy Analytics [SMC]")
         print(f"  [F] 🧠 Filter by Strategy (Current: {active_strategy})")
         print(f"  [A] 🪙 Filter by Asset / Traded Pair (Current: {active_asset})")
         print(f"  [S] 📡 Filter by Signal Mode (Current: {active_signal_mode})")
@@ -1268,7 +1402,7 @@ def main():
         print()
 
         try:
-            choice = input("  Select option [0-9, M, F, A, B, S]: ").strip()
+            choice = input("  Select option [0-9, M, O, F, A, B, S]: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\n\n  Goodbye! 👋\n")
             break
@@ -1327,6 +1461,8 @@ def main():
                 print()
         elif choice_up in ("M", "ML"):
             display_ml_telemetry(filtered_trades, asset_label=active_asset)
+        elif choice_up in ("O", "SMC", "OB", "ORDER_BLOCK"):
+            display_order_block_demand_telemetry(filtered_trades, asset_label=active_asset)
         elif choice_up in ("F", "STRAT", "STRATEGY"):
             active_strategy = select_strategy_filter_menu(active_strategy)
         elif choice_up in ("A", "10", "PAIR", "COIN"):

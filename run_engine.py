@@ -118,7 +118,9 @@ def prompt_user_settings():
     print("   [3] DOGE_V2_2_RATCHET_CHAMPION     -> Phase V2.2 Deep Dive Champion (5t TP / 2t SL + Ratchet + Inverted + Maker)")
     print("   [4] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
     print("   [5] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
-    print("   [6] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
+    print("   [6] TRUMP_ORDER_BLOCK_DEMAND       -> 🏛️ Vivek Yadav SMC Order Block + Demand Block (1:1 Partial TP + BE + 1:2 Runner)")
+    print("   [7] DOGE_ORDER_BLOCK_DEMAND        -> 🏛️ Vivek Yadav SMC Order Block + Demand Block for DOGE")
+    print("   [8] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
 
     preset_map = {
         "1": "TRUMP_ML_RAPID_SCALPER",
@@ -126,7 +128,9 @@ def prompt_user_settings():
         "3": "DOGE_V2_2_RATCHET_CHAMPION",
         "4": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
         "5": "TRUMP_LEGACY_BASELINE",
-        "6": "CUSTOM"
+        "6": "TRUMP_ORDER_BLOCK_DEMAND",
+        "7": "DOGE_ORDER_BLOCK_DEMAND",
+        "8": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -139,10 +143,11 @@ def prompt_user_settings():
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4", "5"):
+    if preset_choice in ("1", "2", "3", "4", "5", "6", "7"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
         is_ml_preset = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+        is_smc_preset = "ORDER_BLOCK" in chosen_preset or "DEMAND" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "SMC")
 
         print(f"\n   ✅ Loaded Preset: {preset_cfg.get('name', chosen_preset)}")
         print(f"      • Symbol: {preset_cfg.get('symbol')}")
@@ -150,18 +155,76 @@ def prompt_user_settings():
         if is_ml_preset:
             print(f"      • Take Profit: Dynamic ATR (~{preset_cfg.get('tp_atr_mult', 1.9)}x ATR) | Stop Loss: Dynamic ATR (~{preset_cfg.get('sl_atr_mult', 1.0)}x ATR)")
             print(f"      • Signal Mode: DIRECT (Momentum / Machine Learning Alpha)")
+        elif is_smc_preset:
+            print(f"      • Take Profit: Dynamic 1:2 R:R (with 50% partial close at 1:1 & Breakeven Lock)")
+            print(f"      • Stop Loss: Structural Order Block boundary + buffer ticks")
+            print(f"      • Signal Mode: DIRECT (Smart Money Concepts / Order Block)")
         else:
             print(f"      • Take Profit: +{preset_cfg.get('tp_ticks', 5)} ticks | Stop Loss: {preset_cfg.get('sl_ticks', 2)} ticks")
             print(f"      • Signal Mode: {'INVERTED (Exhaustion Fading)' if preset_cfg.get('invert_signal') else 'DIRECT (Momentum)'}")
         print(f"      • Execution Style: {preset_cfg.get('execution_style', 'PURE_MARKET')}")
         print(f"      • Target Leverage: {preset_cfg.get('leverage', 30)}x isolated")
 
-        # 1. Execution Mode
-        print("\n1. Execution Mode:")
-        print("   [1] LIVE TRADING    -> Real orders submitted to KCEX using wallet balance.")
-        print("   [2] SIMULATED (Dry) -> Virtual orders with real-time live ticker data (0 risk).")
-        mode_str = input(f"   Select Mode [default: {'1 (LIVE)' if default_mode == 'live' else '2 (SIMULATED)'}]: ").strip()
-        mode_val = EngineMode.DRY_RUN if mode_str == "2" else (EngineMode.LIVE if mode_str == "1" else (EngineMode.LIVE if default_mode == "live" else EngineMode.DRY_RUN))
+        # 1. Execution Mode & Target Platform Selection
+        print("\n1. Execution Mode & Target Platform:")
+        print("   [1] LIVE TRADING (Local Machine)")
+        print("   [2] LIVE TRADING (GitHub Actions Cloud Runner - Saves Laptop Compute)")
+        print("   [3] DRY-RUN / Simulated (Local Machine)")
+        print("   [4] DRY-RUN / Simulated (GitHub Actions Cloud Runner - Saves Laptop Compute)")
+        print("   [5] HISTORICAL BACKTEST (Local Machine)")
+        print("   [6] HISTORICAL BACKTEST (GitHub Actions Cloud Runner - Saves Laptop Compute)")
+        def_target_num = "1" if default_mode == "live" else "3"
+        target_str = input(f"   Select Target [default: {def_target_num}]: ").strip()
+        if not target_str:
+            target_str = def_target_num
+
+        if target_str in ("5", "6"):
+            b_target = "local" if target_str == "5" else "github"
+            print(f"\n🚀 Redirecting to Backtest Engine ({'Local Machine' if b_target == 'local' else 'GitHub Actions Cloud'})...\n")
+            import subprocess
+            cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "BACKTESTER", "run_backtest.py"), "--preset", chosen_preset, "--target", b_target]
+            subprocess.run(cmd)
+            sys.exit(0)
+        elif target_str in ("2", "4"):
+            cloud_mode = "live" if target_str == "2" else "dry-run"
+            print(f"\n🚀 Setting up GitHub Actions Cloud Runner for {cloud_mode.upper()} trading ({chosen_preset})...")
+            print("\nEnter Session Runtime Limit:")
+            print("   [1] 0.5 hours (30 mins test)")
+            print("   [2] 1.0 hour")
+            print("   [3] 3.5 hours (Standard multi-hour session)")
+            print("   [4] 6.0 hours (Overnight session)")
+            rt_input = input("Select runtime [default: 3 (3.5 hours)]: ").strip()
+            rt_hours = "0.5" if rt_input == "1" else ("1.0" if rt_input == "2" else ("6.0" if rt_input == "4" else "3.5"))
+
+            from BACKTESTER.engine.github_runner import GitHubBacktestRunner
+            workflow_file = "live_trading.yml" if cloud_mode == "live" else "dry_run_trading.yml"
+            gh_runner = GitHubBacktestRunner(workflow_filename=workflow_file)
+            if not gh_runner.prompt_token_if_needed():
+                print("[!] GitHub token missing. Aborting cloud dispatch.")
+                sys.exit(1)
+
+            inputs = {
+                "preset": chosen_preset,
+                "runtime_hours": rt_hours
+            }
+            if cloud_mode == "live":
+                inputs["mode"] = "live"
+
+            print(f"📡 Dispatching {workflow_file} on GitHub Actions...")
+            dispatched = gh_runner.dispatch_workflow(inputs)
+            if dispatched:
+                print("✅ Workflow successfully dispatched!")
+                run_data = gh_runner.find_dispatched_run(time.time())
+                if run_data:
+                    run_id = run_data.get("id")
+                    run_url = run_data.get("html_url")
+                    print(f"🔗 Cloud Run URL: {run_url}")
+                    gh_runner.poll_workflow_run(run_id)
+                else:
+                    print(f"🔗 View progress at: https://github.com/{gh_runner.owner}/{gh_runner.repo}/actions")
+            sys.exit(0)
+        else:
+            mode_val = EngineMode.LIVE if target_str == "1" else EngineMode.DRY_RUN
 
         # 2. Order Execution Style (Maker vs Taker)
         def_exec_style = preset_cfg.get("execution_style", "PURE_MARKET")
@@ -249,17 +312,28 @@ def prompt_user_settings():
             outcomes_jsonl_file=get_setting("OUTCOMES_JSONL_FILE", "trade_outcomes.jsonl")
         )
 
-    # 1. Mode (Custom Manual Configuration)
-    print("\n1. Execution Mode:")
-    print("   [1] LIVE TRADING    -> Real orders submitted to KCEX using wallet balance.")
-    print("   [2] SIMULATED (Dry) -> Virtual orders with real-time live ticker data (0 risk).")
-    mode_str = input(f"   Select Mode [default: {'1 (LIVE)' if default_mode == 'live' else '2 (SIMULATED)'}]: ").strip()
-    if mode_str == "2":
+    # 1. Mode & Target (Custom Manual Configuration)
+    print("\n1. Execution Mode & Target Platform:")
+    print("   [1] LIVE TRADING (Local Machine)    -> Real orders submitted to KCEX using wallet balance.")
+    print("   [2] SIMULATED (Dry, Local Machine)  -> Virtual orders with real-time live ticker data (0 risk).")
+    print("   [3] HISTORICAL BACKTEST (Local)     -> Dual-feed historical replay on local machine.")
+    print("   [4] HISTORICAL BACKTEST (GitHub)    -> Dual-feed historical replay on GitHub Actions Cloud.")
+    def_mode_choice = "1" if default_mode == "live" else "2"
+    mode_str = input(f"   Select Mode [default: {def_mode_choice}]: ").strip()
+    if not mode_str:
+        mode_str = def_mode_choice
+
+    if mode_str in ("3", "4"):
+        b_target = "local" if mode_str == "3" else "github"
+        print(f"\n🚀 Redirecting to Backtest Engine ({'Local Machine' if b_target == 'local' else 'GitHub Actions Cloud'})...\n")
+        import subprocess
+        cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "BACKTESTER", "run_backtest.py"), "--target", b_target]
+        subprocess.run(cmd)
+        sys.exit(0)
+    elif mode_str == "2":
         mode_val = EngineMode.DRY_RUN
-    elif mode_str == "1":
-        mode_val = EngineMode.LIVE
     else:
-        mode_val = EngineMode.LIVE if default_mode == "live" else EngineMode.DRY_RUN
+        mode_val = EngineMode.LIVE
 
     # 2. Trading Pair
     print("\n2. Trading Pair:")
@@ -322,12 +396,15 @@ def prompt_user_settings():
     print("   [1] EMA CROSSOVER     -> Fast/Slow EMA Crossover (5/13, 9/21, 3/8)")
     print("   [2] STOCHASTIC RSI    -> Fast Scalp & Mean Reversion (%K/%D cross in Oversold/Overbought zones) [Default]")
     print("   [3] SMART STRATEGY    -> Autonomous Regime-Adaptive Engine (Auto-routes between EMA & Stoch RSI)")
+    print("   [4] ORDER BLOCK + DEMAND -> Smart Money Concepts (Vivek Yadav: BOS, OB wick-to-wick, FVG, 1:2 RR)")
 
     default_strat_choice = "2"
     if default_strat in ("EMA", "EMA_CROSSOVER", "CROSSOVER"):
         default_strat_choice = "1"
     elif default_strat in ("SMART", "SMART_STRATEGY"):
         default_strat_choice = "3"
+    elif default_strat in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK"):
+        default_strat_choice = "4"
     else:
         default_strat_choice = "2"
 
@@ -411,6 +488,17 @@ def prompt_user_settings():
         print("      • Sub-ATR Compression    -> Pauses safely until volatility recovers")
         print("      • Climax Volatility      -> Pauses safely to avoid spread sweeps")
         print("      • 200 EMA Filter         -> OFF (Mean-reversion enabled per empirical research)")
+
+    elif strat_str in ("4", "ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "order_block_demand", "order_book_demand", "smc"):
+        strat_mode_val = "ORDER_BLOCK_DEMAND"
+        bi_directional_val = True
+        dir_val = OrderDirection.LONG
+        print("\n   ✅ Active Strategy: Order Block + Demand Strategy (Smart Money Concepts)")
+        print("      • Strict Body-Close Break of Structure (BOS)")
+        print("      • Full Wick-to-Wick Order Block & Demand/Supply Block Tracking")
+        print("      • 3-5 Consecutive Impulse Candles + FVG Imbalance Validation")
+        print("      • Weakness on Approach & Rejection Wick Confirmation")
+        print("      • Dynamic 1:2 Risk-to-Reward Ratio and Safe Zone Stops")
 
     else:
         # Default: STOCH_RSI
@@ -879,6 +967,12 @@ def parse_args():
         description="KCEX Automated Trade Execution Engine - Masterplan Strategy"
     )
     parser.add_argument(
+        "--preset",
+        type=str,
+        default=None,
+        help="Strategy Preset (e.g. TRUMP_ML_RAPID_SCALPER, TRUMP_ORDER_BLOCK_DEMAND, DOGE_ORDER_BLOCK_DEMAND)"
+    )
+    parser.add_argument(
         "--symbol",
         type=str,
         default=None,
@@ -980,10 +1074,11 @@ def parse_args():
             "stoch_rsi", "stochastic_rsi", "STOCH_RSI", "STOCHASTIC_RSI", "stoch", "STOCH",
             "smart", "smart_strategy", "SMART", "SMART_STRATEGY",
             "microstructure", "cycle", "MICROSTRUCTURE", "CYCLE",
-            "ml", "ml_1m", "ml_model", "ml_1m_model", "ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"
+            "ml", "ml_1m", "ml_model", "ml_1m_model", "ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL",
+            "order_block_demand", "order_book_demand", "order_block", "ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "smc", "SMC"
         ],
         default=None,
-        help="Strategy type: 'ML_1M_MODEL', 'smart_strategy', 'ema_crossover', 'stoch_rsi'"
+        help="Strategy type: 'ML_1M_MODEL', 'smart_strategy', 'order_block_demand', 'ema_crossover', 'stoch_rsi'"
     )
     parser.add_argument(
         "--order-type",
@@ -1217,12 +1312,6 @@ def parse_args():
     )
     # Phase V2.1 & V2.2 Quantitative Research Presets & Toggles
     parser.add_argument(
-        "--preset",
-        type=str,
-        default=None,
-        help="Strategy Preset: 'DOGE_V2_2_RATCHET_CHAMPION', 'DOGE_ASYMMETRIC_MOMENTUM_10T2T', 'TRUMP_LEGACY_BASELINE', or 'CUSTOM'"
-    )
-    parser.add_argument(
         "--invert-signal",
         action="store_true",
         default=None,
@@ -1391,13 +1480,16 @@ def main():
                 bi_directional = get_setting("STOCH_BI_DIRECTIONAL", True)
             elif strat_raw in ("SMART", "SMART_STRATEGY"):
                 bi_directional = True
+            elif strat_raw in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"):
+                bi_directional = True
             elif is_ml_strat:
                 bi_directional = True
             else:
                 bi_directional = get_setting("MICRO_BI_DIRECTIONAL", True)
 
-        # For ML strategy, ensure dynamic TP is enabled, ratchet disabled, and direct signal by default
-        if is_ml_strat and not args.fixed_tp:
+        # For ML or OrderBlockDemand strategy, ensure dynamic TP is enabled by default
+        is_smc_strat = strat_raw in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC")
+        if (is_ml_strat or is_smc_strat) and not args.fixed_tp:
             dynamic_tp = True
 
         # Quantitative parameters resolution

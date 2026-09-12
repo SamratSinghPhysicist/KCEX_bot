@@ -53,6 +53,10 @@ from strategies.ml_strategy import (
     MLStrategy,
     MLSubStrategy
 )
+from strategies.order_block_demand import (
+    OrderBlockDemandStrategy,
+    OrderBlockDemandSubStrategy
+)
 
 logger = logging.getLogger("KCEXStrategy")
 
@@ -131,6 +135,19 @@ class MasterplanStrategy:
                     confidence_threshold_sell=getattr(self.config, "confidence_threshold_sell", None),
                     edge_threshold=getattr(self.config, "edge_threshold", None),
                     preferred_direction=pref_dir
+                )
+            elif strat_upper in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"):
+                self.sub_strategy = OrderBlockDemandStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    interval=getattr(self.config, "timeframe", getattr(self.config, "ema_interval", "Min1")),
+                    preferred_direction=pref_dir,
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    require_closed_candle=getattr(self.config, "smart_require_closed_candle", True),
+                    risk_reward_ratio=getattr(self.config, "risk_reward_ratio", 2.0),
+                    buffer_ticks=getattr(self.config, "buffer_ticks", 1),
+                    min_sl_ticks=getattr(self.config, "min_sl_ticks", 3),
+                    max_sl_ticks=getattr(self.config, "max_sl_ticks", 35)
                 )
             else:
                 # Default to Stochastic RSI

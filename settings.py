@@ -187,11 +187,12 @@ POLL_INTERVAL_SECONDS = 0.2
 # 7. STRATEGY SELECTION & INDICATOR SETTINGS
 # =============================================================================
 # Strategy mode selection:
+#   "ORDER_BLOCK_DEMAND" -> Smart Money Concepts: Order Blocks + Demand/Supply Blocks (Vivek Yadav)
 #   "ML_1M"          -> 1-Minute Machine Learning Directional Alpha Engine (HistGradientBoosting) [Default]
 #   "SMART_STRATEGY" -> Autonomous Regime-Adaptive Strategy (Switches Momentum EMA / Range Stoch RSI)
 #   "STOCH_RSI"      -> Stochastic RSI Fast Scalp & Reversal Strategy
 #   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8)
-STRATEGY_MODE = "ML_1M"
+STRATEGY_MODE = "ORDER_BLOCK_DEMAND"
 
 # -----------------------------------------------------------------------------
 # Order Execution Type & Slippage Protection
@@ -826,6 +827,64 @@ STRATEGY_PRESETS = {
         "resting_limit_tp": True,
         "queue_dynamics_enabled": True,
         "simulate_intra_tick_liquidation": True,
+        "slippage_enabled": False,
+        "slippage_ticks": 0
+    },
+    "TRUMP_ORDER_BLOCK_DEMAND": {
+        "name": "TRUMP Order Block + Demand Strategy (Smart Money Concepts)",
+        "description": (
+            "Implements Vivek Yadav's SMC Strategy: Strict body-close BOS, wick-to-wick Order Blocks, "
+            "Demand/Supply blocks with 3-5 consecutive impulse candles + FVG, approach weakness check, "
+            "rejection wick confirmation, safe zone SL, 1:1 partial close + Breakeven lock + 1:2 runner with 0% KCEX fees."
+        ),
+        "symbol": "TRUMP_USDT",
+        "strategy_mode": "ORDER_BLOCK_DEMAND",
+        "timeframe": "1m",
+        "leverage": 25,
+        "volume_mode": "MULTIPLIER",
+        "volume_multiplier": 2.0,
+        "tp_ticks": 10,
+        "dynamic_tp": True,
+        "sl_mode": "TICKS",
+        "sl_ticks": 5,
+        "risk_reward_ratio": 2.0,
+        "partial_tp_enabled": True,
+        "breakeven_buffer_ticks": 1,
+        "smc_1x_exit_mode": "1TO2_WITH_BE",
+        "buffer_ticks": 1,
+        "min_sl_ticks": 3,
+        "max_sl_ticks": 35,
+        "execution_style": "PURE_MARKET",
+        "resting_limit_tp": True,
+        "slippage_enabled": False,
+        "slippage_ticks": 0
+    },
+    "DOGE_ORDER_BLOCK_DEMAND": {
+        "name": "DOGE Order Block + Demand Strategy (Smart Money Concepts)",
+        "description": (
+            "Implements Vivek Yadav's SMC Strategy on DOGE_USDT: Strict body-close BOS, wick-to-wick Order Blocks, "
+            "Demand/Supply blocks with 3-5 consecutive impulse candles + FVG, approach weakness check, "
+            "rejection wick confirmation, safe zone SL, 1:1 partial close + Breakeven lock + 1:2 runner with 0% KCEX fees."
+        ),
+        "symbol": "DOGE_USDT",
+        "strategy_mode": "ORDER_BLOCK_DEMAND",
+        "timeframe": "1m",
+        "leverage": 25,
+        "volume_mode": "MULTIPLIER",
+        "volume_multiplier": 2.0,
+        "tp_ticks": 8,
+        "dynamic_tp": True,
+        "sl_mode": "TICKS",
+        "sl_ticks": 4,
+        "risk_reward_ratio": 2.0,
+        "partial_tp_enabled": True,
+        "breakeven_buffer_ticks": 1,
+        "smc_1x_exit_mode": "1TO2_WITH_BE",
+        "buffer_ticks": 1,
+        "min_sl_ticks": 2,
+        "max_sl_ticks": 30,
+        "execution_style": "PURE_MARKET",
+        "resting_limit_tp": True,
         "slippage_enabled": False,
         "slippage_ticks": 0
     },

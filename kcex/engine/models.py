@@ -173,8 +173,14 @@ class ExecutionConfig:
     microstructure_imbalance_threshold: float = 1.5
     volatility_regime_period: int = 14
 
+    # 9. Smart Money Concepts (Order Block + Demand Strategy) Controls
+    partial_tp_enabled: bool = True             # Enable 1:1 Partial TP + Breakeven Lock + 1:2 Runner
+    breakeven_buffer_ticks: int = 1             # Buffer in ticks added when locking Stop Loss to Breakeven (+1 to +5 ticks)
+    smc_1x_exit_mode: str = "1TO2_WITH_BE"      # For 1-contract positions: "1TO2_WITH_BE" (Lock BE at 1:1, run to 1:2) or "1TO1_TP" (Close at 1:1)
+
     poll_interval_seconds: float = 0.5
     logs_dir: str = field(default_factory=lambda: os.path.join(ROOT_DIR, "logs"))
+
     realtime_log_file: str = "engine_realtime.log"
     outcomes_log_file: str = "trade_outcomes.txt"
     outcomes_jsonl_file: str = "trade_outcomes.jsonl"
@@ -260,6 +266,16 @@ class TradeOutcome:
     ml_sl_ticks: Optional[int] = None
     ml_atr_14: Optional[float] = None
 
+    # Smart Money Concepts (Order Block + Demand Strategy) Telemetry
+    smc_zone_id: Optional[str] = None
+    smc_zone_type: Optional[str] = None
+    smc_zone_high: Optional[float] = None
+    smc_zone_low: Optional[float] = None
+    smc_fvg_size: Optional[float] = None
+    smc_target_1to1: Optional[float] = None
+    smc_target_1to2: Optional[float] = None
+    smc_partial_tp_hit: Optional[bool] = None
+
     @property
     def is_profit(self) -> bool:
         return self.realized_pnl_usdt > 0.0
@@ -335,6 +351,15 @@ class TradeOutcome:
             "ml_tp_ticks": self.ml_tp_ticks,
             "ml_sl_ticks": self.ml_sl_ticks,
             "ml_atr_14": self.ml_atr_14,
+            # Smart Money Concepts Telemetry
+            "smc_zone_id": self.smc_zone_id,
+            "smc_zone_type": self.smc_zone_type,
+            "smc_zone_high": self.smc_zone_high,
+            "smc_zone_low": self.smc_zone_low,
+            "smc_fvg_size": self.smc_fvg_size,
+            "smc_target_1to1": self.smc_target_1to1,
+            "smc_target_1to2": self.smc_target_1to2,
+            "smc_partial_tp_hit": self.smc_partial_tp_hit,
         }
 
 

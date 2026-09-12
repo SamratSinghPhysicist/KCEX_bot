@@ -125,12 +125,14 @@ class GitHubBacktestRunner:
         self,
         owner: Optional[str] = None,
         repo: Optional[str] = None,
-        token: Optional[str] = None
+        token: Optional[str] = None,
+        workflow_filename: str = "backtest.yml"
     ):
         det_owner, det_repo = get_git_remote_repo()
         self.owner = owner or os.getenv("GITHUB_REPOSITORY_OWNER") or det_owner
         self.repo = repo or os.getenv("GITHUB_REPOSITORY_NAME") or det_repo
         self.token = resolve_github_token(token)
+        self.WORKFLOW_FILENAME = workflow_filename
         self.api_base = f"https://api.github.com/repos/{self.owner}/{self.repo}"
 
     @property
@@ -216,6 +218,8 @@ class GitHubBacktestRunner:
             strat = "EMA_CROSSOVER"
         elif strat in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL"):
             strat = "ML_1M_MODEL"
+        elif strat in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"):
+            strat = "ORDER_BLOCK_DEMAND"
         else:
             strat = "STOCH_RSI"
 

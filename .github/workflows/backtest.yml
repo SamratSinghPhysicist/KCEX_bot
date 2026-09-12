@@ -35,6 +35,7 @@ on:
         type: choice
         options:
           - "ML_1M_MODEL"
+          - "ORDER_BLOCK_DEMAND"
           - "STOCH_RSI"
           - "EMA_CROSSOVER"
           - "SMART_STRATEGY"

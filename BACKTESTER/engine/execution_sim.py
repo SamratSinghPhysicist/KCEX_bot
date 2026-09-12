@@ -167,6 +167,21 @@ class BacktestExecutionEngine:
                 cooldown_seconds=self.config.cooldown_seconds,
                 auto_start_feed=False
             )
+        elif strat_upper in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"):
+            from strategies.order_block_demand import OrderBlockDemandStrategy
+            sub_strat = OrderBlockDemandStrategy(
+                market=self.market,
+                symbol=self.symbol,
+                interval=timeframe_to_kcex_interval(self.config.timeframe),
+                preferred_direction=pref_dir,
+                cooldown_seconds=self.config.cooldown_seconds,
+                require_closed_candle=getattr(self.config, "smart_require_closed_candle", True),
+                risk_reward_ratio=getattr(self.config, "risk_reward_ratio", 2.0),
+                buffer_ticks=getattr(self.config, "buffer_ticks", 1),
+                min_sl_ticks=getattr(self.config, "min_sl_ticks", 3),
+                max_sl_ticks=getattr(self.config, "max_sl_ticks", 35),
+                auto_start_feed=False
+            )
         else:
             sub_strat = StochasticRSIStrategy(
                 market=self.market,
@@ -410,12 +425,13 @@ class BacktestExecutionEngine:
                     atr_val = atrs[-1]
 
         is_ml_sig = (signal.sub_strategy_name in ("ML_1M_MODEL", "MLStrategy")) or (getattr(self.config, "strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")) or getattr(self.config, "dynamic_tp", False)
-        if is_ml_sig and signal.metadata and "target_ticks" in signal.metadata:
+        is_smc_sig = ("ORDER_BLOCK" in str(signal.metadata.get("strategy_mode", "")).upper()) or ("OrderBlock" in signal.sub_strategy_name) or (getattr(self.config, "strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"))
+        if (is_ml_sig or is_smc_sig) and signal.metadata and "target_ticks" in signal.metadata:
             effective_tp_ticks = int(signal.metadata["target_ticks"])
         else:
             effective_tp_ticks = self.config.tp_ticks
 
-        if is_ml_sig and signal.metadata and "target_sl_ticks" in signal.metadata:
+        if (is_ml_sig or is_smc_sig) and signal.metadata and "target_sl_ticks" in signal.metadata:
             effective_sl_ticks = int(signal.metadata["target_sl_ticks"])
             effective_sl_roe = None
         else:
@@ -442,6 +458,15 @@ class BacktestExecutionEngine:
             atr_value=atr_val
         )
         initial_sl = exact_sl
+
+        # SMC 1:1 Partial TP and Breakeven Runner state
+        target_1to1 = float(signal.metadata.get("target_1to1_price", 0.0)) if (is_smc_sig and signal and signal.metadata) else None
+        partial_tp_enabled = bool(signal.metadata.get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True))) if is_smc_sig else False
+        be_buf_ticks = int(signal.metadata.get("breakeven_buffer_ticks", getattr(self.config, "breakeven_buffer_ticks", 1))) if is_smc_sig else 1
+        smc_1x_mode = str(getattr(self.config, "smc_1x_exit_mode", "1TO2_WITH_BE")).upper()
+        partial_tp_executed = False
+        partial_fill_price = None
+        remaining_vol = vol_contracts
 
         exit_price = entry_price
         exit_reason = ExitReason.UNKNOWN
@@ -502,6 +527,29 @@ class BacktestExecutionEngine:
                                 exit_time_sec = tick.timestamp_ms / 1000.0
                                 hit_via_ticks = True
                                 break
+
+                    # Smart Money Concepts: 1:1 Partial TP & Breakeven Lock (Tick Stream)
+                    if is_smc_sig and partial_tp_enabled and target_1to1 and not partial_tp_executed:
+                        hit_1to1 = (tick.price >= target_1to1) if direction == OrderDirection.LONG else (tick.price <= target_1to1)
+                        if hit_1to1:
+                            if remaining_vol >= 2:
+                                close_vol = remaining_vol // 2
+                                partial_fill_price = target_1to1
+                                partial_tp_executed = True
+                                remaining_vol -= close_vol
+                                new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                                exact_sl = round(new_be_sl, ps)
+                            else:
+                                if smc_1x_mode == "1TO1_TP":
+                                    exit_price = target_1to1
+                                    exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                                    exit_time_sec = tick.timestamp_ms / 1000.0
+                                    hit_via_ticks = True
+                                    break
+                                else:  # 1TO2_WITH_BE
+                                    partial_tp_executed = True
+                                    new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                                    exact_sl = round(new_be_sl, ps)
 
                     if direction == OrderDirection.LONG:
                         # TP hit (Maker limit order fills at exact TP, 0 exit slippage)
@@ -615,6 +663,31 @@ class BacktestExecutionEngine:
                                 exit_candle_idx = idx
                                 break
 
+                    # Smart Money Concepts: 1:1 Partial TP & Breakeven Lock (Candle Fallback)
+                    just_hit_1to1 = False
+                    if is_smc_sig and partial_tp_enabled and target_1to1 and not partial_tp_executed:
+                        hit_1to1 = (c.high >= target_1to1) if direction == OrderDirection.LONG else (c.low <= target_1to1)
+                        if hit_1to1:
+                            just_hit_1to1 = True
+                            if remaining_vol >= 2:
+                                close_vol = remaining_vol // 2
+                                partial_fill_price = target_1to1
+                                partial_tp_executed = True
+                                remaining_vol -= close_vol
+                                new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                                exact_sl = round(new_be_sl, ps)
+                            else:
+                                if smc_1x_mode == "1TO1_TP":
+                                    exit_price = target_1to1
+                                    exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                                    exit_time_sec = c.close_time_ms / 1000.0
+                                    exit_candle_idx = idx
+                                    break
+                                else:  # 1TO2_WITH_BE
+                                    partial_tp_executed = True
+                                    new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                                    exact_sl = round(new_be_sl, ps)
+
                     if direction == OrderDirection.LONG:
                         if c.high >= exact_tp:
                             exit_price = exact_tp
@@ -622,7 +695,7 @@ class BacktestExecutionEngine:
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx
                             break
-                        elif c.low <= exact_sl:
+                        elif (c.close <= exact_sl if just_hit_1to1 else c.low <= exact_sl):
                             exit_price = exact_sl
                             if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
                                 exit_price = round(exact_sl - (self.config.slippage_ticks * pu), ps)
@@ -637,7 +710,7 @@ class BacktestExecutionEngine:
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx
                             break
-                        elif c.high >= exact_sl:
+                        elif (c.close >= exact_sl if just_hit_1to1 else c.high >= exact_sl):
                             exit_price = exact_sl
                             if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
                                 exit_price = round(exact_sl + (self.config.slippage_ticks * pu), ps)
@@ -687,6 +760,13 @@ class BacktestExecutionEngine:
 
         # 6. Financial Reconciliation
         duration = max(0.1, exit_time_sec - open_time_sec)
+
+        # Blended outcome pricing if 50% was closed at 1:1 TP and runner exited separately
+        if partial_tp_executed and partial_fill_price is not None and remaining_vol < vol_contracts:
+            closed_partial_vol = vol_contracts - remaining_vol
+            blended_exit_price = ((closed_partial_vol * partial_fill_price) + (remaining_vol * exit_price)) / vol_contracts
+            exit_price = round(blended_exit_price, ps)
+
         price_diff = (exit_price - entry_price) if direction == OrderDirection.LONG else (entry_price - exit_price)
 
         fee_rate = self.contract.taker_fee_rate
@@ -741,7 +821,22 @@ class BacktestExecutionEngine:
             inr_rate=self.config.inr_rate,
             exit_reason=exit_reason,
             balance_after_trade_usdt=new_balance_usdt,
-            balance_after_trade_inr=new_balance_inr
+            balance_after_trade_inr=new_balance_inr,
+            smc_zone_id=signal.metadata.get("zone_id") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_zone_type=signal.metadata.get("zone_type") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_zone_high=signal.metadata.get("zone_high") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_zone_low=signal.metadata.get("zone_low") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_fvg_size=signal.metadata.get("fvg_size") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_target_1to1=signal.metadata.get("target_1to1_price") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_target_1to2=signal.metadata.get("target_1to2_price") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_partial_tp_hit=partial_tp_executed if is_smc_sig else False,
+            ml_confidence=signal.metadata.get("confidence") if (is_ml_sig and signal and signal.metadata) else None,
+            ml_prob_buy=signal.metadata.get("prob_buy") if (is_ml_sig and signal and signal.metadata) else None,
+            ml_prob_sell=signal.metadata.get("prob_sell") if (is_ml_sig and signal and signal.metadata) else None,
+            ml_prob_wait=signal.metadata.get("prob_wait") if (is_ml_sig and signal and signal.metadata) else None,
+            ml_tp_ticks=signal.metadata.get("target_ticks") if (is_ml_sig and signal and signal.metadata) else None,
+            ml_sl_ticks=signal.metadata.get("target_sl_ticks") if (is_ml_sig and signal and signal.metadata) else None,
+            ml_atr_14=signal.metadata.get("atr_14") if (is_ml_sig and signal and signal.metadata) else None
         )
 
         return outcome, exit_candle_idx

@@ -346,15 +346,16 @@ class TradeExecutionEngine:
         self.logger.section(f"EXECUTING TRADE #{trade_id} [{direction.value}] - {symbol}")
 
         # Determine effective TP ticks:
-        # If dynamic_tp is enabled or ML strategy emitted target_ticks:
+        # If dynamic_tp is enabled, ML strategy, or OrderBlockDemand strategy emitted target_ticks:
         is_ml_sig = signal.sub_strategy_name in ("ML_1M_MODEL", "MLStrategy")
-        if (getattr(self.config, "dynamic_tp", False) or is_ml_sig) and "target_ticks" in signal.metadata:
+        is_smc_sig = ("ORDER_BLOCK" in str(signal.metadata.get("strategy_mode", "")).upper()) or ("OrderBlock" in signal.sub_strategy_name)
+        if (getattr(self.config, "dynamic_tp", False) or is_ml_sig or is_smc_sig) and "target_ticks" in signal.metadata:
             target_tp_ticks = int(signal.metadata["target_ticks"])
         else:
             target_tp_ticks = int(self.config.tp_ticks)
 
         # Determine effective SL:
-        if is_ml_sig and "target_sl_ticks" in signal.metadata:
+        if (is_ml_sig or is_smc_sig) and "target_sl_ticks" in signal.metadata:
             sl_ticks_to_use = int(signal.metadata["target_sl_ticks"])
             sl_roe_to_use = None
         else:
@@ -377,6 +378,12 @@ class TradeExecutionEngine:
             rr_val = signal.metadata.get("risk_reward_ratio", 2.0)
             self.logger.info(
                 f"[ML ALPHA TRIGGER] Confidence: {conf_val:.1%} | Target TP: +{target_tp_ticks}t | SL: -{sl_ticks_to_use}t | R:R={rr_val}"
+            )
+        elif is_smc_sig:
+            z_type = signal.metadata.get("zone_type", "ORDER_BLOCK")
+            rr_val = signal.metadata.get("risk_reward_ratio", 2.0)
+            self.logger.info(
+                f"[SMC ORDER BLOCK TRIGGER] Zone: {z_type} | Target TP: +{target_tp_ticks}t | SL: -{sl_ticks_to_use}t | R:R={rr_val}"
             )
 
         # Get fresh market snapshot
@@ -446,7 +453,8 @@ class TradeExecutionEngine:
                 est_tp=est_tp,
                 est_sl=est_sl,
                 open_time=open_time,
-                sub_strategy_name=signal.sub_strategy_name
+                sub_strategy_name=signal.sub_strategy_name,
+                signal=signal
             )
         else:
             outcome = self._simulate_dry_run_trade(
@@ -457,7 +465,8 @@ class TradeExecutionEngine:
                 leverage=leverage,
                 open_time=open_time,
                 sub_strategy_name=signal.sub_strategy_name,
-                target_tp_ticks=target_tp_ticks
+                target_tp_ticks=target_tp_ticks,
+                signal=signal
             )
 
 
@@ -477,6 +486,17 @@ class TradeExecutionEngine:
                 outcome.ml_tp_ticks = signal.metadata.get("target_ticks")
                 outcome.ml_sl_ticks = signal.metadata.get("target_sl_ticks")
                 outcome.ml_atr_14 = signal.metadata.get("atr_14")
+
+            # Propagate SMC Strategy Telemetry to outcome and MongoDB
+            if signal.metadata and "strategy_mode" in signal.metadata and "ORDER_BLOCK" in str(signal.metadata.get("strategy_mode")).upper():
+                outcome.smc_zone_id = signal.metadata.get("zone_id")
+                outcome.smc_zone_type = signal.metadata.get("zone_type")
+                outcome.smc_zone_high = signal.metadata.get("zone_high")
+                outcome.smc_zone_low = signal.metadata.get("zone_low")
+                outcome.smc_fvg_size = signal.metadata.get("fvg_size")
+                outcome.smc_target_1to1 = signal.metadata.get("target_1to1_price")
+                outcome.smc_target_1to2 = signal.metadata.get("target_1to2_price")
+                outcome.smc_partial_tp_hit = bool(signal.metadata.get("partial_tp_hit", False))
 
             # Output and record outcome
             card = self.outcome_logger.log_outcome(outcome)
@@ -510,7 +530,8 @@ class TradeExecutionEngine:
         est_tp: float,
         est_sl: float,
         open_time: float,
-        sub_strategy_name: str
+        sub_strategy_name: str,
+        signal: Optional[TradeSignal] = None
     ) -> Optional[TradeOutcome]:
         symbol = contract.symbol
         side_str = "LONG" if direction == OrderDirection.LONG else "SHORT"
@@ -771,7 +792,8 @@ class TradeExecutionEngine:
                 exact_sl=exact_sl,
                 precision=ps,
                 entry_price=entry_price,
-                open_time=open_time
+                open_time=open_time,
+                signal=signal
             )
 
         close_time = time.time()
@@ -997,7 +1019,8 @@ class TradeExecutionEngine:
         exact_sl: float,
         precision: int = 4,
         entry_price: Optional[float] = None,
-        open_time: Optional[float] = None
+        open_time: Optional[float] = None,
+        signal: Optional[TradeSignal] = None
     ) -> tuple[float, ExitReason, Optional[str]]:
         """
         Polls ticker and open positions until the position closes.
@@ -1012,6 +1035,15 @@ class TradeExecutionEngine:
         deep_alert_logged = False
         monitor_start_time = open_time if open_time is not None else time.time()
         last_heartbeat_time = 0.0
+
+        # SMC 1:1 Partial TP and Breakeven Runner state
+        is_smc = bool(signal and signal.metadata and "ORDER_BLOCK" in str(signal.metadata.get("strategy_mode", "")).upper())
+        target_1to1 = float(signal.metadata.get("target_1to1_price", 0.0)) if is_smc else None
+        partial_tp_enabled = bool(signal.metadata.get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True))) if is_smc else False
+        be_buf_ticks = int(signal.metadata.get("breakeven_buffer_ticks", getattr(self.config, "breakeven_buffer_ticks", 1))) if is_smc else 1
+        smc_1x_mode = str(getattr(self.config, "smc_1x_exit_mode", "1TO2_WITH_BE")).upper()
+        partial_tp_executed = False
+        remaining_vol = vol_contracts
 
         while not self._shutdown_requested:
             time.sleep(self.config.poll_interval_seconds)
@@ -1101,6 +1133,98 @@ class TradeExecutionEngine:
                     f"Stop SL: {exact_sl:.{precision}f} ({dist_sl_ticks:+.1f}t) | Unrealized: {u_ticks:+.1f}t ({u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
                 )
 
+            # -----------------------------------------------------------------
+            # Smart Money Concepts: 1:1 Partial Take Profit & Breakeven Lock
+            # -----------------------------------------------------------------
+            if is_smc and partial_tp_enabled and target_1to1 and not partial_tp_executed and entry_price:
+                hit_1to1 = (exec_price >= target_1to1) if direction == OrderDirection.LONG else (exec_price <= target_1to1)
+                if hit_1to1:
+                    pu = (10 ** -precision)
+                    if remaining_vol >= 2:
+                        close_vol = remaining_vol // 2
+                        self.logger.info(
+                            f"🎉 [SMC 1:1 PARTIAL TP HIT] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
+                            f"Closing 50% ({close_vol} contracts) at market to secure 1R profit..."
+                        )
+                        try:
+                            self.trader.close_position(
+                                position_id=position_id or 0,
+                                symbol=symbol,
+                                side=side_str,
+                                vol_contracts=close_vol,
+                                leverage=leverage,
+                                is_isolated=self.config.is_isolated,
+                                is_market=True,
+                                price=exec_price
+                            )
+                            remaining_vol -= close_vol
+                            vol_contracts = remaining_vol
+                            partial_tp_executed = True
+                            if signal and signal.metadata:
+                                signal.metadata["partial_tp_hit"] = True
+                            # Move SL to Breakeven (+buffer ticks in profit)
+                            new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                            exact_sl = round(new_be_sl, precision)
+                            self.logger.info(
+                                f"🔒 [SMC BREAKEVEN SL LOCKED] Stop Loss moved to BREAKEVEN +{be_buf_ticks}t ({exact_sl:.{precision}f} USDT). "
+                                f"Remaining {remaining_vol} contract(s) now running risk-free towards 1:2 R:R target ({exact_tp:.{precision}f} USDT)!"
+                            )
+                            if position_id:
+                                try:
+                                    self.trader.set_position_tp_sl(
+                                        symbol=symbol,
+                                        position_id=position_id,
+                                        take_profit_price=exact_tp,
+                                        stop_loss_price=exact_sl
+                                    )
+                                except Exception as e:
+                                    self.logger.debug("Failed updating server-side SL on partial TP: %s", e)
+                        except Exception as e:
+                            self.logger.warning("Partial close error at 1:1: %s", e)
+                    else:
+                        # 1 contract volume handling
+                        if smc_1x_mode == "1TO1_TP":
+                            self.logger.info(
+                                f"🎯 [SMC 1X TARGET 1:1 HIT] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
+                                f"Closing single-contract position at 1:1..."
+                            )
+                            try:
+                                res = self.trader.close_position(
+                                    position_id=position_id or 0,
+                                    symbol=symbol,
+                                    side=side_str,
+                                    vol_contracts=remaining_vol,
+                                    leverage=leverage,
+                                    is_isolated=self.config.is_isolated,
+                                    is_market=True,
+                                    price=exec_price
+                                )
+                                close_order_id = str(res.get("data", {}).get("orderId") or "")
+                                return exec_price, ExitReason.MIN_PROFIT_TP_HIT, close_order_id
+                            except Exception as e:
+                                self.logger.warning("Market close error on 1x 1:1 TP: %s", e)
+                        else:  # 1TO2_WITH_BE
+                            partial_tp_executed = True
+                            if signal and signal.metadata:
+                                signal.metadata["partial_tp_hit"] = True
+                            new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                            exact_sl = round(new_be_sl, precision)
+                            self.logger.info(
+                                f"🔒 [SMC 1-CONTRACT BE LOCK] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
+                                f"Stop Loss moved to BREAKEVEN +{be_buf_ticks}t ({exact_sl:.{precision}f} USDT). "
+                                f"Position is 100% risk-free, targeting 1:2 R:R ({exact_tp:.{precision}f} USDT)!"
+                            )
+                            if position_id:
+                                try:
+                                    self.trader.set_position_tp_sl(
+                                        symbol=symbol,
+                                        position_id=position_id,
+                                        take_profit_price=exact_tp,
+                                        stop_loss_price=exact_sl
+                                    )
+                                except Exception as e:
+                                    self.logger.debug("Failed updating server-side SL on 1x BE: %s", e)
+
             # 3. Check if executable price reached Min-Profit TP (bid for LONG, ask for SHORT)
             if self.strategy.is_better_than_min_profit(direction, exec_price, exact_tp, entry_price=entry_price):
                 op_sym = ">=" if direction == OrderDirection.LONG else "<="
@@ -1120,7 +1244,7 @@ class TradeExecutionEngine:
                         price=exec_price
                     )
                     close_order_id = str(res.get("data", {}).get("orderId") or "")
-                    return exec_price, ExitReason.IMMEDIATE_PROFIT_CLOSE, close_order_id
+                    return exec_price, ExitReason.MIN_PROFIT_TP_HIT, close_order_id
                 except Exception as e:
                     self.logger.warning("Market close error (position may already be closed by TP): %s", e)
 
@@ -1129,9 +1253,9 @@ class TradeExecutionEngine:
             if sl_breached:
                 # Distinguish between standard SL, ratchet tightened SL, and ratchet breakeven
                 pu = (10 ** -precision)
-                if abs(exact_sl - entry_price) <= (0.2 * pu):
+                if partial_tp_executed or abs(exact_sl - entry_price) <= (0.2 * pu):
                     exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
-                    sl_label = "RATCHET BREAKEVEN"
+                    sl_label = "SMC BREAKEVEN SL" if partial_tp_executed else "RATCHET BREAKEVEN"
                 elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
                     exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
                     sl_label = "RATCHET TIGHTENED SL"
@@ -1242,7 +1366,8 @@ class TradeExecutionEngine:
         leverage: int,
         open_time: float,
         sub_strategy_name: str,
-        target_tp_ticks: Optional[int] = None
+        target_tp_ticks: Optional[int] = None,
+        signal: Optional[TradeSignal] = None
     ) -> TradeOutcome:
         """
         High-fidelity DRY-RUN execution simulation using live market ticker data.
@@ -1251,6 +1376,16 @@ class TradeExecutionEngine:
         pu = contract.price_unit
         cs = contract.contract_size
         underlying_qty = vol_contracts * cs
+
+        # SMC 1:1 Partial TP and Breakeven Runner state
+        is_smc = bool(signal and signal.metadata and "ORDER_BLOCK" in str(signal.metadata.get("strategy_mode", "")).upper())
+        target_1to1 = float(signal.metadata.get("target_1to1_price", 0.0)) if is_smc else None
+        partial_tp_enabled = bool(signal.metadata.get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True))) if is_smc else False
+        be_buf_ticks = int(signal.metadata.get("breakeven_buffer_ticks", getattr(self.config, "breakeven_buffer_ticks", 1))) if is_smc else 1
+        smc_1x_mode = str(getattr(self.config, "smc_1x_exit_mode", "1TO2_WITH_BE")).upper()
+        partial_tp_executed = False
+        partial_fill_price = None
+        remaining_vol = vol_contracts
 
         # 1. Realistic Entry Price:
         # Market orders: Long executes against best ask (ask1), Short against best bid (bid1)
@@ -1426,6 +1561,47 @@ class TradeExecutionEngine:
                             )
                             break
 
+                # -----------------------------------------------------------------
+                # Smart Money Concepts: 1:1 Partial Take Profit & Breakeven Lock (Dry-Run)
+                # -----------------------------------------------------------------
+                if is_smc and partial_tp_enabled and target_1to1 and not partial_tp_executed:
+                    hit_1to1 = (cur_bid >= target_1to1 or cur_last >= target_1to1) if direction == OrderDirection.LONG else (cur_ask <= target_1to1 or cur_last <= target_1to1)
+                    if hit_1to1:
+                        if remaining_vol >= 2:
+                            close_vol = remaining_vol // 2
+                            partial_fill_price = target_1to1
+                            partial_tp_executed = True
+                            if signal and signal.metadata:
+                                signal.metadata["partial_tp_hit"] = True
+                            new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                            exact_sl = round(new_be_sl, ps)
+                            remaining_vol -= close_vol
+                            self.logger.info(
+                                f"🎉 [DRY-RUN SMC 1:1 PARTIAL TP] Reached 1:1 target ({target_1to1:.{ps}f} USDT). "
+                                f"Closed 50% ({close_vol} contracts). Stop Loss locked at BREAKEVEN +{be_buf_ticks}t ({exact_sl:.{ps}f} USDT). "
+                                f"Remaining {remaining_vol} contract(s) running to 1:2 TP ({exact_tp:.{ps}f} USDT)!"
+                            )
+                        else:
+                            if smc_1x_mode == "1TO1_TP":
+                                exit_price = target_1to1
+                                exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                                self.logger.info(
+                                    f"🎯 [DRY-RUN SMC 1X 1:1 TP] Reached 1:1 target ({target_1to1:.{ps}f} USDT). "
+                                    f"Closed single-contract position at 1:1 TP!"
+                                )
+                                break
+                            else:  # 1TO2_WITH_BE
+                                partial_tp_executed = True
+                                if signal and signal.metadata:
+                                    signal.metadata["partial_tp_hit"] = True
+                                new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                                exact_sl = round(new_be_sl, ps)
+                                self.logger.info(
+                                    f"🔒 [DRY-RUN SMC 1-CONTRACT BE LOCK] Reached 1:1 target ({target_1to1:.{ps}f} USDT). "
+                                    f"Stop Loss locked at BREAKEVEN +{be_buf_ticks}t ({exact_sl:.{ps}f} USDT). "
+                                    f"Position is risk-free, targeting 1:2 R:R ({exact_tp:.{ps}f} USDT)!"
+                                )
+
                 # For LONG: Close fills by selling at best bid (bid1) or last trade
                 if direction == OrderDirection.LONG:
                     effective_close_price = cur_bid
@@ -1580,6 +1756,12 @@ class TradeExecutionEngine:
         close_time = time.time()
         duration = max(0.1, close_time - open_time)
 
+        # Blended outcome pricing if 50% was closed at 1:1 TP and runner exited separately
+        if partial_tp_executed and partial_fill_price is not None and remaining_vol < vol_contracts:
+            closed_partial_vol = vol_contracts - remaining_vol
+            blended_exit_price = ((closed_partial_vol * partial_fill_price) + (remaining_vol * exit_price)) / vol_contracts
+            exit_price = round(blended_exit_price, ps)
+
         price_diff = (exit_price - entry_price) if direction == OrderDirection.LONG else (entry_price - exit_price)
 
         inr_rate = self.market.get_inr_rate()
@@ -1658,7 +1840,15 @@ class TradeExecutionEngine:
             balance_after_trade_inr=balance_after_inr,
             order_id="SIMULATED_ORDER_001",
             close_order_id="SIMULATED_CLOSE_001",
-            position_id=12345678
+            position_id=12345678,
+            smc_zone_id=signal.metadata.get("zone_id") if is_smc and signal and signal.metadata else None,
+            smc_zone_type=signal.metadata.get("zone_type") if is_smc and signal and signal.metadata else None,
+            smc_zone_high=signal.metadata.get("zone_high") if is_smc and signal and signal.metadata else None,
+            smc_zone_low=signal.metadata.get("zone_low") if is_smc and signal and signal.metadata else None,
+            smc_fvg_size=signal.metadata.get("fvg_size") if is_smc and signal and signal.metadata else None,
+            smc_target_1to1=signal.metadata.get("target_1to1_price") if is_smc and signal and signal.metadata else None,
+            smc_target_1to2=signal.metadata.get("target_1to2_price") if is_smc and signal and signal.metadata else None,
+            smc_partial_tp_hit=partial_tp_executed if is_smc else False
         )
 
     # =========================================================================

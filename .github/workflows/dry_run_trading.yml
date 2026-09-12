@@ -14,6 +14,8 @@ on:
           - DOGE_V2_2_RATCHET_CHAMPION
           - DOGE_ASYMMETRIC_MOMENTUM_10T2T
           - TRUMP_LEGACY_BASELINE
+          - TRUMP_ORDER_BLOCK_DEMAND
+          - DOGE_ORDER_BLOCK_DEMAND
           - CUSTOM
       symbol:
         description: "Trading pair symbol (used if CUSTOM preset)"
@@ -27,6 +29,7 @@ on:
         type: choice
         options:
           - ML_1M_MODEL
+          - ORDER_BLOCK_DEMAND
           - STOCH_RSI
           - EMA_CROSSOVER
           - SMART_STRATEGY

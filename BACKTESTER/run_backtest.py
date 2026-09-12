@@ -87,7 +87,9 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     print("   [6] DOGE_ASYMMETRIC_MOMENTUM_10T2T -> Asymmetric Momentum Scalp (10t TP / 2t SL + Direct Momentum)")
     print("   [7] TRUMP_V3_CHAMPION_MAKER_RATCHET -> Phase V3 Maker Hybrid Champion for TRUMP (6t TP / 3t SL + Ratchet)")
     print("   [8] TRUMP_LEGACY_BASELINE          -> Original Baseline (2t TP / 25% ROE SL + Market Order)")
-    print("   [9] CUSTOM / MANUAL SETUP          -> Step-by-step custom wizard configuration")
+    print("   [9] TRUMP_ORDER_BLOCK_DEMAND     -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
+    print("   [10] DOGE_ORDER_BLOCK_DEMAND     -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
+    print("   [11] CUSTOM / MANUAL SETUP       -> Step-by-step custom wizard configuration")
 
     preset_map = {
         "1": "TRUMP_ML_RAPID_SCALPER",
@@ -98,7 +100,9 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         "6": "DOGE_ASYMMETRIC_MOMENTUM_10T2T",
         "7": "TRUMP_V3_CHAMPION_MAKER_RATCHET",
         "8": "TRUMP_LEGACY_BASELINE",
-        "9": "CUSTOM"
+        "9": "TRUMP_ORDER_BLOCK_DEMAND",
+        "10": "DOGE_ORDER_BLOCK_DEMAND",
+        "11": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -111,7 +115,7 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4", "5", "6", "7", "8"):
+    if preset_choice in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
 
@@ -315,11 +319,14 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     print("   [1] Stochastic RSI       (Fast Scalp & Reversals in extreme zones) [Default / Recommended]")
     print("   [2] EMA Crossover        (Trend-following Golden/Death Crosses)")
     print("   [3] Smart Strategy       (Autonomous Regime-Adaptive: Momentum EMA + Mean-Reversion Stoch RSI)")
+    print("   [4] Order Block + Demand (Smart Money Concepts: BOS body-close, OB wick-to-wick, FVG, 1:2 RR)")
     strat_choice = input("   Select Strategy [default: 1 (Stochastic RSI)]: ").strip()
     if strat_choice == "2":
         strategy_mode = "EMA_CROSSOVER"
     elif strat_choice == "3":
         strategy_mode = "SMART_STRATEGY"
+    elif strat_choice == "4":
+        strategy_mode = "ORDER_BLOCK_DEMAND"
     else:
         strategy_mode = "STOCH_RSI"
 
@@ -629,7 +636,9 @@ def main():
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Personal Access Token for workflow dispatch")
     parser.add_argument("--symbol", type=str, default=None, help="Trading pair symbol (e.g. TRUMP_USDT, DOGE_USDT)")
     parser.add_argument("--timeframe", type=str, default="1m", help="Strategy candle timeframe (e.g. 1m, 5m, 15m, 1h, 1d)")
-    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "SMART_STRATEGY", "SMART", "stoch_rsi", "ema_crossover", "smart_strategy", "smart", "ML_1M_MODEL", "ML_1M", "ML", "ml_1m_model", "ml_1m", "ml"], help="Strategy to evaluate")
+    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "SMART_STRATEGY", "SMART", "stoch_rsi", "ema_crossover", "smart_strategy", "smart", "ML_1M_MODEL", "ML_1M", "ML", "ml_1m_model", "ml_1m", "ml", "ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "order_block_demand", "order_book_demand", "order_block", "smc", "SMC"], help="Strategy to evaluate")
+    parser.add_argument("--ohlcv-dir", type=str, default=None, help="Custom path to OHLCV candlestick data directory")
+    parser.add_argument("--trades-dir", type=str, default=None, help="Custom path to tick trades data directory")
     parser.add_argument("--smart-atr-filter", dest="smart_atr_filter", action="store_true", default=None, help="Enable Smart Strategy ATR compression filter")
     parser.add_argument("--no-smart-atr-filter", dest="smart_atr_filter", action="store_false", help="Disable Smart Strategy ATR compression filter")
     parser.add_argument("--smart-min-atr-ticks", type=float, default=2.5, help="Minimum ATR in ticks for Smart Strategy entry (default: 2.5)")
@@ -819,11 +828,19 @@ def main():
             except Exception as e:
                 print(f"[!] Warning: Failed to parse --quant-params-json: {e}")
 
-        strat_mode = "SMART_STRATEGY" if args.strategy.upper() in ("SMART", "SMART_STRATEGY") else args.strategy.upper()
+        strat_upper = args.strategy.upper()
+        if strat_upper in ("SMART", "SMART_STRATEGY"):
+            strat_mode = "SMART_STRATEGY"
+        elif strat_upper in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"):
+            strat_mode = "ORDER_BLOCK_DEMAND"
+        else:
+            strat_mode = strat_upper
+
         if "strategy_mode" in preset_cfg and args.strategy == "STOCH_RSI":
             strat_mode = preset_cfg["strategy_mode"]
 
         is_ml_strat = strat_mode in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+        is_smc_strat = strat_mode in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC")
 
         # Resolve parameters from preset if specified, allowing CLI overrides
         tp_ticks = args.tp_ticks if (args.tp_ticks != 2 or "tp_ticks" not in preset_cfg) else preset_cfg["tp_ticks"]
@@ -831,7 +848,7 @@ def main():
         sl_ticks = args.sl_ticks if (args.sl_ticks != 10 or "sl_ticks" not in preset_cfg) else preset_cfg["sl_ticks"]
         sl_roe = args.sl_roe if (args.sl_roe != 25.0 or "sl_roe_pct" not in preset_cfg) else preset_cfg["sl_roe_pct"]
 
-        if is_ml_strat:
+        if is_ml_strat or is_smc_strat:
             if not args.invert_signal and "invert_signal" not in preset_cfg:
                 invert_sig = False
             else:
@@ -842,8 +859,8 @@ def main():
                 ratchet_en = args.ratchet_enabled or preset_cfg.get("ratchet_enabled", False)
             dynamic_tp = preset_cfg.get("dynamic_tp", True)
             if args.volume_multiplier is None and "volume_multiplier" not in preset_cfg:
-                vol_mult = 1.0
-            lev_to_use = args.leverage if args.leverage != 75 else int(preset_cfg.get("leverage", 30))
+                vol_mult = 2.0 if "TRUMP" in sym else 1.0
+            lev_to_use = args.leverage if args.leverage != 75 else int(preset_cfg.get("leverage", 75 if is_smc_strat else 30))
         else:
             invert_sig = args.invert_signal or preset_cfg.get("invert_signal", False)
             ratchet_en = args.ratchet_enabled or preset_cfg.get("ratchet_enabled", False)
@@ -874,10 +891,17 @@ def main():
         else:
             slip_enabled = (slip_ticks > 0)
 
+        user_ohlcv_def = r"D:\My_Bots\Trading\BINANCE_DATA\OHLCV_Data\binance_futures_ohlcv"
+        user_trades_def = r"D:\My_Bots\Trading\BINANCE_DATA\Tick_Trades_Data\binance_futures_trades"
+        ohlcv_dir_val = args.ohlcv_dir or (user_ohlcv_def if os.path.exists(user_ohlcv_def) else os.path.join(BACKTESTER_DIR, "OHLCV_Data_Binance"))
+        trades_dir_val = args.trades_dir or (user_trades_def if os.path.exists(user_trades_def) else os.path.join(BACKTESTER_DIR, "Historical_Trades_Data_Binance"))
+
         config = BacktestConfig(
             symbol=sym,
             timeframe=args.timeframe,
             strategy_mode=strat_mode,
+            ohlcv_data_dir=ohlcv_dir_val,
+            trades_data_dir=trades_dir_val,
             ema_preset=args.ema_preset,
             stoch_preset=args.stoch_preset,
             start_time=args.start,
@@ -934,8 +958,8 @@ def main():
             use_atr_targets=use_atr,
             atr_tp_multiplier=atr_tp_mult,
             atr_sl_multiplier=atr_sl_mult,
-            volume_filter_enabled=vol_filter_en,
-            volume_filter_multiplier=vol_filter_mult,
+            volume_filter_enabled=vol_filt,
+            volume_filter_multiplier=vol_filt_mult,
             queue_dynamics_enabled=queue_dyn,
             resting_limit_tp=resting_tp,
             simulate_intra_tick_liquidation=sim_liq

@@ -178,8 +178,13 @@ class BacktestMarket:
             max_l = int(template.get("max_leverage", 75))
             mmr = float(template.get("maintenance_margin_ratio", 0.0067))
             imr = float(template.get("initial_margin_ratio", 0.0133))
-            mfr = float(template.get("maker_fee_rate", 0.0))
-            tfr = float(template.get("taker_fee_rate", 0.0))
+            is_zero_fee_pair = any(k in canonical for k in ("TRUMP", "DOGE"))
+            if is_zero_fee_pair:
+                mfr = 0.0
+                tfr = 0.0
+            else:
+                mfr = 0.0
+                tfr = 0.0001  # 0.01% taker fee
             depth_steps = template.get("depth_steps", [str(pu)])
             raw_data = {}
 
@@ -190,6 +195,14 @@ class BacktestMarket:
         elif self.fee_mode == "MANUAL":
             mfr = self.maker_fee_override if self.maker_fee_override is not None else 0.0
             tfr = self.taker_fee_override if self.taker_fee_override is not None else 0.0
+        elif self.fee_mode == "LIVE":
+            is_zero_fee_pair = any(k in canonical for k in ("TRUMP", "DOGE"))
+            if is_zero_fee_pair:
+                mfr = 0.0
+                tfr = 0.0
+            else:
+                mfr = 0.0
+                tfr = 0.0001  # 0.01% taker (no maker)
 
         # Specific manual overrides always take ultimate precedence
         if self.maker_fee_override is not None:
