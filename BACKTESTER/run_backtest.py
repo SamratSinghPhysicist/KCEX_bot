@@ -108,11 +108,21 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
 
+        is_ml_p = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+        is_smc_p = "ORDER_BLOCK" in chosen_preset or "DEMAND" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "SMC")
+
         print(f"\n   ✅ Loaded Preset: {preset_cfg.get('name', chosen_preset)}")
         print(f"      • Trading Pair:    {preset_cfg.get('symbol')} ({preset_cfg.get('timeframe', '1m')} timeframe)")
-        print(f"      • Strategy:        {preset_cfg.get('strategy_mode')} ({preset_cfg.get('stoch_preset', 'FAST_SCALP')})")
+        print(f"      • Strategy:        {preset_cfg.get('strategy_mode')}")
         print(f"      • Signal Mode:     {'INVERTED (Exhaustion Fading)' if preset_cfg.get('invert_signal') else 'DIRECT (Momentum)'}")
-        print(f"      • Take Profit:     +{preset_cfg.get('tp_ticks')} ticks | Stop Loss: {preset_cfg.get('sl_ticks')} ticks ({preset_cfg.get('sl_mode')})")
+        if is_smc_p:
+            print(f"      • Take Profit:     DYNAMIC 1:2 R:R (50% partial exit at 1:1 + Breakeven Runner) [Fallback: +{preset_cfg.get('tp_ticks', 10)}t]")
+            print(f"      • Stop Loss:       DYNAMIC Structural Zone Extrema (Order Block Low/High + buffer) [Fallback: {preset_cfg.get('sl_ticks', 5)}t]")
+        elif is_ml_p:
+            print(f"      • Take Profit:     DYNAMIC ATR (~{preset_cfg.get('tp_atr_mult', 1.9)}x ATR)")
+            print(f"      • Stop Loss:       DYNAMIC ATR (~{preset_cfg.get('sl_atr_mult', 1.0)}x ATR)")
+        else:
+            print(f"      • Take Profit:     +{preset_cfg.get('tp_ticks')} ticks | Stop Loss: {preset_cfg.get('sl_ticks')} ticks ({preset_cfg.get('sl_mode')})")
         print(f"      • Execution Style: {preset_cfg.get('execution_style')}")
         print(f"      • Tick Ratchet:    {'ENABLED' if preset_cfg.get('ratchet_enabled') else 'DISABLED'}")
 

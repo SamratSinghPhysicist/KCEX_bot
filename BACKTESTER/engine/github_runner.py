@@ -491,8 +491,17 @@ class GitHubBacktestRunner:
         print(f"Candle Timeframe: {inputs['timeframe']}")
         print(f"Strategy:         {inputs['strategy']}")
         print(f"Leverage:         {inputs['leverage']}x Isolated")
-        print(f"Take Profit:      {inputs['tp_ticks']} pu ticks")
-        print(f"Stop Loss:        {inputs['sl_mode']} ({inputs['sl_roe']}% ROE)" if inputs['sl_mode'] == 'ROE' else f"{inputs['sl_ticks']} ticks")
+        strat_name = inputs.get('strategy', '')
+        if strat_name in ('ORDER_BLOCK_DEMAND', 'ORDER_BOOK_DEMAND'):
+            print(f"Take Profit:      DYNAMIC (1:2 R:R | 50% exit at 1:1 + Breakeven Runner) [Fallback: +{inputs['tp_ticks']}t]")
+            print(f"Stop Loss:        DYNAMIC (Order Block Structural Extrema + 1t buffer) [Fallback: {inputs['sl_ticks']}t]")
+        elif strat_name in ('ML_1M_MODEL', 'ML'):
+            print(f"Take Profit:      DYNAMIC (Multi-Horizon HistGBDT ATR Scaler)")
+            print(f"Stop Loss:        DYNAMIC (Multi-Horizon HistGBDT ATR Scaler)")
+        else:
+            print(f"Take Profit:      +{inputs['tp_ticks']} pu ticks")
+            sl_lbl = f"{inputs['sl_mode']} ({inputs['sl_roe']}% ROE)" if inputs['sl_mode'] == 'ROE' else f"{inputs['sl_ticks']} ticks"
+            print(f"Stop Loss:        {sl_lbl}")
         print(f"Date Range:       {inputs['start_date']} to {inputs['end_date']}")
         print(f"Tick Simulation:  {'ENABLED' if inputs['use_ticks'] == 'true' else 'DISABLED'}")
         filters = json.loads(inputs.get("filters_json", "{}")) if "filters_json" in inputs else {}
