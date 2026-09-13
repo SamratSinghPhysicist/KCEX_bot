@@ -146,7 +146,13 @@ jobs:
           MAX_TRADES="${{ inputs.max_trades || '0' }}"
           EXEC_STYLE="${{ inputs.execution_style || 'PURE_MARKET' }}"
           RUNTIME_HOURS="${{ inputs.runtime_hours || '3.5' }}"
+          RUNTIME_HOURS="${RUNTIME_HOURS%[hH]}"
           RUNTIME_SECONDS=$(python -c "print(int(float('${RUNTIME_HOURS}') * 3600))")
+
+          # Sanitize unit suffixes (e.g. 20x -> 20, 50x -> 50.0, 10s -> 10)
+          LEVERAGE="${LEVERAGE%[xX]}"
+          VOL_MULT="${VOL_MULT%[xX]}"
+          COOLDOWN="${COOLDOWN%[sS]}"
 
           # Signal Paradigm: Direct (default false) vs Inverted
           INVERT_FLAG="--no-invert-signal"
@@ -185,7 +191,29 @@ jobs:
           echo "Environment:       GitHub Actions (Run #${{ github.run_number }})"
           echo "::endgroup::"
 
-          echo "::notice::🚀 Starting ${MODE^^} trading session: ${PRESET} (${SYMBOL}) | Style: ${EXEC_STYLE} | Runtime: ${RUNTIME_HOURS}h"
+          # Determine extra CLI override arguments
+          EXTRA_ARGS=()
+          if [ "${PRESET}" = "TRUMP_STOCH_RSI" ] || [ "${PRESET}" = "CUSTOM" ]; then
+            EXTRA_ARGS+=(
+              --symbol "${SYMBOL}"
+              --volume-multiplier "${VOL_MULT}"
+              --leverage "${LEVERAGE}"
+              --tp-ticks "${TP_TICKS}"
+              --sl-ticks "${SL_TICKS}"
+              --cooldown "${COOLDOWN}"
+              ${TP_FLAG}
+              ${INVERT_FLAG}
+              ${RATCHET_FLAG}
+            )
+          else
+            # For other presets (e.g. ML, SMC), pass overrides if explicitly provided
+            if [ "${LEVERAGE}" != "10" ]; then EXTRA_ARGS+=(--leverage "${LEVERAGE}"); fi
+            if [ "${VOL_MULT}" != "50.0" ]; then EXTRA_ARGS+=(--volume-multiplier "${VOL_MULT}"); fi
+            if [ "${TP_TICKS}" != "2" ]; then EXTRA_ARGS+=(--tp-ticks "${TP_TICKS}"); fi
+            if [ "${SL_TICKS}" != "150" ]; then EXTRA_ARGS+=(--sl-ticks "${SL_TICKS}"); fi
+            if [ "${COOLDOWN}" != "0" ]; then EXTRA_ARGS+=(--cooldown "${COOLDOWN}"); fi
+            EXTRA_ARGS+=(${TP_FLAG} ${INVERT_FLAG} ${RATCHET_FLAG})
+          fi
 
           if [ "${PRESET}" != "CUSTOM" ]; then
             python run_engine.py \
@@ -193,7 +221,8 @@ jobs:
               --mode "${MODE}" \
               --preset "${PRESET}" \
               --execution-style "${EXEC_STYLE}" \
-              --volume-multiplier "${VOL_MULT}" \
+              "${EXTRA_ARGS[@]}" \
+              --disable-slippage \
               --max-trades "${MAX_TRADES}" \
               --runtime-limit "${RUNTIME_SECONDS}" \
               --mongodb-uri "${MONGODB_URI}"
@@ -205,18 +234,11 @@ jobs:
               --strategy "${STRATEGY}" \
               --stoch-preset FAST_SCALP \
               --bi-directional \
-              ${INVERT_FLAG} \
               --volume-mode MULTIPLIER \
-              --volume-multiplier "${VOL_MULT}" \
-              --tp-ticks "${TP_TICKS}" \
-              ${TP_FLAG} \
               --sl-mode TICKS \
-              --sl-ticks "${SL_TICKS}" \
-              --leverage "${LEVERAGE}" \
               --execution-style "${EXEC_STYLE}" \
-              ${RATCHET_FLAG} \
+              "${EXTRA_ARGS[@]}" \
               --disable-slippage \
-              --cooldown "${COOLDOWN}" \
               --max-trades "${MAX_TRADES}" \
               --runtime-limit "${RUNTIME_SECONDS}" \
               --mongodb-uri "${MONGODB_URI}"

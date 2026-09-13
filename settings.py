@@ -433,15 +433,15 @@ STRATEGY_PRESETS = {
         "symbol": "TRUMP_USDT",
         "strategy_mode": "STOCH_RSI",
         "timeframe": "1m",
-        "leverage": 10,
+        "leverage": LEVERAGE,
         "volume_mode": "MULTIPLIER",
-        "volume_multiplier": 50.0,
-        "margin_fallback_pct": 25.0,
-        "tp_ticks": 2,
+        "volume_multiplier": VOLUME_MULTIPLIER,
+        "margin_fallback_pct": MARGIN_FALLBACK_PCT,
+        "tp_ticks": TP_TICKS,
         "dynamic_tp": False,
         "sl_mode": "TICKS",
-        "sl_ticks": 150,
-        "cooldown_seconds": 0.0,
+        "sl_ticks": SL_TICKS,
+        "cooldown_seconds": COOLDOWN_SECONDS,
         "max_trades": 0,
         "stoch_preset": "FAST_SCALP",
         "stoch_rsi_period": 9,
@@ -611,7 +611,15 @@ def get_active_preset_config(preset_name: str = None) -> dict:
     """
     key = (preset_name or ACTIVE_PRESET).upper()
     if key in STRATEGY_PRESETS and key != "CUSTOM":
-        return STRATEGY_PRESETS[key]
+        cfg = dict(STRATEGY_PRESETS[key])
+        if key == "TRUMP_STOCH_RSI":
+            cfg["leverage"] = LEVERAGE
+            cfg["volume_multiplier"] = VOLUME_MULTIPLIER
+            cfg["margin_fallback_pct"] = MARGIN_FALLBACK_PCT
+            cfg["tp_ticks"] = TP_TICKS
+            cfg["sl_ticks"] = SL_TICKS
+            cfg["cooldown_seconds"] = COOLDOWN_SECONDS
+        return cfg
     return {
         "name": "Custom Manual Configuration",
         "symbol": SYMBOL,

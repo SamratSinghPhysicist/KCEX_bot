@@ -111,20 +111,22 @@ def prompt_user_settings():
     print("💡 Tip: Press [Enter] on any prompt to accept the default from settings.py.\n")
 
     # 0. Quantitative Strategy Preset Selection
-    active_preset_name = get_setting("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER").upper()
+    active_preset_name = get_setting("ACTIVE_PRESET", "TRUMP_STOCH_RSI").upper()
     print("0. Strategy Preset Selection:")
-    print("   [1] TRUMP_ML_RAPID_SCALPER   -> 1M ML Alpha Engine (+39.9% Net, 1.98 PF, 3.27 Sharpe) [RECOMMENDED]")
-    print("   [2] DOGE_ML_MOMENTUM         -> 1M ML Momentum Classifier for DOGE Futures")
-    print("   [3] TRUMP_ORDER_BLOCK_DEMAND -> 🏛️ Vivek Yadav SMC Order Block + Demand Block (1:1 Partial TP + BE + 1:2 Runner)")
-    print("   [4] DOGE_ORDER_BLOCK_DEMAND  -> 🏛️ Vivek Yadav SMC Order Block + Demand Block for DOGE")
-    print("   [5] CUSTOM / MANUAL SETUP    -> Step-by-step custom wizard configuration")
+    print("   [1] TRUMP_STOCH_RSI          -> Stochastic RSI Scalper (10x, 50x min vol/25% margin fallback, 2t TP/150t SL) [DEFAULT]")
+    print("   [2] TRUMP_ML_RAPID_SCALPER   -> 1M ML Alpha Engine (+39.9% Net, 1.98 PF, 3.27 Sharpe)")
+    print("   [3] DOGE_ML_MOMENTUM         -> 1M ML Momentum Classifier for DOGE Futures")
+    print("   [4] TRUMP_ORDER_BLOCK_DEMAND -> 🏛️ Vivek Yadav SMC Order Block + Demand Block (1:1 Partial TP + BE + 1:2 Runner)")
+    print("   [5] DOGE_ORDER_BLOCK_DEMAND  -> 🏛️ Vivek Yadav SMC Order Block + Demand Block for DOGE")
+    print("   [6] CUSTOM / MANUAL SETUP    -> Step-by-step custom wizard configuration")
 
     preset_map = {
-        "1": "TRUMP_ML_RAPID_SCALPER",
-        "2": "DOGE_ML_MOMENTUM",
-        "3": "TRUMP_ORDER_BLOCK_DEMAND",
-        "4": "DOGE_ORDER_BLOCK_DEMAND",
-        "5": "CUSTOM"
+        "1": "TRUMP_STOCH_RSI",
+        "2": "TRUMP_ML_RAPID_SCALPER",
+        "3": "DOGE_ML_MOMENTUM",
+        "4": "TRUMP_ORDER_BLOCK_DEMAND",
+        "5": "DOGE_ORDER_BLOCK_DEMAND",
+        "6": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -137,7 +139,7 @@ def prompt_user_settings():
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4"):
+    if preset_choice in ("1", "2", "3", "4", "5"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
         is_ml_preset = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
@@ -197,9 +199,22 @@ def prompt_user_settings():
                 print("[!] GitHub token missing. Aborting cloud dispatch.")
                 sys.exit(1)
 
+            # Leverage override for cloud runner
+            def_cloud_lev = int(preset_cfg.get("leverage", get_setting("LEVERAGE", 10)))
+            cloud_lev_input = input(f"Target Leverage [default: {def_cloud_lev}x]: ").strip().rstrip("xX")
+            try:
+                cloud_lev = int(cloud_lev_input) if cloud_lev_input else def_cloud_lev
+            except ValueError:
+                cloud_lev = def_cloud_lev
+
             inputs = {
                 "preset": chosen_preset,
-                "runtime_hours": rt_hours
+                "runtime_hours": rt_hours,
+                "leverage": str(cloud_lev),
+                "volume_multiplier": str(preset_cfg.get("volume_multiplier", 50.0)),
+                "tp_ticks": str(preset_cfg.get("tp_ticks", 2)),
+                "sl_ticks": str(preset_cfg.get("sl_ticks", 150)),
+                "cooldown_seconds": str(preset_cfg.get("cooldown_seconds", 0))
             }
             if cloud_mode == "live":
                 inputs["mode"] = "live"
@@ -238,17 +253,27 @@ def prompt_user_settings():
         sym_p = preset_cfg.get("symbol", "TRUMP_USDT")
         def_vol_mult = float(preset_cfg.get("volume_multiplier", 1.0))
         print("\n3. Position Sizing (Volume Multiplier):")
-        print(f"   Enter multiplier of minimum contract quantity (1.0 = 1 min contract, 2.0 = 2 min contracts)")
-        print(f"   💡 Note: 1.0x (1 contract) allows smooth trading on low margin / 20x-30x leverage.")
-        vol_input = input(f"   Volume Multiplier [default: {def_vol_mult:g}x]: ").strip()
+        print(f"   Enter multiplier of minimum contract quantity (1.0 = 1 min contract, 50.0 = 50 min contracts)")
+        print(f"   💡 Note: TRUMP_STOCH_RSI uses 50.0x min volume with 25% margin fallback sizing.")
+        vol_input = input(f"   Volume Multiplier [default: {def_vol_mult:g}x]: ").strip().rstrip("xX")
         try:
             vol_mult = float(vol_input) if vol_input else def_vol_mult
         except ValueError:
             vol_mult = def_vol_mult
 
-        # 4. Session Trade Target
+        # 4. Target Leverage
+        def_lev = int(preset_cfg.get("leverage", get_setting("LEVERAGE", 10)))
+        print("\n4. Target Leverage:")
+        print("   Enter position leverage multiplier (Isolated margin)")
+        lev_input = input(f"   Target Leverage [default: {def_lev}x]: ").strip().rstrip("xX")
+        try:
+            lev_val = int(lev_input) if lev_input else def_lev
+        except ValueError:
+            lev_val = def_lev
+
+        # 5. Session Trade Target
         def_max_trades = int(preset_cfg.get("max_trades", 0))
-        print("\n4. Session Trade Target (Max Trades Limit):")
+        print("\n5. Session Trade Target (Max Trades Limit):")
         print("   Enter maximum trades before stopping (0 = Unlimited / Continuous Scalping)")
         max_input = input(f"   Max Trades [default: {def_max_trades} ({'Unlimited' if def_max_trades == 0 else str(def_max_trades) + ' trades'})]: ").strip()
         try:
@@ -261,21 +286,24 @@ def prompt_user_settings():
         dyn_tp = preset_cfg.get("dynamic_tp", True if (is_ml_preset or is_smc_preset) else False)
         inv_sig = preset_cfg.get("invert_signal", False)
         ratch_en = preset_cfg.get("ratchet_enabled", False)
-        tp_ticks = preset_cfg.get("tp_ticks", 0 if is_ml_preset else (10 if is_smc_preset else 5))
-        sl_ticks = preset_cfg.get("sl_ticks", 0 if is_ml_preset else (5 if is_smc_preset else 2))
+        tp_ticks = preset_cfg.get("tp_ticks", 0 if is_ml_preset else (10 if is_smc_preset else 2))
+        sl_ticks = preset_cfg.get("sl_ticks", 0 if is_ml_preset else (5 if is_smc_preset else 150))
         sl_mode = preset_cfg.get("sl_mode", "TICKS")
         sl_roe = preset_cfg.get("sl_roe_pct", 25.0)
+        cooldown_val = float(preset_cfg.get("cooldown_seconds", get_setting("COOLDOWN_SECONDS", 0.0)))
+        margin_fallback = float(preset_cfg.get("margin_fallback_pct", get_setting("MARGIN_FALLBACK_PCT", 25.0)))
 
         print("=" * 78 + "\n")
         return ExecutionConfig(
             symbol=sym_p,
             direction=OrderDirection.LONG,
             mode=mode_val,
-            leverage=int(preset_cfg.get("leverage", 30)),
+            leverage=lev_val,
             is_isolated=True,
-            cooldown_seconds=default_cool,
+            cooldown_seconds=cooldown_val,
             volume_mode="MULTIPLIER",
             volume_multiplier=vol_mult,
+            margin_fallback_pct=margin_fallback,
             tp_ticks=tp_ticks,
             dynamic_tp=dyn_tp,
             sl_mode=sl_mode,
@@ -299,7 +327,7 @@ def prompt_user_settings():
             ratchet_breakeven_ticks=preset_cfg.get("ratchet_breakeven_ticks", 2.5),
             slippage_enabled=preset_cfg.get("slippage_enabled", False),
             slippage_ticks=preset_cfg.get("slippage_ticks", 0),
-            poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
+            poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.2),
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
             outcomes_log_file=get_setting("OUTCOMES_LOG_FILE", "trade_outcomes.txt"),
@@ -1050,9 +1078,9 @@ def parse_args():
     )
     parser.add_argument(
         "--leverage",
-        type=int,
+        type=str,
         default=None,
-        help="Position leverage (default from settings.py: 30)"
+        help="Position leverage (default from preset or settings.py: 10). Accepts e.g. 10 or 20x."
     )
     parser.add_argument(
         "--poll-interval",
@@ -1430,7 +1458,10 @@ def main():
 
         vol_mode = (args.volume_mode or preset_cfg.get("volume_mode") or get_setting("VOLUME_MODE", "MULTIPLIER")).upper()
         if args.volume_multiplier is not None:
-            vol_mult = args.volume_multiplier
+            try:
+                vol_mult = float(str(args.volume_multiplier).strip().rstrip("xX"))
+            except ValueError:
+                vol_mult = float(preset_cfg.get("volume_multiplier", 50.0))
         elif "volume_multiplier" in preset_cfg:
             vol_mult = float(preset_cfg["volume_multiplier"])
         elif hasattr(settings, "get_default_quantity_for_symbol"):
@@ -1438,7 +1469,7 @@ def main():
         elif "DOGE" in sym:
             vol_mult = 1.0
         else:
-            vol_mult = 1.0 if "ML" in active_preset_name else 2.0
+            vol_mult = 1.0 if "ML" in active_preset_name else 50.0
 
         vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 2) if vol_mode == "CONTRACTS" else None)
 
@@ -1450,15 +1481,29 @@ def main():
         else:
             dynamic_tp = preset_cfg.get("dynamic_tp", get_setting("DYNAMIC_TP", False))
 
-        sl_mode = (args.sl_mode or preset_cfg.get("sl_mode") or get_setting("SL_MODE", "ROE")).upper()
-        sl_ticks = args.sl_ticks if args.sl_ticks is not None else (preset_cfg.get("sl_ticks") if "sl_ticks" in preset_cfg else (get_setting("SL_TICKS", 10) if sl_mode == "TICKS" else None))
+        sl_mode = (args.sl_mode or preset_cfg.get("sl_mode") or get_setting("SL_MODE", "TICKS")).upper()
+        sl_ticks = args.sl_ticks if args.sl_ticks is not None else (preset_cfg.get("sl_ticks") if "sl_ticks" in preset_cfg else (get_setting("SL_TICKS", 150) if sl_mode == "TICKS" else None))
         sl_price_pct = args.sl_price_pct if args.sl_price_pct is not None else (get_setting("SL_PRICE_PCT", 0.5) if sl_mode == "PRICE_PCT" else None)
         sl_roe = args.sl_roe if args.sl_roe is not None else (preset_cfg.get("sl_roe_pct") if "sl_roe_pct" in preset_cfg else get_setting("SL_ROE_PCT", 25.0))
 
-        lev = args.leverage if args.leverage is not None else preset_cfg.get("leverage", get_setting("LEVERAGE", 30))
-        cooldown = args.cooldown if args.cooldown is not None else preset_cfg.get("cooldown_seconds", get_setting("COOLDOWN_SECONDS", 10.0))
+        if args.leverage is not None:
+            try:
+                lev = int(str(args.leverage).strip().rstrip("xX"))
+            except ValueError:
+                lev = int(preset_cfg.get("leverage", get_setting("LEVERAGE", 10)))
+        else:
+            lev = int(preset_cfg.get("leverage", get_setting("LEVERAGE", 10)))
+
+        if args.cooldown is not None:
+            try:
+                cooldown = float(str(args.cooldown).strip().rstrip("sS"))
+            except ValueError:
+                cooldown = float(preset_cfg.get("cooldown_seconds", get_setting("COOLDOWN_SECONDS", 0.0)))
+        else:
+            cooldown = float(preset_cfg.get("cooldown_seconds", get_setting("COOLDOWN_SECONDS", 0.0)))
+
         max_trades = args.max_trades if args.max_trades is not None else (preset_cfg.get("max_trades") if "max_trades" in preset_cfg else get_setting("MAX_TRADES", 0))
-        poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.3)
+        poll_int = args.poll_interval if args.poll_interval is not None else get_setting("POLL_INTERVAL_SECONDS", 0.2)
 
         strat_raw = (args.strategy or preset_cfg.get("strategy_mode") or get_setting("STRATEGY_MODE", "STOCH_RSI")).upper()
         is_ml_strat = strat_raw in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")

@@ -6,7 +6,7 @@ on:
       preset:
         description: "Strategy Preset"
         required: false
-        default: "TRUMP_ML_RAPID_SCALPER"
+        default: "TRUMP_STOCH_RSI"
         type: choice
         options:
           - TRUMP_STOCH_RSI
@@ -23,12 +23,12 @@ on:
       strategy:
         description: "Strategy Engine (used if CUSTOM preset)"
         required: false
-        default: "ML_1M_MODEL"
+        default: "STOCH_RSI"
         type: choice
         options:
+          - STOCH_RSI
           - ML_1M_MODEL
           - ORDER_BLOCK_DEMAND
-          - STOCH_RSI
           - EMA_CROSSOVER
           - SMART_STRATEGY
       execution_style:
@@ -40,14 +40,14 @@ on:
           - PURE_MARKET
           - MAKER_HYBRID
       volume_multiplier:
-        description: "Volume multiplier (e.g. 1.0 for 1x min quantity)"
+        description: "Volume multiplier (e.g. 50.0 for 50x min quantity)"
         required: false
-        default: "1.0"
+        default: "50.0"
         type: string
       leverage:
-        description: "Position leverage (default: 30x)"
+        description: "Position leverage (default: 10x)"
         required: false
-        default: "30"
+        default: "10"
         type: string
       runtime_hours:
         description: "Session runtime limit in hours (e.g. 0.1 for 6m, 1.0 for 1h, 3.5 for full session)"
@@ -62,17 +62,17 @@ on:
       cooldown_seconds:
         description: "Cooldown seconds between trades"
         required: false
-        default: "10"
+        default: "0"
         type: string
       tp_ticks:
         description: "Take-Profit in price unit ticks (Fixed if not ML)"
         required: false
-        default: "10"
+        default: "2"
         type: string
       sl_ticks:
         description: "Stop-Loss in price unit ticks (Fixed if not ML)"
         required: false
-        default: "3"
+        default: "150"
         type: string
       invert_signal:
         description: "Signal Paradigm: Invert signal (Exhaustion Fading)"
@@ -87,7 +87,7 @@ on:
 
 jobs:
   dry-run-trade:
-    name: "🟢 Dry-Run (${{ inputs.preset || 'TRUMP_ML_RAPID_SCALPER' }})"
+    name: "🟢 Dry-Run (${{ inputs.preset || 'TRUMP_STOCH_RSI' }})"
     runs-on: ubuntu-latest
     timeout-minutes: 240
 
@@ -106,27 +106,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: "🟢 Run Dry-Run Simulated Trading Engine"
+      - name: "🚀 Run KCEX Engine (Simulated Dry-Run)"
         env:
           KCEX_AUTH_TOKEN: ${{ secrets.KCEX_AUTH_TOKEN }}
           KCEX_USER_DEVICE: ${{ secrets.KCEX_USER_DEVICE }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: |
-          echo "::group::🔧 Engine Configuration"
-          PRESET="${{ inputs.preset || 'TRUMP_ML_RAPID_SCALPER' }}"
+          echo "::group::🔧 Simulation Configuration"
+          PRESET="${{ inputs.preset || 'TRUMP_STOCH_RSI' }}"
+          STRATEGY="${{ inputs.strategy || 'STOCH_RSI' }}"
           SYMBOL="${{ inputs.symbol || 'TRUMP_USDT' }}"
-          STRATEGY="${{ inputs.strategy || 'ML_1M_MODEL' }}"
-          TP_TICKS="${{ inputs.tp_ticks || '10' }}"
-          SL_TICKS="${{ inputs.sl_ticks || '3' }}"
-          VOL_MULT="${{ inputs.volume_multiplier || '1.0' }}"
-          LEVERAGE="${{ inputs.leverage || '30' }}"
-          COOLDOWN="${{ inputs.cooldown_seconds || '10' }}"
+          TP_TICKS="${{ inputs.tp_ticks || '2' }}"
+          SL_TICKS="${{ inputs.sl_ticks || '150' }}"
+          VOL_MULT="${{ inputs.volume_multiplier || '50.0' }}"
+          LEVERAGE="${{ inputs.leverage || '10' }}"
+          COOLDOWN="${{ inputs.cooldown_seconds || '0' }}"
           MAX_TRADES="${{ inputs.max_trades || '0' }}"
           EXEC_STYLE="${{ inputs.execution_style || 'PURE_MARKET' }}"
           RUNTIME_HOURS="${{ inputs.runtime_hours || '1.0' }}"
+          RUNTIME_HOURS="${RUNTIME_HOURS%[hH]}"
           RUNTIME_SECONDS=$(python -c "print(int(float('${RUNTIME_HOURS}') * 3600))")
 
-          # Signal Paradigm: Direct (default false) vs Inverted
+          # Sanitize unit suffixes (e.g. 20x -> 20, 50x -> 50.0, 10s -> 10)
+          LEVERAGE="${LEVERAGE%[xX]}"
+          VOL_MULT="${VOL_MULT%[xX]}"
+          COOLDOWN="${COOLDOWN%[sS]}"
+
+          # Signal Paradigm: Direct vs Inverted
           INVERT_FLAG="--no-invert-signal"
           if [ "${{ inputs.invert_signal }}" = "true" ]; then
             INVERT_FLAG="--invert-signal"
@@ -160,13 +166,37 @@ jobs:
 
           echo "::notice::🟢 Starting DRY-RUN simulated session: ${PRESET} | Style: ${EXEC_STYLE} | Runtime: ${RUNTIME_HOURS}h"
 
+          # Determine extra CLI override arguments
+          EXTRA_ARGS=()
+          if [ "${PRESET}" = "TRUMP_STOCH_RSI" ] || [ "${PRESET}" = "CUSTOM" ]; then
+            EXTRA_ARGS+=(
+              --symbol "${SYMBOL}"
+              --volume-multiplier "${VOL_MULT}"
+              --leverage "${LEVERAGE}"
+              --tp-ticks "${TP_TICKS}"
+              --sl-ticks "${SL_TICKS}"
+              --cooldown "${COOLDOWN}"
+              ${TP_FLAG}
+              ${INVERT_FLAG}
+              ${RATCHET_FLAG}
+            )
+          else
+            if [ "${LEVERAGE}" != "10" ]; then EXTRA_ARGS+=(--leverage "${LEVERAGE}"); fi
+            if [ "${VOL_MULT}" != "50.0" ]; then EXTRA_ARGS+=(--volume-multiplier "${VOL_MULT}"); fi
+            if [ "${TP_TICKS}" != "2" ]; then EXTRA_ARGS+=(--tp-ticks "${TP_TICKS}"); fi
+            if [ "${SL_TICKS}" != "150" ]; then EXTRA_ARGS+=(--sl-ticks "${SL_TICKS}"); fi
+            if [ "${COOLDOWN}" != "0" ]; then EXTRA_ARGS+=(--cooldown "${COOLDOWN}"); fi
+            EXTRA_ARGS+=(${TP_FLAG} ${INVERT_FLAG} ${RATCHET_FLAG})
+          fi
+
           if [ "${PRESET}" != "CUSTOM" ]; then
             python run_engine.py \
               --non-interactive \
               --mode dry-run \
               --preset "${PRESET}" \
               --execution-style "${EXEC_STYLE}" \
-              --volume-multiplier "${VOL_MULT}" \
+              "${EXTRA_ARGS[@]}" \
+              --disable-slippage \
               --max-trades "${MAX_TRADES}" \
               --runtime-limit "${RUNTIME_SECONDS}"
           else
@@ -177,18 +207,11 @@ jobs:
               --strategy "${STRATEGY}" \
               --stoch-preset FAST_SCALP \
               --bi-directional \
-              ${INVERT_FLAG} \
               --volume-mode MULTIPLIER \
-              --volume-multiplier "${VOL_MULT}" \
-              --tp-ticks "${TP_TICKS}" \
-              ${TP_FLAG} \
               --sl-mode TICKS \
-              --sl-ticks "${SL_TICKS}" \
-              --leverage "${LEVERAGE}" \
               --execution-style "${EXEC_STYLE}" \
-              ${RATCHET_FLAG} \
+              "${EXTRA_ARGS[@]}" \
               --disable-slippage \
-              --cooldown "${COOLDOWN}" \
               --max-trades "${MAX_TRADES}" \
               --runtime-limit "${RUNTIME_SECONDS}"
           fi
