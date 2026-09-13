@@ -10,9 +10,9 @@ Features:
 - Highly visible LIVE vs SIMULATED mode indicators
 - Live wallet balance displayed at startup and after every trade cycle
 """
-
 import sys
 import os
+import time
 import argparse
 
 # Ensure utf-8 output encoding on Windows consoles
