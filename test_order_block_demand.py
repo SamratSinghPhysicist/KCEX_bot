@@ -185,9 +185,10 @@ class TestOrderBlockDemandStrategy(unittest.TestCase):
 
     def test_rejection_wick_and_green_confirmation_signal(self):
         """
-        Vivek's Rule:
-        Zone tapped + lower rejection wick formed + green confirmation candle closed -> Trigger LONG.
-        Target: Dynamic 1:2 Risk to Reward ratio.
+        Vivek's Rule (User Requirements 2, 3, 4):
+        Candle T: Retests zone + forms lower rejection wick.
+        Candle T+1: Next candle closes GREEN confirming buyers defend the zone.
+        Entry at close of Candle T+1 with 1:2 R:R dynamic targets.
         """
         zone = SmartMoneyZone(
             zone_id="OB_BULL_ACTIVE",
@@ -204,7 +205,7 @@ class TestOrderBlockDemandStrategy(unittest.TestCase):
 
         # Create 40 bars so history >= 30
         mock_bars = []
-        for i in range(40):
+        for i in range(38):
             mock_bars.append({
                 "timestamp": 1000 + i * 60,
                 "open": 2.510,
@@ -214,30 +215,149 @@ class TestOrderBlockDemandStrategy(unittest.TestCase):
                 "volume": 100.0
             })
 
-        # Bar 39 (Evaluating bar): Retests zone with bottom wick (rejection) and closes green
-        # open = 2.495 (inside zone), low = 2.482 (taps near zone.low), high = 2.505, close = 2.504 (green)
-        mock_bars[-1] = {
-            "timestamp": 1000 + 39 * 60,
+        # Bar 38 (Candle T): Retests zone with prominent lower rejection wick
+        # open = 2.495, high = 2.505, low = 2.482, close = 2.496
+        # lower wick = min(2.495, 2.496) - 2.482 = 0.013
+        # range = 2.505 - 2.482 = 0.023 -> 56.5% wick ratio >= 15%
+        mock_bars.append({
+            "timestamp": 1000 + 38 * 60,
             "open": 2.495,
             "high": 2.505,
             "low": 2.482,
+            "close": 2.496,
+            "volume": 200.0
+        })
+
+        # Bar 39 (Candle T+1): Next candle closes GREEN confirming the bounce
+        # open = 2.496, high = 2.506, low = 2.494, close = 2.504 (green close)
+        mock_bars.append({
+            "timestamp": 1000 + 39 * 60,
+            "open": 2.496,
+            "high": 2.506,
+            "low": 2.494,
             "close": 2.504,
             "volume": 250.0
-        }
+        })
         self.mock_market.get_klines.return_value = mock_bars
 
         signal = self.strategy.generate_signal("TRUMP_USDT")
-        self.assertIsNotNone(signal, "Should generate LONG signal upon zone tap + rejection wick + green confirmation")
+        self.assertIsNotNone(signal, "Should generate LONG signal upon Candle T tap+wick followed by Candle T+1 green confirmation close")
         self.assertEqual(signal.direction, OrderDirection.LONG)
 
         # Check Dynamic 1:2 R:R
-        # Stop Loss: zone.low (2.480) - buffer (0.001) = 2.479
+        # Stop Loss: min(zone.low 2.480, wick_low 2.482) - buffer (0.001) = 2.479
         # Entry: 2.504
         # Risk: 2.504 - 2.479 = 0.025 -> 25 ticks
         # Target TP: 2 * 25 = 50 ticks
         self.assertEqual(signal.metadata["target_sl_ticks"], 25)
         self.assertEqual(signal.metadata["target_ticks"], 50)
         self.assertEqual(signal.metadata["risk_reward_ratio"], 2.0)
+        self.assertEqual(signal.metadata["stop_loss_price"], 2.479)
+        self.assertEqual(signal.metadata["take_profit_price"], 2.554)
+
+        # Confirm zone is now MITIGATED and cannot be traded again
+        self.assertNotIn("OB_BULL_ACTIVE", self.strategy.active_zones)
+        self.assertIn(1000, self.strategy.resolved_origin_ts)
+
+    def test_bearish_order_block_tap_and_red_confirmation(self):
+        """
+        Vivek's Rule (Bearish):
+        Candle T: Retests Bearish OB overhead + forms upper rejection wick.
+        Candle T+1: Next candle closes RED confirming sellers defend the zone.
+        Entry at close of Candle T+1 with 1:2 R:R dynamic targets.
+        """
+        zone = SmartMoneyZone(
+            zone_id="OB_BEAR_ACTIVE",
+            zone_type=ZoneType.BEARISH_ORDER_BLOCK,
+            symbol="TRUMP_USDT",
+            high=2.520,
+            low=2.500,
+            body_high=2.515,
+            body_low=2.505,
+            creation_bar_idx=5,
+            creation_ts=2000
+        )
+        self.strategy.active_zones["OB_BEAR_ACTIVE"] = zone
+
+        mock_bars = []
+        for i in range(38):
+            mock_bars.append({
+                "timestamp": 1000 + i * 60,
+                "open": 2.490,
+                "high": 2.495,
+                "low": 2.485,
+                "close": 2.488,
+                "volume": 100.0
+            })
+
+        # Bar 38 (Candle T): Retests Bearish OB with upper rejection wick
+        # open = 2.505, high = 2.518, low = 2.500, close = 2.504
+        # upper wick = 2.518 - max(2.505, 2.504) = 0.013
+        # range = 2.518 - 2.500 = 0.018 -> 72% upper wick ratio
+        mock_bars.append({
+            "timestamp": 1000 + 38 * 60,
+            "open": 2.505,
+            "high": 2.518,
+            "low": 2.500,
+            "close": 2.504,
+            "volume": 200.0
+        })
+
+        # Bar 39 (Candle T+1): Next candle closes RED confirming the rejection
+        # open = 2.504, high = 2.505, low = 2.492, close = 2.494 (red close)
+        mock_bars.append({
+            "timestamp": 1000 + 39 * 60,
+            "open": 2.504,
+            "high": 2.505,
+            "low": 2.492,
+            "close": 2.494,
+            "volume": 250.0
+        })
+        self.mock_market.get_klines.return_value = mock_bars
+
+        signal = self.strategy.generate_signal("TRUMP_USDT")
+        self.assertIsNotNone(signal, "Should generate SHORT signal upon Candle T tap+wick followed by Candle T+1 red confirmation close")
+        self.assertEqual(signal.direction, OrderDirection.SHORT)
+
+        # Check Dynamic 1:2 R:R
+        # Stop Loss: max(zone.high 2.520, wick_high 2.518) + buffer (0.001) = 2.521
+        # Entry: 2.494
+        # Risk: 2.521 - 2.494 = 0.027 -> 27 ticks
+        # Target TP: 2 * 27 = 54 ticks
+        self.assertEqual(signal.metadata["target_sl_ticks"], 27)
+        self.assertEqual(signal.metadata["target_ticks"], 54)
+        self.assertEqual(signal.metadata["risk_reward_ratio"], 2.0)
+        self.assertEqual(signal.metadata["stop_loss_price"], 2.521)
+        self.assertEqual(signal.metadata["take_profit_price"], 2.440)
+
+        # Confirm zone is now MITIGATED and cannot be traded again
+        self.assertNotIn("OB_BEAR_ACTIVE", self.strategy.active_zones)
+        self.assertIn(2000, self.strategy.resolved_origin_ts)
+
+    def test_mitigated_zone_never_recreated(self):
+        """
+        Anti-Recreation Rule:
+        Once an Order Block origin candle is resolved/mitigated, subsequent scans
+        must never re-create that zone, preventing overtrading loops.
+        """
+        # Populate history with an OB origin at bar 2
+        ts = [1000 + i * 60 for i in range(10)]
+        opens = [2.50, 2.50, 2.49, 2.50, 2.51, 2.52, 2.53, 2.54, 2.55, 2.56]
+        highs = [2.51, 2.51, 2.50, 2.51, 2.52, 2.53, 2.54, 2.55, 2.56, 2.57]
+        lows  = [2.49, 2.49, 2.48, 2.49, 2.50, 2.51, 2.52, 2.53, 2.54, 2.55]
+        closes= [2.50, 2.50, 2.485, 2.505, 2.515, 2.525, 2.535, 2.545, 2.555, 2.565]
+
+        # Scan initially
+        zones_first = self.strategy.scan_for_order_blocks(ts, opens, highs, lows, closes)
+        self.assertGreaterEqual(len(zones_first), 1)
+
+        # Mark origin timestamp as resolved
+        origin_ts = zones_first[0].creation_ts
+        self.strategy.resolved_origin_ts.add(origin_ts)
+
+        # Scan again - should NOT re-create the resolved zone
+        zones_second = self.strategy.scan_for_order_blocks(ts, opens, highs, lows, closes)
+        self.assertFalse(any(z.creation_ts == origin_ts for z in zones_second))
 
     def test_fee_schedule_zero_on_trump_doge_and_001_on_others(self):
         """
