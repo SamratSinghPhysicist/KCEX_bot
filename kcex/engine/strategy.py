@@ -57,6 +57,11 @@ from strategies.order_block_demand import (
     OrderBlockDemandStrategy,
     OrderBlockDemandSubStrategy
 )
+from strategies.tick_constrained_mm import (
+    TickConstrainedMMStrategy,
+    TickConstrainedSubStrategy,
+    TickConstrainedConfig
+)
 
 logger = logging.getLogger("KCEXStrategy")
 
@@ -148,6 +153,33 @@ class MasterplanStrategy:
                     buffer_ticks=getattr(self.config, "buffer_ticks", 1),
                     min_sl_ticks=getattr(self.config, "min_sl_ticks", 3),
                     max_sl_ticks=getattr(self.config, "max_sl_ticks", 35)
+                )
+            elif strat_upper in ("TICK_CONSTRAINED_MM", "TICK_CONSTRAINED", "MICRO_MARKET_MAKER", "MM", "SIMULTANEOUS_MM", "SIMULTANEOUS"):
+                mm_cfg = TickConstrainedConfig(
+                    tick_size=getattr(self.config, "tick_size", 0.001),
+                    min_tick_bps=getattr(self.config, "min_tick_bps", 4.0),
+                    tp_ticks=getattr(self.config, "tp_ticks", 1),
+                    sl_ticks=getattr(self.config, "sl_ticks", 3),
+                    entry_queue_qty=getattr(self.config, "entry_queue_qty", 200.0),
+                    tp_queue_qty=getattr(self.config, "tp_queue_qty", 200.0),
+                    ofi_window=getattr(self.config, "ofi_window", 50),
+                    max_ofi_threshold=getattr(self.config, "max_ofi_threshold", 0.40),
+                    time_stop_sec=getattr(self.config, "time_stop_sec", 60.0),
+                    use_htf_filter=getattr(self.config, "htf_trend_filter_enabled", True),
+                    htf_timeframe=getattr(self.config, "htf_timeframe", "Min15"),
+                    bb_period=getattr(self.config, "bb_period", 20),
+                    bb_std=getattr(self.config, "bb_std", 2.0),
+                    bbw_percentile_cutoff=getattr(self.config, "bbw_percentile_cutoff", 40.0),
+                    adx_period=getattr(self.config, "adx_period", 14),
+                    max_adx_sideways=getattr(self.config, "max_adx_sideways", 22.0),
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    simultaneous_mode=getattr(self.config, "simultaneous_mode", False) or ("SIMULTANEOUS" in strat_upper)
+                )
+                self.sub_strategy = TickConstrainedMMStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    config=mm_cfg,
+                    preferred_direction=pref_dir
                 )
             else:
                 # Default to Stochastic RSI

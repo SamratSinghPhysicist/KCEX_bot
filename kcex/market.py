@@ -297,17 +297,24 @@ class KCEXMarket:
 
         return candles
 
-    def get_recent_trades(self, symbol: str) -> List[Dict[str, Any]]:
+    def get_recent_trades(self, symbol: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Fetches recently executed public trades.
         Endpoint: GET /fapi/v1/contract/deals/{symbol}
         
+        Args:
+            symbol (str): Trading pair symbol, e.g. "TRUMP_USDT".
+            limit (int, optional): Maximum number of recent trades to return.
+            
         Returns:
             List of trade dictionaries with price ('p'), volume ('v'), side ('T': 1=Buy, 2=Sell), time ('t').
         """
         endpoint = KCEXConfig.ENDPOINT_CONTRACT_DEALS.format(symbol=symbol.upper())
         res = self.client.get_public(endpoint)
-        return res.get("data", [])
+        trades = res.get("data", [])
+        if limit is not None and limit > 0:
+            return trades[:limit]
+        return trades
 
     def get_funding_rate(self, symbol: str) -> Dict[str, Any]:
         """

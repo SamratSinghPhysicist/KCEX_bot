@@ -84,14 +84,16 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     print("   [2] DOGE_ML_MOMENTUM            -> Machine Learning 1M Momentum (HistGBDT Multi-Horizon + Volatility Scaling) [AI CHAMPION]")
     print("   [3] TRUMP_ORDER_BLOCK_DEMAND     -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
     print("   [4] DOGE_ORDER_BLOCK_DEMAND      -> Smart Money Concepts (BOS Body-Close, Wick-to-Wick OB, FVG, 1:2 RR) [SMC]")
-    print("   [5] CUSTOM / MANUAL SETUP        -> Step-by-step custom wizard configuration")
+    print("   [5] TRUMP_TICK_CONSTRAINED_MM   -> ⚡ Microstructure Market Making & Scalper (+1t TP, -3t SL, OFI & HTF Squeeze)")
+    print("   [6] CUSTOM / MANUAL SETUP        -> Step-by-step custom wizard configuration")
 
     preset_map = {
         "1": "TRUMP_ML_RAPID_SCALPER",
         "2": "DOGE_ML_MOMENTUM",
         "3": "TRUMP_ORDER_BLOCK_DEMAND",
         "4": "DOGE_ORDER_BLOCK_DEMAND",
-        "5": "CUSTOM"
+        "5": "TRUMP_TICK_CONSTRAINED_MM",
+        "6": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -104,12 +106,13 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4"):
+    if preset_choice in ("1", "2", "3", "4", "5"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
 
         is_ml_p = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
         is_smc_p = "ORDER_BLOCK" in chosen_preset or "DEMAND" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "SMC")
+        is_mm_p = "TICK_CONSTRAINED" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("TICK_CONSTRAINED_MM", "MM")
 
         print(f"\n   ✅ Loaded Preset: {preset_cfg.get('name', chosen_preset)}")
         print(f"      • Trading Pair:    {preset_cfg.get('symbol')} ({preset_cfg.get('timeframe', '1m')} timeframe)")
@@ -121,6 +124,9 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         elif is_ml_p:
             print(f"      • Take Profit:     DYNAMIC ATR (~{preset_cfg.get('tp_atr_mult', 1.9)}x ATR)")
             print(f"      • Stop Loss:       DYNAMIC ATR (~{preset_cfg.get('sl_atr_mult', 1.0)}x ATR)")
+        elif is_mm_p:
+            print(f"      • Take Profit:     +{preset_cfg.get('tp_ticks', 1)} tick | Stop Loss: {preset_cfg.get('sl_ticks', 3)} ticks (Micro-Stop)")
+            print(f"      • Microstructure:  OFI Threshold ({preset_cfg.get('max_ofi_threshold', 0.40):.2f}) | Min Tick: {preset_cfg.get('min_tick_bps', 4.0):.1f} bps")
         else:
             print(f"      • Take Profit:     +{preset_cfg.get('tp_ticks')} ticks | Stop Loss: {preset_cfg.get('sl_ticks')} ticks ({preset_cfg.get('sl_mode')})")
         print(f"      • Execution Style: {preset_cfg.get('execution_style')}")
@@ -636,7 +642,7 @@ def main():
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Personal Access Token for workflow dispatch")
     parser.add_argument("--symbol", type=str, default=None, help="Trading pair symbol (e.g. TRUMP_USDT, DOGE_USDT)")
     parser.add_argument("--timeframe", type=str, default="1m", help="Strategy candle timeframe (e.g. 1m, 5m, 15m, 1h, 1d)")
-    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "SMART_STRATEGY", "SMART", "stoch_rsi", "ema_crossover", "smart_strategy", "smart", "ML_1M_MODEL", "ML_1M", "ML", "ml_1m_model", "ml_1m", "ml", "ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "order_block_demand", "order_book_demand", "order_block", "smc", "SMC"], help="Strategy to evaluate")
+    parser.add_argument("--strategy", type=str, default="STOCH_RSI", choices=["STOCH_RSI", "EMA_CROSSOVER", "SMART_STRATEGY", "SMART", "stoch_rsi", "ema_crossover", "smart_strategy", "smart", "ML_1M_MODEL", "ML_1M", "ML", "ml_1m_model", "ml_1m", "ml", "ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "order_block_demand", "order_book_demand", "order_block", "smc", "SMC", "TICK_CONSTRAINED_MM", "tick_constrained_mm", "TICK_CONSTRAINED", "tick_constrained", "MM", "mm"], help="Strategy to evaluate")
     parser.add_argument("--ohlcv-dir", type=str, default=None, help="Custom path to OHLCV candlestick data directory")
     parser.add_argument("--trades-dir", type=str, default=None, help="Custom path to tick trades data directory")
     parser.add_argument("--smart-atr-filter", dest="smart_atr_filter", action="store_true", default=None, help="Enable Smart Strategy ATR compression filter")

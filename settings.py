@@ -595,6 +595,48 @@ STRATEGY_PRESETS = {
         "slippage_enabled": False,
         "slippage_ticks": 0
     },
+    "TRUMP_TICK_CONSTRAINED_MM": {
+        "name": "TRUMP Tick-Constrained Market Making & Scalper",
+        "description": (
+            "Tick-Constrained Microstructure Market Maker on TRUMP_USDT (0% KCEX fee). "
+            "Operates when tick size >= 4.0 bps, quotes with post-only Limit orders, "
+            "+1 tick TP, -3 ticks SL with OFI toxic sweep filter & 15m Bollinger compression gating."
+        ),
+        "symbol": "TRUMP_USDT",
+        "strategy_mode": "TICK_CONSTRAINED_MM",
+        "timeframe": "15m",
+        "leverage": 10,
+        "volume_mode": "MULTIPLIER",
+        "volume_multiplier": 50.0,
+        "margin_fallback_pct": 25.0,
+        "tp_ticks": 1,
+        "dynamic_tp": False,
+        "sl_mode": "TICKS",
+        "sl_ticks": 50,
+        "cooldown_seconds": 0.0,
+        "max_trades": 0,
+        "min_tick_bps": 4.0,
+        "ofi_window": 50,
+        "max_ofi_threshold": 0.40,
+        "time_stop_sec": 60.0,
+        "entry_queue_qty": 200.0,
+        "tp_queue_qty": 200.0,
+        "htf_trend_filter_enabled": True,
+        "htf_timeframe": "Min15",
+        "bb_period": 20,
+        "bb_std": 2.0,
+        "bbw_percentile_cutoff": 40.0,
+        "adx_period": 14,
+        "max_adx_sideways": 22.0,
+        "simultaneous_mode": False,
+        "execution_style": "MAKER_HYBRID",
+        "order_type": "LIMIT",
+        "resting_limit_tp": True,
+        "invert_signal": False,
+        "ratchet_enabled": False,
+        "slippage_enabled": False,
+        "slippage_ticks": 0
+    },
     "CUSTOM": {
         "name": "Custom User Configuration",
         "description": "Bypasses presets and uses manual individual toggle variables from settings.py.",
@@ -612,12 +654,13 @@ def get_active_preset_config(preset_name: str = None) -> dict:
     key = (preset_name or ACTIVE_PRESET).upper()
     if key in STRATEGY_PRESETS and key != "CUSTOM":
         cfg = dict(STRATEGY_PRESETS[key])
-        if key == "TRUMP_STOCH_RSI":
+        if key in ("TRUMP_STOCH_RSI", "TRUMP_TICK_CONSTRAINED_MM"):
             cfg["leverage"] = LEVERAGE
             cfg["volume_multiplier"] = VOLUME_MULTIPLIER
             cfg["margin_fallback_pct"] = MARGIN_FALLBACK_PCT
-            cfg["tp_ticks"] = TP_TICKS
-            cfg["sl_ticks"] = SL_TICKS
+            if key == "TRUMP_STOCH_RSI":
+                cfg["tp_ticks"] = TP_TICKS
+                cfg["sl_ticks"] = SL_TICKS
             cfg["cooldown_seconds"] = COOLDOWN_SECONDS
         return cfg
     return {

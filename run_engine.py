@@ -113,12 +113,13 @@ def prompt_user_settings():
     # 0. Quantitative Strategy Preset Selection
     active_preset_name = get_setting("ACTIVE_PRESET", "TRUMP_STOCH_RSI").upper()
     print("0. Strategy Preset Selection:")
-    print("   [1] TRUMP_STOCH_RSI          -> Stochastic RSI Scalper (10x, 50x min vol/25% margin fallback, 2t TP/150t SL) [DEFAULT]")
-    print("   [2] TRUMP_ML_RAPID_SCALPER   -> 1M ML Alpha Engine (+39.9% Net, 1.98 PF, 3.27 Sharpe)")
-    print("   [3] DOGE_ML_MOMENTUM         -> 1M ML Momentum Classifier for DOGE Futures")
-    print("   [4] TRUMP_ORDER_BLOCK_DEMAND -> 🏛️ Vivek Yadav SMC Order Block + Demand Block (1:1 Partial TP + BE + 1:2 Runner)")
-    print("   [5] DOGE_ORDER_BLOCK_DEMAND  -> 🏛️ Vivek Yadav SMC Order Block + Demand Block for DOGE")
-    print("   [6] CUSTOM / MANUAL SETUP    -> Step-by-step custom wizard configuration")
+    print("   [1] TRUMP_STOCH_RSI             -> Stochastic RSI Scalper (10x, 50x min vol/25% margin fallback, 2t TP/150t SL) [DEFAULT]")
+    print("   [2] TRUMP_ML_RAPID_SCALPER      -> 1M ML Alpha Engine (+39.9% Net, 1.98 PF, 3.27 Sharpe)")
+    print("   [3] DOGE_ML_MOMENTUM            -> 1M ML Momentum Classifier for DOGE Futures")
+    print("   [4] TRUMP_ORDER_BLOCK_DEMAND    -> 🏛️ Vivek Yadav SMC Order Block + Demand Block (1:1 Partial TP + BE + 1:2 Runner)")
+    print("   [5] DOGE_ORDER_BLOCK_DEMAND     -> 🏛️ Vivek Yadav SMC Order Block + Demand Block for DOGE")
+    print("   [6] TRUMP_TICK_CONSTRAINED_MM   -> ⚡ Microstructure Market Making & Scalper (+1t TP, -3t SL, OFI & HTF Squeeze)")
+    print("   [7] CUSTOM / MANUAL SETUP       -> Step-by-step custom wizard configuration")
 
     preset_map = {
         "1": "TRUMP_STOCH_RSI",
@@ -126,7 +127,8 @@ def prompt_user_settings():
         "3": "DOGE_ML_MOMENTUM",
         "4": "TRUMP_ORDER_BLOCK_DEMAND",
         "5": "DOGE_ORDER_BLOCK_DEMAND",
-        "6": "CUSTOM"
+        "6": "TRUMP_TICK_CONSTRAINED_MM",
+        "7": "CUSTOM"
     }
 
     def_preset_choice = "1"
@@ -139,11 +141,12 @@ def prompt_user_settings():
     if not preset_choice:
         preset_choice = def_preset_choice
 
-    if preset_choice in ("1", "2", "3", "4", "5"):
+    if preset_choice in ("1", "2", "3", "4", "5", "6"):
         chosen_preset = preset_map[preset_choice]
         preset_cfg = settings.get_active_preset_config(chosen_preset) if hasattr(settings, "get_active_preset_config") else {}
         is_ml_preset = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
         is_smc_preset = "ORDER_BLOCK" in chosen_preset or "DEMAND" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "SMC")
+        is_mm_preset = "TICK_CONSTRAINED" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("TICK_CONSTRAINED_MM", "MM")
 
         print(f"\n   ✅ Loaded Preset: {preset_cfg.get('name', chosen_preset)}")
         print(f"      • Symbol: {preset_cfg.get('symbol')}")
@@ -155,6 +158,10 @@ def prompt_user_settings():
             print(f"      • Take Profit: Dynamic 1:2 R:R (with 50% partial close at 1:1 & Breakeven Lock)")
             print(f"      • Stop Loss: Structural Order Block boundary + buffer ticks")
             print(f"      • Signal Mode: DIRECT (Smart Money Concepts / Order Block)")
+        elif is_mm_preset:
+            print(f"      • Take Profit: +{preset_cfg.get('tp_ticks', 1)} tick | Stop Loss: {preset_cfg.get('sl_ticks', 3)} ticks (Micro-Stop)")
+            print(f"      • Microstructure Gates: OFI Imbalance ({preset_cfg.get('max_ofi_threshold', 0.40):.2f}) | Min Tick bps: {preset_cfg.get('min_tick_bps', 4.0):.1f}")
+            print(f"      • Signal Mode: MICROSTRUCTURE MM (Bid/Ask Quoting with 0.00% Zero-Fee Scratches)")
         else:
             print(f"      • Take Profit: +{preset_cfg.get('tp_ticks', 5)} ticks | Stop Loss: {preset_cfg.get('sl_ticks', 2)} ticks")
             print(f"      • Signal Mode: {'INVERTED (Exhaustion Fading)' if preset_cfg.get('invert_signal') else 'DIRECT (Momentum)'}")
@@ -282,12 +289,12 @@ def prompt_user_settings():
             max_trades = def_max_trades
 
         # Resolve strategy, TP/SL, and ratchet settings
-        strat_mode = preset_cfg.get("strategy_mode", "ML_1M" if is_ml_preset else ("ORDER_BLOCK_DEMAND" if is_smc_preset else "STOCH_RSI"))
+        strat_mode = preset_cfg.get("strategy_mode", "ML_1M" if is_ml_preset else ("ORDER_BLOCK_DEMAND" if is_smc_preset else ("TICK_CONSTRAINED_MM" if is_mm_preset else "STOCH_RSI")))
         dyn_tp = preset_cfg.get("dynamic_tp", True if (is_ml_preset or is_smc_preset) else False)
         inv_sig = preset_cfg.get("invert_signal", False)
         ratch_en = preset_cfg.get("ratchet_enabled", False)
-        tp_ticks = preset_cfg.get("tp_ticks", 0 if is_ml_preset else (10 if is_smc_preset else 2))
-        sl_ticks = preset_cfg.get("sl_ticks", 0 if is_ml_preset else (5 if is_smc_preset else 150))
+        tp_ticks = preset_cfg.get("tp_ticks", 0 if is_ml_preset else (10 if is_smc_preset else (1 if is_mm_preset else 2)))
+        sl_ticks = preset_cfg.get("sl_ticks", 0 if is_ml_preset else (5 if is_smc_preset else (3 if is_mm_preset else 150)))
         sl_mode = preset_cfg.get("sl_mode", "TICKS")
         sl_roe = preset_cfg.get("sl_roe_pct", 25.0)
         cooldown_val = float(preset_cfg.get("cooldown_seconds", get_setting("COOLDOWN_SECONDS", 0.0)))
@@ -327,6 +334,13 @@ def prompt_user_settings():
             ratchet_breakeven_ticks=preset_cfg.get("ratchet_breakeven_ticks", 2.5),
             slippage_enabled=preset_cfg.get("slippage_enabled", False),
             slippage_ticks=preset_cfg.get("slippage_ticks", 0),
+            min_tick_bps=preset_cfg.get("min_tick_bps", 4.0),
+            ofi_window=preset_cfg.get("ofi_window", 50),
+            max_ofi_threshold=preset_cfg.get("max_ofi_threshold", 0.40),
+            time_stop_sec=preset_cfg.get("time_stop_sec", 60.0),
+            simultaneous_mode=preset_cfg.get("simultaneous_mode", False),
+            entry_queue_qty=preset_cfg.get("entry_queue_qty", 200.0),
+            tp_queue_qty=preset_cfg.get("tp_queue_qty", 200.0),
             poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.2),
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),

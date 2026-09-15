@@ -14,6 +14,7 @@ on:
           - DOGE_ML_MOMENTUM
           - TRUMP_ORDER_BLOCK_DEMAND
           - DOGE_ORDER_BLOCK_DEMAND
+          - TRUMP_TICK_CONSTRAINED_MM
           - CUSTOM
       symbol:
         description: "Trading pair symbol (used if CUSTOM preset)"
@@ -31,6 +32,7 @@ on:
           - ORDER_BLOCK_DEMAND
           - EMA_CROSSOVER
           - SMART_STRATEGY
+          - TICK_CONSTRAINED_MM
       execution_style:
         description: "Execution style (PURE_MARKET or MAKER_HYBRID)"
         required: false

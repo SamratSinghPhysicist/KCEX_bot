@@ -46,6 +46,10 @@ from kcex.engine.strategy import (
     SmartStrategy,
     MLStrategy
 )
+from strategies.tick_constrained_mm import (
+    TickConstrainedMMStrategy,
+    TickConstrainedConfig
+)
 from strategies.filters import FilterPipeline
 
 
@@ -125,6 +129,33 @@ class TradeExecutionEngine:
                     symbol=self.config.symbol,
                     preferred_direction=pref_dir,
                     cooldown_seconds=self.config.cooldown_seconds
+                )
+            elif strat_upper in ("TICK_CONSTRAINED_MM", "TICK_CONSTRAINED", "MICRO_MARKET_MAKER", "MM", "SIMULTANEOUS_MM", "SIMULTANEOUS"):
+                mm_cfg = TickConstrainedConfig(
+                    tick_size=getattr(self.config, "tick_size", 0.001),
+                    min_tick_bps=getattr(self.config, "min_tick_bps", 4.0),
+                    tp_ticks=getattr(self.config, "tp_ticks", 1),
+                    sl_ticks=getattr(self.config, "sl_ticks", 3),
+                    entry_queue_qty=getattr(self.config, "entry_queue_qty", 200.0),
+                    tp_queue_qty=getattr(self.config, "tp_queue_qty", 200.0),
+                    ofi_window=getattr(self.config, "ofi_window", 50),
+                    max_ofi_threshold=getattr(self.config, "max_ofi_threshold", 0.40),
+                    time_stop_sec=getattr(self.config, "time_stop_sec", 60.0),
+                    use_htf_filter=getattr(self.config, "htf_trend_filter_enabled", True),
+                    htf_timeframe=getattr(self.config, "htf_timeframe", "Min15"),
+                    bb_period=getattr(self.config, "bb_period", 20),
+                    bb_std=getattr(self.config, "bb_std", 2.0),
+                    bbw_percentile_cutoff=getattr(self.config, "bbw_percentile_cutoff", 40.0),
+                    adx_period=getattr(self.config, "adx_period", 14),
+                    max_adx_sideways=getattr(self.config, "max_adx_sideways", 22.0),
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    simultaneous_mode=getattr(self.config, "simultaneous_mode", False) or ("SIMULTANEOUS" in strat_upper)
+                )
+                sub_strat = TickConstrainedMMStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    config=mm_cfg,
+                    preferred_direction=pref_dir
                 )
             else:
                 sub_strat = StochasticRSIStrategy(
@@ -520,6 +551,12 @@ class TradeExecutionEngine:
                 outcome.smc_target_1to1 = signal.metadata.get("target_1to1_price")
                 outcome.smc_target_1to2 = signal.metadata.get("target_1to2_price")
                 outcome.smc_partial_tp_hit = bool(signal.metadata.get("partial_tp_hit", False))
+
+            # Propagate Tick-Constrained Market Making Telemetry
+            if signal.metadata and ("ofi_ratio" in signal.metadata or "tick_bps" in signal.metadata):
+                outcome.mm_ofi_ratio = signal.metadata.get("ofi_ratio")
+                outcome.mm_tick_bps = signal.metadata.get("tick_bps")
+                outcome.mm_htf_sideways = signal.metadata.get("htf_is_sideways")
 
             # Output and record outcome
             card = self.outcome_logger.log_outcome(outcome)

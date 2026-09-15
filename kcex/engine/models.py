@@ -180,6 +180,15 @@ class ExecutionConfig:
     breakeven_buffer_ticks: int = 1             # Buffer in ticks added when locking Stop Loss to Breakeven (+1 to +5 ticks)
     smc_1x_exit_mode: str = "1TO2_WITH_BE"      # For 1-contract positions: "1TO2_WITH_BE" (Lock BE at 1:1, run to 1:2) or "1TO1_TP" (Close at 1:1)
 
+    # 10. Tick-Constrained Market Making & Simultaneous Scalping Controls
+    min_tick_bps: float = 4.0                   # Minimum tick size in bps of price (large-tick gatekeeper)
+    ofi_window: int = 50                        # Order Flow Imbalance calculation window
+    max_ofi_threshold: float = 0.40             # Toxic flow threshold to pause quoting
+    time_stop_sec: float = 60.0                 # Max hold time before passive scratch
+    simultaneous_mode: bool = False             # Simultaneous dual Long+Short entry
+    entry_queue_qty: float = 200.0              # Estimated entry queue depth
+    tp_queue_qty: float = 200.0                 # Estimated TP queue depth
+
     poll_interval_seconds: float = 0.5
     logs_dir: str = field(default_factory=lambda: os.path.join(ROOT_DIR, "logs"))
 
@@ -277,6 +286,11 @@ class TradeOutcome:
     smc_target_1to1: Optional[float] = None
     smc_target_1to2: Optional[float] = None
     smc_partial_tp_hit: Optional[bool] = None
+
+    # Tick-Constrained Market Making Telemetry
+    mm_ofi_ratio: Optional[float] = None
+    mm_tick_bps: Optional[float] = None
+    mm_htf_sideways: Optional[bool] = None
 
     @property
     def is_profit(self) -> bool:

@@ -62,6 +62,13 @@ from strategies.order_block_demand import (
     SwingPoint,
     SwingStructureDetector
 )
+from strategies.tick_constrained_mm import (
+    TickConstrainedMMStrategy,
+    TickConstrainedSubStrategy,
+    TickConstrainedConfig,
+    TickConstrainedSimulator,
+    compute_ofi_from_trades
+)
 
 __all__ = [
     "BaseStrategy",
@@ -103,5 +110,10 @@ __all__ = [
     "compute_bollinger_bandwidth",
     "compute_choppiness_index",
     "AdaptiveRegimeSwitcher",
+    "TickConstrainedMMStrategy",
+    "TickConstrainedSubStrategy",
+    "TickConstrainedConfig",
+    "TickConstrainedSimulator",
+    "compute_ofi_from_trades",
 ]
 
