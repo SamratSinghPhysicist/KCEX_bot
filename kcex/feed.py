@@ -134,31 +134,27 @@ class KCEXWebSocketFeed:
 
     async def _connection_supervisor(self) -> None:
         """Supervises connection lifecycle with backoff."""
-        # Note: Do NOT send browser Origin: https://www.kcex.com.
-        # From cloud datacenter IPs (e.g. Railway), Cloudflare blocks non-browser clients with Origin headers (HTTP 403).
-        headers = {
-            "User-Agent": self.DEFAULT_USER_AGENT,
-        }
-
         endpoint_candidates = [
             self.ws_url,
             "wss://www.kcex.com/fapi/edge",
             "wss://www.kcex.com/fapi/edge?platform=api"
         ]
         candidate_idx = 0
+        consecutive_403 = 0
         backoff = 1.0
 
         while self._running:
             curr_url = endpoint_candidates[candidate_idx]
+            # Try connecting with clean headers (no spoofed browser User-Agent or Origin)
             try:
                 logger.info("Connecting to KCEX WebSocket: %s...", curr_url)
                 async with websockets.connect(
                     curr_url,
-                    additional_headers=headers,
                     open_timeout=10.0,
                     ping_interval=None  # We use application-level JSON ping
                 ) as ws:
                     self._connected = True
+                    consecutive_403 = 0
                     backoff = 1.0
                     logger.info("WebSocket connected. Subscribing to %s streams...", self.symbol)
 
@@ -216,13 +212,15 @@ class KCEXWebSocketFeed:
                     break
                 is_403 = ("403" in str(e)) or ("InvalidStatus" in str(e) and "403" in str(e))
                 if is_403:
+                    consecutive_403 += 1
                     candidate_idx = (candidate_idx + 1) % len(endpoint_candidates)
-                    logger.warning(
-                        "[KCEXFeed] WebSocket returned HTTP 403 on %s (Cloudflare datacenter block). "
-                        "Backing off 30.0s before retrying next candidate (ML radar active via cached REST)...",
-                        curr_url
+                    sleep_time = 60.0 if consecutive_403 >= len(endpoint_candidates) else 15.0
+                    logger.info(
+                        "[KCEXFeed] WebSocket returned HTTP 403 on %s (Cloudflare cloud datacenter block). "
+                        "Retrying in %.0fs (ML radar active via cached REST)...",
+                        curr_url, sleep_time
                     )
-                    await asyncio.sleep(30.0)
+                    await asyncio.sleep(sleep_time)
                     backoff = 1.0
                 else:
                     logger.warning("WebSocket error (%s): %s. Reconnecting in %.1fs...", type(e).__name__, e, backoff)
