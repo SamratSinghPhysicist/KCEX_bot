@@ -242,23 +242,41 @@ class TradeExecutionEngine:
             if not self.client.config.is_authenticated:
                 raise ValueError("LIVE mode requires KCEX_AUTH_TOKEN configured in .env.")
 
-            balances = self.trader.get_usdt_balance()
-            avail_usdt = balances.get("available_usdt", 0.0)
-            avail_inr = balances.get("available_inr", 0.0)
-            self.logger.info(
-                f"Futures Wallet Available: {avail_usdt:.4f} USDT (INR {avail_inr:.2f})"
-            )
+            try:
+                balances = self.trader.get_usdt_balance()
+                avail_usdt = balances.get("available_usdt", 0.0)
+                avail_inr = balances.get("available_inr", 0.0)
+                self.logger.info(
+                    f"Futures Wallet Available: {avail_usdt:.4f} USDT (INR {avail_inr:.2f})"
+                )
 
-            # Check if an existing open position exists
-            open_positions = self.trader.get_open_positions(symbol)
-            if open_positions:
-                for pos in open_positions:
-                    hold_vol = float(pos.get("holdVol", 0) or pos.get("vol", 0))
-                    if hold_vol > 0:
-                        self.logger.warning(
-                            f"Warning: Found existing open position on {symbol}: {hold_vol} contracts. "
-                            f"Position ID: {pos.get('positionId')}"
-                        )
+                # Check if an existing open position exists
+                open_positions = self.trader.get_open_positions(symbol)
+                if open_positions:
+                    for pos in open_positions:
+                        hold_vol = float(pos.get("holdVol", 0) or pos.get("vol", 0))
+                        if hold_vol > 0:
+                            self.logger.warning(
+                                f"Warning: Found existing open position on {symbol}: {hold_vol} contracts. "
+                                f"Position ID: {pos.get('positionId')}"
+                            )
+            except KCEXAPIError as e:
+                if e.code == 401 or "authority" in str(e).lower() or "unauthorized" in str(e).lower():
+                    self.logger.error("=" * 78)
+                    self.logger.error("  [AUTHENTICATION ERROR] KCEX API Rejected Session Token (HTTP 401)")
+                    self.logger.error("=" * 78)
+                    self.logger.error("  KCEX returned: [KCEX Error 401] No authority!")
+                    self.logger.error("  Your KCEX_AUTH_TOKEN is invalid, expired, or rejected by KCEX.\n")
+                    self.logger.error("  HOW TO UPDATE YOUR TOKEN ON RAILWAY:")
+                    self.logger.error("  1. Log into your KCEX account in Chrome / Edge (https://www.kcex.com).")
+                    self.logger.error("  2. Press F12 -> Network tab -> click any futures/private request.")
+                    self.logger.error("  3. Copy the entire 'Authorization' header value.")
+                    self.logger.error("  4. Go to Railway -> Your Service -> Variables.")
+                    self.logger.error("  5. Update KCEX_AUTH_TOKEN with the fresh token and Redeploy.")
+                    self.logger.error("=" * 78)
+                    time.sleep(30)
+                    sys.exit(1)
+                raise
 
         self.logger.info(f"Engine Mode: {self.config.mode.value.upper()}")
         self.logger.info(f"Sub-strategy: {self.strategy.sub_strategy.name}")

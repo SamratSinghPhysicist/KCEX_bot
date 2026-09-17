@@ -1721,17 +1721,39 @@ def main():
         market = KCEXMarket(trader.client)
         inr_rate = market.get_inr_rate()
         if cfg.is_authenticated:
-            balances = trader.get_usdt_balance()
-            avail_u = balances.get("available_usdt", 0.0)
-            avail_i = balances.get("available_inr", 0.0)
-            equity_u = balances.get("equity_usdt", 0.0)
-            equity_i = balances.get("equity_inr", 0.0)
-            print("------------------------------------------------------------------------------")
-            print(f"CURRENT KCEX WALLET BALANCE:")
-            print(f"Available : {avail_u:.4f} USDT (INR {avail_i:.2f})")
-            print(f"Equity    : {equity_u:.4f} USDT (INR {equity_i:.2f})")
-            print(f"USD/INR   : INR {inr_rate:.2f} per USD")
-            print("------------------------------------------------------------------------------\n")
+            try:
+                balances = trader.get_usdt_balance()
+                avail_u = balances.get("available_usdt", 0.0)
+                avail_i = balances.get("available_inr", 0.0)
+                equity_u = balances.get("equity_usdt", 0.0)
+                equity_i = balances.get("equity_inr", 0.0)
+                print("------------------------------------------------------------------------------")
+                print(f"CURRENT KCEX WALLET BALANCE:")
+                print(f"Available : {avail_u:.4f} USDT (INR {avail_i:.2f})")
+                print(f"Equity    : {equity_u:.4f} USDT (INR {equity_i:.2f})")
+                print(f"USD/INR   : INR {inr_rate:.2f} per USD")
+                print("------------------------------------------------------------------------------\n")
+            except KCEXAPIError as e:
+                if e.code == 401 or "authority" in str(e).lower() or "unauthorized" in str(e).lower():
+                    if config.mode == EngineMode.LIVE:
+                        print("\n" + "=" * 78)
+                        print("  [AUTHENTICATION ERROR] KCEX API Rejected Session Token (HTTP 401)")
+                        print("=" * 78)
+                        print("  KCEX returned: [KCEX Error 401] No authority!")
+                        print("  Your KCEX_AUTH_TOKEN is invalid, expired, or rejected by KCEX.\n")
+                        print("  HOW TO UPDATE YOUR TOKEN ON RAILWAY:")
+                        print("  1. Log into your KCEX account in Chrome / Edge (https://www.kcex.com).")
+                        print("  2. Press F12 -> Network tab -> click any futures/private request.")
+                        print("  3. Copy the entire 'Authorization' header value.")
+                        print("  4. Go to Railway -> Your Service -> Variables.")
+                        print("  5. Update KCEX_AUTH_TOKEN with the fresh token and Redeploy.")
+                        print("=" * 78 + "\n")
+                        time.sleep(30)
+                        sys.exit(1)
+                    else:
+                        print(f"[Notice] Balance check skipped: {e}\n")
+                else:
+                    print(f"[Notice] Balance check skipped: {e}\n")
     except Exception as e:
         print(f"[Notice] Balance check skipped: {e}\n")
 

@@ -145,6 +145,11 @@ class KCEXClient:
                     time.sleep(delay)
                     attempt += 1
                     continue
+                if is_private and method == "GET" and attempt == 0 and e.code == 401:
+                    # Retry once with "{}" body signature in case backend hashed empty JSON object
+                    headers = self.signer.sign_request(method=method, body="{}")
+                    attempt += 1
+                    continue
                 try:
                     err_body = e.read().decode('utf-8', errors='replace')
                     err_json = json.loads(err_body)

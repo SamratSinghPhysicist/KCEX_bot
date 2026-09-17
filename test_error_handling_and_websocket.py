@@ -250,6 +250,58 @@ class TestErrorHandlingAndWebsocket(unittest.TestCase):
         # Engine successfully executed cycle 1 (caught 510), engaged backoff, and executed cycle 2
         self.assertEqual(call_count, 2)
 
+    def test_signer_signs_get_requests_with_content_sign_and_time(self):
+        """Verifies that KCEXSigner produces Content-Sign and Content-time headers for GET requests."""
+        from kcex.signer import KCEXSigner
+        from kcex.config import KCEXConfig
+
+        cfg = KCEXConfig(auth_token="dummy_token_abcdef")
+        signer = KCEXSigner(cfg)
+        headers = signer.sign_request(method="GET", body=None, timestamp_ms=1726000000000)
+
+        self.assertIn("Authorization", headers)
+        self.assertEqual(headers["Authorization"], "dummy_token_abcdef")
+        self.assertIn("Content-Sign", headers)
+        self.assertIn("Content-time", headers)
+        self.assertEqual(headers["Content-time"], "1726000000000")
+        self.assertIn("User-Device", headers)
+
+    def test_pre_flight_checks_handles_401_gracefully(self):
+        """Verifies that pre_flight_checks intercepts 401 Unauthorized cleanly with sys.exit(1)."""
+        from kcex.engine.executor import TradeExecutionEngine, ExecutionConfig, EngineMode
+        from kcex.market import ContractInfo
+
+        mock_market = MagicMock()
+        mock_trader = MagicMock()
+        mock_client = MagicMock()
+        mock_client.config.is_authenticated = True
+        mock_trader.client = mock_client
+        mock_market.client = mock_client
+
+        mock_contract = MagicMock()
+        mock_contract.price_unit = 0.001
+        mock_contract.contract_size = 0.1
+        mock_contract.min_volume = 1.0
+        mock_contract.maker_fee_rate = 0.0
+        mock_contract.taker_fee_rate = 0.0
+        mock_market.get_contract_detail.return_value = mock_contract
+        mock_market.get_account_tier_fees.return_value = {"makerFee": 0.0, "takerFee": 0.0}
+        mock_market.get_inr_rate.return_value = 95.0
+
+        # Simulate 401 on get_usdt_balance
+        mock_trader.get_usdt_balance.side_effect = KCEXAPIError(code=401, message="No authority!")
+
+        engine = TradeExecutionEngine(
+            config=ExecutionConfig(symbol="TRUMP_USDT", mode=EngineMode.LIVE),
+            market=mock_market,
+            trader=mock_trader
+        )
+
+        with patch("time.sleep"), self.assertRaises(SystemExit) as cm:
+            engine.pre_flight_checks()
+
+        self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

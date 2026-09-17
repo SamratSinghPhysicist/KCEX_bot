@@ -108,34 +108,33 @@ class KCEXSigner:
         if auth_token:
             headers["Authorization"] = auth_token
 
-        # If method is POST or PUT, KCEX web client signs the payload
         is_write = method.upper() in ("POST", "PUT")
-
         if is_write:
             headers["Content-Type"] = "application/json"
-            
-            if timestamp_ms is None:
-                timestamp_ms = int(time.time() * 1000)
 
-            # Format body as compact JSON string
-            if body is None:
-                body_str = "{}"
-            elif isinstance(body, (dict, list)):
-                body_str = json.dumps(body, separators=(',', ':'))
-            else:
-                body_str = str(body)
+        # Content-time and Content-Sign are required on ALL private endpoints (both GET and POST/PUT)
+        if timestamp_ms is None:
+            timestamp_ms = int(time.time() * 1000)
 
-            # KCEX MD5 signing algorithm:
-            # Step 1: I = md5(auth_token + timestamp).substr(7)
-            token_and_time = f"{auth_token}{timestamp_ms}"
-            hash1 = hashlib.md5(token_and_time.encode('utf-8')).hexdigest()
-            intermediate_key = hash1[7:]  # .substr(7) in javascript slices from index 7 to end
+        # Format body as compact JSON string
+        if body is None:
+            body_str = "" if not is_write else "{}"
+        elif isinstance(body, (dict, list)):
+            body_str = json.dumps(body, separators=(',', ':'))
+        else:
+            body_str = str(body)
 
-            # Step 2: j = md5(timestamp + body_str + intermediate_key)
-            sign_input = f"{timestamp_ms}{body_str}{intermediate_key}"
-            signature = hashlib.md5(sign_input.encode('utf-8')).hexdigest()
+        # KCEX MD5 signing algorithm:
+        # Step 1: I = md5(auth_token + timestamp).substr(7)
+        token_and_time = f"{auth_token}{timestamp_ms}"
+        hash1 = hashlib.md5(token_and_time.encode('utf-8')).hexdigest()
+        intermediate_key = hash1[7:]  # .substr(7) in javascript slices from index 7 to end
 
-            headers["Content-time"] = str(timestamp_ms)
-            headers["Content-Sign"] = signature
+        # Step 2: j = md5(timestamp + body_str + intermediate_key)
+        sign_input = f"{timestamp_ms}{body_str}{intermediate_key}"
+        signature = hashlib.md5(sign_input.encode('utf-8')).hexdigest()
+
+        headers["Content-time"] = str(timestamp_ms)
+        headers["Content-Sign"] = signature
 
         return headers
