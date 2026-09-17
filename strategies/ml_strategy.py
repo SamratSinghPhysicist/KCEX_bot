@@ -52,16 +52,21 @@ class MLStrategy(BaseStrategy):
         confidence_threshold: Optional[float] = None,
         confidence_threshold_sell: Optional[float] = None,
         edge_threshold: Optional[float] = None,
-        preferred_direction: Optional[OrderDirection] = None
+        preferred_direction: Optional[OrderDirection] = None,
+        require_closed_candle: bool = True,
+        interval: Optional[str] = None,
+        auto_start_feed: bool = False,
+        **kwargs: Any
     ):
         super().__init__(name="ML_1M_MODEL")
         self.market = market
         self.symbol = symbol
         self.clean_symbol = normalize_symbol_name(symbol)
-        self.timeframe = timeframe
+        self.timeframe = interval or timeframe
         self.cooldown_seconds = cooldown_seconds
         self.warmup_candles = warmup_candles
         self.preferred_direction = preferred_direction
+        self.require_closed_candle = require_closed_candle
 
         self.last_trade_time: float = 0.0
         self.trade_in_progress: bool = False
@@ -177,7 +182,9 @@ class MLStrategy(BaseStrategy):
             logger.error(f"[MLStrategy] Error extracting features: {e}")
             return None
 
-        latest_idx = len(df_feats) - 1
+        # Determine evaluation candle index:
+        # If require_closed_candle is True, candle[-1] is still forming, so evaluate closed candle at index -2.
+        latest_idx = len(df_feats) - 2 if self.require_closed_candle and len(df_feats) >= 2 else len(df_feats) - 1
         latest_row = df_feats.iloc[[latest_idx]]
         curr_price = float(df_ohlcv["close"].iloc[latest_idx])
         curr_atr = float(df_feats["atr_14"].iloc[latest_idx])
@@ -292,6 +299,7 @@ class MLStrategy(BaseStrategy):
             "timeframe": self.timeframe,
             "cooldown_seconds": self.cooldown_seconds,
             "warmup_candles": self.warmup_candles,
+            "require_closed_candle": self.require_closed_candle,
             "model_path": self.model_path,
             "model_loaded": (self.model is not None and self.model.is_trained)
         }

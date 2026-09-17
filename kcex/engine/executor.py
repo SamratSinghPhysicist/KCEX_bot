@@ -475,7 +475,7 @@ class TradeExecutionEngine:
         margin_est_inr = margin_est_usdt * inr_rate
 
         sl_desc = (
-            f"-{self.config.sl_ticks} ticks" if self.config.sl_ticks
+            f"-{sl_ticks_to_use} ticks" if sl_ticks_to_use
             else f"-{self.config.sl_price_pct}% price" if self.config.sl_price_pct
             else f"-{self.config.sl_roe_pct}% ROE"
         )
@@ -769,11 +769,25 @@ class TradeExecutionEngine:
             except Exception:
                 pass
 
+        is_ml_sig = (sub_strategy_name in ("ML_1M_MODEL", "MLStrategy")) or (getattr(self.config, "strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")) or getattr(self.config, "dynamic_tp", False)
+        is_smc_sig = ("ORDER_BLOCK" in str((signal.metadata if signal and signal.metadata else {}).get("strategy_mode", "")).upper()) or ("OrderBlock" in sub_strategy_name) or (getattr(self.config, "strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"))
+        if (is_ml_sig or is_smc_sig) and signal and signal.metadata and "target_ticks" in signal.metadata:
+            effective_tp_ticks = int(signal.metadata["target_ticks"])
+        else:
+            effective_tp_ticks = self.config.tp_ticks
+
+        if (is_ml_sig or is_smc_sig) and signal and signal.metadata and "target_sl_ticks" in signal.metadata:
+            effective_sl_ticks = int(signal.metadata["target_sl_ticks"])
+            effective_sl_roe = None
+        else:
+            effective_sl_ticks = self.config.sl_ticks
+            effective_sl_roe = self.config.sl_roe_pct
+
         exact_tp = self.strategy.calculate_min_profit_tp(
             direction=direction,
             entry_price=entry_price,
             price_unit=pu,
-            tp_ticks=self.config.tp_ticks,
+            tp_ticks=effective_tp_ticks,
             precision=contract.price_precision,
             atr_value=atr_val
         )
@@ -781,8 +795,8 @@ class TradeExecutionEngine:
             direction=direction,
             entry_price=entry_price,
             leverage=leverage,
-            sl_roe_pct=self.config.sl_roe_pct,
-            sl_ticks=self.config.sl_ticks,
+            sl_roe_pct=effective_sl_roe,
+            sl_ticks=effective_sl_ticks,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
             precision=contract.price_precision,
@@ -1482,7 +1496,21 @@ class TradeExecutionEngine:
 
         entry_price = round(entry_price, contract.price_precision)
 
-        effective_tp_ticks = target_tp_ticks if target_tp_ticks is not None else self.config.tp_ticks
+        is_ml_sig = (sub_strategy_name in ("ML_1M_MODEL", "MLStrategy")) or (getattr(self.config, "strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")) or getattr(self.config, "dynamic_tp", False)
+        is_smc_sig = ("ORDER_BLOCK" in str((signal.metadata if signal and signal.metadata else {}).get("strategy_mode", "")).upper()) or ("OrderBlock" in sub_strategy_name) or (getattr(self.config, "strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"))
+        if (is_ml_sig or is_smc_sig) and signal and signal.metadata and "target_ticks" in signal.metadata:
+            effective_tp_ticks = int(signal.metadata["target_ticks"])
+        elif target_tp_ticks is not None:
+            effective_tp_ticks = target_tp_ticks
+        else:
+            effective_tp_ticks = self.config.tp_ticks
+
+        if (is_ml_sig or is_smc_sig) and signal and signal.metadata and "target_sl_ticks" in signal.metadata:
+            effective_sl_ticks = int(signal.metadata["target_sl_ticks"])
+            effective_sl_roe = None
+        else:
+            effective_sl_ticks = self.config.sl_ticks
+            effective_sl_roe = self.config.sl_roe_pct
 
         atr_val = None
         if getattr(self.config, "use_atr_targets", False):
@@ -1511,8 +1539,8 @@ class TradeExecutionEngine:
             direction=direction,
             entry_price=entry_price,
             leverage=leverage,
-            sl_roe_pct=self.config.sl_roe_pct,
-            sl_ticks=self.config.sl_ticks,
+            sl_roe_pct=effective_sl_roe,
+            sl_ticks=effective_sl_ticks,
             sl_price_pct=self.config.sl_price_pct,
             price_unit=pu,
             precision=contract.price_precision,
@@ -1521,7 +1549,7 @@ class TradeExecutionEngine:
         initial_sl = exact_sl
 
         sl_desc = (
-            f"-{self.config.sl_ticks} ticks" if self.config.sl_ticks
+            f"-{effective_sl_ticks} ticks" if effective_sl_ticks
             else f"-{self.config.sl_price_pct}% price" if self.config.sl_price_pct
             else f"-{self.config.sl_roe_pct}% ROE"
         )

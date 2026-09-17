@@ -102,7 +102,12 @@ def compute_triple_barrier_labels(
         elif short_success and not long_success:
             labels[i] = cfg.CLASS_SELL
         elif long_success and short_success:
-            labels[i] = cfg.CLASS_BUY if long_tp_idx < short_tp_idx else cfg.CLASS_SELL
+            if long_tp_idx < short_tp_idx:
+                labels[i] = cfg.CLASS_BUY
+            elif short_tp_idx < long_tp_idx:
+                labels[i] = cfg.CLASS_SELL
+            else:
+                labels[i] = cfg.CLASS_WAIT
         else:
             labels[i] = cfg.CLASS_WAIT
 

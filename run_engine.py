@@ -15,10 +15,15 @@ import os
 import time
 import argparse
 
-# Ensure utf-8 output encoding on Windows consoles
+# Ensure utf-8 output encoding and unbuffered line streaming in containers/Railway
 if hasattr(sys.stdout, 'reconfigure'):
     try:
-        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+    except Exception:
+        pass
+if hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
     except Exception:
         pass
 
@@ -1485,7 +1490,7 @@ def main():
         else:
             vol_mult = 1.0 if "ML" in active_preset_name else 50.0
 
-        vol_contracts = args.volume_contracts if args.volume_contracts is not None else (get_setting("VOLUME_CONTRACTS", 2) if vol_mode == "CONTRACTS" else None)
+        vol_contracts = args.volume_contracts if args.volume_contracts is not None else (preset_cfg.get("volume_contracts") or get_setting("VOLUME_CONTRACTS", 1) if vol_mode == "CONTRACTS" else None)
 
         tp_ticks = args.tp_ticks if args.tp_ticks is not None else (preset_cfg.get("tp_ticks") if "tp_ticks" in preset_cfg else get_setting("TP_TICKS", 2))
         if args.fixed_tp:

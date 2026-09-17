@@ -139,7 +139,8 @@ class MasterplanStrategy:
                     confidence_threshold=getattr(self.config, "confidence_threshold", None),
                     confidence_threshold_sell=getattr(self.config, "confidence_threshold_sell", None),
                     edge_threshold=getattr(self.config, "edge_threshold", None),
-                    preferred_direction=pref_dir
+                    preferred_direction=pref_dir,
+                    require_closed_candle=getattr(self.config, "ml_require_closed_candle", getattr(self.config, "require_closed_candle", True))
                 )
             elif strat_upper in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"):
                 self.sub_strategy = OrderBlockDemandStrategy(

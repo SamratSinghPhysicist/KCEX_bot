@@ -141,8 +141,8 @@ class TradingModel:
                 squeeze_ok = (bb_exp >= 1.0)
                 wait_factor = 0.65
             else:
-                # Rapid Intraday Scalping Gating: responsive 1m micro-trend and taker flow
-                allow_long = (trend_1m_val >= -0.25) and (t_ratio >= 0.46)
+                # Rapid Intraday Scalping Gating: responsive 1m micro-trend, taker flow, and non-counter-trend alignment
+                allow_long = (trend_htf_val >= 0.0) and (trend_1m_val >= -0.25) and (t_ratio >= 0.46)
                 allow_short = (trend_htf_val <= 0.0) and (trend_1m_val <= 0.25) and (t_ratio <= 0.54)
                 squeeze_ok = (bb_exp >= 0.95)
                 wait_factor = 0.50

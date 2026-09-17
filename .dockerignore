@@ -1,0 +1,21 @@
+.git
+.gitignore
+.env
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude local backtest data archives (saves gigabytes of build context)
+BACKTESTER/Historical_Trades_Data_Binance/
+BACKTESTER/OHLCV_Data_Binance/
+BACKTESTER/BookTicker_Data_Binance/
+BACKTESTER/reports/
+
+# Exclude research documents and logs
+AI_ANALYSIS/
+Network_logs_by_codex/
+logs/*.log
+logs/*.txt
+logs/*.jsonl

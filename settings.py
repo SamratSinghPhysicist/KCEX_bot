@@ -57,12 +57,12 @@ SYMBOL = os.getenv("KCEX_SYMBOL", "TRUMP_USDT")
 
 # Default order direction: "LONG" or "SHORT"
 # The engine's directional cycle sub-strategy will execute trades in this direction.
-DIRECTION = "LONG"
+DIRECTION = os.getenv("KCEX_DIRECTION", "LONG")
 
 # Default execution mode:
 # "live"    -> Real trades using KCEX futures wallet balance (requires API token in .env)
 # "dry-run" -> Real-time market simulation (zero risk, uses live orderbook prices)
-MODE = "live"
+MODE = os.getenv("KCEX_MODE", os.getenv("MODE", "live"))
 
 
 # =============================================================================
@@ -81,28 +81,26 @@ MODE = "live"
 # • Committed Margin (Cash from Wallet):
 #     The actual collateral deducted from your KCEX wallet balance to hold the trade.
 #     Formula: Margin Required = Trade Quantity / Leverage
-#     Example (at 75x leverage):
-#       - 1 contract  margin = 0.235 USDT / 75 = ~0.0031 USDT (INR ~0.30)
-#       - 2 contracts margin = 0.470 USDT / 75 = ~0.0063 USDT (INR ~0.60)
-#       - 5 contracts margin = 1.175 USDT / 75 = ~0.0157 USDT (INR ~1.48)
+#     Example (at 10x leverage):
+#       - 1 contract  margin = 0.200 USDT / 10 = ~0.020 USDT (INR ~1.70)
 #
 # Configuration Modes:
 #   "MIN"        -> Always execute exactly minimum possible quantity (1x min_volume).
 #   "MULTIPLIER" -> Execute x times the contract's minimum volume (e.g. 1.0, 2.0, 5.0).
 #   "CONTRACTS"  -> Execute an exact integer number of contracts (e.g. 1, 2, 5).
-VOLUME_MODE = "MULTIPLIER"  # "MIN", "MULTIPLIER", or "CONTRACTS"
+VOLUME_MODE = os.getenv("KCEX_VOLUME_MODE", os.getenv("VOLUME_MODE", "CONTRACTS"))
 
-# Default volume sizing: 50x min for TRUMP_USDT
-VOLUME_MULTIPLIER = 50.0
+# Default volume sizing: 1.0x min for TRUMP_USDT
+VOLUME_MULTIPLIER = float(os.getenv("KCEX_VOLUME_MULTIPLIER", os.getenv("VOLUME_MULTIPLIER", "1.0")))
 
 # Dynamic Margin Fallback Percentage:
 # In case wallet available margin is insufficient for requested volume,
 # scale position size to use this percentage of available margin.
-MARGIN_FALLBACK_PCT = 25.0
+MARGIN_FALLBACK_PCT = float(os.getenv("KCEX_MARGIN_FALLBACK_PCT", "25.0"))
 
 # If VOLUME_MODE == "CONTRACTS":
 # Exact number of contracts (must be >= contract min_volume, which is 1 for TRUMP)
-VOLUME_CONTRACTS = 50
+VOLUME_CONTRACTS = int(os.getenv("KCEX_VOLUME_CONTRACTS", os.getenv("VOLUME_CONTRACTS", "1")))
 
 
 def get_default_quantity_for_symbol(symbol: str) -> tuple[str, float]:
@@ -161,8 +159,8 @@ SL_PRICE_PCT = 0.5
 # =============================================================================
 # 5. LEVERAGE & MARGIN SETTINGS
 # =============================================================================
-# Position leverage multiplier.
-LEVERAGE = 10
+# Position leverage multiplier (default: 10x for safe margin headroom on small accounts).
+LEVERAGE = int(os.getenv("KCEX_LEVERAGE", os.getenv("LEVERAGE", "10")))
 
 # Margin mode: True for Isolated (openType=1), False for Cross (openType=2).
 # Isolated margin is strongly recommended to restrict risk strictly to position margin.
@@ -174,11 +172,11 @@ IS_ISOLATED = True
 # =============================================================================
 # Cooldown period in seconds to wait after a trade closes before opening the next trade.
 # Zero cooldown between trades per user configuration.
-COOLDOWN_SECONDS = 0.0
+COOLDOWN_SECONDS = float(os.getenv("KCEX_COOLDOWN", os.getenv("COOLDOWN_SECONDS", "0.0")))
 
 # Maximum number of trades to execute in this session.
 # Set to 0 for UNLIMITED / continuous 24/7 automated operation until stopped.
-MAX_TRADES = 0
+MAX_TRADES = int(os.getenv("KCEX_MAX_TRADES", os.getenv("MAX_TRADES", "0")))
 
 # Ticker polling interval in seconds while actively monitoring an open trade.
 # Faster polling (0.2s - 0.3s) ensures rapid detection of TP hits for immediate market close.
@@ -194,7 +192,10 @@ POLL_INTERVAL_SECONDS = 0.2
 #   "SMART_STRATEGY" -> Autonomous Regime-Adaptive Strategy (Switches Momentum EMA / Range Stoch RSI)
 #   "STOCH_RSI"      -> Stochastic RSI Fast Scalp & Reversal Strategy
 #   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8)
-STRATEGY_MODE = "STOCH_RSI"
+STRATEGY_MODE = os.getenv("KCEX_STRATEGY_MODE", os.getenv("STRATEGY_MODE", "ML_1M"))
+
+# Default Active Preset
+ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER"))
 
 # -----------------------------------------------------------------------------
 # Order Execution Type & Slippage Protection
@@ -473,7 +474,7 @@ STRATEGY_PRESETS = {
         "symbol": "TRUMP_USDT",
         "strategy_mode": "ML_1M",
         "timeframe": "1m",
-        "leverage": 30,  # Safe 30x leverage (safe against 1.0x ATR SL)
+        "leverage": 10,  # 10x isolated leverage (sized for $0.20 USDT margin)
         "tp_atr_mult": 1.9,
         "sl_atr_mult": 1.0,
         "dynamic_tp": True,
@@ -482,8 +483,10 @@ STRATEGY_PRESETS = {
         "sl_ticks": 0,
         "invert_signal": False,
         "ratchet_enabled": False,
-        "volume_mode": "MULTIPLIER",
+        "volume_mode": "CONTRACTS",
+        "volume_contracts": 1,
         "volume_multiplier": 1.0,
+        "margin_fallback_pct": 25.0,
         "max_trades": 0,
         "confidence_threshold": 0.38,
         "confidence_threshold_sell": 0.38,
@@ -661,6 +664,13 @@ def get_active_preset_config(preset_name: str = None) -> dict:
             if key == "TRUMP_STOCH_RSI":
                 cfg["tp_ticks"] = TP_TICKS
                 cfg["sl_ticks"] = SL_TICKS
+            cfg["cooldown_seconds"] = COOLDOWN_SECONDS
+        elif key == "TRUMP_ML_RAPID_SCALPER":
+            cfg["leverage"] = LEVERAGE
+            cfg["volume_mode"] = VOLUME_MODE
+            cfg["volume_contracts"] = VOLUME_CONTRACTS
+            cfg["volume_multiplier"] = VOLUME_MULTIPLIER
+            cfg["margin_fallback_pct"] = MARGIN_FALLBACK_PCT
             cfg["cooldown_seconds"] = COOLDOWN_SECONDS
         return cfg
     return {

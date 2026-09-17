@@ -54,14 +54,14 @@ def train_model(
 
     use_calendar = False
     if cfg.split_mode == "calendar" and "timestamp" in df_dataset.columns:
-        test_start_ts = int(pd.Timestamp(cfg.test_start_date).timestamp() * 1000)
+        test_start_ts = int(pd.Timestamp(cfg.test_start_date, tz="UTC").timestamp() * 1000)
         min_ts = df_dataset["timestamp"].iloc[0]
         max_ts = df_dataset["timestamp"].iloc[-1]
         if min_ts < test_start_ts < max_ts:
             use_calendar = True
 
     if use_calendar:
-        test_start_ts = int(pd.Timestamp(cfg.test_start_date).timestamp() * 1000)
+        test_start_ts = int(pd.Timestamp(cfg.test_start_date, tz="UTC").timestamp() * 1000)
         train_mask = (df_dataset["timestamp"] < test_start_ts - embargo_ms)
         test_mask = (df_dataset["timestamp"] >= test_start_ts)
         train_df = df_dataset.loc[train_mask].copy().reset_index(drop=True)
