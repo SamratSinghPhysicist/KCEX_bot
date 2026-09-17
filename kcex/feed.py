@@ -134,17 +134,26 @@ class KCEXWebSocketFeed:
 
     async def _connection_supervisor(self) -> None:
         """Supervises connection lifecycle with backoff."""
+        # Note: Do NOT send browser Origin: https://www.kcex.com.
+        # From cloud datacenter IPs (e.g. Railway), Cloudflare blocks non-browser clients with Origin headers (HTTP 403).
         headers = {
             "User-Agent": self.DEFAULT_USER_AGENT,
-            "Origin": "https://www.kcex.com",
         }
 
+        endpoint_candidates = [
+            self.ws_url,
+            "wss://www.kcex.com/fapi/edge",
+            "wss://www.kcex.com/fapi/edge?platform=api"
+        ]
+        candidate_idx = 0
         backoff = 1.0
+
         while self._running:
+            curr_url = endpoint_candidates[candidate_idx]
             try:
-                logger.info("Connecting to KCEX WebSocket: %s...", self.ws_url)
+                logger.info("Connecting to KCEX WebSocket: %s...", curr_url)
                 async with websockets.connect(
-                    self.ws_url,
+                    curr_url,
                     additional_headers=headers,
                     open_timeout=10.0,
                     ping_interval=None  # We use application-level JSON ping
@@ -205,9 +214,20 @@ class KCEXWebSocketFeed:
                 self._connected = False
                 if not self._running:
                     break
-                logger.warning("WebSocket error (%s): %s. Reconnecting in %.1fs...", type(e).__name__, e, backoff)
-                await asyncio.sleep(backoff)
-                backoff = min(backoff * 2.0, 15.0)
+                is_403 = ("403" in str(e)) or ("InvalidStatus" in str(e) and "403" in str(e))
+                if is_403:
+                    candidate_idx = (candidate_idx + 1) % len(endpoint_candidates)
+                    logger.warning(
+                        "[KCEXFeed] WebSocket returned HTTP 403 on %s (Cloudflare datacenter block). "
+                        "Backing off 30.0s before retrying next candidate (ML radar active via cached REST)...",
+                        curr_url
+                    )
+                    await asyncio.sleep(30.0)
+                    backoff = 1.0
+                else:
+                    logger.warning("WebSocket error (%s): %s. Reconnecting in %.1fs...", type(e).__name__, e, backoff)
+                    await asyncio.sleep(backoff)
+                    backoff = min(backoff * 2.0, 15.0)
 
         self._connected = False
 
