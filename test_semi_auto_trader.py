@@ -330,6 +330,67 @@ class TestSemiAutoTrader(unittest.TestCase):
             self.assertEqual(call_payload["type"], 5)
             self.assertEqual(call_payload_short["type"], 5)
 
+    def test_close_position_limit_orders(self):
+        """Verifies limit close orders send type=1, exact limit price, and correct side codes (2 for short, 4 for long)."""
+        contract = ContractInfo(
+            symbol="MOG_USDT",
+            base_coin="MOG",
+            quote_coin="USDT",
+            contract_size=100000.0,
+            price_unit=0.000000001,
+            volume_unit=1.0,
+            price_precision=9,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=50000.0,
+            min_leverage=1,
+            max_leverage=25,
+            maintenance_margin_ratio=0.02,
+            initial_margin_ratio=0.04,
+            maker_fee_rate=0.0,
+            taker_fee_rate=0.0,
+            depth_steps=["1"],
+            raw_data={}
+        )
+
+        mock_positions = [
+            {"symbol": "MOG_USDT", "positionId": 778899, "side": 2, "holdVol": 5, "leverage": 25}
+        ]
+
+        with patch.object(self.market, "get_contract_detail", return_value=contract), \
+             patch.object(self.trader, "get_open_positions", return_value=mock_positions), \
+             patch.object(self.client, "post_private", return_value={"success": True, "code": 0, "data": {"orderId": "888"}}) as mock_post:
+
+            # 1. Close Short Limit with auto-detected positionId and leverage
+            res_short = self.trader.close_short_limit(
+                symbol="MOG_USDT",
+                price=0.000003450,
+                vol_contracts=5
+            )
+            payload_short = mock_post.call_args[1]["json_data"]
+            self.assertEqual(payload_short["symbol"], "MOG_USDT")
+            self.assertEqual(payload_short["type"], 1)  # Limit Order
+            self.assertEqual(payload_short["side"], 2)  # Close Short
+            self.assertEqual(payload_short["positionId"], 778899)
+            self.assertEqual(payload_short["vol"], 5)
+            self.assertEqual(payload_short["price"], "0.00000345")
+            self.assertFalse(payload_short["flashClose"])
+
+            # 2. Close Long Limit with explicit positionId
+            res_long = self.trader.close_long_limit(
+                symbol="MOG_USDT",
+                position_id=123456,
+                vol_contracts=10,
+                price=0.000004100,
+                leverage=25
+            )
+            payload_long = mock_post.call_args[1]["json_data"]
+            self.assertEqual(payload_long["type"], 1)  # Limit Order
+            self.assertEqual(payload_long["side"], 4)  # Close Long
+            self.assertEqual(payload_long["positionId"], 123456)
+            self.assertEqual(payload_long["vol"], 10)
+            self.assertEqual(payload_long["price"], "0.0000041")
+
     def test_target_prices_liquidation_clamping(self):
         """Verifies that Stop Loss is clamped safely inside liquidation threshold."""
         # Short with entry 2.393, 75x leverage, 30% ROE loss

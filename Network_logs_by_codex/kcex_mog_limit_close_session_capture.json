@@ -1,0 +1,78 @@
+{
+  "capture_metadata": {
+    "timestamp_utc": "2026-09-17T20:25:00Z",
+    "timestamp_ist": "2026-09-18T01:55:00+05:30",
+    "target_pair": "MOG_USDT",
+    "action": "Close Short Limit Order reconnaissance",
+    "client_platform": "WEB",
+    "version_tag": "prd - v3.8.10 - 4420ec7",
+    "user_device_fingerprint": "eyJ2aXNpdG9ySWQiOiJwMWw4STBBbWJNNHI3OXpsdkR3RiIsInJlcXVlc3RJZCI6IjE3ODk2NTMyOTM4ODIuaWxPc2VqIn0",
+    "order_confirmation_preferences": [1, 2, 3, 4, 5, 100, 101, "FOLLOW_LIMIT_ORDER"]
+  },
+  "endpoint_specification": {
+    "method": "POST",
+    "url": "https://www.kcex.com/fapi/v1/private/order/create",
+    "headers_required": {
+      "Authorization": "<REDACTED_SESSION_TOKEN>",
+      "Content-Sign": "<DYNAMIC_HMAC_SHA256>",
+      "Content-time": "<EPOCH_MS>",
+      "User-Device": "eyJ2aXNpdG9ySWQiOiJwMWw4STBBbWJNNHI3OXpsdkR3RiIsInJlcXVlc3RJZCI6IjE3ODk2NTMyOTM4ODIuaWxPc2VqIn0",
+      "Platform": "WEB",
+      "Language": "en-US",
+      "Content-Type": "application/json;charset=UTF-8",
+      "Version-tag": "prd - v3.8.10 - 4420ec7"
+    }
+  },
+  "close_order_schemas": {
+    "close_short_limit": {
+      "purpose": "Buy to close an open short position at an exact limit price",
+      "payload": {
+        "symbol": "MOG_USDT",
+        "openType": 1,
+        "positionId": "<ACTIVE_SHORT_POSITION_ID>",
+        "leverage": 25,
+        "type": 1,
+        "vol": 1,
+        "side": 2,
+        "price": "0.00000345",
+        "flashClose": false,
+        "priceProtect": "0"
+      },
+      "key_field_definitions": {
+        "type": "1 = Limit Order (5 = Market Order)",
+        "side": "2 = Close Short (Buy to cover)",
+        "openType": "1 = Isolated Margin, 2 = Cross Margin",
+        "positionId": "Unique position ID returned by /fapi/v1/private/position/open_positions",
+        "price": "Exact limit price formatted to contract price precision (avoiding scientific notation)",
+        "vol": "Volume in integer contract units (must be >= minVol)"
+      }
+    },
+    "close_long_limit": {
+      "purpose": "Sell to close an open long position at an exact limit price",
+      "payload": {
+        "symbol": "MOG_USDT",
+        "openType": 1,
+        "positionId": "<ACTIVE_LONG_POSITION_ID>",
+        "leverage": 25,
+        "type": 1,
+        "vol": 1,
+        "side": 4,
+        "price": "0.00000410",
+        "flashClose": false,
+        "priceProtect": "0"
+      },
+      "key_field_definitions": {
+        "type": "1 = Limit Order (5 = Market Order)",
+        "side": "4 = Close Long (Sell to exit)"
+      }
+    }
+  },
+  "response_format": {
+    "success": true,
+    "code": 0,
+    "data": {
+      "orderId": "850678462910268416",
+      "ts": 1788487950408
+    }
+  }
+}

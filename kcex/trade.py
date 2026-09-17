@@ -15,6 +15,16 @@ from kcex.risk import KCEXRiskCalculator
 logger = logging.getLogger("KCEXTrader")
 
 
+def format_price_str(price: float, precision: int) -> str:
+    """Formats price to fixed decimal string avoiding scientific notation."""
+    s = f"{price:.{precision}f}"
+    if "." in s:
+        s = s.rstrip("0").rstrip(".")
+        if not s:
+            s = "0"
+    return s
+
+
 class KCEXTrader:
     """
     Manages futures orders, positions, attached/post-trade TP/SL, and balances.
@@ -242,16 +252,16 @@ class KCEXTrader:
         if not is_market:
             if price is None:
                 raise ValueError("Limit order requires 'price' parameter.")
-            payload["price"] = str(round(price, contract.price_precision))
+            payload["price"] = format_price_str(price, contract.price_precision)
 
         # Attached Stop Loss
         if final_sl is not None:
-            payload["stopLossPrice"] = str(round(final_sl, contract.price_precision))
+            payload["stopLossPrice"] = format_price_str(final_sl, contract.price_precision)
             payload["lossTrend"] = "1"
 
         # Attached Take Profit
         if final_tp is not None:
-            payload["takeProfitPrice"] = str(round(final_tp, contract.price_precision))
+            payload["takeProfitPrice"] = format_price_str(final_tp, contract.price_precision)
             payload["profitTrend"] = "1"
 
         logger.info("Submitting order: %s", payload)
@@ -295,6 +305,8 @@ class KCEXTrader:
         close_side = 4 if is_closing_long else 2
 
         if price is None:
+            if not is_market:
+                raise ValueError("Limit close orders require an explicit 'price' parameter.")
             ticker = self.market.get_ticker(symbol_upper)
             price = float(ticker.get("lastPrice", 1.0))
 
@@ -318,12 +330,137 @@ class KCEXTrader:
             "vol": int(vol_contracts),
             "side": close_side,
             "flashClose": False,
-            "price": str(round(final_price, contract.price_precision)),
+            "price": format_price_str(final_price, contract.price_precision),
             "priceProtect": "0"
         }
 
         logger.info("Submitting close order: %s", payload)
         return self.client.post_private(KCEXConfig.ENDPOINT_ORDER_CREATE, json_data=payload)
+
+    def close_position_limit(
+        self,
+        symbol: str,
+        side: str,
+        price: float,
+        vol_contracts: Optional[int] = None,
+        position_id: Optional[int] = None,
+        leverage: Optional[int] = None,
+        is_isolated: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Closes an open position (or part of it) using a Limit Order.
+        Endpoint: POST /fapi/v1/private/order/create (type: 1)
+
+        Args:
+            symbol (str): Trading pair (e.g. "MOG_USDT" or "TRUMP_USDT").
+            side (str): Direction being closed: "SHORT" (side=2) or "LONG" (side=4).
+            price (float): Limit price to exit at.
+            vol_contracts (int, optional): Contracts to close. If None, closes entire active position.
+            position_id (int, optional): Open position ID. If None, auto-detected from open positions.
+            leverage (int, optional): Position leverage. If None, auto-detected from active position.
+            is_isolated (bool): True for Isolated margin (openType=1), False for Cross (openType=2).
+
+        Returns:
+            Dict: API response containing orderId and ts.
+        """
+        symbol_upper = symbol.upper()
+        contract = self.market.get_contract_detail(symbol_upper)
+        side_norm = side.upper()
+        if side_norm not in ("LONG", "SHORT", "BUY", "SELL"):
+            raise ValueError(f"Invalid side: {side}. Must be 'LONG' or 'SHORT'.")
+
+        target_side_type = "LONG" if side_norm in ("LONG", "BUY") else "SHORT"
+
+        # If position_id, leverage, or vol_contracts are not provided, auto-resolve from open positions
+        if position_id is None or leverage is None or vol_contracts is None:
+            open_positions = self.get_open_positions(symbol_upper)
+            matching = []
+            for p in open_positions:
+                pos_side = p.get("side") or p.get("positionType")
+                # KCEX open positions convention: 1 = Long, 2 = Short, or string 'LONG'/'SHORT'
+                is_match = False
+                if target_side_type == "LONG" and (pos_side == 1 or str(pos_side).upper() == "LONG" or (p.get("holdVol", 0) > 0 and pos_side != 2)):
+                    is_match = True
+                elif target_side_type == "SHORT" and (pos_side in (2, 3) or str(pos_side).upper() == "SHORT"):
+                    is_match = True
+                if is_match or len(open_positions) == 1:
+                    matching.append(p)
+
+            if matching:
+                pos = matching[0]
+                if position_id is None:
+                    position_id = int(pos.get("positionId") or pos.get("id"))
+                if leverage is None:
+                    leverage = int(pos.get("leverage", contract.max_leverage))
+                if vol_contracts is None:
+                    vol_contracts = int(pos.get("holdVol", 0))
+
+        if position_id is None:
+            raise ValueError(f"No active {target_side_type} position found for {symbol_upper} to close. Specify position_id explicitly.")
+
+        if vol_contracts is None or vol_contracts <= 0:
+            raise ValueError(f"Invalid volume: {vol_contracts}. Must be a positive integer of contracts.")
+
+        if price is None or price <= 0:
+            raise ValueError(f"Invalid limit price: {price}. Limit orders require a valid positive price.")
+
+        if leverage is None:
+            leverage = contract.max_leverage
+
+        return self.close_position(
+            position_id=position_id,
+            symbol=symbol_upper,
+            side=target_side_type,
+            vol_contracts=vol_contracts,
+            leverage=leverage,
+            is_isolated=is_isolated,
+            is_market=False,
+            price=price
+        )
+
+    def close_short_limit(
+        self,
+        symbol: str,
+        price: float,
+        vol_contracts: Optional[int] = None,
+        position_id: Optional[int] = None,
+        leverage: Optional[int] = None,
+        is_isolated: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Convenience helper to close a SHORT position using a Limit Order (side=2, type=1).
+        """
+        return self.close_position_limit(
+            symbol=symbol,
+            side="SHORT",
+            price=price,
+            vol_contracts=vol_contracts,
+            position_id=position_id,
+            leverage=leverage,
+            is_isolated=is_isolated
+        )
+
+    def close_long_limit(
+        self,
+        symbol: str,
+        price: float,
+        vol_contracts: Optional[int] = None,
+        position_id: Optional[int] = None,
+        leverage: Optional[int] = None,
+        is_isolated: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Convenience helper to close a LONG position using a Limit Order (side=4, type=1).
+        """
+        return self.close_position_limit(
+            symbol=symbol,
+            side="LONG",
+            price=price,
+            vol_contracts=vol_contracts,
+            position_id=position_id,
+            leverage=leverage,
+            is_isolated=is_isolated
+        )
 
     def close_partial_position(
         self,
