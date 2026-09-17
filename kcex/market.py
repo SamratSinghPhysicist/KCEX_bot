@@ -9,7 +9,7 @@ import time
 import logging
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-from kcex.client import KCEXClient
+from kcex.client import KCEXClient, KCEXAPIError
 from kcex.config import KCEXConfig
 
 logger = logging.getLogger("KCEXMarket")
@@ -271,31 +271,38 @@ class KCEXMarket:
             "start": start_time,
             "end": end_time
         }
-        res = self.client.get_public(endpoint, params=params)
-        data = res.get("data", {})
+        try:
+            res = self.client.get_public(endpoint, params=params)
+            data = res.get("data", {})
 
-        # KCEX returns parallel arrays: 'time', 'open', 'close', 'high', 'low', 'vol', 'amount'
-        times = data.get("time", [])
-        opens = data.get("open", [])
-        highs = data.get("high", [])
-        lows = data.get("low", [])
-        closes = data.get("close", [])
-        vols = data.get("vol", [])
-        amounts = data.get("amount", [])
+            # KCEX returns parallel arrays: 'time', 'open', 'close', 'high', 'low', 'vol', 'amount'
+            times = data.get("time", [])
+            opens = data.get("open", [])
+            highs = data.get("high", [])
+            lows = data.get("low", [])
+            closes = data.get("close", [])
+            vols = data.get("vol", [])
+            amounts = data.get("amount", [])
 
-        candles: List[Dict[str, Any]] = []
-        for i in range(len(times)):
-            candles.append({
-                "timestamp": times[i],
-                "open": opens[i] if i < len(opens) else 0.0,
-                "high": highs[i] if i < len(highs) else 0.0,
-                "low": lows[i] if i < len(lows) else 0.0,
-                "close": closes[i] if i < len(closes) else 0.0,
-                "volume": vols[i] if i < len(vols) else 0.0,
-                "amount": amounts[i] if i < len(amounts) else 0.0
-            })
+            candles: List[Dict[str, Any]] = []
+            for i in range(len(times)):
+                candles.append({
+                    "timestamp": times[i],
+                    "open": opens[i] if i < len(opens) else 0.0,
+                    "high": highs[i] if i < len(highs) else 0.0,
+                    "low": lows[i] if i < len(lows) else 0.0,
+                    "close": closes[i] if i < len(closes) else 0.0,
+                    "volume": vols[i] if i < len(vols) else 0.0,
+                    "amount": amounts[i] if i < len(amounts) else 0.0
+                })
 
-        return candles
+            return candles
+        except KCEXAPIError as e:
+            logger.warning("Failed to fetch klines for %s (code: %s): %s", symbol, getattr(e, "code", "UNKNOWN"), e)
+            return []
+        except Exception as e:
+            logger.warning("Unexpected error fetching klines for %s: %s", symbol, e)
+            return []
 
     def get_recent_trades(self, symbol: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """

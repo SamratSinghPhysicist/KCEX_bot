@@ -14,6 +14,7 @@ Compatible with:
 import os
 import sys
 import time
+import threading
 import logging
 from typing import Optional, Dict, Any, List
 import numpy as np
@@ -72,6 +73,12 @@ class MLStrategy(BaseStrategy):
         self.trade_in_progress: bool = False
         self.last_prediction: Optional[Dict[str, Any]] = None
 
+        # Kline cache and rate-limit backoff state
+        self.kline_cache_interval: float = float(kwargs.get("kline_cache_interval", 2.0))
+        self._cached_candles: List[Any] = []
+        self._last_kline_fetch_ts: float = 0.0
+        self._rate_limit_backoff_until: float = 0.0
+
         # Resolve model path
         if model_path is None:
             model_path = os.path.join(MODELS_DIR, f"ml_1m_model_{self.clean_symbol.lower()}.pkl")
@@ -92,6 +99,91 @@ class MLStrategy(BaseStrategy):
                 self.model.cfg.confidence_threshold_sell = confidence_threshold_sell
             if edge_threshold is not None:
                 self.model.cfg.edge_threshold = edge_threshold
+
+        # Real-time WebSocket Feed support (from Network_logs_by_codex)
+        self._candles_lock = threading.Lock()
+        self.candles: List[Dict[str, Any]] = []
+        self.latest_deal_price: Optional[float] = None
+        self.feed = None
+
+        if auto_start_feed or getattr(self.market, "is_live", True):
+            self._init_websocket_feed(auto_start=auto_start_feed)
+
+        # Seed initial candles from REST once at startup
+        self._seed_initial_candles()
+
+    def _init_websocket_feed(self, auto_start: bool = False) -> None:
+        """Initializes KCEX real-time WebSocket feed for live klines & deals."""
+        try:
+            from kcex.feed import KCEXWebSocketFeed
+            self.feed = KCEXWebSocketFeed(
+                symbol=self.symbol,
+                kline_interval=self.timeframe or "Min1",
+                on_kline=self._on_ws_kline,
+                on_deal=self._on_ws_deal,
+                subscribe_kline=True,
+                subscribe_deals=True,
+                subscribe_depth=False,
+                subscribe_ticker=False
+            )
+            if auto_start:
+                self.feed.start()
+        except Exception as e:
+            logger.warning("[MLStrategy] Could not initialize WebSocket feed: %s", e)
+
+    def _seed_initial_candles(self) -> None:
+        """Seeds in-memory candles buffer with historical klines from REST once at startup."""
+        try:
+            bars = self.market.get_klines(self.symbol, interval="Min1", limit=300)
+            if bars and len(bars) >= 50:
+                with self._candles_lock:
+                    self.candles = list(bars)
+                logger.info(f"[MLStrategy] Seeded initial {len(bars)} 1m candles for {self.symbol}.")
+        except Exception as e:
+            logger.warning(f"[MLStrategy] Failed to seed initial candles: {e}")
+
+    def _on_ws_kline(self, k: Dict[str, Any]) -> None:
+        """Processes real-time 1m candle updates from KCEX WebSocket push.kline stream."""
+        with self._candles_lock:
+            if not self.candles:
+                self.candles.append(k)
+                return
+            last_candle = self.candles[-1]
+            last_ts = int(last_candle.get("timestamp", 0))
+            new_ts = int(k.get("timestamp", 0))
+
+            if new_ts == last_ts:
+                # Update currently forming 1-minute candle
+                last_candle["high"] = max(float(last_candle.get("high", 0.0)), float(k.get("high", 0.0)))
+                last_candle["low"] = min(float(last_candle.get("low", float("inf"))), float(k.get("low", 0.0)))
+                last_candle["close"] = float(k.get("close", last_candle.get("close", 0.0)))
+                last_candle["volume"] = float(k.get("volume", last_candle.get("volume", 0.0)))
+                last_candle["amount"] = float(k.get("amount", last_candle.get("amount", 0.0)))
+            elif new_ts > last_ts:
+                # New 1-minute candle finalized!
+                k_rec = dict(k)
+                if "taker_buy_volume" not in k_rec:
+                    k_rec["taker_buy_volume"] = k_rec["volume"] * 0.5
+                self.candles.append(k_rec)
+                if len(self.candles) > 350:
+                    self.candles = self.candles[-300:]
+
+    def _on_ws_deal(self, price: float, volume: float, side: str, ts: float) -> None:
+        """Processes real-time deal ticks to update latest price without polling."""
+        self.latest_deal_price = price
+        with self._candles_lock:
+            if not self.require_closed_candle and self.candles:
+                self.candles[-1]["close"] = price
+
+    def start(self) -> None:
+        """Starts the real-time WebSocket feed listener thread."""
+        if self.feed and not self.feed.is_connected:
+            self.feed.start()
+
+    def stop(self) -> None:
+        """Stops the real-time WebSocket feed listener thread."""
+        if self.feed:
+            self.feed.stop()
 
     def _load_model(self) -> None:
         """Loads serialized model artifact from disk."""
@@ -134,8 +226,41 @@ class MLStrategy(BaseStrategy):
         if not self.should_generate_signal(now):
             return None
 
-        # Fetch recent candles for feature warmup
-        raw_candles = self.market.get_klines(symbol, interval="Min1", limit=300)
+        # Check rate-limit cooldown
+        if now < self._rate_limit_backoff_until:
+            return None
+
+        # 1. Prefer in-memory real-time candles from WebSocket feed (zero REST calls!)
+        raw_candles = None
+        with self._candles_lock:
+            if len(self.candles) >= min(self.warmup_candles, 50):
+                raw_candles = list(self.candles)
+
+        # 2. If WebSocket feed buffer is not ready, fall back to cached REST
+        if not raw_candles:
+            if (now - self._last_kline_fetch_ts < self.kline_cache_interval) and self._cached_candles:
+                raw_candles = self._cached_candles
+            else:
+                try:
+                    raw_candles = self.market.get_klines(symbol, interval="Min1", limit=300)
+                    if raw_candles:
+                        self._cached_candles = raw_candles
+                        self._last_kline_fetch_ts = now
+                        with self._candles_lock:
+                            if not self.candles:
+                                self.candles = list(raw_candles)
+                except Exception as e:
+                    is_rate_limit = ("510" in str(e)) or (getattr(e, "code", None) in (510, 429))
+                    if is_rate_limit:
+                        self._rate_limit_backoff_until = now + 5.0
+                        logger.warning(
+                            f"[MLStrategy] Hit API rate limit (510/429) fetching klines for {symbol}. "
+                            f"Engaging 5.0s backoff: {e}"
+                        )
+                    else:
+                        logger.warning(f"[MLStrategy] Error fetching klines for {symbol}: {e}")
+                    raw_candles = self._cached_candles
+
         if not raw_candles or len(raw_candles) < min(self.warmup_candles, 50):
             logger.debug(f"[MLStrategy] Insufficient candles for warmup ({len(raw_candles) if raw_candles else 0}).")
             return None
@@ -211,18 +336,27 @@ class MLStrategy(BaseStrategy):
             self._last_radar_log_time = 0.0
         if now - self._last_radar_log_time >= 4.0:
             self._last_radar_log_time = now
-            p_buy = dec["prob_buy"]
-            p_sell = dec["prob_sell"]
-            p_wait = dec["prob_wait"]
-            thresh_buy = getattr(self.model.cfg, "confidence_threshold", 0.38)
-            thresh_sell = getattr(self.model.cfg, "confidence_threshold_sell", thresh_buy)
-            pu = getattr(self.market, "get_tick_size", lambda s: 0.001)(symbol)
-            atr_ticks = (curr_atr / pu) if pu > 0 else 0
-            logger.info(
-                f"[ML RADAR] {symbol} Price: {curr_price:.4f} USDT | ATR(14): {curr_atr:.4f} ({atr_ticks:.1f}t) | "
-                f"P(BUY): {p_buy:.1%} [T:{thresh_buy:.1%}] | P(SELL): {p_sell:.1%} [T:{thresh_sell:.1%}] | "
-                f"P(WAIT): {p_wait:.1%} | Action: {action}"
-            )
+            try:
+                p_buy = float(dec.get("prob_buy", 0.0))
+                p_sell = float(dec.get("prob_sell", 0.0))
+                p_wait = float(dec.get("prob_wait", 0.0))
+                raw_tb = getattr(self.model.cfg, "confidence_threshold", 0.38) if hasattr(self, "model") and hasattr(self.model, "cfg") else 0.38
+                thresh_buy = float(raw_tb) if isinstance(raw_tb, (int, float)) else 0.38
+                raw_ts = getattr(self.model.cfg, "confidence_threshold_sell", thresh_buy) if hasattr(self, "model") and hasattr(self.model, "cfg") else thresh_buy
+                thresh_sell = float(raw_ts) if isinstance(raw_ts, (int, float)) else thresh_buy
+                try:
+                    pu_val = getattr(self.market, "get_tick_size", lambda s: 0.001)(symbol)
+                    pu = float(pu_val) if pu_val and isinstance(pu_val, (int, float)) else 0.001
+                except Exception:
+                    pu = 0.001
+                atr_ticks = (curr_atr / pu) if pu > 0 else 0
+                logger.info(
+                    f"[ML RADAR] {symbol} Price: {curr_price:.4f} USDT | ATR(14): {curr_atr:.4f} ({atr_ticks:.1f}t) | "
+                    f"P(BUY): {p_buy:.1%} [T:{thresh_buy:.1%}] | P(SELL): {p_sell:.1%} [T:{thresh_sell:.1%}] | "
+                    f"P(WAIT): {p_wait:.1%} | Action: {action}"
+                )
+            except Exception as e:
+                logger.debug(f"[ML RADAR] Telemetry format error: {e}")
 
         # Apply preferred direction lock if configured
         if self.preferred_direction is not None:
@@ -235,7 +369,11 @@ class MLStrategy(BaseStrategy):
             direction = OrderDirection.LONG if action == "BUY" else OrderDirection.SHORT
             tp_ticks = dec["tp_ticks"]
             sl_ticks = dec["sl_ticks"]
-            pu = getattr(self.market, "get_tick_size", lambda s: 0.001)(symbol)
+            try:
+                pu_val = getattr(self.market, "get_tick_size", lambda s: 0.001)(symbol)
+                pu = float(pu_val) if pu_val and isinstance(pu_val, (int, float)) else 0.001
+            except Exception:
+                pu = 0.001
 
             metadata = {
                 "target_ticks": tp_ticks,
@@ -316,12 +454,15 @@ class MLStrategy(BaseStrategy):
 
     def get_diagnostics(self) -> Dict[str, Any]:
         """Returns real-time diagnostics and latest prediction probabilities."""
+        feed_stats = self.feed.stats if self.feed else {"connected": False}
         diag = {
             "strategy": self.name,
             "symbol": self.symbol,
             "trade_in_progress": self.trade_in_progress,
             "model_loaded": (self.model is not None and self.model.is_trained),
             "remaining_cooldown_sec": round(self.get_remaining_cooldown(time.time()), 1),
+            "feed": feed_stats,
+            "in_memory_candles": len(self.candles),
             "last_prediction": self.last_prediction
         }
         return diag

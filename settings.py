@@ -434,15 +434,15 @@ STRATEGY_PRESETS = {
         "symbol": "TRUMP_USDT",
         "strategy_mode": "STOCH_RSI",
         "timeframe": "1m",
-        "leverage": LEVERAGE,
+        "leverage": 10,
         "volume_mode": "MULTIPLIER",
-        "volume_multiplier": VOLUME_MULTIPLIER,
-        "margin_fallback_pct": MARGIN_FALLBACK_PCT,
-        "tp_ticks": TP_TICKS,
+        "volume_multiplier": 50.0,
+        "margin_fallback_pct": 25.0,
+        "tp_ticks": 2,
         "dynamic_tp": False,
         "sl_mode": "TICKS",
-        "sl_ticks": SL_TICKS,
-        "cooldown_seconds": COOLDOWN_SECONDS,
+        "sl_ticks": 150,
+        "cooldown_seconds": 0.0,
         "max_trades": 0,
         "stoch_preset": "FAST_SCALP",
         "stoch_rsi_period": 9,
@@ -657,13 +657,19 @@ def get_active_preset_config(preset_name: str = None) -> dict:
     key = (preset_name or ACTIVE_PRESET).upper()
     if key in STRATEGY_PRESETS and key != "CUSTOM":
         cfg = dict(STRATEGY_PRESETS[key])
-        if key in ("TRUMP_STOCH_RSI", "TRUMP_TICK_CONSTRAINED_MM"):
+        if key == "TRUMP_STOCH_RSI":
+            if "KCEX_LEVERAGE" in os.environ:
+                cfg["leverage"] = LEVERAGE
+            if "KCEX_VOLUME_MULTIPLIER" in os.environ:
+                cfg["volume_multiplier"] = VOLUME_MULTIPLIER
+            if "KCEX_MARGIN_FALLBACK_PCT" in os.environ:
+                cfg["margin_fallback_pct"] = MARGIN_FALLBACK_PCT
+            if "KCEX_COOLDOWN" in os.environ:
+                cfg["cooldown_seconds"] = COOLDOWN_SECONDS
+        elif key == "TRUMP_TICK_CONSTRAINED_MM":
             cfg["leverage"] = LEVERAGE
             cfg["volume_multiplier"] = VOLUME_MULTIPLIER
             cfg["margin_fallback_pct"] = MARGIN_FALLBACK_PCT
-            if key == "TRUMP_STOCH_RSI":
-                cfg["tp_ticks"] = TP_TICKS
-                cfg["sl_ticks"] = SL_TICKS
             cfg["cooldown_seconds"] = COOLDOWN_SECONDS
         elif key == "TRUMP_ML_RAPID_SCALPER":
             cfg["leverage"] = LEVERAGE

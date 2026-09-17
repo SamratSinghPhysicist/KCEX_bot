@@ -239,6 +239,12 @@ class OrderBlockDemandStrategy(BaseStrategy):
         self.last_diagnostics: Dict[str, Any] = {}
         self.last_rejection_reason: str = ""
 
+        # Kline cache and rate-limit backoff state
+        self.kline_cache_interval: float = 2.0
+        self._cached_candles: List[Any] = []
+        self._last_kline_fetch_ts: float = 0.0
+        self._rate_limit_backoff_until: float = 0.0
+
     def _refresh_contract_spec(self) -> None:
         """Inspects contract specifications for precise tick scaling."""
         try:
@@ -659,8 +665,31 @@ class OrderBlockDemandStrategy(BaseStrategy):
         if not self.should_generate_signal(now):
             return None
 
-        # Fetch latest candlestick history
-        bars = self.market.get_klines(self.symbol, interval=self.interval, limit=120)
+        if now < self._rate_limit_backoff_until:
+            return None
+
+        # Fetch latest candlestick history with caching and try-catch
+        bars = None
+        if (now - self._last_kline_fetch_ts < self.kline_cache_interval) and self._cached_candles:
+            bars = self._cached_candles
+        else:
+            try:
+                bars = self.market.get_klines(self.symbol, interval=self.interval, limit=120)
+                if bars:
+                    self._cached_candles = bars
+                    self._last_kline_fetch_ts = now
+            except Exception as e:
+                is_rate_limit = ("510" in str(e)) or (getattr(e, "code", None) in (510, 429))
+                if is_rate_limit:
+                    self._rate_limit_backoff_until = now + 5.0
+                    logger.warning(
+                        f"[{self.name}] Hit API rate limit (510/429) fetching klines for {self.symbol}. "
+                        f"Engaging 5.0s backoff: {e}"
+                    )
+                else:
+                    logger.warning(f"[{self.name}] Failed to fetch klines for {self.symbol}: {e}")
+                bars = self._cached_candles
+
         if not bars or len(bars) < 30:
             self.last_rejection_reason = "Insufficient candle history (<30 bars)"
             return None

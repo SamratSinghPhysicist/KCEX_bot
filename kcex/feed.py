@@ -42,6 +42,13 @@ class KCEXWebSocketFeed:
         ws_url: Optional[str] = None,
         on_depth: Optional[Callable[[List[Tuple[float, float]], List[Tuple[float, float]], float], None]] = None,
         on_deal: Optional[Callable[[float, float, str, float], None]] = None,
+        on_kline: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_ticker: Optional[Callable[[Dict[str, Any]], None]] = None,
+        kline_interval: str = "Min1",
+        subscribe_deals: bool = True,
+        subscribe_depth: bool = True,
+        subscribe_kline: bool = False,
+        subscribe_ticker: bool = False,
         ping_interval_s: float = 5.0
     ):
         self.symbol = symbol.upper()
@@ -49,6 +56,13 @@ class KCEXWebSocketFeed:
         self.ws_url = ws_url or self.DEFAULT_WS_URL
         self.on_depth = on_depth
         self.on_deal = on_deal
+        self.on_kline = on_kline
+        self.on_ticker = on_ticker
+        self.kline_interval = kline_interval
+        self.subscribe_deals = subscribe_deals or (on_deal is not None)
+        self.subscribe_depth = subscribe_depth or (on_depth is not None)
+        self.subscribe_kline = subscribe_kline or (on_kline is not None)
+        self.subscribe_ticker = subscribe_ticker or (on_ticker is not None)
         self.ping_interval_s = ping_interval_s
 
         self._running = False
@@ -58,6 +72,8 @@ class KCEXWebSocketFeed:
         self._last_msg_ts = 0.0
         self._depth_count = 0
         self._deal_count = 0
+        self._kline_count = 0
+        self._ticker_count = 0
 
     @property
     def is_connected(self) -> bool:
@@ -69,6 +85,8 @@ class KCEXWebSocketFeed:
             "connected": self._connected,
             "depth_frames": self._depth_count,
             "deal_frames": self._deal_count,
+            "kline_frames": self._kline_count,
+            "ticker_frames": self._ticker_count,
             "last_msg_age_s": round(time.time() - self._last_msg_ts, 2) if self._last_msg_ts else None
         }
 
@@ -133,21 +151,41 @@ class KCEXWebSocketFeed:
                 ) as ws:
                     self._connected = True
                     backoff = 1.0
-                    logger.info("WebSocket connected. Subscribing to %s depth and deal streams...", self.symbol)
+                    logger.info("WebSocket connected. Subscribing to %s streams...", self.symbol)
 
-                    # 1. Subscribe to deals (uncompressed raw JSON text)
-                    deal_sub = {
-                        "method": "sub.deal",
-                        "param": {"symbol": self.symbol, "compress": False}
-                    }
-                    await ws.send(json.dumps(deal_sub))
+                    # 1. Subscribe to deals
+                    if self.subscribe_deals:
+                        deal_sub = {
+                            "method": "sub.deal",
+                            "param": {"symbol": self.symbol, "compress": False}
+                        }
+                        await ws.send(json.dumps(deal_sub))
 
                     # 2. Subscribe to depth step
-                    depth_sub = {
-                        "method": "sub.depth.step",
-                        "param": {"symbol": self.symbol, "step": self.depth_step}
-                    }
-                    await ws.send(json.dumps(depth_sub))
+                    if self.subscribe_depth:
+                        depth_sub = {
+                            "method": "sub.depth.step",
+                            "param": {"symbol": self.symbol, "step": self.depth_step}
+                        }
+                        await ws.send(json.dumps(depth_sub))
+
+                    # 3. Subscribe to 1-minute klines (from Network_logs_by_codex: sub.kline)
+                    if self.subscribe_kline:
+                        kline_sub = {
+                            "method": "sub.kline",
+                            "param": {"symbol": self.symbol, "interval": self.kline_interval}
+                        }
+                        await ws.send(json.dumps(kline_sub))
+                        logger.info("Subscribed to WebSocket kline stream: %s %s", self.symbol, self.kline_interval)
+
+                    # 4. Subscribe to ticker updates (from Network_logs_by_codex: sub.ticker)
+                    if self.subscribe_ticker:
+                        ticker_sub = {
+                            "method": "sub.ticker",
+                            "param": {"symbol": self.symbol}
+                        }
+                        await ws.send(json.dumps(ticker_sub))
+                        logger.info("Subscribed to WebSocket ticker stream: %s", self.symbol)
 
                     # Spawn heartbeat pinger
                     pinger_task = asyncio.create_task(self._pinger(ws))
@@ -254,3 +292,36 @@ class KCEXWebSocketFeed:
 
             if self.on_depth and (bids or asks):
                 self.on_depth(bids, asks, depth_ts)
+
+        # 3. Kline / Candlestick stream (push.kline from Network_logs_by_codex)
+        elif channel == "push.kline":
+            self._kline_count += 1
+            data = payload.get("data") or payload.get("sample") or payload
+            if isinstance(data, dict) and self.on_kline:
+                try:
+                    t_val = data.get("t") or payload.get("ts") or int(now * 1000)
+                    ts_sec = int(t_val // 1000) if t_val > 1e11 else int(t_val)
+                    kline_dict = {
+                        "timestamp": ts_sec,
+                        "open": float(data.get("o", 0.0)),
+                        "high": float(data.get("h", 0.0)),
+                        "low": float(data.get("l", 0.0)),
+                        "close": float(data.get("c", 0.0)),
+                        "volume": float(data.get("q", data.get("v", 0.0))),
+                        "amount": float(data.get("a", 0.0)),
+                        "interval": data.get("interval", self.kline_interval)
+                    }
+                    if kline_dict["close"] > 0:
+                        self.on_kline(kline_dict)
+                except (ValueError, TypeError) as e:
+                    logger.debug("Error parsing push.kline frame: %s", e)
+
+        # 4. Ticker stream (push.ticker from Network_logs_by_codex)
+        elif channel == "push.ticker":
+            self._ticker_count += 1
+            data = payload.get("data") or payload.get("sample") or payload
+            if isinstance(data, dict) and self.on_ticker:
+                try:
+                    self.on_ticker(data)
+                except Exception as e:
+                    logger.debug("Error in on_ticker callback: %s", e)

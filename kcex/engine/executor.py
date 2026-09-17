@@ -304,7 +304,12 @@ class TradeExecutionEngine:
         6. Monitors until position is closed
         7. Logs outcome to dual-currency journal
         """
-        signal = self.strategy.get_signal()
+        try:
+            signal = self.strategy.get_signal()
+        except Exception as e:
+            self.logger.warning("Error retrieving trade signal: %s", e)
+            return None
+
         if not signal:
             return None
 
@@ -418,11 +423,19 @@ class TradeExecutionEngine:
             )
 
         # Get fresh market snapshot
-        ticker = self.market.get_ticker(symbol)
-        last_price = float(ticker.get("lastPrice", 0.0) or ticker.get("fairPrice", 1.0))
-        ref_price = last_price
-        inr_rate = self.market.get_inr_rate()
-        self.logger.set_inr_rate(inr_rate)
+        try:
+            ticker = self.market.get_ticker(symbol)
+            last_price = float(ticker.get("lastPrice", 0.0) or ticker.get("fairPrice", 1.0))
+            ref_price = last_price
+            inr_rate = self.market.get_inr_rate()
+            self.logger.set_inr_rate(inr_rate)
+        except Exception as e:
+            self.logger.warning("Failed to fetch fresh market snapshot for %s: %s", symbol, e)
+            if hasattr(self.strategy, "on_trade_rejected"):
+                self.strategy.on_trade_rejected()
+            elif hasattr(self.strategy.sub_strategy, "trade_in_progress"):
+                self.strategy.sub_strategy.trade_in_progress = False
+            return None
 
         # Calculate estimated TP & SL prices
         ps = contract.price_precision
@@ -497,34 +510,37 @@ class TradeExecutionEngine:
         # =====================================================================
         # SUBMIT ORDER
         # =====================================================================
-        if self.config.mode == EngineMode.LIVE:
-            outcome = self._execute_live_trade(
-                trade_id=trade_id,
-                contract=contract,
-                direction=direction,
-                vol_contracts=vol_contracts,
-                leverage=leverage,
-                est_tp=est_tp,
-                est_sl=est_sl,
-                open_time=open_time,
-                sub_strategy_name=signal.sub_strategy_name,
-                signal=signal
-            )
-        else:
-            outcome = self._simulate_dry_run_trade(
-                trade_id=trade_id,
-                contract=contract,
-                direction=direction,
-                vol_contracts=vol_contracts,
-                leverage=leverage,
-                open_time=open_time,
-                sub_strategy_name=signal.sub_strategy_name,
-                target_tp_ticks=target_tp_ticks,
-                signal=signal
-            )
-
-
-        self._in_active_trade = False
+        try:
+            if self.config.mode == EngineMode.LIVE:
+                outcome = self._execute_live_trade(
+                    trade_id=trade_id,
+                    contract=contract,
+                    direction=direction,
+                    vol_contracts=vol_contracts,
+                    leverage=leverage,
+                    est_tp=est_tp,
+                    est_sl=est_sl,
+                    open_time=open_time,
+                    sub_strategy_name=signal.sub_strategy_name,
+                    signal=signal
+                )
+            else:
+                outcome = self._simulate_dry_run_trade(
+                    trade_id=trade_id,
+                    contract=contract,
+                    direction=direction,
+                    vol_contracts=vol_contracts,
+                    leverage=leverage,
+                    open_time=open_time,
+                    sub_strategy_name=signal.sub_strategy_name,
+                    target_tp_ticks=target_tp_ticks,
+                    signal=signal
+                )
+        except Exception as e:
+            self.logger.error("Error executing trade cycle #%d for %s: %s", trade_id, symbol, e, exc_info=True)
+            outcome = None
+        finally:
+            self._in_active_trade = False
 
         if outcome:
             # Attach balance_before to outcome for MongoDB
@@ -2054,8 +2070,9 @@ class TradeExecutionEngine:
             self.logger.info(f"MongoDB Logging: ENABLED | Session ID: {self.mongo_logger.session_id}")
 
         last_diag_log = 0.0
-        try:
-            while self.running and not self._shutdown_requested:
+        consecutive_errors = 0
+        while self.running and not self._shutdown_requested:
+            try:
                 # Check max trades
                 if self.config.max_trades > 0 and self.trade_counter >= self.config.max_trades:
                     self.logger.info(f"Reached configured maximum trades limit ({self.config.max_trades}). Stopping.")
@@ -2086,107 +2103,136 @@ class TradeExecutionEngine:
                     now = time.time()
                     if now - last_diag_log >= 4.0:
                         last_diag_log = now
-                        diag = self.strategy.get_diagnostics()
-                        if diag and "fast_ema" in diag:
-                            c_f = diag.get('fast_ema', 0.0)
-                            c_s = diag.get('slow_ema', 0.0)
-                            diff = diag.get('diff', 0.0)
-                            diff_pct = diag.get('diff_pct', 0.0)
-                            prec = contract.price_precision
-                            self.logger.info(
-                                f"[HUNTING ENTRY] EMA({diag.get('preset', '5/13')}) {diag.get('interval', 'Min1')} | "
-                                f"Fast: {c_f:.{prec}f} | Slow: {c_s:.{prec}f} | "
-                                f"Diff: {diff:+.{prec}f} ({diff_pct:+.2f}%) | "
-                                f"Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
-                            )
-                        elif diag and (diag.get("strategy") == "STOCHASTIC_RSI" or ("k" in diag and "d" in diag)):
-                            k_val = diag.get('k', 50.0)
-                            d_val = diag.get('d', 50.0)
-                            diff_kd = diag.get('diff', 0.0)
-                            zone = diag.get('zone', 'NEUTRAL')
-                            preset = diag.get('preset', 'FAST_SCALP')
-                            inv = diag.get('interval', 'Min1')
-                            self.logger.info(
-                                f"[HUNTING ENTRY] StochRSI({preset}) {inv} | "
-                                f"%K: {k_val:.1f} | %D: {d_val:.1f} | Diff: {diff_kd:+.1f} | "
-                                f"Zone: {zone} | Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
-                            )
-                        elif diag and "obi_z" in diag:
-                            feed_info = diag.get("feed", {})
-                            ws_status = "LIVE WS" if feed_info.get("connected") else "CONNECTING"
-                            b_bid = f"{diag.get('best_bid'):.{contract.price_precision}f}" if diag.get('best_bid') else "N/A"
-                            b_ask = f"{diag.get('best_ask'):.{contract.price_precision}f}" if diag.get('best_ask') else "N/A"
-                            self.logger.info(
-                                f"[HUNTING ENTRY] {ws_status} | Bid/Ask: {b_bid} / {b_ask} (Spread: {diag.get('spread_ticks', 0):.1f} pu) | "
-                                f"OBI z={diag.get('obi_z', 0):+.2f} | Delta z={diag.get('delta_z', 0):+.2f} | VAMP z={diag.get('vamp_z', 0):+.2f}"
-                            )
-                        elif diag and (diag.get("strategy") == "ML_1M_MODEL" or "last_prediction" in diag):
-                            last_p = diag.get("last_prediction") or {}
-                            if last_p:
-                                p_buy = last_p.get("prob_buy", 0.0)
-                                p_sell = last_p.get("prob_sell", 0.0)
-                                p_wait = last_p.get("prob_wait", 0.0)
-                                act = last_p.get("action", "WAIT")
-                                conf = last_p.get("confidence", 0.0)
-                                rem_cd = diag.get("remaining_cooldown_sec", 0.0)
+                        try:
+                            diag = self.strategy.get_diagnostics()
+                            if diag and "fast_ema" in diag:
+                                c_f = diag.get('fast_ema', 0.0)
+                                c_s = diag.get('slow_ema', 0.0)
+                                diff = diag.get('diff', 0.0)
+                                diff_pct = diag.get('diff_pct', 0.0)
+                                prec = contract.price_precision
                                 self.logger.info(
-                                    f"[HUNTING ENTRY] ML 1M Radar ({contract.symbol}) | Action: {act} (Conviction: {conf:.1%}) | "
-                                    f"P(BUY): {p_buy:.1%} | P(SELL): {p_sell:.1%} | P(WAIT): {p_wait:.1%} | Cooldown: {rem_cd:.1f}s"
+                                    f"[HUNTING ENTRY] EMA({diag.get('preset', '5/13')}) {diag.get('interval', 'Min1')} | "
+                                    f"Fast: {c_f:.{prec}f} | Slow: {c_s:.{prec}f} | "
+                                    f"Diff: {diff:+.{prec}f} ({diff_pct:+.2f}%) | "
+                                    f"Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
                                 )
+                            elif diag and (diag.get("strategy") == "STOCHASTIC_RSI" or ("k" in diag and "d" in diag)):
+                                k_val = diag.get('k', 50.0)
+                                d_val = diag.get('d', 50.0)
+                                diff_kd = diag.get('diff', 0.0)
+                                zone = diag.get('zone', 'NEUTRAL')
+                                preset = diag.get('preset', 'FAST_SCALP')
+                                inv = diag.get('interval', 'Min1')
+                                self.logger.info(
+                                    f"[HUNTING ENTRY] StochRSI({preset}) {inv} | "
+                                    f"%K: {k_val:.1f} | %D: {d_val:.1f} | Diff: {diff_kd:+.1f} | "
+                                    f"Zone: {zone} | Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
+                                )
+                            elif diag and "obi_z" in diag:
+                                feed_info = diag.get("feed", {})
+                                ws_status = "LIVE WS" if feed_info.get("connected") else "CONNECTING"
+                                b_bid = f"{diag.get('best_bid'):.{contract.price_precision}f}" if diag.get('best_bid') else "N/A"
+                                b_ask = f"{diag.get('best_ask'):.{contract.price_precision}f}" if diag.get('best_ask') else "N/A"
+                                self.logger.info(
+                                    f"[HUNTING ENTRY] {ws_status} | Bid/Ask: {b_bid} / {b_ask} (Spread: {diag.get('spread_ticks', 0):.1f} pu) | "
+                                    f"OBI z={diag.get('obi_z', 0):+.2f} | Delta z={diag.get('delta_z', 0):+.2f} | VAMP z={diag.get('vamp_z', 0):+.2f}"
+                                )
+                            elif diag and (diag.get("strategy") == "ML_1M_MODEL" or "last_prediction" in diag):
+                                last_p = diag.get("last_prediction") or {}
+                                if last_p:
+                                    p_buy = last_p.get("prob_buy", 0.0)
+                                    p_sell = last_p.get("prob_sell", 0.0)
+                                    p_wait = last_p.get("prob_wait", 0.0)
+                                    act = last_p.get("action", "WAIT")
+                                    conf = last_p.get("confidence", 0.0)
+                                    rem_cd = diag.get("remaining_cooldown_sec", 0.0)
+                                    feed_info = diag.get("feed", {})
+                                    ws_badge = " [WS LIVE]" if feed_info.get("connected") else " [REST]"
+                                    self.logger.info(
+                                        f"[HUNTING ENTRY] ML 1M Radar ({contract.symbol}){ws_badge} | Action: {act} (Conviction: {conf:.1%}) | "
+                                        f"P(BUY): {p_buy:.1%} | P(SELL): {p_sell:.1%} | P(WAIT): {p_wait:.1%} | Cooldown: {rem_cd:.1f}s"
+                                    )
+                        except Exception as de:
+                            self.logger.debug("Diagnostics fetch error: %s", de)
 
+                consecutive_errors = 0
                 time.sleep(0.3)
 
-        except Exception as e:
-            self.logger.error("Unexpected error in execution loop: %s", e, exc_info=True)
-        finally:
-            self.running = False
+            except KCEXAPIError as ke:
+                consecutive_errors += 1
+                is_rate_limit = ("510" in str(ke)) or (getattr(ke, "code", None) in (510, 429))
+                backoff = min(30.0, 5.0 * (1.5 ** min(consecutive_errors - 1, 4))) if is_rate_limit else 2.0
+                self.logger.warning(
+                    f"[API EXCEPTION] KCEX API error in execution loop ({ke}). "
+                    f"Engaging {backoff:.1f}s backoff before resuming cycle (consecutive errors: {consecutive_errors})."
+                )
+                time.sleep(backoff)
+
+            except KeyboardInterrupt:
+                self.logger.info("KeyboardInterrupt received in execution loop. Initiating graceful shutdown...")
+                self._shutdown_requested = True
+                break
+
+            except Exception as e:
+                consecutive_errors += 1
+                backoff = min(15.0, 2.0 * consecutive_errors)
+                self.logger.error(
+                    f"[UNEXPECTED LOOP ERROR] Error in execution loop: {e}. "
+                    f"Pausing {backoff:.1f}s before resuming loop (consecutive errors: {consecutive_errors}).",
+                    exc_info=True
+                )
+                time.sleep(backoff)
+
+        self.running = False
+        try:
+            self.strategy.stop()
+        except Exception:
+            pass
+
+        self.logger.section("ENGINE EXECUTION SESSION ENDED")
+
+        stats = self.outcome_logger.cumulative
+        self.logger.info(
+            f"Total Trades Completed: {stats.total_trades} | "
+            f"Wins: {stats.winning_trades} | Losses: {stats.losing_trades} | "
+            f"Win Rate: {stats.win_rate_pct:.1f}%"
+        )
+        self.logger.info(
+            f"Net Session PnL: {self.logger.format_dual(stats.total_pnl_usdt)}"
+        )
+        if self._cancelled_order_count > 0:
+            self.logger.info(f"Cancelled Orders (Limit Timeout): {self._cancelled_order_count}")
+
+        # Log session end to MongoDB
+        if self.mongo_logger:
+            final_bal_usdt = None
+            final_bal_inr = None
             try:
-                self.strategy.stop()
+                if self.config.mode == EngineMode.LIVE:
+                    bal = self.trader.get_usdt_balance()
+                    final_bal_usdt = bal.get("available_usdt", 0.0)
+                    final_bal_inr = bal.get("available_inr", 0.0)
             except Exception:
                 pass
-            self.logger.section("ENGINE EXECUTION SESSION ENDED")
 
-            stats = self.outcome_logger.cumulative
-            self.logger.info(
-                f"Total Trades Completed: {stats.total_trades} | "
-                f"Wins: {stats.winning_trades} | Losses: {stats.losing_trades} | "
-                f"Win Rate: {stats.win_rate_pct:.1f}%"
+            self.mongo_logger.log_session_end(
+                total_trades=stats.total_trades,
+                winning_trades=stats.winning_trades,
+                losing_trades=stats.losing_trades,
+                scratch_trades=stats.scratch_trades,
+                cancelled_orders=self._cancelled_order_count,
+                total_pnl_usdt=stats.total_pnl_usdt,
+                total_pnl_inr=stats.total_pnl_inr,
+                win_rate=stats.win_rate_pct,
+                best_trade_usdt=stats.best_trade_usdt,
+                worst_trade_usdt=stats.worst_trade_usdt,
+                total_fees_usdt=stats.total_fees_usdt,
+                total_fees_inr=stats.total_fees_inr,
+                final_balance_usdt=final_bal_usdt,
+                final_balance_inr=final_bal_inr
             )
-            self.logger.info(
-                f"Net Session PnL: {self.logger.format_dual(stats.total_pnl_usdt)}"
-            )
-            if self._cancelled_order_count > 0:
-                self.logger.info(f"Cancelled Orders (Limit Timeout): {self._cancelled_order_count}")
+            self.mongo_logger.close()
 
-            # Log session end to MongoDB
-            if self.mongo_logger:
-                final_bal_usdt = None
-                final_bal_inr = None
-                try:
-                    if self.config.mode == EngineMode.LIVE:
-                        bal = self.trader.get_usdt_balance()
-                        final_bal_usdt = bal.get("available_usdt", 0.0)
-                        final_bal_inr = bal.get("available_inr", 0.0)
-                except Exception:
-                    pass
-
-                self.mongo_logger.log_session_end(
-                    total_trades=stats.total_trades,
-                    winning_trades=stats.winning_trades,
-                    losing_trades=stats.losing_trades,
-                    scratch_trades=stats.scratch_trades,
-                    cancelled_orders=self._cancelled_order_count,
-                    total_pnl_usdt=stats.total_pnl_usdt,
-                    total_pnl_inr=stats.total_pnl_inr,
-                    win_rate=stats.win_rate_pct,
-                    best_trade_usdt=stats.best_trade_usdt,
-                    worst_trade_usdt=stats.worst_trade_usdt,
-                    total_fees_usdt=stats.total_fees_usdt,
-                    total_fees_inr=stats.total_fees_inr,
-                    final_balance_usdt=final_bal_usdt,
-                    final_balance_inr=final_bal_inr
-                )
-                self.mongo_logger.close()
-
-            # Write GitHub Actions Step Summary
-            self._write_github_step_summary()
+        # Write GitHub Actions Step Summary
+        self._write_github_step_summary()

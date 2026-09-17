@@ -396,31 +396,55 @@ class MasterplanStrategy:
             return is_hit
 
     def get_signal(self) -> Optional[TradeSignal]:
-        """Polls active sub-strategy for next entry signal."""
-        return self.sub_strategy.generate_signal(self.config.symbol)
+        """Polls active sub-strategy for next entry signal with exception protection."""
+        try:
+            return self.sub_strategy.generate_signal(self.config.symbol)
+        except Exception as e:
+            logger.warning(
+                "Exception during signal generation for %s (%s): %s",
+                self.config.symbol, getattr(self.sub_strategy, "name", "sub_strategy"), e,
+                exc_info=True
+            )
+            return None
 
     def on_trade_completed(self, outcome: TradeOutcome) -> None:
         """Notifies active sub-strategy when trade completes."""
-        self.sub_strategy.on_trade_completed(outcome)
+        try:
+            self.sub_strategy.on_trade_completed(outcome)
+        except Exception as e:
+            logger.warning("Error in on_trade_completed callback: %s", e)
 
     def on_trade_rejected(self) -> None:
         """Notifies active sub-strategy when candidate trade signal is suppressed by a regime filter."""
-        if hasattr(self.sub_strategy, "on_trade_rejected"):
-            self.sub_strategy.on_trade_rejected()
-        elif hasattr(self.sub_strategy, "trade_in_progress"):
-            self.sub_strategy.trade_in_progress = False
+        try:
+            if hasattr(self.sub_strategy, "on_trade_rejected"):
+                self.sub_strategy.on_trade_rejected()
+            elif hasattr(self.sub_strategy, "trade_in_progress"):
+                self.sub_strategy.trade_in_progress = False
+        except Exception as e:
+            logger.warning("Error in on_trade_rejected callback: %s", e)
 
     def start(self) -> None:
         """Starts sub-strategy resources (e.g. WebSocket feeds)."""
-        self.sub_strategy.start()
+        try:
+            self.sub_strategy.start()
+        except Exception as e:
+            logger.warning("Error starting sub-strategy resources: %s", e)
 
     def stop(self) -> None:
         """Stops sub-strategy resources."""
-        self.sub_strategy.stop()
+        try:
+            self.sub_strategy.stop()
+        except Exception as e:
+            logger.warning("Error stopping sub-strategy resources: %s", e)
 
     def get_diagnostics(self) -> Dict[str, Any]:
-        """Returns live sub-strategy diagnostics."""
-        return self.sub_strategy.get_diagnostics()
+        """Returns live sub-strategy diagnostics with exception protection."""
+        try:
+            return self.sub_strategy.get_diagnostics()
+        except Exception as e:
+            logger.debug("Exception fetching strategy diagnostics: %s", e)
+            return {}
 
 
 __all__ = [

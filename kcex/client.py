@@ -20,6 +20,7 @@ import http.cookiejar
 import gzip
 import json
 import logging
+import time
 from typing import Dict, Any, Optional
 from kcex.config import KCEXConfig
 from kcex.signer import KCEXSigner
@@ -64,10 +65,11 @@ class KCEXClient:
         params: Optional[Dict[str, Any]] = None,
         json_data: Optional[Any] = None,
         is_private: bool = False,
-        is_platform: bool = False
+        is_platform: bool = False,
+        max_retries: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Sends an HTTP request to KCEX.
+        Sends an HTTP request to KCEX with automatic retry and backoff on rate limits / network errors.
 
         Args:
             method (str): 'GET', 'POST', etc.
@@ -76,12 +78,13 @@ class KCEXClient:
             json_data (dict/list, optional): Body payload for POST requests.
             is_private (bool): If True, signs the request using session credentials.
             is_platform (bool): If True, uses the platform API base URL (/api/platform).
+            max_retries (int, optional): Max retries on rate limit (510/429) or transient errors. Defaults to 2 for GET.
 
         Returns:
             Dict[str, Any]: Parsed JSON response.
 
         Raises:
-            KCEXAPIError: If the server returns an error code or message.
+            KCEXAPIError: If the server returns an unhandled error code or message after retries.
         """
         url = self._build_url(endpoint, is_platform=is_platform)
         method = method.upper()
@@ -115,54 +118,96 @@ class KCEXClient:
                 payload_str = str(json_data)
             data_bytes = payload_str.encode('utf-8')
 
-        req = urllib.request.Request(url=url, data=data_bytes, headers=headers, method=method)
+        retries = max_retries if max_retries is not None else (2 if method == "GET" else 0)
+        attempt = 0
 
-        logger.debug("Request: %s %s", method, url)
+        while True:
+            req = urllib.request.Request(url=url, data=data_bytes, headers=headers, method=method)
+            logger.debug("Request: %s %s (attempt %d/%d)", method, url, attempt + 1, retries + 1)
 
-        try:
-            with self.opener.open(req, timeout=self.config.timeout) as resp:
-                raw_bytes = resp.read()
-                # Check for gzip compression
-                if resp.headers.get("Content-Encoding") == "gzip":
-                    try:
-                        raw_bytes = gzip.decompress(raw_bytes)
-                    except Exception:
-                        pass
-                text = raw_bytes.decode('utf-8', errors='replace')
-        except urllib.error.HTTPError as e:
             try:
-                err_body = e.read().decode('utf-8', errors='replace')
-                err_json = json.loads(err_body)
-                msg = err_json.get("msg") or err_json.get("message") or f"HTTP {e.code}"
-                code = err_json.get("code") or e.code
-            except Exception:
-                msg = f"HTTP Error {e.code}"
-                code = e.code
-                err_body = None
-            raise KCEXAPIError(code=code, message=msg, raw_response=err_body)
-        except urllib.error.URLError as e:
-            raise KCEXAPIError(code="NETWORK_ERROR", message=f"Network error: {str(e.reason)}")
-        except Exception as e:
-            raise KCEXAPIError(code="REQUEST_FAILED", message=f"Request failed: {str(e)}")
+                with self.opener.open(req, timeout=self.config.timeout) as resp:
+                    raw_bytes = resp.read()
+                    # Check for gzip compression
+                    if resp.headers.get("Content-Encoding") == "gzip":
+                        try:
+                            raw_bytes = gzip.decompress(raw_bytes)
+                        except Exception:
+                            pass
+                    text = raw_bytes.decode('utf-8', errors='replace')
+            except urllib.error.HTTPError as e:
+                if attempt < retries and (e.code == 429 or e.code in (500, 502, 503, 504, 520, 521, 522, 524)):
+                    delay = 1.5 * (2 ** attempt)
+                    logger.warning(
+                        "KCEX HTTP %s on %s %s. Retrying in %.1fs (attempt %d/%d)...",
+                        e.code, method, endpoint, delay, attempt + 1, retries
+                    )
+                    time.sleep(delay)
+                    attempt += 1
+                    continue
+                try:
+                    err_body = e.read().decode('utf-8', errors='replace')
+                    err_json = json.loads(err_body)
+                    msg = err_json.get("msg") or err_json.get("message") or f"HTTP {e.code}"
+                    code = err_json.get("code") or e.code
+                except Exception:
+                    msg = f"HTTP Error {e.code}"
+                    code = e.code
+                    err_body = None
+                raise KCEXAPIError(code=code, message=msg, raw_response=err_body)
+            except urllib.error.URLError as e:
+                if attempt < retries:
+                    delay = 1.0 * (attempt + 1)
+                    logger.warning(
+                        "KCEX network error on %s %s (%s). Retrying in %.1fs (attempt %d/%d)...",
+                        method, endpoint, e.reason, delay, attempt + 1, retries
+                    )
+                    time.sleep(delay)
+                    attempt += 1
+                    continue
+                raise KCEXAPIError(code="NETWORK_ERROR", message=f"Network error: {str(e.reason)}")
+            except Exception as e:
+                if attempt < retries:
+                    delay = 1.0 * (attempt + 1)
+                    logger.warning(
+                        "KCEX request exception on %s %s (%s). Retrying in %.1fs (attempt %d/%d)...",
+                        method, endpoint, e, delay, attempt + 1, retries
+                    )
+                    time.sleep(delay)
+                    attempt += 1
+                    continue
+                raise KCEXAPIError(code="REQUEST_FAILED", message=f"Request failed: {str(e)}")
 
-        # Parse JSON response
-        try:
-            res_json = json.loads(text)
-        except Exception as e:
-            if text.strip().startswith("<"):
-                msg = "KCEX platform returned HTML (system may be in maintenance or blocking IP)"
-                raise KCEXAPIError(code="MAINTENANCE_HTML", message=msg, raw_response=text[:200])
-            raise KCEXAPIError(code="INVALID_JSON", message=f"Failed to parse JSON: {str(e)}")
+            # Parse JSON response
+            try:
+                res_json = json.loads(text)
+            except Exception as e:
+                if text.strip().startswith("<"):
+                    msg = "KCEX platform returned HTML (system may be in maintenance or blocking IP)"
+                    raise KCEXAPIError(code="MAINTENANCE_HTML", message=msg, raw_response=text[:200])
+                raise KCEXAPIError(code="INVALID_JSON", message=f"Failed to parse JSON: {str(e)}")
 
-        # Verify business status code
-        code = res_json.get("code")
-        success = res_json.get("success")
+            # Verify business status code
+            code = res_json.get("code")
+            success = res_json.get("success")
 
-        if code not in (0, 200, None) and success is False:
-            msg = res_json.get("msg") or res_json.get("message") or "Unknown error"
-            raise KCEXAPIError(code=code, message=msg, raw_response=res_json)
+            # Handle rate limit (Error 510 or 429) in business response
+            is_rate_limit = (code in (510, 429)) or ("frequency limit" in str(res_json.get("msg", "")).lower())
+            if is_rate_limit and attempt < retries:
+                delay = 2.0 * (attempt + 1)
+                logger.warning(
+                    "KCEX rate limit [Code %s: %s] on %s %s. Backing off %.1fs (attempt %d/%d)...",
+                    code, res_json.get("msg"), method, endpoint, delay, attempt + 1, retries
+                )
+                time.sleep(delay)
+                attempt += 1
+                continue
 
-        return res_json
+            if code not in (0, 200, None) and success is False:
+                msg = res_json.get("msg") or res_json.get("message") or "Unknown error"
+                raise KCEXAPIError(code=code, message=msg, raw_response=res_json)
+
+            return res_json
 
     def get_public(self, endpoint: str, params: Optional[Dict[str, Any]] = None, is_platform: bool = False) -> Dict[str, Any]:
         """Convenience helper for public GET requests."""
