@@ -67,16 +67,40 @@ def main():
     if conf_path.exists():
         content = conf_path.read_text(encoding="utf-8")
         if "[gdrive]" in content and "refresh_token" in content:
-            print("\n[+] SUCCESS! An active Google Drive remote '[gdrive]' was found in your rclone.conf:")
-            print("-" * 80)
-            print(content.strip())
-            print("-" * 80)
-            print("\n>>> NEXT STEP (Copy this to GitHub Secrets):")
+            import base64
+            # Extract only [gdrive] block
+            lines = [l.strip() for l in content.replace("\r", "").split("\n")]
+            clean_lines = []
+            in_sec = False
+            for l in lines:
+                if l.startswith("[") and l.endswith("]"):
+                    in_sec = (l == "[gdrive]")
+                    if in_sec:
+                        clean_lines.append(l)
+                elif in_sec:
+                    if "=" in l:
+                        clean_lines.append(l)
+                    elif not l:
+                        continue
+                    else:
+                        break
+
+            clean_ini = "\n".join(clean_lines) + "\n"
+            b64_val = base64.b64encode(clean_ini.encode("utf-8")).decode("ascii")
+
+            print("\n[+] SUCCESS! An active Google Drive remote '[gdrive]' was found in your rclone.conf.")
+            print("\nOption A: Paste this clean INI block into GitHub Secrets (RCLONE_CONFIG):")
+            print("vvvvvvvvvvvvvvvvvvvv COPY BELOW THIS LINE vvvvvvvvvvvvvvvvvvvv")
+            print(clean_ini.strip())
+            print("^^^^^^^^^^^^^^^^^^^^ COPY ABOVE THIS LINE ^^^^^^^^^^^^^^^^^^^^")
+            print("\nOption B (Foolproof 1-line Base64 string - guaranteed no line break issues):")
+            print(b64_val)
+            print("\n>>> HOW TO ADD TO GITHUB SECRETS:")
             print("1. Open your repository: https://github.com/SamratSinghPhysicist/KCEX_bot/settings/secrets/actions")
             print("2. Click 'New repository secret'")
             print("3. Name  : RCLONE_CONFIG")
-            print("4. Secret: Paste the content above")
-            print("5. Click 'Add secret'. You are done!")
+            print("4. Secret: Paste Option A (or Option B)")
+            print("5. Click 'Add secret'. Done!")
             return
 
     print("\n" + "-" * 80)
