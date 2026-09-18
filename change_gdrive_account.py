@@ -17,6 +17,7 @@ import base64
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 # Try importing requests and nacl
 try:
