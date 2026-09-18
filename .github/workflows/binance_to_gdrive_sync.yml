@@ -1,0 +1,126 @@
+name: Binance Vision to Google Drive Archiver
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Symbols to Archive (ALL_TARGETED, SHORTLISTED_ONLY, MAJORS_ONLY, or comma-separated e.g. BTCUSDT,TRUMPUSDT)"
+        required: true
+        default: "ALL_TARGETED"
+        type: string
+
+      data_types:
+        description: "Data Types (ALL or comma-separated: klines,trades,aggTrades,bookTicker,fundingRate,markPriceKlines,indexPriceKlines,premiumIndexKlines)"
+        required: true
+        default: "ALL"
+        type: string
+
+      timeframes:
+        description: "Kline Timeframes (ALL or comma-separated: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1mo)"
+        required: true
+        default: "ALL"
+        type: string
+
+      start_date:
+        description: "Earliest Month (YYYY-MM or 'earliest')"
+        required: false
+        default: "earliest"
+        type: string
+
+      end_date:
+        description: "Latest Month (YYYY-MM)"
+        required: true
+        default: "2026-08"
+        type: string
+
+      gdrive_folder:
+        description: "Target Google Drive Folder Relative Path"
+        required: true
+        default: "Online/BINANCE_HISTORICAL_DATA (till August 2026)"
+        type: string
+
+      dry_run:
+        description: "Dry Run (Scan available archives without downloading/uploading)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  archive_to_gdrive:
+    name: Archive Binance Vision to Google Drive
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas
+
+      - name: Install Rclone
+        if: ${{ !inputs.dry_run }}
+        run: |
+          sudo -v ; curl https://rclone.org/install.sh | sudo bash
+          rclone version
+
+      - name: Configure Rclone for Google Drive
+        if: ${{ !inputs.dry_run }}
+        env:
+          RCLONE_CONFIG_DATA: ${{ secrets.RCLONE_CONFIG }}
+        run: |
+          if [ -z "$RCLONE_CONFIG_DATA" ]; then
+            echo "::error::GitHub secret 'RCLONE_CONFIG' is missing! Please configure RCLONE_CONFIG in Repository Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          mkdir -p ~/.config/rclone
+          echo "$RCLONE_CONFIG_DATA" > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
+          echo "Rclone configuration written successfully."
+
+      - name: Test Google Drive Connection
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "Testing connection to Google Drive..."
+          rclone lsd "gdrive:${{ inputs.gdrive_folder }}" || rclone mkdir "gdrive:${{ inputs.gdrive_folder }}"
+          echo "Target Google Drive folder is accessible."
+
+      - name: Run Archival Pipeline
+        run: |
+          START_ARG=""
+          if [ "${{ inputs.start_date }}" != "earliest" ] && [ -n "${{ inputs.start_date }}" ]; then
+            START_ARG="--start-month ${{ inputs.start_date }}"
+          fi
+
+          DRY_ARG=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            DRY_ARG="--dry-run"
+          fi
+
+          python BACKTESTER/binance_drive_archiver.py \
+            --symbols "${{ inputs.symbols }}" \
+            --data-types "${{ inputs.data_types }}" \
+            --timeframes "${{ inputs.timeframes }}" \
+            --end-month "${{ inputs.end_date }}" \
+            --gdrive-folder "${{ inputs.gdrive_folder }}" \
+            $START_ARG \
+            $DRY_ARG
+
+      - name: Post-Run Summary
+        if: always()
+        run: |
+          echo "### Binance Vision to Google Drive Archival Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Symbols Selection:** \`${{ inputs.symbols }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Data Types:** \`${{ inputs.data_types }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timeframes:** \`${{ inputs.timeframes }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date Range:** \`${{ inputs.start_date }}\` to \`${{ inputs.end_date }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Destination Folder:** \`${{ inputs.gdrive_folder }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run:** \`${{ inputs.dry_run }}\`" >> $GITHUB_STEP_SUMMARY
