@@ -140,7 +140,7 @@ class BinanceDriveArchiver:
     def __init__(
         self,
         rclone_remote: str = "gdrive",
-        gdrive_folder: str = "Online/BINANCE_HISTORICAL_DATA (till August 2026)",
+        gdrive_folder: str = "Binance_Historical_Data",
         market: str = "futures/um",
         temp_dir: Optional[str] = None,
         dry_run: bool = False
@@ -427,7 +427,7 @@ def run_archival_pipeline(
     start_month: Optional[str] = None,
     end_month: Optional[str] = "2026-08",
     rclone_remote: str = "gdrive",
-    gdrive_folder: str = "Online/BINANCE_HISTORICAL_DATA (till August 2026)",
+    gdrive_folder: str = "Binance_Historical_Data",
     dry_run: bool = False
 ):
     """Executes the complete unzipped archival pipeline across symbols and data types."""
@@ -601,7 +601,7 @@ def main():
     parser.add_argument(
         "--gdrive-folder",
         type=str,
-        default="Online/BINANCE_HISTORICAL_DATA (till August 2026)",
+        default="Binance_Historical_Data",
         help="Target folder in Google Drive"
     )
     parser.add_argument(

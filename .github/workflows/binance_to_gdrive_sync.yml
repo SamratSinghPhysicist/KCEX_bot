@@ -36,7 +36,7 @@ on:
       gdrive_folder:
         description: "Target Google Drive Folder Relative Path"
         required: true
-        default: "Online/BINANCE_HISTORICAL_DATA (till August 2026)"
+        default: "Binance_Historical_Data"
         type: string
 
       dry_run:
