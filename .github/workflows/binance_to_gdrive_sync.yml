@@ -138,6 +138,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           echo "Testing connection to Google Drive..."
+          rclone config show
           rclone mkdir "gdrive:${{ inputs.gdrive_folder }}"
           echo "Target Google Drive folder is accessible."
 
