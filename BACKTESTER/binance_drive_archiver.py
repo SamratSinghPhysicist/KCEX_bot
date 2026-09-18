@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
 """
-Binance Vision to Google Drive Archiver
-=======================================
-High-speed, resilient archiver for streaming/uploading official Binance Vision
-historical USD-M futures market data directly to Google Drive.
+Binance Vision to Google Drive Archiver (Unzipped CSV Extractor)
+==============================================================
+Streams official Binance Vision historical USD-M futures market data,
+extracts uncompressed CSV files from downloaded ZIP archives, and uploads
+the extracted CSV files directly to Google Drive via Rclone.
 
 Key Features:
-- Zero Persistent Local Disk Usage: Downloads each file to a temporary location,
-  immediately uploads it to Google Drive, and deletes the local copy.
-- Idempotent & Resumable: Scans Google Drive directory to skip already-uploaded archives.
+- Uncompressed CSV Archival: Extracts and stores clean .csv files (not .zip) in Google Drive.
+- Zero Persistent Local Disk Usage: Downloads each .zip to /tmp, unzips the .csv, deletes
+  the .zip immediately, uploads the .csv to Google Drive, and deletes the .csv immediately.
+- Idempotent & Resumable: Scans Google Drive directory to skip already-extracted CSVs.
+- Detailed Timestamped Logging: Full real-time metrics with timestamps, compression ratios,
+  file sizes, and progress tracking.
 - Complete Data Type & Subtype Support:
-  - Kline Types (all timeframes): klines, markPriceKlines, indexPriceKlines, premiumIndexKlines
+  - Kline Types: klines, markPriceKlines, indexPriceKlines, premiumIndexKlines
   - Direct Types: trades, aggTrades, bookTicker, fundingRate
-- Shortlisted Pairs + Majors by default, with arbitrary custom symbol support.
 """
 
 import os
 import sys
 import time
 import shutil
+import zipfile
 import argparse
 import tempfile
+import datetime
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -47,6 +52,13 @@ BINANCE_S3_BUCKET = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision
 BINANCE_DATA_BASE_URL = "https://data.binance.vision"
 
 
+def log(msg: str, level: str = "INFO"):
+    """Prints a structured, timestamped log line to stdout."""
+    now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    prefix = f"[{now_str}] [{level}]"
+    print(f"{prefix} {msg}", flush=True)
+
+
 def get_shortlisted_symbols(csv_path: Optional[str] = None) -> List[str]:
     """Reads shortlisted binance symbols from the generated CSV file."""
     if not csv_path:
@@ -69,7 +81,7 @@ def list_s3_keys_with_prefix(prefix: str, max_retries: int = 4) -> List[str]:
     keys = []
     marker = ""
     session = requests.Session()
-    session.headers.update({"User-Agent": "BinanceVisionArchiver/1.0"})
+    session.headers.update({"User-Agent": "BinanceVisionArchiver/2.0"})
 
     while True:
         url = f"{BINANCE_S3_BUCKET}?prefix={prefix}"
@@ -101,7 +113,7 @@ def list_s3_keys_with_prefix(prefix: str, max_retries: int = 4) -> List[str]:
                     time.sleep(1.5 * attempt)
             except Exception as e:
                 if attempt == max_retries:
-                    print(f"  [Warning] S3 request failed after {max_retries} attempts: {url} ({e})")
+                    log(f"S3 request failed after {max_retries} attempts: {url} ({e})", "WARN")
                     return keys
                 time.sleep(1.5 * attempt)
         else:
@@ -139,13 +151,15 @@ class BinanceDriveArchiver:
         self.temp_dir = temp_dir or tempfile.mkdtemp(prefix="binance_archive_")
         self.dry_run = dry_run
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "BinanceVisionArchiver/1.0"})
+        self.session.headers.update({"User-Agent": "BinanceVisionArchiver/2.0"})
 
         os.makedirs(self.temp_dir, exist_ok=True)
         self.existing_remote_files: Dict[str, Set[str]] = {}
         self._rclone_checked = False
+        self.rclone_bin = "rclone"
 
     def check_rclone_available(self) -> bool:
+        """Verifies if rclone is installed and located."""
         possible_bins = [
             "rclone",
             os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\Rclone.Rclone_Microsoft.Winget.Source_8wekyb3d8bbwe\rclone-v1.75.1-windows-amd64\rclone.exe")
@@ -162,6 +176,7 @@ class BinanceDriveArchiver:
         return False
 
     def get_existing_remote_filenames(self, remote_subfolder: str) -> Set[str]:
+        """Fetches existing filenames in a remote Google Drive folder using rclone lsf."""
         if self.dry_run or not self._rclone_checked:
             return set()
 
@@ -169,10 +184,9 @@ class BinanceDriveArchiver:
             return self.existing_remote_files[remote_subfolder]
 
         full_remote_path = f"{self.rclone_remote}:{self.gdrive_folder}/{remote_subfolder}".strip("/")
-        bin_cmd = getattr(self, "rclone_bin", "rclone")
         try:
             res = subprocess.run(
-                [bin_cmd, "lsf", full_remote_path, "--files-only"],
+                [self.rclone_bin, "lsf", full_remote_path, "--files-only"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -182,8 +196,9 @@ class BinanceDriveArchiver:
                 files = set(line.strip() for line in res.stdout.splitlines() if line.strip())
                 self.existing_remote_files[remote_subfolder] = files
                 return files
-        except Exception:
-            pass
+        except Exception as e:
+            log(f"Failed to query remote directory '{full_remote_path}': {e}", "DEBUG")
+
         self.existing_remote_files[remote_subfolder] = set()
         return set()
 
@@ -195,6 +210,7 @@ class BinanceDriveArchiver:
         start_month: Optional[str] = None,
         end_month: Optional[str] = None
     ) -> List[str]:
+        """Discovers all S3 keys matching symbol, data type, timeframe, and date range."""
         if data_type in ALL_KLINE_TYPES:
             tf = timeframe or "1m"
             prefix = f"data/{self.market}/monthly/{data_type}/{symbol}/{tf}/"
@@ -215,50 +231,102 @@ class BinanceDriveArchiver:
 
         return sorted(filtered_keys)
 
-    def download_file_to_temp(self, s3_key: str, dest_path: str, max_retries: int = 4) -> bool:
+    def download_file_to_temp(self, s3_key: str, dest_path: str, max_retries: int = 4) -> Tuple[bool, int]:
+        """Downloads a single archive file from Binance Vision. Returns (success, size_in_bytes)."""
         url = f"{BINANCE_DATA_BASE_URL}/{s3_key}"
         for attempt in range(1, max_retries + 1):
             try:
-                with self.session.get(url, stream=True, timeout=30) as r:
+                with self.session.get(url, stream=True, timeout=45) as r:
                     if r.status_code == 200:
+                        total_downloaded = 0
                         with open(dest_path, "wb") as f:
                             for chunk in r.iter_content(chunk_size=1024 * 512):
                                 if chunk:
                                     f.write(chunk)
-                        return True
+                                    total_downloaded += len(chunk)
+                        return True, total_downloaded
                     elif r.status_code == 404:
-                        return False
+                        log(f"HTTP 404 File Not Found: {url}", "WARN")
+                        return False, 0
             except Exception as e:
                 if attempt == max_retries:
-                    print(f"  [Error] Failed to download {url}: {e}")
-                    return False
+                    log(f"Failed to download {url} after {max_retries} attempts: {e}", "ERROR")
+                    return False, 0
                 time.sleep(2 * attempt)
-        return False
+        return False, 0
+
+    def extract_csvs_from_zip(self, zip_path: str) -> List[Tuple[str, int]]:
+        """
+        Extracts all .csv files from the given ZIP archive into temp_dir.
+        Returns a list of tuples: [(extracted_csv_path, uncompressed_size_bytes)]
+        """
+        extracted_files = []
+        try:
+            with zipfile.ZipFile(zip_path, "r") as z:
+                csv_members = [m for m in z.namelist() if m.lower().endswith(".csv")]
+                if not csv_members:
+                    log(f"No CSV file found inside {os.path.basename(zip_path)}", "ERROR")
+                    return []
+
+                for member in csv_members:
+                    # Sanitize filename (prevent path traversal)
+                    target_filename = os.path.basename(member)
+                    target_path = os.path.join(self.temp_dir, target_filename)
+
+                    # Extract file
+                    with z.open(member) as source, open(target_path, "wb") as dest:
+                        shutil.copyfileobj(source, dest, length=1024 * 512)
+
+                    extracted_size = os.path.getsize(target_path)
+                    extracted_files.append((target_path, extracted_size))
+        except Exception as e:
+            log(f"Extraction failed for {os.path.basename(zip_path)}: {e}", "ERROR")
+            return []
+
+        return extracted_files
 
     def upload_temp_file_to_drive(self, local_path: str, remote_subfolder: str) -> bool:
+        """Uploads a single local CSV file to Google Drive using rclone copyto."""
         if self.dry_run:
             return True
 
         filename = os.path.basename(local_path)
         full_remote_path = f"{self.rclone_remote}:{self.gdrive_folder}/{remote_subfolder}/{filename}".replace("\\", "/")
-        bin_cmd = getattr(self, "rclone_bin", "rclone")
         try:
             res = subprocess.run(
-                [bin_cmd, "copyto", local_path, full_remote_path, "--retries", "3", "--low-level-retries", "10"],
+                [self.rclone_bin, "copyto", local_path, full_remote_path, "--retries", "3", "--low-level-retries", "10"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=300
+                timeout=600
             )
-            return res.returncode == 0
+            if res.returncode == 0:
+                return True
+            else:
+                log(f"rclone copyto returned non-zero code for {filename}: {res.stderr.strip()}", "ERROR")
+                return False
         except Exception as e:
-            print(f"  [Error] rclone upload exception for {filename}: {e}")
+            log(f"rclone upload exception for {filename}: {e}", "ERROR")
             return False
 
-    def sync_key_to_drive(self, s3_key: str) -> str:
-        parts = s3_key.split("/")
-        filename = parts[-1]
+    def sync_key_to_drive(self, s3_key: str) -> Tuple[str, int, int]:
+        """
+        Processes a single S3 key:
+        1. Identifies expected uncompressed CSV filename.
+        2. Checks if CSV already exists in Google Drive. If yes, skip.
+        3. Downloads ZIP to temp folder.
+        4. Extracts uncompressed CSV file(s) and purges the ZIP immediately.
+        5. Uploads the uncompressed CSV(s) to Google Drive.
+        6. Purges the uncompressed CSV(s) locally.
 
+        Returns: (status: 'uploaded'|'skipped'|'error', downloaded_bytes, extracted_bytes)
+        """
+        parts = s3_key.split("/")
+        zip_filename = parts[-1]
+        expected_csv_filename = zip_filename[:-4] + ".csv"
+
+        # Remote subfolder structure:
+        # e.g., "klines/BTCUSDT/1m" or "trades/BTCUSDT"
         if len(parts) >= 6 and parts[3] in ALL_KLINE_TYPES:
             remote_subfolder = f"{parts[4]}/{parts[5]}/{parts[6]}"
         elif len(parts) >= 5:
@@ -266,34 +334,85 @@ class BinanceDriveArchiver:
         else:
             remote_subfolder = "misc"
 
+        # 1. Check if the UNCOMPRESSED CSV already exists in Google Drive
         existing_files = self.get_existing_remote_filenames(remote_subfolder)
-        if filename in existing_files:
-            return "skipped"
+        if expected_csv_filename in existing_files:
+            log(f"SKIP  | Drive already contains: {remote_subfolder}/{expected_csv_filename}", "CHECK")
+            return "skipped", 0, 0
 
         if self.dry_run:
-            return "uploaded"
+            log(f"PLAN  | Would download, extract and upload: {expected_csv_filename} -> {remote_subfolder}/", "DRYRUN")
+            return "uploaded", 0, 0
 
-        local_temp_file = os.path.join(self.temp_dir, filename)
+        local_temp_zip = os.path.join(self.temp_dir, zip_filename)
+        downloaded_bytes = 0
+        extracted_bytes = 0
+        extracted_csvs: List[Tuple[str, int]] = []
+
         try:
-            success = self.download_file_to_temp(s3_key, local_temp_file)
-            if not success:
-                return "error"
+            # 2. Download ZIP
+            t0 = time.time()
+            success, downloaded_bytes = self.download_file_to_temp(s3_key, local_temp_zip)
+            if not success or downloaded_bytes == 0:
+                log(f"FAIL  | Download failed for {zip_filename}", "ERROR")
+                return "error", 0, 0
 
-            upload_success = self.upload_temp_file_to_drive(local_temp_file, remote_subfolder)
-            if upload_success:
-                if remote_subfolder in self.existing_remote_files:
-                    self.existing_remote_files[remote_subfolder].add(filename)
-                return "uploaded"
-            else:
-                return "error"
+            download_duration = max(time.time() - t0, 0.01)
+            download_speed = (downloaded_bytes / (1024 * 1024)) / download_duration
+            log(f"DL    | Downloaded {zip_filename} ({downloaded_bytes / (1024 * 1024):.2f} MB @ {download_speed:.2f} MB/s)", "STAGE")
+
+            # 3. Extract CSV(s)
+            extracted_csvs = self.extract_csvs_from_zip(local_temp_zip)
+            if not extracted_csvs:
+                log(f"FAIL  | Could not extract CSV from {zip_filename}", "ERROR")
+                return "error", downloaded_bytes, 0
+
+            # 4. Immediate cleanup of the local ZIP file
+            try:
+                os.remove(local_temp_zip)
+            except Exception:
+                pass
+
+            # 5. Upload each extracted CSV to Google Drive
+            all_uploaded = True
+            for csv_path, csv_size in extracted_csvs:
+                extracted_bytes += csv_size
+                csv_name = os.path.basename(csv_path)
+
+                t_up = time.time()
+                log(f"EXTR  | Unzipped {csv_name} (Uncompressed: {csv_size / (1024 * 1024):.2f} MB)", "STAGE")
+                log(f"UP    | Uploading {csv_name} -> {self.rclone_remote}:{self.gdrive_folder}/{remote_subfolder}/", "STAGE")
+
+                upload_ok = self.upload_temp_file_to_drive(csv_path, remote_subfolder)
+                up_duration = max(time.time() - t_up, 0.01)
+                up_speed = (csv_size / (1024 * 1024)) / up_duration
+
+                if upload_ok:
+                    log(f"DONE  | Uploaded {csv_name} ({csv_size / (1024 * 1024):.2f} MB in {up_duration:.1f}s @ {up_speed:.2f} MB/s)", "SUCCESS")
+                    if remote_subfolder in self.existing_remote_files:
+                        self.existing_remote_files[remote_subfolder].add(csv_name)
+                else:
+                    log(f"FAIL  | Upload failed for {csv_name}", "ERROR")
+                    all_uploaded = False
+
+            return ("uploaded" if all_uploaded else "error"), downloaded_bytes, extracted_bytes
+
         finally:
-            if os.path.exists(local_temp_file):
+            # 6. Always purge local CSVs and leftover ZIP files immediately
+            if os.path.exists(local_temp_zip):
                 try:
-                    os.remove(local_temp_file)
+                    os.remove(local_temp_zip)
                 except Exception:
                     pass
+            for csv_path, _ in extracted_csvs:
+                if os.path.exists(csv_path):
+                    try:
+                        os.remove(csv_path)
+                    except Exception:
+                        pass
 
     def cleanup(self):
+        """Purges the temporary directory entirely."""
         if os.path.exists(self.temp_dir):
             try:
                 shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -311,6 +430,7 @@ def run_archival_pipeline(
     gdrive_folder: str = "Online/BINANCE_HISTORICAL_DATA (till August 2026)",
     dry_run: bool = False
 ):
+    """Executes the complete unzipped archival pipeline across symbols and data types."""
     archiver = BinanceDriveArchiver(
         rclone_remote=rclone_remote,
         gdrive_folder=gdrive_folder,
@@ -320,33 +440,34 @@ def run_archival_pipeline(
     if not dry_run:
         has_rclone = archiver.check_rclone_available()
         if not has_rclone:
-            print("[Error] 'rclone' executable was not found on PATH. Please install and configure rclone.")
+            log("'rclone' executable was not found on PATH. Please install and configure rclone.", "ERROR")
             sys.exit(1)
 
-    print("=" * 80)
-    print("BINANCE PUBLIC DATA VISION -> GOOGLE DRIVE ARCHIVER")
-    print("=" * 80)
-    print(f"Target Google Drive Folder : {gdrive_folder}")
-    print(f"Remote Name                : {rclone_remote}")
-    print(f"Dry Run Mode               : {dry_run}")
-    print(f"Date Cutoff                : {start_month or 'Earliest'} -> {end_month or 'Latest'}")
-    print(f"Total Symbols              : {len(symbols)} ({', '.join(symbols[:8])}{'...' if len(symbols)>8 else ''})")
-    print(f"Data Types                 : {', '.join(data_types)}")
-    print(f"Kline Timeframes           : {', '.join(timeframes)}")
-    print("=" * 80)
+    print("=" * 90)
+    print("  BINANCE VISION -> GOOGLE DRIVE HISTORICAL ARCHIVER (UNZIPPED CSV)")
+    print("=" * 90)
+    log(f"Target Google Drive Folder : {gdrive_folder}")
+    log(f"Remote Name                : {rclone_remote}")
+    log(f"Dry Run Mode               : {dry_run}")
+    log(f"Date Cutoff                : {start_month or 'Earliest'} -> {end_month or 'Latest'}")
+    log(f"Total Target Symbols       : {len(symbols)} ({', '.join(symbols[:8])}{'...' if len(symbols)>8 else ''})")
+    log(f"Data Types                 : {', '.join(data_types)}")
+    log(f"Kline Timeframes           : {', '.join(timeframes)}")
+    print("=" * 90)
 
     total_discovered = 0
     total_uploaded = 0
     total_skipped = 0
     total_errors = 0
+    total_downloaded_bytes = 0
+    total_uncompressed_bytes = 0
 
-    start_time = time.time()
+    pipeline_start_time = time.time()
 
     for s_idx, symbol in enumerate(symbols, 1):
-        print(f"\n[{s_idx}/{len(symbols)}] Processing Symbol: {symbol}")
-        sym_discovered = 0
-        sym_uploaded = 0
-        sym_skipped = 0
+        print("\n" + "-" * 90)
+        log(f"[{s_idx}/{len(symbols)}] PROCESSING SYMBOL: {symbol}", "SYMBOL")
+        print("-" * 90)
 
         for dt in data_types:
             if dt in ALL_KLINE_TYPES:
@@ -356,83 +477,85 @@ def run_archival_pipeline(
                     )
                     if not keys:
                         continue
-                    sym_discovered += len(keys)
+
                     total_discovered += len(keys)
-                    print(f"  -> {dt:<18} [{tf:<4}]: {len(keys)} files found", end="", flush=True)
+                    log(f"[{symbol}] Discovered {len(keys)} monthly archives for '{dt}' [interval: {tf}]", "DISCOVER")
 
                     up_count = 0
                     skip_count = 0
                     err_count = 0
 
-                    for k in keys:
-                        res = archiver.sync_key_to_drive(k)
-                        if res == "uploaded":
+                    for k_idx, k in enumerate(keys, 1):
+                        fn = k.split("/")[-1]
+                        log(f"[{symbol} | {dt} {tf}] ({k_idx}/{len(keys)}) Processing: {fn}", "QUEUE")
+
+                        status, dl_bytes, ext_bytes = archiver.sync_key_to_drive(k)
+                        total_downloaded_bytes += dl_bytes
+                        total_uncompressed_bytes += ext_bytes
+
+                        if status == "uploaded":
                             up_count += 1
-                        elif res == "skipped":
+                            total_uploaded += 1
+                        elif status == "skipped":
                             skip_count += 1
+                            total_skipped += 1
                         else:
                             err_count += 1
+                            total_errors += 1
 
-                    sym_uploaded += up_count
-                    sym_skipped += skip_count
-                    total_uploaded += up_count
-                    total_skipped += skip_count
-                    total_errors += err_count
-
-                    status_str = f" | +{up_count} uploaded, {skip_count} existing"
-                    if err_count:
-                        status_str += f", {err_count} failed"
-                    print(status_str)
+                    log(f"[{symbol} | {dt} {tf}] Finished: {up_count} uploaded, {skip_count} skipped, {err_count} errors", "STATUS")
             else:
                 keys = archiver.discover_keys_for_symbol_and_type(
                     symbol, dt, start_month=start_month, end_month=end_month
                 )
                 if not keys:
                     continue
-                sym_discovered += len(keys)
+
                 total_discovered += len(keys)
-                print(f"  -> {dt:<18}       : {len(keys)} files found", end="", flush=True)
+                log(f"[{symbol}] Discovered {len(keys)} monthly archives for '{dt}'", "DISCOVER")
 
                 up_count = 0
                 skip_count = 0
                 err_count = 0
 
-                for k in keys:
-                    res = archiver.sync_key_to_drive(k)
-                    if res == "uploaded":
+                for k_idx, k in enumerate(keys, 1):
+                    fn = k.split("/")[-1]
+                    log(f"[{symbol} | {dt}] ({k_idx}/{len(keys)}) Processing: {fn}", "QUEUE")
+
+                    status, dl_bytes, ext_bytes = archiver.sync_key_to_drive(k)
+                    total_downloaded_bytes += dl_bytes
+                    total_uncompressed_bytes += ext_bytes
+
+                    if status == "uploaded":
                         up_count += 1
-                    elif res == "skipped":
+                        total_uploaded += 1
+                    elif status == "skipped":
                         skip_count += 1
+                        total_skipped += 1
                     else:
                         err_count += 1
+                        total_errors += 1
 
-                sym_uploaded += up_count
-                sym_skipped += skip_count
-                total_uploaded += up_count
-                total_skipped += skip_count
-                total_errors += err_count
-
-                status_str = f" | +{up_count} uploaded, {skip_count} existing"
-                if err_count:
-                    status_str += f", {err_count} failed"
-                print(status_str)
+                log(f"[{symbol} | {dt}] Finished: {up_count} uploaded, {skip_count} skipped, {err_count} errors", "STATUS")
 
     archiver.cleanup()
 
-    elapsed = time.time() - start_time
-    print("\n" + "=" * 80)
-    print("ARCHIVAL RUN SUMMARY")
-    print("=" * 80)
-    print(f"Total Archives Discovered : {total_discovered}")
-    print(f"Successfully Uploaded     : {total_uploaded}")
-    print(f"Skipped (Already in Drive): {total_skipped}")
-    print(f"Errors                    : {total_errors}")
-    print(f"Elapsed Time              : {elapsed/60:.2f} minutes")
-    print("=" * 80)
+    elapsed = time.time() - pipeline_start_time
+    print("\n" + "=" * 90)
+    print("  ARCHIVAL PIPELINE COMPLETED")
+    print("=" * 90)
+    log(f"Total Archives Discovered      : {total_discovered}")
+    log(f"CSV Files Successfully Uploaded: {total_uploaded}")
+    log(f"CSV Files Skipped (In Drive)   : {total_skipped}")
+    log(f"Errors Encountered             : {total_errors}")
+    log(f"Total Compressed Data Streamed : {total_downloaded_bytes / (1024 * 1024 * 1024):.2f} GB")
+    log(f"Total Uncompressed CSV Archived: {total_uncompressed_bytes / (1024 * 1024 * 1024):.2f} GB")
+    log(f"Total Elapsed Time             : {elapsed / 60:.2f} minutes")
+    print("=" * 90)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Binance Vision Historical Data to Google Drive Archiver")
+    parser = argparse.ArgumentParser(description="Binance Vision Historical Data to Google Drive Archiver (Unzipped CSV)")
     parser.add_argument(
         "--symbols",
         type=str,
