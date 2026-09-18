@@ -77,20 +77,37 @@ jobs:
         env:
           RCLONE_CONFIG_DATA: ${{ secrets.RCLONE_CONFIG }}
         run: |
-          if [ -z "$RCLONE_CONFIG_DATA" ]; then
-            echo "::error::GitHub secret 'RCLONE_CONFIG' is missing! Please configure RCLONE_CONFIG in Repository Settings -> Secrets and variables -> Actions."
-            exit 1
-          fi
-          mkdir -p ~/.config/rclone
-          echo "$RCLONE_CONFIG_DATA" > ~/.config/rclone/rclone.conf
-          chmod 600 ~/.config/rclone/rclone.conf
-          echo "Rclone configuration written successfully."
+          python3 - << 'EOF'
+          import os
+          from pathlib import Path
+
+          data = os.environ.get("RCLONE_CONFIG_DATA", "").strip()
+          if not data:
+              print("::error::GitHub secret 'RCLONE_CONFIG' is missing! Please configure RCLONE_CONFIG in Repository Settings -> Secrets and variables -> Actions.")
+              exit(1)
+
+          # Normalize CRLF and Windows carriage returns to Unix LF
+          data = data.replace('\r\n', '\n').replace('\r', '\n').strip()
+
+          # If user pasted raw JSON token without INI header, wrap it automatically
+          if data.startswith('{') and 'refresh_token' in data:
+              data = f"[gdrive]\ntype = drive\nscope = drive\ntoken = {data}"
+
+          lines = [l.strip() for l in data.split('\n') if l.strip()]
+          content = '\n'.join(lines) + '\n'
+
+          conf_path = Path.home() / ".config" / "rclone" / "rclone.conf"
+          conf_path.parent.mkdir(parents=True, exist_ok=True)
+          conf_path.write_text(content, encoding="utf-8")
+          conf_path.chmod(0o600)
+          print("Rclone configuration successfully written and sanitized.")
+          EOF
 
       - name: Test Google Drive Connection
         if: ${{ !inputs.dry_run }}
         run: |
           echo "Testing connection to Google Drive..."
-          rclone lsd "gdrive:${{ inputs.gdrive_folder }}" || rclone mkdir "gdrive:${{ inputs.gdrive_folder }}"
+          rclone mkdir "gdrive:${{ inputs.gdrive_folder }}"
           echo "Target Google Drive folder is accessible."
 
       - name: Run Archival Pipeline
