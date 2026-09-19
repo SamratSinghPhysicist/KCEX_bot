@@ -1,0 +1,145 @@
+{
+  "symbol": "WIFUSDT",
+  "config": {
+    "horizon_bars": 15,
+    "tp_atr_mult": 3.0,
+    "sl_atr_mult": 1.5,
+    "confidence_threshold": 0.4,
+    "confidence_threshold_sell": 0.48,
+    "min_profit_pct": 0.002,
+    "taker_fee": 0.0,
+    "leverage": 20.0,
+    "embargo_bars": 30
+  },
+  "train_metrics": {
+    "train_samples": 566770,
+    "test_samples": 89265,
+    "num_features": 30,
+    "train_accuracy": 0.569,
+    "train_log_loss": 0.9598,
+    "top_features": [
+      {
+        "feature": "ret_60m",
+        "importance": 0.0003333333333333706
+      },
+      {
+        "feature": "dist_ema9",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema1h_50",
+        "importance": 0.0
+      },
+      {
+        "feature": "bb_width",
+        "importance": 0.0
+      },
+      {
+        "feature": "bb_expansion",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema21",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_vwap",
+        "importance": 0.0
+      },
+      {
+        "feature": "ret_1m",
+        "importance": 0.0
+      },
+      {
+        "feature": "vol_ratio_5_30",
+        "importance": 0.0
+      },
+      {
+        "feature": "whale_ratio",
+        "importance": 0.0
+      }
+    ]
+  },
+  "oos_metrics": {
+    "symbol": "WIFUSDT",
+    "test_bars": 89265,
+    "total_trades": 16,
+    "win_rate_pct": 6.25,
+    "breakeven_win_rate_pct": 33.33,
+    "profit_factor": 0.13,
+    "max_drawdown_pct": 9.05,
+    "sharpe_ratio_daily": -3.65,
+    "sortino_ratio_daily": -3.62,
+    "t_statistic": -3.18,
+    "p_value_two_tailed": 0.0062,
+    "binom_p_value": 0.9985,
+    "total_pnl_pct": -9.05,
+    "final_equity_usd": 9095.03,
+    "avg_win_usd": 140.63,
+    "avg_loss_usd": -69.71,
+    "expectancy_usd": -56.56,
+    "long_trades": 16,
+    "long_win_rate_pct": 6.25,
+    "long_pnl_usd": -904.97,
+    "short_trades": 0,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": 0.0,
+    "signal_share_buy_pct": 0.0,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 100.0
+  },
+  "friction_matrix": [
+    {
+      "slippage_ticks": 1.0,
+      "trades": 9,
+      "win_rate_pct": 44.44,
+      "profit_factor": 0.62,
+      "net_pnl_pct": -2.0,
+      "sharpe_daily": -1.27,
+      "sortino_daily": -1.39,
+      "max_dd_pct": 3.41,
+      "t_stat": -0.58,
+      "p_val": 0.5805,
+      "binom_p": 0.3497
+    },
+    {
+      "slippage_ticks": 2.0,
+      "trades": 16,
+      "win_rate_pct": 6.25,
+      "profit_factor": 0.13,
+      "net_pnl_pct": -9.05,
+      "sharpe_daily": -3.65,
+      "sortino_daily": -3.62,
+      "max_dd_pct": 9.05,
+      "t_stat": -3.18,
+      "p_val": 0.0062,
+      "binom_p": 0.9985
+    },
+    {
+      "slippage_ticks": 3.0,
+      "trades": 19,
+      "win_rate_pct": 5.26,
+      "profit_factor": 0.09,
+      "net_pnl_pct": -14.21,
+      "sharpe_daily": -3.39,
+      "sortino_daily": -3.37,
+      "max_dd_pct": 14.21,
+      "t_stat": -5.2,
+      "p_val": 0.0001,
+      "binom_p": 0.9995
+    },
+    {
+      "slippage_ticks": 5.0,
+      "trades": 20,
+      "win_rate_pct": 5.0,
+      "profit_factor": 0.06,
+      "net_pnl_pct": -18.97,
+      "sharpe_daily": -3.33,
+      "sortino_daily": -3.31,
+      "max_dd_pct": 18.97,
+      "t_stat": -6.8,
+      "p_val": 0.0,
+      "binom_p": 0.9997
+    }
+  ]
+}

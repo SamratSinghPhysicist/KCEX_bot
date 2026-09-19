@@ -1,0 +1,145 @@
+{
+  "symbol": "PIPPINUSDT",
+  "config": {
+    "horizon_bars": 15,
+    "tp_atr_mult": 3.0,
+    "sl_atr_mult": 1.5,
+    "confidence_threshold": 0.4,
+    "confidence_threshold_sell": 0.48,
+    "min_profit_pct": 0.002,
+    "taker_fee": 0.0,
+    "leverage": 20.0,
+    "embargo_bars": 30
+  },
+  "train_metrics": {
+    "train_samples": 566770,
+    "test_samples": 89265,
+    "num_features": 30,
+    "train_accuracy": 0.5697,
+    "train_log_loss": 0.9512,
+    "top_features": [
+      {
+        "feature": "atr_norm",
+        "importance": 0.0023333333333333726
+      },
+      {
+        "feature": "vol_ratio_5_30",
+        "importance": 0.0016666666666667052
+      },
+      {
+        "feature": "dist_ema50",
+        "importance": 0.0015000000000000568
+      },
+      {
+        "feature": "dist_ema15m_21",
+        "importance": 0.0015000000000000198
+      },
+      {
+        "feature": "spread_50_200",
+        "importance": 0.0013333333333333715
+      },
+      {
+        "feature": "spread_21_50",
+        "importance": 0.0013333333333333346
+      },
+      {
+        "feature": "bb_width",
+        "importance": 0.0011666666666666863
+      },
+      {
+        "feature": "spread_9_21",
+        "importance": 0.0011666666666666863
+      },
+      {
+        "feature": "dist_vwap",
+        "importance": 0.0011666666666666863
+      },
+      {
+        "feature": "trend_htf",
+        "importance": 0.001000000000000038
+      }
+    ]
+  },
+  "oos_metrics": {
+    "symbol": "PIPPINUSDT",
+    "test_bars": 89265,
+    "total_trades": 13,
+    "win_rate_pct": 7.69,
+    "breakeven_win_rate_pct": 33.33,
+    "profit_factor": 0.08,
+    "max_drawdown_pct": 7.35,
+    "sharpe_ratio_daily": -5.02,
+    "sortino_ratio_daily": -4.97,
+    "t_statistic": -4.06,
+    "p_value_two_tailed": 0.0016,
+    "binom_p_value": 0.9949,
+    "total_pnl_pct": -6.77,
+    "final_equity_usd": 9322.7,
+    "avg_win_usd": 57.37,
+    "avg_loss_usd": -61.22,
+    "expectancy_usd": -52.1,
+    "long_trades": 13,
+    "long_win_rate_pct": 7.69,
+    "long_pnl_usd": -677.3,
+    "short_trades": 0,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": 0.0,
+    "signal_share_buy_pct": 0.0,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 100.0
+  },
+  "friction_matrix": [
+    {
+      "slippage_ticks": 1.0,
+      "trades": 13,
+      "win_rate_pct": 23.08,
+      "profit_factor": 0.28,
+      "net_pnl_pct": -3.82,
+      "sharpe_daily": -3.2,
+      "sortino_daily": -3.34,
+      "max_dd_pct": 4.94,
+      "t_stat": -1.87,
+      "p_val": 0.0857,
+      "binom_p": 0.8613
+    },
+    {
+      "slippage_ticks": 2.0,
+      "trades": 13,
+      "win_rate_pct": 7.69,
+      "profit_factor": 0.08,
+      "net_pnl_pct": -6.77,
+      "sharpe_daily": -5.02,
+      "sortino_daily": -4.97,
+      "max_dd_pct": 7.35,
+      "t_stat": -4.06,
+      "p_val": 0.0016,
+      "binom_p": 0.9949
+    },
+    {
+      "slippage_ticks": 3.0,
+      "trades": 13,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl_pct": -9.19,
+      "sharpe_daily": -6.04,
+      "sortino_daily": -5.81,
+      "max_dd_pct": 9.19,
+      "t_stat": -8.36,
+      "p_val": 0.0,
+      "binom_p": 1.0
+    },
+    {
+      "slippage_ticks": 5.0,
+      "trades": 14,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl_pct": -12.76,
+      "sharpe_daily": -5.77,
+      "sortino_daily": -5.56,
+      "max_dd_pct": 12.76,
+      "t_stat": -12.31,
+      "p_val": 0.0,
+      "binom_p": 1.0
+    }
+  ]
+}

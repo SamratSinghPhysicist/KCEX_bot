@@ -91,6 +91,69 @@ def download_zip_from_binance(url: str, extract_to: str, expected_csv_name: str)
                 pass
 
 
+def synthesize_ohlcv_from_trades(trades_path: str, output_csv_path: str) -> bool:
+    """Synthesizes 1m OHLCV candle CSV from a Binance trades CSV file."""
+    try:
+        import numpy as np
+        print(f"[DataLoader] Synthesizing 1m OHLCV from {os.path.basename(trades_path)}...")
+        first_chunk = pd.read_csv(trades_path, nrows=2)
+        has_header = "price" in first_chunk.columns or "time" in first_chunk.columns
+        cols = None if has_header else ["id", "price", "qty", "quote_qty", "time", "is_buyer_maker"]
+
+        chunks = []
+        chunksize = 500_000
+        for chunk in pd.read_csv(trades_path, names=cols, header=0 if has_header else None, chunksize=chunksize):
+            is_buy = ~chunk["is_buyer_maker"]
+            chunk["minute_ts"] = (chunk["time"] // 60000) * 60000
+            chunk["taker_buy_vol"] = np.where(is_buy, chunk["qty"], 0.0)
+            chunk["taker_buy_quote"] = np.where(is_buy, chunk["quote_qty"], 0.0)
+            grp = chunk.groupby("minute_ts").agg(
+                open=("price", "first"),
+                high=("price", "max"),
+                low=("price", "min"),
+                close=("price", "last"),
+                volume=("qty", "sum"),
+                quote_volume=("quote_qty", "sum"),
+                count=("id", "count"),
+                taker_buy_volume=("taker_buy_vol", "sum"),
+                taker_buy_quote_volume=("taker_buy_quote", "sum")
+            )
+            chunks.append(grp)
+
+        if not chunks:
+            return False
+
+        df_combined = pd.concat(chunks)
+        df_final = df_combined.groupby(df_combined.index).agg({
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+            "quote_volume": "sum",
+            "count": "sum",
+            "taker_buy_volume": "sum",
+            "taker_buy_quote_volume": "sum"
+        })
+        df_final["open_time"] = df_final.index
+        df_final["close_time"] = df_final["open_time"] + 59999
+        df_final["ignore"] = 0
+
+        order = [
+            "open_time", "open", "high", "low", "close", "volume",
+            "close_time", "quote_volume", "count", "taker_buy_volume",
+            "taker_buy_quote_volume", "ignore"
+        ]
+        df_final = df_final[order].sort_values("open_time")
+        os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
+        df_final.to_csv(output_csv_path, index=False)
+        print(f"[+] Synthesized {len(df_final):,} 1m OHLCV bars -> {output_csv_path}")
+        return True
+    except Exception as e:
+        print(f"[!] Warning: Failed synthesizing OHLCV from trades: {e}")
+        return False
+
+
 def get_ohlcv_file_path(symbol: str, year: int, month: int, auto_download: bool = True) -> Optional[str]:
     """
     Finds or downloads the 1m OHLCV CSV file for the given symbol and year-month.
@@ -98,6 +161,7 @@ def get_ohlcv_file_path(symbol: str, year: int, month: int, auto_download: bool 
     1. User's D:\\ drive path
     2. Cloud fallback directory (data/binance_futures_ohlcv/...)
     3. Downloads from Binance Vision if requested
+    4. Falls back to synthesizing from trades CSV if klines zip is unavailable (e.g. 2019)
     """
     sym = normalize_symbol_name(symbol)
     binance_sym = get_binance_symbol(symbol)
@@ -122,6 +186,13 @@ def get_ohlcv_file_path(symbol: str, year: int, month: int, auto_download: bool 
         success = download_zip_from_binance(url, cloud_dir, expected_filename)
         if success and os.path.exists(cloud_path):
             return cloud_path
+
+        # 4. Fallback: Synthesize from trades if klines zip is 404 (e.g. late 2019)
+        trades_path = get_trades_file_path(symbol, year, month, auto_download=auto_download)
+        if trades_path and os.path.exists(trades_path):
+            syn_ok = synthesize_ohlcv_from_trades(trades_path, cloud_path)
+            if syn_ok and os.path.exists(cloud_path):
+                return cloud_path
 
     return None
 

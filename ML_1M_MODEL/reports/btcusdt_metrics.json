@@ -1,0 +1,145 @@
+{
+  "symbol": "BTCUSDT",
+  "config": {
+    "horizon_bars": 15,
+    "tp_atr_mult": 3.0,
+    "sl_atr_mult": 1.5,
+    "confidence_threshold": 0.4,
+    "confidence_threshold_sell": 0.48,
+    "min_profit_pct": 0.002,
+    "taker_fee": 0.0,
+    "leverage": 20.0,
+    "embargo_bars": 30
+  },
+  "train_metrics": {
+    "train_samples": 566770,
+    "test_samples": 89265,
+    "num_features": 30,
+    "train_accuracy": 0.6915,
+    "train_log_loss": 0.7603,
+    "top_features": [
+      {
+        "feature": "dist_ema15m_21",
+        "importance": 0.0003333333333333706
+      },
+      {
+        "feature": "ret_15m",
+        "importance": 0.0001666666666666853
+      },
+      {
+        "feature": "atr_norm",
+        "importance": 3.700743415417188e-17
+      },
+      {
+        "feature": "dist_ema200",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema21",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema9",
+        "importance": 0.0
+      },
+      {
+        "feature": "bb_width",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_vwap",
+        "importance": 0.0
+      },
+      {
+        "feature": "trend_score",
+        "importance": 0.0
+      },
+      {
+        "feature": "trend_htf",
+        "importance": 0.0
+      }
+    ]
+  },
+  "oos_metrics": {
+    "symbol": "BTCUSDT",
+    "test_bars": 89265,
+    "total_trades": 0,
+    "win_rate_pct": 0.0,
+    "breakeven_win_rate_pct": 50.0,
+    "profit_factor": 0.0,
+    "max_drawdown_pct": 0.0,
+    "sharpe_ratio_daily": 0.0,
+    "sortino_ratio_daily": 0.0,
+    "t_statistic": 0.0,
+    "p_value_two_tailed": 1.0,
+    "binom_p_value": 1.0,
+    "total_pnl_pct": 0.0,
+    "final_equity_usd": 10000.0,
+    "avg_win_usd": 0.0,
+    "avg_loss_usd": 0.0,
+    "expectancy_usd": 0.0,
+    "long_trades": 0,
+    "long_win_rate_pct": 0.0,
+    "long_pnl_usd": 0.0,
+    "short_trades": 0,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": 0.0,
+    "signal_share_buy_pct": 0.0,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 100.0
+  },
+  "friction_matrix": [
+    {
+      "slippage_ticks": 1.0,
+      "trades": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl_pct": 0.0,
+      "sharpe_daily": 0.0,
+      "sortino_daily": 0.0,
+      "max_dd_pct": 0.0,
+      "t_stat": 0.0,
+      "p_val": 1.0,
+      "binom_p": 1.0
+    },
+    {
+      "slippage_ticks": 2.0,
+      "trades": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl_pct": 0.0,
+      "sharpe_daily": 0.0,
+      "sortino_daily": 0.0,
+      "max_dd_pct": 0.0,
+      "t_stat": 0.0,
+      "p_val": 1.0,
+      "binom_p": 1.0
+    },
+    {
+      "slippage_ticks": 3.0,
+      "trades": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl_pct": 0.0,
+      "sharpe_daily": 0.0,
+      "sortino_daily": 0.0,
+      "max_dd_pct": 0.0,
+      "t_stat": 0.0,
+      "p_val": 1.0,
+      "binom_p": 1.0
+    },
+    {
+      "slippage_ticks": 5.0,
+      "trades": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl_pct": 0.0,
+      "sharpe_daily": 0.0,
+      "sortino_daily": 0.0,
+      "max_dd_pct": 0.0,
+      "t_stat": 0.0,
+      "p_val": 1.0,
+      "binom_p": 1.0
+    }
+  ]
+}

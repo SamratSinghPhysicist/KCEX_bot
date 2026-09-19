@@ -1,0 +1,2 @@
+trade_id,type,entry_time,exit_time,entry_price,exit_price,tp_price,sl_price,tp_ticks,sl_ticks,bars_held,confidence,exit_reason,gross_return_pct,net_return_pct,net_margin_ret_pct,pnl_usd,equity_after
+1,LONG,1787202060000,1787202960000,84.83,85.0,85.0,84.74,17,9,15,0.447,TP_HIT,0.20040080160320844,0.18040080160320843,3.6080160320641688,36.08016032064169,10036.080160320642

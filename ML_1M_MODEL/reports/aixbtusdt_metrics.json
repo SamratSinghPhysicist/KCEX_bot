@@ -1,0 +1,145 @@
+{
+  "symbol": "AIXBTUSDT",
+  "config": {
+    "horizon_bars": 15,
+    "tp_atr_mult": 3.0,
+    "sl_atr_mult": 1.5,
+    "confidence_threshold": 0.4,
+    "confidence_threshold_sell": 0.48,
+    "min_profit_pct": 0.002,
+    "taker_fee": 0.0,
+    "leverage": 20.0,
+    "embargo_bars": 30
+  },
+  "train_metrics": {
+    "train_samples": 566770,
+    "test_samples": 89265,
+    "num_features": 30,
+    "train_accuracy": 0.5291,
+    "train_log_loss": 0.9928,
+    "top_features": [
+      {
+        "feature": "spread_50_200",
+        "importance": 0.0030000000000000395
+      },
+      {
+        "feature": "vol_surge",
+        "importance": 0.0025000000000000577
+      },
+      {
+        "feature": "dist_ema50",
+        "importance": 0.002166666666666687
+      },
+      {
+        "feature": "spread_21_50",
+        "importance": 0.0016666666666667052
+      },
+      {
+        "feature": "ret_15m",
+        "importance": 0.0015000000000000198
+      },
+      {
+        "feature": "dist_vwap",
+        "importance": 0.0015000000000000198
+      },
+      {
+        "feature": "ret_5m",
+        "importance": 0.001000000000000038
+      },
+      {
+        "feature": "trend_score",
+        "importance": 0.0010000000000000009
+      },
+      {
+        "feature": "atr_norm",
+        "importance": 0.0008333333333333895
+      },
+      {
+        "feature": "ret_1m",
+        "importance": 0.0008333333333333526
+      }
+    ]
+  },
+  "oos_metrics": {
+    "symbol": "AIXBTUSDT",
+    "test_bars": 89265,
+    "total_trades": 240,
+    "win_rate_pct": 2.08,
+    "breakeven_win_rate_pct": 33.33,
+    "profit_factor": 0.04,
+    "max_drawdown_pct": 63.45,
+    "sharpe_ratio_daily": -11.08,
+    "sortino_ratio_daily": -9.64,
+    "t_statistic": -33.91,
+    "p_value_two_tailed": 0.0,
+    "binom_p_value": 1.0,
+    "total_pnl_pct": -63.45,
+    "final_equity_usd": 3654.95,
+    "avg_win_usd": 46.63,
+    "avg_loss_usd": -27.99,
+    "expectancy_usd": -26.44,
+    "long_trades": 236,
+    "long_win_rate_pct": 2.12,
+    "long_pnl_usd": -6211.02,
+    "short_trades": 4,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": -134.03,
+    "signal_share_buy_pct": 0.3,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 99.7
+  },
+  "friction_matrix": [
+    {
+      "slippage_ticks": 1.0,
+      "trades": 155,
+      "win_rate_pct": 20.0,
+      "profit_factor": 0.35,
+      "net_pnl_pct": -23.94,
+      "sharpe_daily": -9.84,
+      "sortino_daily": -8.83,
+      "max_dd_pct": 25.27,
+      "t_stat": -6.31,
+      "p_val": 0.0,
+      "binom_p": 0.9999
+    },
+    {
+      "slippage_ticks": 2.0,
+      "trades": 240,
+      "win_rate_pct": 2.08,
+      "profit_factor": 0.04,
+      "net_pnl_pct": -63.45,
+      "sharpe_daily": -11.08,
+      "sortino_daily": -9.64,
+      "max_dd_pct": 63.45,
+      "t_stat": -33.91,
+      "p_val": 0.0,
+      "binom_p": 1.0
+    },
+    {
+      "slippage_ticks": 3.0,
+      "trades": 246,
+      "win_rate_pct": 0.81,
+      "profit_factor": 0.01,
+      "net_pnl_pct": -73.86,
+      "sharpe_daily": -11.81,
+      "sortino_daily": -10.11,
+      "max_dd_pct": 73.86,
+      "t_stat": -59.28,
+      "p_val": 0.0,
+      "binom_p": 1.0
+    },
+    {
+      "slippage_ticks": 5.0,
+      "trades": 251,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl_pct": -85.88,
+      "sharpe_daily": -12.05,
+      "sortino_daily": -10.25,
+      "max_dd_pct": 85.88,
+      "t_stat": -203.14,
+      "p_val": 0.0,
+      "binom_p": 1.0
+    }
+  ]
+}
