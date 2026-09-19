@@ -1,0 +1,124 @@
+name: 🚀 Train Major Crypto Models (Long Inception History)
+
+on:
+  workflow_dispatch:
+    inputs:
+      horizon_bars:
+        description: 'Prediction Horizon Bars (1m)'
+        required: false
+        default: '15'
+      tp_atr_mult:
+        description: 'Take Profit ATR Multiplier'
+        required: false
+        default: '3.0'
+      sl_atr_mult:
+        description: 'Stop Loss ATR Multiplier'
+        required: false
+        default: '1.5'
+      confidence_threshold:
+        description: 'Model Confidence Threshold'
+        required: false
+        default: '0.40'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  train-major-pair:
+    name: Train ${{ matrix.symbol }} (${{ matrix.train_start }} -> 2026-08-31)
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      max-parallel: 4
+      fail-fast: false
+      matrix:
+        include:
+          - symbol: BTCUSDT
+            train_start: "2019-09-01"
+            train_end: "2026-05-31"
+            test_start: "2026-06-01"
+            test_end: "2026-08-31"
+          - symbol: ETHUSDT
+            train_start: "2019-11-01"
+            train_end: "2026-05-31"
+            test_start: "2026-06-01"
+            test_end: "2026-08-31"
+          - symbol: SOLUSDT
+            train_start: "2020-09-01"
+            train_end: "2026-05-31"
+            test_start: "2026-06-01"
+            test_end: "2026-08-31"
+          - symbol: DOGEUSDT
+            train_start: "2020-07-01"
+            train_end: "2026-05-31"
+            test_start: "2026-06-01"
+            test_end: "2026-08-31"
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Free Runner Disk Space for Deep Tick Trades
+        run: |
+          echo "Initial Disk Space:"
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/share/swift /opt/hostedtoolcache
+          echo "Disk Space After Deep Cleaning:"
+          df -h
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install System Dependencies (OpenMP)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgomp1
+
+      - name: Install Python ML Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ML_1M_MODEL/requirements.txt
+
+      - name: Execute End-to-End Training & Out-of-Sample Backtesting
+        run: |
+          echo "Target Symbol: ${{ matrix.symbol }}"
+          echo "Train Period:  ${{ matrix.train_start }} to ${{ matrix.train_end }}"
+          echo "Test Period:   ${{ matrix.test_start }} to ${{ matrix.test_end }}"
+          rm -rf ML_1M_MODEL/reports/* ML_1M_MODEL/saved_models/*
+          mkdir -p ML_1M_MODEL/reports ML_1M_MODEL/saved_models ML_1M_MODEL/data_cache
+
+          python -m ML_1M_MODEL.run_pipeline \
+            --symbol "${{ matrix.symbol }}" \
+            --train-start "${{ matrix.train_start }}" \
+            --train-end "${{ matrix.train_end }}" \
+            --test-start "${{ matrix.test_start }}" \
+            --test-end "${{ matrix.test_end }}" \
+            --horizon "${{ inputs.horizon_bars || '15' }}" \
+            --tp-mult "${{ inputs.tp_atr_mult || '3.0' }}" \
+            --sl-mult "${{ inputs.sl_atr_mult || '1.5' }}" \
+            --confidence "${{ inputs.confidence_threshold || '0.40' }}"
+
+      - name: Publish Markdown Results to GitHub Step Summary
+        if: always()
+        run: |
+          REPORT_FILE=$(ls -t ML_1M_MODEL/reports/*_oos_report.md 2>/dev/null | head -n 1)
+          if [ -f "$REPORT_FILE" ]; then
+            cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ⚠️ ML Model Run for ${{ matrix.symbol }} Incomplete" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Trained Model Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-model-${{ matrix.symbol }}-run${{ github.run_id }}
+          path: |
+            ML_1M_MODEL/saved_models/*
+            ML_1M_MODEL/reports/*
+          if-no-files-found: warn
+          retention-days: 30
