@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
-      max-parallel: 4
+      max-parallel: 6
       fail-fast: false
       matrix:
         symbol: ${{ fromJson(needs.resolve-matrix.outputs.symbols) }}
