@@ -50,7 +50,8 @@ from kcex import (
     EngineMode,
     KCEXConfig,
     KCEXTrader,
-    KCEXMarket
+    KCEXMarket,
+    KCEXAPIError
 )
 
 

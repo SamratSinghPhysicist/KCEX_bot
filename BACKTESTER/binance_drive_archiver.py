@@ -90,7 +90,7 @@ def list_s3_keys_with_prefix(prefix: str, max_retries: int = 4) -> List[str]:
 
         for attempt in range(1, max_retries + 1):
             try:
-                r = session.get(url, timeout=12)
+                r = session.get(url, timeout=60)
                 if r.status_code == 200:
                     root = ET.fromstring(r.text)
                     ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
@@ -190,7 +190,7 @@ class BinanceDriveArchiver:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=30
+                timeout=300
             )
             if res.returncode == 0:
                 files = set(line.strip() for line in res.stdout.splitlines() if line.strip())
@@ -236,7 +236,7 @@ class BinanceDriveArchiver:
         url = f"{BINANCE_DATA_BASE_URL}/{s3_key}"
         for attempt in range(1, max_retries + 1):
             try:
-                with self.session.get(url, stream=True, timeout=45) as r:
+                with self.session.get(url, stream=True, timeout=450) as r:
                     if r.status_code == 200:
                         total_downloaded = 0
                         with open(dest_path, "wb") as f:
@@ -298,7 +298,7 @@ class BinanceDriveArchiver:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=600
+                timeout=1200
             )
             if res.returncode == 0:
                 return True
