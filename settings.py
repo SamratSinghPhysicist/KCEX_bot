@@ -207,6 +207,14 @@ LIMIT_ORDER_TIMEOUT_SECONDS = 10.0
 CANCEL_IF_UNFILLED = False  # False = let limit orders rest without cancelling; True = cancel on timeout
 
 # -----------------------------------------------------------------------------
+# Take Profit & Stop Loss Placement Methods
+# -----------------------------------------------------------------------------
+# "DIRECT" -> Native KCEX Server-Side Stoporder (Plan Order)
+# "LIMIT"  -> Close (Limit) Order (Resting Maker order for TP; Limit close on trigger for SL)
+TP_ORDER_TYPE = os.getenv("KCEX_TP_ORDER_TYPE", "DIRECT")
+SL_ORDER_TYPE = os.getenv("KCEX_SL_ORDER_TYPE", "DIRECT")
+
+# -----------------------------------------------------------------------------
 # Smart Strategy Configuration (Regime-Adaptive Scalping Engine)
 # -----------------------------------------------------------------------------
 # Dynamically classifies 1m market microstructure into 5 regimes:

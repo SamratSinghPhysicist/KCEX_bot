@@ -23,6 +23,8 @@ from semi_auto_trader import (
     compute_target_prices,
     print_pre_trade_report,
     execute_single_trade_cycle,
+    execute_limit_close_and_verify,
+    prompt_tp_sl_order_type,
     OrderDirection,
     EngineMode,
     ExitReason
@@ -486,6 +488,197 @@ class TestSemiAutoTrader(unittest.TestCase):
             self.assertEqual(reason, ExitReason.STOP_LOSS_HIT)
             self.assertEqual(pnl, -0.0002)
             self.assertEqual(exit_p, 2.379)
+
+    def test_preset_tp_sl_order_type(self):
+        """Verifies tp_order_type and sl_order_type initialization and summary_lines formatting."""
+        preset = init_default_preset(self.config)
+        self.assertIn(preset.tp_order_type, ["DIRECT", "LIMIT"])
+        self.assertIn(preset.sl_order_type, ["DIRECT", "LIMIT"])
+
+        # Default Direct
+        preset.tp_order_type = "DIRECT"
+        preset.sl_order_type = "DIRECT"
+        summary_direct = preset.summary_lines()
+        self.assertTrue(any("Direct Stop" in line for line in summary_direct))
+
+        # Close Limit
+        preset.tp_order_type = "LIMIT"
+        preset.sl_order_type = "LIMIT"
+        summary_limit = preset.summary_lines()
+        self.assertTrue(any("Close Limit" in line for line in summary_limit))
+
+    def test_prompt_tp_sl_order_type(self):
+        """Verifies interactive prompt choices (Hybrid, Both Limit, Both Direct, Custom)."""
+        # Option 1: Hybrid (TP Limit, SL Direct)
+        with patch("builtins.input", return_value="1"):
+            tp_type, sl_type = prompt_tp_sl_order_type()
+            self.assertEqual(tp_type, "LIMIT")
+            self.assertEqual(sl_type, "DIRECT")
+
+        # Option 2: Both Limit
+        with patch("builtins.input", return_value="2"):
+            tp_type, sl_type = prompt_tp_sl_order_type()
+            self.assertEqual(tp_type, "LIMIT")
+            self.assertEqual(sl_type, "LIMIT")
+
+        # Option 3: Both Direct
+        with patch("builtins.input", return_value="3"):
+            tp_type, sl_type = prompt_tp_sl_order_type()
+            self.assertEqual(tp_type, "DIRECT")
+            self.assertEqual(sl_type, "DIRECT")
+
+        # Option 4: Custom (TP Direct=2, SL Limit=2)
+        with patch("builtins.input", side_effect=["4", "2", "2"]):
+            tp_type, sl_type = prompt_tp_sl_order_type()
+            self.assertEqual(tp_type, "DIRECT")
+            self.assertEqual(sl_type, "LIMIT")
+
+        # Default (Enter key when current is LIMIT/DIRECT)
+        with patch("builtins.input", return_value=""):
+            tp_type, sl_type = prompt_tp_sl_order_type(current_tp_type="LIMIT", current_sl_type="DIRECT")
+            self.assertEqual(tp_type, "LIMIT")
+            self.assertEqual(sl_type, "DIRECT")
+
+    def test_execute_limit_close_and_verify_dry_run(self):
+        """Verifies that execute_limit_close_and_verify in dry-run returns simulated price."""
+        contract = ContractInfo(
+            symbol="TRUMP_USDT",
+            base_coin="TRUMP",
+            quote_coin="USDT",
+            contract_size=0.1,
+            price_unit=0.001,
+            volume_unit=1.0,
+            price_precision=3,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=10000.0,
+            min_leverage=1,
+            max_leverage=75,
+            maintenance_margin_ratio=0.0067,
+            initial_margin_ratio=0.0133,
+            maker_fee_rate=0.0,
+            taker_fee_rate=0.0,
+            depth_steps=["1"],
+            raw_data={}
+        )
+        exit_p, oid = execute_limit_close_and_verify(
+            trader=self.trader,
+            market=self.market,
+            symbol="TRUMP_USDT",
+            position_id=123,
+            direction=OrderDirection.LONG,
+            vol_contracts=2,
+            leverage=20,
+            limit_price=2.350,
+            contract=contract,
+            is_live=False
+        )
+        self.assertEqual(exit_p, 2.350)
+        self.assertEqual(oid, "simulated_limit_close_id")
+
+    def test_execute_limit_close_and_verify_live(self):
+        """Verifies that execute_limit_close_and_verify sends is_market=False and verifies fill."""
+        contract = ContractInfo(
+            symbol="TRUMP_USDT",
+            base_coin="TRUMP",
+            quote_coin="USDT",
+            contract_size=0.1,
+            price_unit=0.001,
+            volume_unit=1.0,
+            price_precision=3,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=10000.0,
+            min_leverage=1,
+            max_leverage=75,
+            maintenance_margin_ratio=0.0067,
+            initial_margin_ratio=0.0133,
+            maker_fee_rate=0.0,
+            taker_fee_rate=0.0,
+            depth_steps=["1"],
+            raw_data={}
+        )
+        with patch.object(self.trader, "cancel_all_orders") as mock_cancel, \
+             patch.object(self.trader, "close_position", return_value={"data": {"orderId": "limit_999"}}) as mock_close, \
+             patch.object(self.trader, "get_open_positions", return_value=[]), \
+             patch.object(self.client, "get_private", return_value={"data": [{"side": 4, "dealVol": 2, "dealAvgPrice": 2.350}]}):
+
+            exit_p, oid = execute_limit_close_and_verify(
+                trader=self.trader,
+                market=self.market,
+                symbol="TRUMP_USDT",
+                position_id=123,
+                direction=OrderDirection.LONG,
+                vol_contracts=2,
+                leverage=20,
+                limit_price=2.350,
+                contract=contract,
+                is_live=True
+            )
+            self.assertEqual(exit_p, 2.350)
+            self.assertEqual(oid, "limit_999")
+            mock_close.assert_called_once_with(
+                position_id=123,
+                symbol="TRUMP_USDT",
+                side="LONG",
+                vol_contracts=2,
+                leverage=20,
+                is_market=False,
+                price=2.350
+            )
+
+    def test_sl_cancels_resting_tp_limit_order(self):
+        """Verifies that when SL hits, any active resting TP limit order is cancelled."""
+        from semi_auto_trader import monitor_position_until_closed
+        contract = ContractInfo(
+            symbol="TRUMP_USDT",
+            base_coin="TRUMP",
+            quote_coin="USDT",
+            contract_size=0.1,
+            price_unit=0.001,
+            volume_unit=1.0,
+            price_precision=3,
+            volume_precision=0,
+            min_volume=1.0,
+            max_volume=10000.0,
+            min_leverage=1,
+            max_leverage=75,
+            maintenance_margin_ratio=0.0067,
+            initial_margin_ratio=0.0133,
+            maker_fee_rate=0.0,
+            taker_fee_rate=0.0,
+            depth_steps=["1"],
+            raw_data={}
+        )
+        # Ticker hits SL: entry 2.380, SL 2.370, bid 2.369 (below SL)
+        ticker_sl = {"lastPrice": 2.369, "bid1": 2.369, "ask1": 2.370}
+
+        with patch.object(self.market, "get_ticker", return_value=ticker_sl), \
+             patch.object(self.market, "get_inr_rate", return_value=94.5), \
+             patch("semi_auto_trader.check_manual_close_hotkey", return_value=False), \
+             patch.object(self.trader, "cancel_order") as mock_cancel_order, \
+             patch("semi_auto_trader.execute_limit_close_and_verify", return_value=(2.370, "close_oid")):
+
+            exit_p, reason, _ = monitor_position_until_closed(
+                trader=self.trader,
+                market=self.market,
+                symbol="TRUMP_USDT",
+                position_id=12345,
+                direction=OrderDirection.LONG,
+                vol_contracts=2,
+                leverage=75,
+                entry_price=2.380,
+                exact_tp=2.390,
+                exact_sl=2.370,
+                contract=contract,
+                is_live=True,
+                tp_order_type="LIMIT",
+                sl_order_type="LIMIT",
+                tp_order_id="resting_tp_777"
+            )
+            # Resting TP limit order must be cancelled when SL hit
+            mock_cancel_order.assert_called_with("resting_tp_777")
+            self.assertEqual(reason, ExitReason.STOP_LOSS_HIT)
 
 
 if __name__ == "__main__":

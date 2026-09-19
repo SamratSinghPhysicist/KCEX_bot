@@ -140,8 +140,13 @@ class TradePreset:
     # Execution mode
     mode: EngineMode = EngineMode.LIVE
     order_type: str = "MARKET"
+    # TP & SL Order Placement Styles: "DIRECT" (KCEX Native Stoporder) or "LIMIT" (Close Limit Order)
+    tp_order_type: str = "DIRECT"
+    sl_order_type: str = "DIRECT"
 
     def summary_lines(self) -> list[str]:
+        tp_style_desc = "Close Limit" if self.tp_order_type.upper() == "LIMIT" else "Direct Stop"
+        sl_style_desc = "Close Limit" if self.sl_order_type.upper() == "LIMIT" else "Direct Stop" if self.sl_mode != "NONE" else "None"
         tp_desc = f"{self.tp_val:g} ticks" if self.tp_mode == "TICKS" else f"{self.tp_val:g}% ROE" if self.tp_mode == "ROE_PCT" else f"{self.tp_val:g}% price move" if self.tp_mode == "PRICE_PCT" else f"{self.tp_val:g} USDT"
         sl_desc = f"{self.sl_val:g}% ROE" if self.sl_mode == "ROE_PCT" else f"{self.sl_val:g} ticks" if self.sl_mode == "TICKS" else f"{self.sl_val:g}% price move" if self.sl_mode == "PRICE_PCT" else f"{self.sl_val:g} USDT" if self.sl_mode == "ABSOLUTE" else "None"
         
@@ -151,8 +156,8 @@ class TradePreset:
             f"  • Pair / Symbol : {colorize(self.symbol, Style.BOLD)}",
             f"  • Leverage      : {colorize(f'{self.leverage}x Isolated', Style.YELLOW)}",
             f"  • Position Size : {colorize(qty_desc, Style.CYAN)}",
-            f"  • Take Profit   : {colorize(tp_desc, Style.GREEN)} ({self.tp_mode})",
-            f"  • Stop Loss     : {colorize(sl_desc, Style.RED)} ({self.sl_mode})",
+            f"  • Take Profit   : {colorize(tp_desc, Style.GREEN)} ({self.tp_mode} via {tp_style_desc})",
+            f"  • Stop Loss     : {colorize(sl_desc, Style.RED)} ({self.sl_mode} via {sl_style_desc})",
             f"  • Order Type    : {colorize(self.order_type, Style.BOLD)}"
         ]
 
@@ -210,6 +215,9 @@ def init_default_preset(config: KCEXConfig) -> TradePreset:
         sl_m = "ROE_PCT"
         sl_v = float(get_setting_default("SL_ROE_PCT", 25.0))
 
+    tp_ord_type = str(get_setting_default("TP_ORDER_TYPE", "DIRECT")).upper()
+    sl_ord_type = str(get_setting_default("SL_ORDER_TYPE", "DIRECT")).upper()
+
     return TradePreset(
         symbol=default_sym,
         leverage=default_lev,
@@ -220,7 +228,9 @@ def init_default_preset(config: KCEXConfig) -> TradePreset:
         tp_val=default_tp,
         sl_mode=sl_m,
         sl_val=sl_v,
-        mode=mode
+        mode=mode,
+        tp_order_type=tp_ord_type,
+        sl_order_type=sl_ord_type
     )
 
 
@@ -525,7 +535,7 @@ def prompt_stop_loss(
 
 def prompt_order_type(current_order_type: str = "MARKET") -> str:
     """Prompts for order execution type: MARKET (taker) or LIMIT (maker)."""
-    print(f"\n{Style.BOLD}[5] Order Execution Style:{Style.RESET}")
+    print(f"\n{Style.BOLD}[7] Order Execution Style:{Style.RESET}")
     print(f"    1. MARKET (Taker) - Instant fill at current orderbook ask/bid")
     print(f"    2. LIMIT  (Maker) - Post-only limit entry at top-of-book (0% maker fee, rests in book)")
     def_choice = "2" if current_order_type.upper() == "LIMIT" else "1"
@@ -538,6 +548,100 @@ def prompt_order_type(current_order_type: str = "MARKET") -> str:
         if choice in ("2", "limit", "LIMIT", "maker", "MAKER"):
             return "LIMIT"
         print(colorize("Invalid choice. Enter 1 for MARKET or 2 for LIMIT.", Style.YELLOW))
+
+
+def prompt_tp_sl_order_type(
+    current_tp_type: str = "DIRECT",
+    current_sl_type: str = "DIRECT",
+    sl_mode: str = "ROE_PCT"
+) -> Tuple[str, str]:
+    """
+    Prompts for TP & SL order placement methods:
+      1. TP via Close (Limit) Order + SL Directly (Server Stop) [RECOMMENDED HYBRID]
+      2. Both via Close (Limit) Order
+      3. Both Directly (KCEX native server-side TP/SL Stoporder)
+      4. Custom (Configure TP and SL methods individually as per user's wish)
+    Returns (tp_order_type, sl_order_type), where each is "LIMIT" or "DIRECT".
+    """
+    cur_tp = current_tp_type.upper()
+    cur_sl = current_sl_type.upper()
+
+    # Determine default menu selection
+    if cur_tp == "LIMIT" and cur_sl == "DIRECT":
+        def_choice = "1"
+    elif cur_tp == "LIMIT" and cur_sl == "LIMIT":
+        def_choice = "2"
+    elif cur_tp == "DIRECT" and cur_sl == "DIRECT":
+        def_choice = "3"
+    else:
+        def_choice = "4"
+
+    print(f"\n{Style.BOLD}[8] TP & SL Order Placement Method:{Style.RESET}")
+    print(f"    Select how TP and SL orders should be submitted to KCEX:")
+    print(f"      {Style.GREEN}1. TP via Close (Limit) Order + SL Directly (Server Stop){Style.RESET} [RECOMMENDED HYBRID]")
+    print(f"         (Rests Maker limit order at TP target for 0% fee; server stop protects downside)")
+    print(f"      2. Both via Close (Limit) Order")
+    print(f"         (Maker limit order at TP target; limit order close when SL level is reached)")
+    print(f"      3. Both Directly (KCEX Native Server-Side Stoporder)")
+    print(f"         (Traditional position TP/SL trigger orders managed on KCEX server)")
+    print(f"      4. Custom / Set Individually")
+    print(f"         (Select TP order type and SL order type separately as per your wish)")
+
+    while True:
+        c_in = input(f"Choose TP/SL placement style [1-4] (Default {def_choice}): ").strip()
+        choice = c_in if c_in in ("1", "2", "3", "4") else (def_choice if not c_in else "")
+        if choice == "1":
+            print(f"    {Style.GREEN}✓ Selected: TP via Close (Limit) Order | SL via Direct Server Stop{Style.RESET}")
+            return "LIMIT", "DIRECT"
+        elif choice == "2":
+            print(f"    {Style.GREEN}✓ Selected: Both via Close (Limit) Order{Style.RESET}")
+            return "LIMIT", "LIMIT"
+        elif choice == "3":
+            print(f"    {Style.GREEN}✓ Selected: Both Directly via KCEX Native Server-Side TP/SL{Style.RESET}")
+            return "DIRECT", "DIRECT"
+        elif choice == "4":
+            # Individual configuration
+            print(f"\n    {Style.CYAN}--- Configure TP Placement Method ---{Style.RESET}")
+            print(f"      1. Close (Limit) Order (Resting Maker in book at target price, 0% fee)")
+            print(f"      2. Direct (KCEX native server-side TP stop order)")
+            tp_def = "1" if cur_tp == "LIMIT" else "2"
+            while True:
+                tp_in = input(f"    TP order method [1/2] (Default {tp_def}): ").strip()
+                if not tp_in:
+                    tp_choice = "LIMIT" if tp_def == "1" else "DIRECT"
+                    break
+                if tp_in in ("1", "limit", "LIMIT"):
+                    tp_choice = "LIMIT"
+                    break
+                if tp_in in ("2", "direct", "DIRECT"):
+                    tp_choice = "DIRECT"
+                    break
+                print(colorize("    Invalid choice. Enter 1 for Limit or 2 for Direct.", Style.YELLOW))
+
+            if sl_mode == "NONE":
+                sl_choice = "DIRECT"
+            else:
+                print(f"\n    {Style.CYAN}--- Configure SL Placement Method ---{Style.RESET}")
+                print(f"      1. Direct (KCEX native server-side Stop Loss stop order)")
+                print(f"      2. Close (Limit) Order (Limit close order placed when SL price level is touched)")
+                sl_def = "2" if cur_sl == "LIMIT" else "1"
+                while True:
+                    sl_in = input(f"    SL order method [1/2] (Default {sl_def}): ").strip()
+                    if not sl_in:
+                        sl_choice = "LIMIT" if sl_def == "2" else "DIRECT"
+                        break
+                    if sl_in in ("1", "direct", "DIRECT"):
+                        sl_choice = "DIRECT"
+                        break
+                    if sl_in in ("2", "limit", "LIMIT"):
+                        sl_choice = "LIMIT"
+                        break
+                    print(colorize("    Invalid choice. Enter 1 for Direct or 2 for Limit.", Style.YELLOW))
+
+            print(f"    {Style.GREEN}✓ Selected: TP={tp_choice} | SL={sl_choice}{Style.RESET}")
+            return tp_choice, sl_choice
+
+        print(colorize("Invalid choice. Please enter 1, 2, 3, or 4.", Style.YELLOW))
 
 
 def get_ml_recommendation(symbol: str, market: KCEXMarket) -> Optional[Dict[str, Any]]:
@@ -683,7 +787,9 @@ def print_pre_trade_report(
     tp_desc: str,
     sl_desc: str,
     inr_rate: float,
-    risk: KCEXRiskCalculator
+    risk: KCEXRiskCalculator,
+    tp_order_type: str = "DIRECT",
+    sl_order_type: str = "DIRECT"
 ) -> bool:
     """Displays comprehensive pre-trade summary and prompts for user confirmation."""
     ps = contract.price_precision
@@ -719,6 +825,9 @@ def print_pre_trade_report(
     dir_color = Style.GREEN if direction == OrderDirection.LONG else Style.RED
     dir_badge = f"{dir_color}{Style.BOLD}[{direction.value}]{Style.RESET}"
 
+    tp_style_str = "Close Limit Order" if tp_order_type.upper() == "LIMIT" else "Direct Stoporder"
+    sl_style_str = "Close Limit Order" if sl_order_type.upper() == "LIMIT" else "Direct Stoporder"
+
     print(f"\n{Style.CYAN}{Style.BOLD}" + "=" * 70)
     print(f"              PRE-TRADE EXECUTION SUMMARY & RISK CHECK")
     print("=" * 70 + f"{Style.RESET}")
@@ -731,10 +840,10 @@ def print_pre_trade_report(
     print(f"  • Required Margin    : {Style.BOLD}{margin_usdt:.4f} USDT (INR {margin_inr:.2f}){Style.RESET}")
     print(f"  • Est. Liquidation   : {liq_price:.{ps}f} USDT ({dist_liq_pct:.2f}% buffer)")
     print("-" * 70)
-    print(f"  • Take Profit (TP)   : {Style.GREEN}{tp_price:.{ps}f} USDT{Style.RESET} ({tp_desc})")
+    print(f"  • Take Profit (TP)   : {Style.GREEN}{tp_price:.{ps}f} USDT{Style.RESET} ({tp_desc} via {tp_style_str})")
     print(f"    Expected Profit    : {Style.GREEN}+{tp_pnl_usdt:.4f} USDT (+INR {tp_pnl_usdt * inr_rate:.2f}) | +{tp_roe_pct:.2f}% ROE{Style.RESET}")
     if sl_price:
-        print(f"  • Stop Loss (SL)     : {Style.RED}{sl_price:.{ps}f} USDT{Style.RESET} ({sl_desc})")
+        print(f"  • Stop Loss (SL)     : {Style.RED}{sl_price:.{ps}f} USDT{Style.RESET} ({sl_desc} via {sl_style_str})")
         print(f"    Expected Loss      : {Style.RED}-{sl_pnl_usdt:.4f} USDT (-INR {sl_pnl_usdt * inr_rate:.2f}) | -{sl_roe_pct:.2f}% ROE{Style.RESET}")
         
         # Check if SL exceeds liquidation
@@ -929,6 +1038,139 @@ def execute_market_close_and_verify(
     return exit_price, close_oid
 
 
+def execute_limit_close_and_verify(
+    trader: KCEXTrader,
+    market: KCEXMarket,
+    symbol: str,
+    position_id: Optional[int],
+    direction: OrderDirection,
+    vol_contracts: int,
+    leverage: int,
+    limit_price: float,
+    contract: ContractInfo,
+    is_live: bool,
+    max_wait_seconds: float = 6.0
+) -> Tuple[float, Optional[str]]:
+    """
+    Submits a Close (Limit) order (type=1) to close a position and polls KCEX.
+    If the limit order remains unfilled after max_wait_seconds, safely falls back
+    to an aggressive market close to ensure capital preservation and position closure.
+    Returns (exit_price, close_order_id).
+    """
+    side_str = "LONG" if direction == OrderDirection.LONG else "SHORT"
+    close_oid = None
+
+    if not is_live:
+        return limit_price, "simulated_limit_close_id"
+
+    # 1. Cancel any active stop orders or resting orders to free volume
+    try:
+        trader.cancel_all_orders(symbol=symbol)
+    except Exception:
+        pass
+
+    # 2. Send limit close order (type=1)
+    try:
+        res = trader.close_position(
+            position_id=position_id or 0,
+            symbol=symbol,
+            side=side_str,
+            vol_contracts=vol_contracts,
+            leverage=leverage,
+            is_market=False,
+            price=limit_price
+        )
+        close_oid = str(res.get("data", {}).get("orderId") or "")
+        print(f"\n{Style.CYAN}✓ Close (Limit) Order #{close_oid} placed at {limit_price:.{contract.price_precision}f} USDT. Waiting for fill...{Style.RESET}")
+    except Exception as e:
+        print(f"\n{Style.YELLOW}Limit close placement attempt returned: {e}. Falling back to Market close...{Style.RESET}")
+        return execute_market_close_and_verify(
+            trader=trader,
+            market=market,
+            symbol=symbol,
+            position_id=position_id,
+            direction=direction,
+            vol_contracts=vol_contracts,
+            leverage=leverage,
+            contract=contract,
+            is_live=is_live
+        )
+
+    # 3. Actively poll until position is confirmed closed
+    start_t = time.time()
+    is_open = True
+    while time.time() - start_t < max_wait_seconds:
+        time.sleep(0.35)
+        try:
+            open_pos = trader.get_open_positions(symbol)
+            is_open = False
+            for p in open_pos:
+                if position_id:
+                    if int(p.get("positionId", 0)) == int(position_id) and float(p.get("holdVol", 0) or 0) > 0:
+                        is_open = True
+                        break
+                else:
+                    if float(p.get("holdVol", 0) or 0) > 0:
+                        is_open = True
+                        break
+
+            if not is_open:
+                break
+        except Exception:
+            pass
+
+    # 4. Fallback to market close if limit order not filled in time
+    if is_open:
+        print(f"\n{Style.YELLOW}⚠️ Limit close order #{close_oid} not filled after {max_wait_seconds:.1f}s. Fallback to Market close to guarantee exit...{Style.RESET}")
+        try:
+            if close_oid:
+                trader.cancel_order(close_oid)
+        except Exception:
+            pass
+        return execute_market_close_and_verify(
+            trader=trader,
+            market=market,
+            symbol=symbol,
+            position_id=position_id,
+            direction=direction,
+            vol_contracts=vol_contracts,
+            leverage=leverage,
+            contract=contract,
+            is_live=is_live
+        )
+
+    # Clean up any lingering orders
+    try:
+        trader.cancel_all_orders(symbol=symbol)
+    except Exception:
+        pass
+
+    # 5. Fetch exact exit price from KCEX history orders
+    exit_price = limit_price
+    time.sleep(0.35)
+    try:
+        hist = trader.client.get_private(
+            KCEXConfig.ENDPOINT_ORDER_HISTORY,
+            params={"symbol": symbol.upper(), "category": 1, "page_num": 1, "page_size": 10}
+        )
+        orders = hist.get("data", [])
+        if isinstance(orders, dict):
+            orders = orders.get("list", [])
+        closing_side = 4 if direction == OrderDirection.LONG else 2
+        for o in orders:
+            if position_id and o.get("positionId") and int(o.get("positionId")) != int(position_id):
+                continue
+            if o.get("side") == closing_side and float(o.get("dealVol", 0)) > 0:
+                p = float(o.get("dealAvgPrice") or o.get("price") or 0.0)
+                if p > 0:
+                    exit_price = p
+                    break
+    except Exception:
+        pass
+
+    return exit_price, close_oid
+
+
 def reconcile_exit_from_kcex(
     trader: KCEXTrader,
     symbol: str,
@@ -1036,13 +1278,16 @@ def monitor_position_until_closed(
     exact_tp: float,
     exact_sl: Optional[float],
     contract: ContractInfo,
-    is_live: bool = True
+    is_live: bool = True,
+    tp_order_type: str = "DIRECT",
+    sl_order_type: str = "DIRECT",
+    tp_order_id: Optional[str] = None
 ) -> Tuple[float, ExitReason, Optional[str]]:
     """
     Autonomous Bot Monitor:
     - Displays real-time live terminal dashboard.
-    - Guarantees TP execution: triggers immediate market close when target price is touched.
-    - Guarantees SL execution: triggers emergency market close if price crosses SL.
+    - Guarantees TP execution: triggers immediate market close when target price is touched (or Maker limit fill).
+    - Guarantees SL execution: triggers emergency market close or limit close if price crosses SL.
     - Listens for server-side order fills with multi-check confirmation.
     - Listens for manual hotkey press ('C' to market close anytime).
     """
@@ -1062,8 +1307,11 @@ def monitor_position_until_closed(
     tp_hit_first_seen: Optional[float] = None
     deep_monitor_warned: bool = False
 
+    tp_style_tag = "Close Limit" if tp_order_type.upper() == "LIMIT" else "Direct Stop"
+    sl_style_tag = "Close Limit" if sl_order_type.upper() == "LIMIT" else "Direct Stop" if exact_sl else "None"
+
     print(f"\n{Style.CYAN}{Style.BOLD}>>> AUTONOMOUS POSITION MONITOR ACTIVE <<<{Style.RESET}")
-    print(f"Target TP: {Style.GREEN}{exact_tp:.{ps}f} USDT{Style.RESET} | Target SL: {Style.RED}{exact_sl:.{ps}f} USDT{Style.RESET}" if exact_sl else f"Target TP: {Style.GREEN}{exact_tp:.{ps}f} USDT{Style.RESET} | Target SL: None")
+    print(f"Target TP: {Style.GREEN}{exact_tp:.{ps}f} USDT{Style.RESET} ({tp_style_tag}) | Target SL: {Style.RED}{exact_sl:.{ps}f} USDT{Style.RESET} ({sl_style_tag})" if exact_sl else f"Target TP: {Style.GREEN}{exact_tp:.{ps}f} USDT{Style.RESET} ({tp_style_tag}) | Target SL: None")
     print(f"{Style.DIM}Hotkeys: Press [C] to instantly Market Close now | Ctrl+C to abort{Style.RESET}\n")
 
     poll_count = 0
@@ -1075,6 +1323,11 @@ def monitor_position_until_closed(
         # 1. Hotkey check: Did user press 'C' for immediate manual market close?
         if check_manual_close_hotkey():
             print(f"\n{Style.YELLOW}⚡ [MANUAL HOTKEY TRIGGERED] 'C' key detected! Market closing position immediately...{Style.RESET}")
+            if is_live and tp_order_id:
+                try:
+                    trader.cancel_order(str(tp_order_id))
+                except Exception:
+                    pass
             exit_p, close_oid = execute_market_close_and_verify(
                 trader=trader,
                 market=market,
@@ -1182,19 +1435,42 @@ def monitor_position_until_closed(
 
         # 8. STOP LOSS HIT CHECK (Emergency capital preservation)
         if sl_hit:
-            print(f"\n\n{Style.BG_RED}{Style.BOLD} 🛑 STOP LOSS LEVEL REACHED! {Style.RESET} "
-                  f"Executable Price: {exec_price:.{ps}f} (SL: {exact_sl:.{ps}f}). Executing emergency Market Close...")
-            exit_p, close_oid = execute_market_close_and_verify(
-                trader=trader,
-                market=market,
-                symbol=symbol,
-                position_id=position_id,
-                direction=direction,
-                vol_contracts=vol_contracts,
-                leverage=leverage,
-                contract=contract,
-                is_live=is_live
-            )
+            # Cancel resting TP limit order to unlock volume
+            if is_live and tp_order_id:
+                try:
+                    trader.cancel_order(str(tp_order_id))
+                except Exception:
+                    pass
+
+            if sl_order_type.upper() == "LIMIT":
+                print(f"\n\n{Style.BG_RED}{Style.BOLD} 🛑 STOP LOSS LEVEL REACHED! {Style.RESET} "
+                      f"Executable Price: {exec_price:.{ps}f} (SL: {exact_sl:.{ps}f}). Executing Close (Limit) Order...")
+                exit_p, close_oid = execute_limit_close_and_verify(
+                    trader=trader,
+                    market=market,
+                    symbol=symbol,
+                    position_id=position_id,
+                    direction=direction,
+                    vol_contracts=vol_contracts,
+                    leverage=leverage,
+                    limit_price=exact_sl,
+                    contract=contract,
+                    is_live=is_live
+                )
+            else:
+                print(f"\n\n{Style.BG_RED}{Style.BOLD} 🛑 STOP LOSS LEVEL REACHED! {Style.RESET} "
+                      f"Executable Price: {exec_price:.{ps}f} (SL: {exact_sl:.{ps}f}). Executing emergency Market Close...")
+                exit_p, close_oid = execute_market_close_and_verify(
+                    trader=trader,
+                    market=market,
+                    symbol=symbol,
+                    position_id=position_id,
+                    direction=direction,
+                    vol_contracts=vol_contracts,
+                    leverage=leverage,
+                    contract=contract,
+                    is_live=is_live
+                )
             if is_live:
                 hist_exit_p, hist_pnl, hist_reason = reconcile_exit_from_kcex(
                     trader=trader,
@@ -1211,19 +1487,34 @@ def monitor_position_until_closed(
         # 9. TAKE PROFIT HIT CHECK
         if can_tp:
             if not is_live:
-                # Dry-run: immediate simulated TP execution
-                print(f"\n\n{Style.BG_GREEN}{Style.BOLD} 🎯 [DRY-RUN] TAKE PROFIT TARGET REACHED! {Style.RESET} "
-                      f"Simulated Exec Price: {exec_price:.{ps}f} (Target: {exact_tp:.{ps}f})")
-                return exec_price, ExitReason.MIN_PROFIT_TP_HIT, "dry_run_tp"
+                if tp_order_type.upper() == "LIMIT":
+                    print(f"\n\n{Style.BG_GREEN}{Style.BOLD} 🎯 [DRY-RUN] TAKE PROFIT LIMIT ORDER FILLED! {Style.RESET} "
+                          f"Simulated Maker Limit Exec Price: {exact_tp:.{ps}f} USDT (0% Maker Fee)")
+                    return exact_tp, ExitReason.MIN_PROFIT_TP_HIT, "dry_run_tp_limit"
+                else:
+                    # Dry-run: immediate simulated TP execution
+                    print(f"\n\n{Style.BG_GREEN}{Style.BOLD} 🎯 [DRY-RUN] TAKE PROFIT TARGET REACHED! {Style.RESET} "
+                          f"Simulated Exec Price: {exec_price:.{ps}f} (Target: {exact_tp:.{ps}f})")
+                    return exec_price, ExitReason.MIN_PROFIT_TP_HIT, "dry_run_tp"
             else:
-                # Live mode: KCEX server-side stop order is active.
-                # Allow KCEX native stop order 1.5 seconds of sustained executable TP to fill on exchange first.
+                # Live mode:
+                # If TP was placed via resting Close Limit order, it sits on the exchange orderbook.
+                # When can_tp is met, allow 1.5 seconds for KCEX matching engine to confirm the fill.
+                # If not confirmed after 1.5s, execute guaranteed market close in profit.
                 if tp_hit_first_seen is None:
                     tp_hit_first_seen = time.time()
                 elif time.time() - tp_hit_first_seen >= 1.5:
-                    # KCEX server stop order lagged or was missing -> execute guaranteed market close in profit
-                    print(f"\n\n{Style.BG_GREEN}{Style.BOLD} 🎯 TAKE PROFIT TARGET REACHED! {Style.RESET} "
-                          f"Executable Price: {exec_price:.{ps}f} (Target: {exact_tp:.{ps}f}). Executing guaranteed Market Close...")
+                    if tp_order_type.upper() == "LIMIT":
+                        print(f"\n\n{Style.BG_GREEN}{Style.BOLD} 🎯 TAKE PROFIT TARGET REACHED! {Style.RESET} "
+                              f"Resting limit order lagging queue fill. Executing guaranteed Market Close...")
+                        if tp_order_id:
+                            try:
+                                trader.cancel_order(str(tp_order_id))
+                            except Exception:
+                                pass
+                    else:
+                        print(f"\n\n{Style.BG_GREEN}{Style.BOLD} 🎯 TAKE PROFIT TARGET REACHED! {Style.RESET} "
+                              f"Executable Price: {exec_price:.{ps}f} (Target: {exact_tp:.{ps}f}). Executing guaranteed Market Close...")
                     exit_p, close_oid = execute_market_close_and_verify(
                         trader=trader,
                         market=market,
@@ -1257,6 +1548,11 @@ def monitor_position_until_closed(
 
             if elapsed >= max_hold_sec:
                 print(f"\n\n{Style.BG_YELLOW}{Style.BOLD} ⏱ MAX HOLD TIME REACHED ({elapsed:.1f}s >= {max_hold_sec}s)! Action: {action} {Style.RESET}")
+                if is_live and tp_order_id:
+                    try:
+                        trader.cancel_order(str(tp_order_id))
+                    except Exception:
+                        pass
                 exit_p, close_oid = execute_market_close_and_verify(
                     trader=trader,
                     market=market,
@@ -1464,7 +1760,9 @@ def execute_single_trade_cycle(
         tp_desc=tp_desc,
         sl_desc=sl_desc,
         inr_rate=inr_rate,
-        risk=risk
+        risk=risk,
+        tp_order_type=preset.tp_order_type,
+        sl_order_type=preset.sl_order_type
     )
 
     if not confirmed:
@@ -1625,18 +1923,65 @@ def execute_single_trade_cycle(
 
     print(f"Entry Filled at: {Style.BOLD}{actual_entry_price:.{ps}f} USDT{Style.RESET} | Exact TP: {Style.GREEN}{exact_tp:.{ps}f}{Style.RESET} | Exact SL: {Style.RED}{exact_sl or 'None'}{Style.RESET}")
 
-    # Set KCEX Server-Side TP/SL on the open position
-    if is_live and position_id:
-        try:
-            trader.set_position_tp_sl(
-                symbol=preset.symbol,
-                position_id=position_id,
-                take_profit_price=exact_tp,
-                stop_loss_price=exact_sl
-            )
-            print(f"{Style.GREEN}✓ Native KCEX Server-Side TP/SL Stoporder Activated!{Style.RESET}")
-        except Exception as e:
-            print(f"{Style.YELLOW}⚠ Warning activating server stoporder: {e} (Bot local monitor will enforce TP/SL){Style.RESET}")
+    # TP and SL Order Placement on KCEX
+    tp_order_id = None
+    side_to_close = "LONG" if direction == OrderDirection.LONG else "SHORT"
+
+    if preset.tp_order_type.upper() == "LIMIT":
+        if is_live and position_id:
+            try:
+                res_tp = trader.close_position_limit(
+                    symbol=preset.symbol,
+                    side=side_to_close,
+                    price=exact_tp,
+                    vol_contracts=actual_vol,
+                    position_id=position_id,
+                    leverage=preset.leverage,
+                    is_isolated=preset.is_isolated
+                )
+                tp_order_id = str(res_tp.get("data", {}).get("orderId") or "")
+                print(f"{Style.GREEN}✓ Resting TP Close (Limit) Order #{tp_order_id} placed at {exact_tp:.{ps}f} USDT (Maker, 0% Fee)!{Style.RESET}")
+            except Exception as e:
+                print(f"{Style.YELLOW}⚠ Warning placing TP Limit close order: {e} (Bot local monitor will enforce TP){Style.RESET}")
+        else:
+            print(f"{Style.GREEN}✓ [DRY-RUN] Resting TP Close (Limit) Order active at {exact_tp:.{ps}f} USDT (Maker, 0% Fee)!{Style.RESET}")
+
+        # If SL is DIRECT, register server-side SL
+        if preset.sl_order_type.upper() == "DIRECT" and exact_sl is not None:
+            if is_live and position_id:
+                try:
+                    trader.set_position_tp_sl(
+                        symbol=preset.symbol,
+                        position_id=position_id,
+                        take_profit_price=None,  # TP handled by resting limit order
+                        stop_loss_price=exact_sl
+                    )
+                    print(f"{Style.GREEN}✓ Native KCEX Server-Side SL Stoporder Activated!{Style.RESET}")
+                except Exception as e:
+                    print(f"{Style.YELLOW}⚠ Notice registering server SL: {e} (Bot local monitor will enforce SL){Style.RESET}")
+            else:
+                print(f"{Style.GREEN}✓ [DRY-RUN] Direct Server-Side SL Stoporder active at {exact_sl:.{ps}f} USDT!{Style.RESET}")
+    else:
+        # TP is DIRECT
+        if is_live and position_id:
+            server_tp = exact_tp
+            server_sl = exact_sl if preset.sl_order_type.upper() == "DIRECT" else None
+            try:
+                trader.set_position_tp_sl(
+                    symbol=preset.symbol,
+                    position_id=position_id,
+                    take_profit_price=server_tp,
+                    stop_loss_price=server_sl
+                )
+                if server_sl is not None:
+                    print(f"{Style.GREEN}✓ Native KCEX Server-Side TP/SL Stoporders Activated!{Style.RESET}")
+                else:
+                    print(f"{Style.GREEN}✓ Native KCEX Server-Side TP Stoporder Activated! (SL via Close Limit){Style.RESET}")
+            except Exception as e:
+                print(f"{Style.YELLOW}⚠ Warning activating server stoporder: {e} (Bot local monitor will enforce TP/SL){Style.RESET}")
+        else:
+            sl_info = f" | Server SL: {exact_sl:.{ps}f}" if preset.sl_order_type.upper() == "DIRECT" and exact_sl else " | SL via Close Limit"
+            print(f"{Style.GREEN}✓ [DRY-RUN] Native KCEX Server-Side TP Stoporder active at {exact_tp:.{ps}f} USDT{sl_info}!{Style.RESET}")
 
     # Enter Autonomous Monitor Loop
     try:
@@ -1652,13 +1997,21 @@ def execute_single_trade_cycle(
             exact_tp=exact_tp,
             exact_sl=exact_sl,
             contract=contract,
-            is_live=is_live
+            is_live=is_live,
+            tp_order_type=preset.tp_order_type,
+            sl_order_type=preset.sl_order_type,
+            tp_order_id=tp_order_id
         )
     except KeyboardInterrupt:
         print(f"\n\n{Style.YELLOW}⚠ User interrupted monitor loop (Ctrl+C).{Style.RESET}")
         if is_live:
             close_now = input("Close this position now on KCEX? (Y/n) [Y]: ").strip().lower()
             if close_now in ("", "y", "yes"):
+                if tp_order_id:
+                    try:
+                        trader.cancel_order(str(tp_order_id))
+                    except Exception:
+                        pass
                 execute_market_close_and_verify(
                     trader=trader,
                     market=market,
@@ -1832,6 +2185,11 @@ def main():
             )
 
         preset.order_type = prompt_order_type(preset.order_type)
+        preset.tp_order_type, preset.sl_order_type = prompt_tp_sl_order_type(
+            current_tp_type=preset.tp_order_type,
+            current_sl_type=preset.sl_order_type,
+            sl_mode=preset.sl_mode
+        )
 
         # Execute Trade
         executed = execute_single_trade_cycle(
