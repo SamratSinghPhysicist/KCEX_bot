@@ -61,9 +61,12 @@ def train_model(
             use_calendar = True
 
     if use_calendar:
+        train_start_ts = int(pd.Timestamp(cfg.train_start_date, tz="UTC").timestamp() * 1000)
         test_start_ts = int(pd.Timestamp(cfg.test_start_date, tz="UTC").timestamp() * 1000)
-        train_mask = (df_dataset["timestamp"] < test_start_ts - embargo_ms)
-        test_mask = (df_dataset["timestamp"] >= test_start_ts)
+        test_end_ts = int(pd.Timestamp(cfg.test_end_date + " 23:59:59", tz="UTC").timestamp() * 1000)
+
+        train_mask = (df_dataset["timestamp"] >= train_start_ts) & (df_dataset["timestamp"] < test_start_ts - embargo_ms)
+        test_mask = (df_dataset["timestamp"] >= test_start_ts) & (df_dataset["timestamp"] <= test_end_ts)
         train_df = df_dataset.loc[train_mask].copy().reset_index(drop=True)
         test_df = df_dataset.loc[test_mask].copy().reset_index(drop=True)
         print(f"[Trainer] Strict Calendar Split: Train ({cfg.train_start_date} to {cfg.train_end_date})={len(train_df):,} bars, "

@@ -19,6 +19,7 @@ from typing import Optional, List, Dict
 
 from .config import (
     PROCESSED_DATA_DIR,
+    CLOUD_TRADES_DIR,
     get_tick_spec,
     normalize_symbol_name,
 )
@@ -210,6 +211,16 @@ def get_or_create_orderflow_1m(
                 print(f"[+] Saved order-flow cache to {cache_pkl}")
             except Exception as e:
                 print(f"[!] Could not write cache {cache_pkl}: {e}")
+
+        # Clean up temporary raw trades CSV in CI or cloud repo data dir to conserve disk space
+        is_ci = os.environ.get("GITHUB_ACTIONS") == "true"
+        is_cloud_dir = os.path.abspath(trades_path).startswith(os.path.abspath(CLOUD_TRADES_DIR))
+        if (is_ci or is_cloud_dir) and os.path.exists(trades_path):
+            try:
+                os.remove(trades_path)
+                print(f"[OrderFlow] Cleaned up temporary raw trades CSV to conserve disk space: {os.path.basename(trades_path)}")
+            except Exception as ce:
+                print(f"[!] Warning cleaning temporary trades CSV: {ce}")
 
     return df_1m
 

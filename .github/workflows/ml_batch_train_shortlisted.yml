@@ -1,39 +1,18 @@
-name: Train & Test 1M ML Trading Model
+name: Batch Train Shortlisted ML Pairs (Matrix)
 
 on:
   workflow_dispatch:
     inputs:
-      symbol:
-        description: "Trading Pair Symbol"
+      suite:
+        description: "Select Pair Batch Suite"
         required: true
-        default: "TRUMPUSDT"
+        default: "ALL_14_SHORTLISTED"
         type: choice
         options:
-          - "TRUMPUSDT"
-          - "DOGEUSDT"
-          - "BTCUSDT"
-          - "ETHUSDT"
-          - "SOLUSDT"
-          - "MELANIAUSDT"
-          - "DOGSUSDT"
-          - "MEMEUSDT"
-          - "BOMEUSDT"
-          - "ACTUSDT"
-          - "AVAAIUSDT"
-          - "1000000MOGUSDT"
-          - "CHILLGUYUSDT"
-          - "GOATUSDT"
-          - "PIPPINUSDT"
-          - "WIFUSDT"
-          - "KOMAUSDT"
-          - "AIXBTUSDT"
-          - "CUSTOM"
-
-      custom_symbol:
-        description: "Custom Symbol (only if 'CUSTOM' selected above)"
-        required: false
-        default: ""
-        type: string
+          - "ALL_14_SHORTLISTED"
+          - "MAJORS_AND_DOGE"
+          - "TOP_MOMENTUM_COINS"
+          - "ALL_18_PAIRS"
 
       train_start_date:
         description: "Training Start Date (YYYY-MM-DD)"
@@ -60,49 +39,83 @@ on:
         type: string
 
       horizon_bars:
-        description: "Prediction Horizon in 1m Bars (Lookahead window)"
+        description: "Horizon Bars (1m)"
         required: true
         default: "15"
-        type: choice
-        options:
-          - "5"
-          - "10"
-          - "12"
-          - "15"
-          - "20"
-          - "30"
-          - "45"
-          - "60"
+        type: string
 
       tp_atr_mult:
-        description: "Dynamic Take Profit ATR Multiplier"
+        description: "TP ATR Multiplier"
         required: true
         default: "3.0"
         type: string
 
       sl_atr_mult:
-        description: "Dynamic Stop Loss ATR Multiplier"
+        description: "SL ATR Multiplier"
         required: true
         default: "1.5"
         type: string
 
       confidence_threshold:
-        description: "Min Model Probability for Signal (BUY / SELL vs WAIT)"
+        description: "Confidence Threshold"
         required: true
         default: "0.40"
         type: string
 
 jobs:
-  train-and-test-ml-model:
-    name: Train & Test (${{ inputs.symbol == 'CUSTOM' && inputs.custom_symbol || inputs.symbol }})
+  resolve-matrix:
+    name: Resolve Pair Matrix
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    outputs:
+      symbols: ${{ steps.set-matrix.outputs.symbols }}
+    steps:
+      - id: set-matrix
+        env:
+          SUITE: ${{ inputs.suite }}
+        run: |
+          echo "Selected Suite: $SUITE"
+          SYMBOLS=$(python3 -c '
+          import json, os
+          suite = os.environ.get("SUITE", "ALL_14_SHORTLISTED")
+          shortlisted_14 = [
+              "MELANIAUSDT", "DOGSUSDT", "MEMEUSDT", "BOMEUSDT", "ACTUSDT",
+              "AVAAIUSDT", "1000000MOGUSDT", "CHILLGUYUSDT", "GOATUSDT",
+              "PIPPINUSDT", "WIFUSDT", "KOMAUSDT", "TRUMPUSDT", "AIXBTUSDT"
+          ]
+          majors = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOGEUSDT"]
+          top_momentum = ["TRUMPUSDT", "DOGEUSDT", "MELANIAUSDT", "WIFUSDT", "GOATUSDT", "1000000MOGUSDT"]
+
+          if suite == "ALL_14_SHORTLISTED":
+              symbols = shortlisted_14
+          elif suite == "MAJORS_AND_DOGE":
+              symbols = majors
+          elif suite == "TOP_MOMENTUM_COINS":
+              symbols = top_momentum
+          elif suite == "ALL_18_PAIRS":
+              symbols = shortlisted_14 + [s for s in majors if s not in shortlisted_14]
+          else:
+              symbols = shortlisted_14
+
+          print(json.dumps(symbols))
+          ')
+          echo "symbols=$SYMBOLS" >> $GITHUB_OUTPUT
+
+  train-matrix-pair:
+    name: Train ${{ matrix.symbol }}
+    needs: resolve-matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      max-parallel: 4
+      fail-fast: false
+      matrix:
+        symbol: ${{ fromJson(needs.resolve-matrix.outputs.symbols) }}
 
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
 
-      - name: Free Runner Disk Space for Deep Tick Data
+      - name: Free Runner Disk Space for Deep Tick Trades
         run: |
           echo "Initial disk space:"
           df -h /
@@ -116,7 +129,7 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install System Dependencies (OpenMP for Scikit-Learn)
+      - name: Install System Dependencies (OpenMP)
         run: |
           sudo apt-get update
           sudo apt-get install -y libgomp1
@@ -131,33 +144,19 @@ jobs:
         with:
           path: |
             ML_1M_MODEL/data_cache
-          key: ml-parquet-${{ inputs.symbol == 'CUSTOM' && inputs.custom_symbol || inputs.symbol }}-${{ inputs.train_start_date }}-${{ inputs.test_end_date }}
+          key: ml-parquet-${{ matrix.symbol }}-${{ inputs.train_start_date }}-${{ inputs.test_end_date }}
           restore-keys: |
-            ml-parquet-${{ inputs.symbol == 'CUSTOM' && inputs.custom_symbol || inputs.symbol }}-
+            ml-parquet-${{ matrix.symbol }}-
             ml-parquet-
 
       - name: Execute End-to-End Training & Out-of-Sample Backtesting
         run: |
-          TARGET_SYM="${{ inputs.symbol }}"
-          if [ "$TARGET_SYM" = "CUSTOM" ]; then
-            TARGET_SYM="${{ inputs.custom_symbol }}"
-          fi
-
-          if [ -z "$TARGET_SYM" ]; then
-            echo "Error: No symbol specified."
-            exit 1
-          fi
-
-          echo "Target Training Symbol: $TARGET_SYM"
-          echo "Training Window       : ${{ inputs.train_start_date }} to ${{ inputs.train_end_date }}"
-          echo "Test Window (OOS)     : ${{ inputs.test_start_date }} to ${{ inputs.test_end_date }}"
-
-          # Clean previous run reports & models in runner workspace
+          echo "Training Matrix Target: ${{ matrix.symbol }}"
           rm -rf ML_1M_MODEL/reports/* ML_1M_MODEL/saved_models/*
           mkdir -p ML_1M_MODEL/reports ML_1M_MODEL/saved_models ML_1M_MODEL/data_cache
 
           python -m ML_1M_MODEL.run_pipeline \
-            --symbol "$TARGET_SYM" \
+            --symbol "${{ matrix.symbol }}" \
             --train-start "${{ inputs.train_start_date }}" \
             --train-end "${{ inputs.train_end_date }}" \
             --test-start "${{ inputs.test_start_date }}" \
@@ -173,19 +172,15 @@ jobs:
           REPORT_FILE=$(ls -t ML_1M_MODEL/reports/*_oos_report.md 2>/dev/null | head -n 1)
           if [ -f "$REPORT_FILE" ]; then
             cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 📦 Generated Artifacts" >> $GITHUB_STEP_SUMMARY
-            echo "The trained model binary and out-of-sample trade logs have been uploaded to Artifacts below." >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ⚠️ ML Model Run Incomplete" >> $GITHUB_STEP_SUMMARY
-            echo "No summary markdown report was found. Check the step logs above for execution details." >> $GITHUB_STEP_SUMMARY
+            echo "## ⚠️ ML Model Run for ${{ matrix.symbol }} Incomplete" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload Trained Models, Trade Logs & Metrics
+      - name: Upload Trained Model Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ml-model-${{ inputs.symbol == 'CUSTOM' && inputs.custom_symbol || inputs.symbol }}-h${{ inputs.horizon_bars }}-run${{ github.run_id }}
+          name: ml-model-${{ matrix.symbol }}-run${{ github.run_id }}
           path: |
             ML_1M_MODEL/saved_models/*
             ML_1M_MODEL/reports/*

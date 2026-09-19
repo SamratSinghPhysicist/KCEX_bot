@@ -2165,8 +2165,12 @@ class TradeExecutionEngine:
                                     act = last_p.get("action", "WAIT")
                                     conf = last_p.get("confidence", 0.0)
                                     rem_cd = diag.get("remaining_cooldown_sec", 0.0)
-                                    feed_info = diag.get("feed", {})
-                                    ws_badge = " [WS LIVE]" if feed_info.get("connected") else " [REST]"
+                                    ds = diag.get("data_source")
+                                    if ds:
+                                        ws_badge = f" [{ds}]"
+                                    else:
+                                        feed_info = diag.get("feed", {})
+                                        ws_badge = " [WS LIVE]" if feed_info.get("connected") else " [REST]"
                                     self.logger.info(
                                         f"[HUNTING ENTRY] ML 1M Radar ({contract.symbol}){ws_badge} | Action: {act} (Conviction: {conf:.1%}) | "
                                         f"P(BUY): {p_buy:.1%} | P(SELL): {p_sell:.1%} | P(WAIT): {p_wait:.1%} | Cooldown: {rem_cd:.1f}s"

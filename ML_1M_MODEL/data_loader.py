@@ -22,6 +22,7 @@ from .config import (
     LOCAL_TRADES_DIR,
     CLOUD_OHLCV_DIR,
     CLOUD_TRADES_DIR,
+    get_binance_symbol,
 )
 
 BINANCE_VISION_BASE = "https://data.binance.vision/data/futures/um/monthly"
@@ -51,7 +52,10 @@ def generate_month_tuples(start_date: str, end_date: str) -> List[Tuple[int, int
 
 
 def download_zip_from_binance(url: str, extract_to: str, expected_csv_name: str) -> bool:
-    """Downloads a zip from Binance Vision and extracts the CSV."""
+    """Downloads a zip from Binance Vision with streaming chunks to disk and extracts the CSV."""
+    import shutil
+    import tempfile
+
     os.makedirs(extract_to, exist_ok=True)
     target_csv = os.path.join(extract_to, expected_csv_name)
     if os.path.exists(target_csv) and os.path.getsize(target_csv) > 0:
@@ -59,14 +63,17 @@ def download_zip_from_binance(url: str, extract_to: str, expected_csv_name: str)
 
     print(f"[DataLoader] Downloading archive from {url} ...")
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    temp_zip = None
     try:
-        with urllib.request.urlopen(req, timeout=45) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:
             if resp.status != 200:
                 print(f"[!] HTTP error {resp.status} for {url}")
                 return False
-            data = resp.read()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp:
+                temp_zip = tmp.name
+                shutil.copyfileobj(resp, tmp, length=1024 * 1024)
 
-        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        with zipfile.ZipFile(temp_zip) as zf:
             zf.extractall(extract_to)
 
         if os.path.exists(target_csv):
@@ -76,6 +83,12 @@ def download_zip_from_binance(url: str, extract_to: str, expected_csv_name: str)
     except Exception as e:
         print(f"[!] Warning: Failed to download archive {url}: {e}")
         return False
+    finally:
+        if temp_zip and os.path.exists(temp_zip):
+            try:
+                os.remove(temp_zip)
+            except Exception:
+                pass
 
 
 def get_ohlcv_file_path(symbol: str, year: int, month: int, auto_download: bool = True) -> Optional[str]:
@@ -87,23 +100,25 @@ def get_ohlcv_file_path(symbol: str, year: int, month: int, auto_download: bool 
     3. Downloads from Binance Vision if requested
     """
     sym = normalize_symbol_name(symbol)
+    binance_sym = get_binance_symbol(symbol)
     m_str = f"{month:02d}"
-    expected_filename = f"{sym}-1m-{year}-{m_str}.csv"
+    expected_filename = f"{binance_sym}-1m-{year}-{m_str}.csv"
 
     # 1. Check local D:\ drive
-    local_path = os.path.join(LOCAL_OHLCV_DIR, sym, "1m", expected_filename)
-    if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
-        return local_path
+    for s in [sym, binance_sym]:
+        local_path = os.path.join(LOCAL_OHLCV_DIR, s, "1m", f"{s}-1m-{year}-{m_str}.csv")
+        if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
+            return local_path
 
     # 2. Check cloud / repo path
-    cloud_dir = os.path.join(CLOUD_OHLCV_DIR, sym, "1m")
+    cloud_dir = os.path.join(CLOUD_OHLCV_DIR, binance_sym, "1m")
     cloud_path = os.path.join(cloud_dir, expected_filename)
     if os.path.exists(cloud_path) and os.path.getsize(cloud_path) > 0:
         return cloud_path
 
     # 3. Download from Binance Vision if permitted
     if auto_download:
-        url = f"{BINANCE_VISION_BASE}/klines/{sym}/1m/{sym}-1m-{year}-{m_str}.zip"
+        url = f"{BINANCE_VISION_BASE}/klines/{binance_sym}/1m/{binance_sym}-1m-{year}-{m_str}.zip"
         success = download_zip_from_binance(url, cloud_dir, expected_filename)
         if success and os.path.exists(cloud_path):
             return cloud_path
@@ -120,23 +135,25 @@ def get_trades_file_path(symbol: str, year: int, month: int, auto_download: bool
     3. Downloads from Binance Vision if requested
     """
     sym = normalize_symbol_name(symbol)
+    binance_sym = get_binance_symbol(symbol)
     m_str = f"{month:02d}"
-    expected_filename = f"{sym}-trades-{year}-{m_str}.csv"
+    expected_filename = f"{binance_sym}-trades-{year}-{m_str}.csv"
 
     # 1. Check local D:\ drive
-    local_path = os.path.join(LOCAL_TRADES_DIR, sym, expected_filename)
-    if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
-        return local_path
+    for s in [sym, binance_sym]:
+        local_path = os.path.join(LOCAL_TRADES_DIR, s, f"{s}-trades-{year}-{m_str}.csv")
+        if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
+            return local_path
 
     # 2. Check cloud / repo path
-    cloud_dir = os.path.join(CLOUD_TRADES_DIR, sym)
+    cloud_dir = os.path.join(CLOUD_TRADES_DIR, binance_sym)
     cloud_path = os.path.join(cloud_dir, expected_filename)
     if os.path.exists(cloud_path) and os.path.getsize(cloud_path) > 0:
         return cloud_path
 
     # 3. Download from Binance Vision if permitted
     if auto_download:
-        url = f"{BINANCE_VISION_BASE}/trades/{sym}/{sym}-trades-{year}-{m_str}.zip"
+        url = f"{BINANCE_VISION_BASE}/trades/{binance_sym}/{binance_sym}-trades-{year}-{m_str}.zip"
         success = download_zip_from_binance(url, cloud_dir, expected_filename)
         if success and os.path.exists(cloud_path):
             return cloud_path

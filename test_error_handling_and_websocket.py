@@ -302,6 +302,62 @@ class TestErrorHandlingAndWebsocket(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
 
+    def test_ml_strategy_falls_back_to_rest_when_ws_disconnected_or_stale(self):
+        """Verifies that MLStrategy falls back to REST polling when WS is disconnected/stale (Railway 403 scenario)."""
+        mock_market = MagicMock()
+        now_sec = int(time.time())
+        fresh_rest_candles = [
+            {
+                "timestamp": now_sec - (i * 60),
+                "open": 2.10, "high": 2.15, "low": 2.05, "close": 2.12,
+                "volume": 1200.0, "taker_buy_volume": 600.0
+            }
+            for i in range(100, 0, -1)
+        ]
+        mock_market.get_klines.return_value = fresh_rest_candles
+        mock_market.get_tick_size.return_value = 0.001
+
+        strat = MLStrategy(
+            market=mock_market,
+            symbol="TRUMP_USDT",
+            auto_start_feed=False
+        )
+
+        # Simulate feed running but disconnected (Cloudflare HTTP 403 on Railway)
+        strat.feed = MagicMock()
+        strat.feed._running = True
+        strat.feed.is_connected = False
+
+        # In-memory candles are stale (from 2 hours ago)
+        stale_candles = [
+            {
+                "timestamp": now_sec - 7200 - (i * 60),
+                "open": 1.95, "high": 1.96, "low": 1.94, "close": 1.952,
+                "volume": 500.0, "taker_buy_volume": 250.0
+            }
+            for i in range(100, 0, -1)
+        ]
+        with strat._candles_lock:
+            strat.candles = stale_candles
+
+        strat.model = MagicMock()
+        strat.model.is_trained = True
+        strat.model.predict_decision.return_value = [{
+            "action": "WAIT",
+            "confidence": 0.50,
+            "prob_buy": 0.20,
+            "prob_sell": 0.20,
+            "prob_wait": 0.60
+        }]
+
+        sig = strat.generate_signal("TRUMP_USDT")
+        # Must call REST get_klines to get fresh candles!
+        mock_market.get_klines.assert_called()
+        self.assertEqual(strat.last_data_source, "REST_LIVE")
+        # In-memory candles must be refreshed with fresh REST candles
+        self.assertEqual(strat.candles[-1]["close"], 2.12)
+
 
 if __name__ == "__main__":
     unittest.main()
+

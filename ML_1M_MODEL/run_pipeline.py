@@ -42,8 +42,12 @@ from .predict import Predictor
 
 def run_pipeline(
     symbol: str = "TRUMPUSDT",
-    start_date: str = "2026-06-01",
-    end_date: str = "2026-08-31",
+    start_date: Optional[str] = "2025-06-01",
+    end_date: Optional[str] = "2026-08-31",
+    train_start: Optional[str] = None,
+    train_end: Optional[str] = None,
+    test_start: Optional[str] = None,
+    test_end: Optional[str] = None,
     horizon_bars: Optional[int] = None,
     tp_atr_mult: Optional[float] = None,
     sl_atr_mult: Optional[float] = None,
@@ -54,8 +58,26 @@ def run_pipeline(
 ):
     # Retrieve calibrated symbol configuration baseline
     cfg = get_model_config(symbol)
-    cfg.start_date = start_date
-    cfg.end_date = end_date
+    
+    # Apply calendar date overrides
+    if train_start:
+        cfg.train_start_date = train_start
+    if train_end:
+        cfg.train_end_date = train_end
+    if test_start:
+        cfg.test_start_date = test_start
+    if test_end:
+        cfg.test_end_date = test_end
+
+    eff_start = start_date or cfg.train_start_date
+    eff_end = end_date or cfg.test_end_date
+    if cfg.train_start_date and cfg.train_start_date < eff_start:
+        eff_start = cfg.train_start_date
+    if cfg.test_end_date and cfg.test_end_date > eff_end:
+        eff_end = cfg.test_end_date
+
+    cfg.start_date = eff_start
+    cfg.end_date = eff_end
 
     # Apply overrides if explicitly provided
     if horizon_bars is not None:
@@ -73,7 +95,9 @@ def run_pipeline(
 
     print("=" * 80)
     print(f"[ML] 1-MINUTE ALPHA ENGINE: {cfg.symbol}")
-    print(f"   Calendar Window      : {start_date} to {end_date} (Train: June–July | Test: August)")
+    print(f"   Calendar Window      : {eff_start} to {eff_end}")
+    print(f"   Train Period         : {cfg.train_start_date} to {cfg.train_end_date}")
+    print(f"   Out-of-Sample Test   : {cfg.test_start_date} to {cfg.test_end_date}")
     print(f"   Prediction Horizon   : {cfg.horizon_bars} bars (1m)")
     print(f"   Dynamic Risk Barriers: TP={cfg.tp_atr_mult}x ATR, SL={cfg.sl_atr_mult}x ATR")
     print(f"   Confidence Trigger   : BUY={cfg.confidence_threshold:.0%}, SELL={cfg.confidence_threshold_sell:.0%}")
@@ -82,11 +106,11 @@ def run_pipeline(
 
     # 1. Ingestion: OHLCV 1m
     print("\n[Step 1/5] Ingesting 1-minute OHLCV candles...")
-    df_ohlcv = load_ohlcv_range(cfg.symbol, start_date, end_date, auto_download=auto_download)
+    df_ohlcv = load_ohlcv_range(cfg.symbol, eff_start, eff_end, auto_download=auto_download)
 
     # 2. Ingestion: Tick Trades Order Flow
     print("\n[Step 2/5] Ingesting & aggregating Tick Trades order-flow microstructure...")
-    df_of = build_orderflow_features_range(cfg.symbol, start_date, end_date, auto_download=auto_download)
+    df_of = build_orderflow_features_range(cfg.symbol, eff_start, eff_end, auto_download=auto_download)
     if not df_of.empty:
         print(f"[+] Successfully integrated {len(df_of):,} 1m order-flow bars (CVD, taker flow, whale ratio).")
     else:
@@ -97,7 +121,7 @@ def run_pipeline(
     model, train_df, test_df, train_metrics = train_model(df_ohlcv, df_of, cfg)
 
     # 4. Out-of-Sample Backtesting on Baseline (2 ticks slippage)
-    print("\n[Step 4/5] Executing Out-of-Sample Financial Backtest on August 1–31...")
+    print(f"\n[Step 4/5] Executing Out-of-Sample Financial Backtest on {cfg.test_start_date} to {cfg.test_end_date}...")
     oos_metrics, df_trades, md_report = backtest_out_of_sample(model, test_df, cfg)
 
     # Friction matrix sweep if requested
@@ -206,9 +230,13 @@ def run_pipeline(
 
 def main():
     parser = argparse.ArgumentParser(description="Master ML 1-Minute Crypto Futures Pipeline")
-    parser.add_argument("--symbol", type=str, default="TRUMPUSDT", help="Trading Symbol (TRUMPUSDT, DOGEUSDT)")
-    parser.add_argument("--start", type=str, default="2026-06-01", help="Start Date YYYY-MM-DD")
-    parser.add_argument("--end", type=str, default="2026-08-31", help="End Date YYYY-MM-DD")
+    parser.add_argument("--symbol", type=str, default="TRUMPUSDT", help="Trading Symbol (TRUMPUSDT, DOGEUSDT, BTCUSDT, etc.)")
+    parser.add_argument("--start", type=str, default="2025-06-01", help="Overall Calendar Start Date YYYY-MM-DD")
+    parser.add_argument("--end", type=str, default="2026-08-31", help="Overall Calendar End Date YYYY-MM-DD")
+    parser.add_argument("--train-start", type=str, default=None, help="Train Period Start Date YYYY-MM-DD (defaults to 2025-06-01)")
+    parser.add_argument("--train-end", type=str, default=None, help="Train Period End Date YYYY-MM-DD (defaults to 2026-06-30)")
+    parser.add_argument("--test-start", type=str, default=None, help="Out-of-Sample Test Start Date YYYY-MM-DD (defaults to 2026-07-01)")
+    parser.add_argument("--test-end", type=str, default=None, help="Out-of-Sample Test End Date YYYY-MM-DD (defaults to 2026-08-31)")
     parser.add_argument("--horizon", type=int, default=None, help="Forward horizon bars")
     parser.add_argument("--tp-mult", type=float, default=None, help="Take-Profit ATR multiplier")
     parser.add_argument("--sl-mult", type=float, default=None, help="Stop-Loss ATR multiplier")
@@ -223,6 +251,10 @@ def main():
         symbol=args.symbol,
         start_date=args.start,
         end_date=args.end,
+        train_start=args.train_start,
+        train_end=args.train_end,
+        test_start=args.test_start,
+        test_end=args.test_end,
         horizon_bars=args.horizon,
         tp_atr_mult=args.tp_mult,
         sl_atr_mult=args.sl_mult,

@@ -74,10 +74,11 @@ class MLStrategy(BaseStrategy):
         self.last_prediction: Optional[Dict[str, Any]] = None
 
         # Kline cache and rate-limit backoff state
-        self.kline_cache_interval: float = float(kwargs.get("kline_cache_interval", 2.0))
+        self.kline_cache_interval: float = float(kwargs.get("kline_cache_interval", 2.5))
         self._cached_candles: List[Any] = []
         self._last_kline_fetch_ts: float = 0.0
         self._rate_limit_backoff_until: float = 0.0
+        self.last_data_source: str = "INITIAL"
 
         # Resolve model path
         if model_path is None:
@@ -230,36 +231,59 @@ class MLStrategy(BaseStrategy):
         if now < self._rate_limit_backoff_until:
             return None
 
-        # 1. Prefer in-memory real-time candles from WebSocket feed (zero REST calls!)
+        # 1. Prefer in-memory real-time candles from WebSocket feed IF WS is active AND candles are fresh
         raw_candles = None
+        data_source = "REST"
         with self._candles_lock:
             if len(self.candles) >= min(self.warmup_candles, 50):
-                raw_candles = list(self.candles)
+                last_c = self.candles[-1]
+                last_ts = int(last_c.get("timestamp", 0) if isinstance(last_c, dict) else getattr(last_c, "timestamp", 0))
+                last_ts_s = (last_ts / 1000.0) if last_ts > 1e11 else float(last_ts)
+                is_fresh = (now - last_ts_s) <= 120.0
+                ws_active = bool(self.feed and getattr(self.feed, "is_connected", False))
+                feed_running = bool(self.feed and getattr(self.feed, "_running", False))
+                # In-memory candles are accepted if fresh AND (WS is connected OR feed is not running in background)
+                if is_fresh and (ws_active or not feed_running):
+                    raw_candles = list(self.candles)
+                    data_source = "WS"
 
-        # 2. If WebSocket feed buffer is not ready, fall back to cached REST
+        # 2. If WebSocket feed is not connected, blocked (Cloudflare 403), or candles are stale,
+        # poll fresh 1m klines from REST with rate-limit throttling (kline_cache_interval).
         if not raw_candles:
             if (now - self._last_kline_fetch_ts < self.kline_cache_interval) and self._cached_candles:
                 raw_candles = self._cached_candles
+                data_source = "REST_CACHED"
             else:
                 try:
-                    raw_candles = self.market.get_klines(symbol, interval="Min1", limit=300)
-                    if raw_candles:
-                        self._cached_candles = raw_candles
+                    fresh_bars = self.market.get_klines(symbol, interval="Min1", limit=300)
+                    if fresh_bars and len(fresh_bars) >= 50:
+                        self._cached_candles = fresh_bars
                         self._last_kline_fetch_ts = now
+                        self._consecutive_rate_limits = 0
                         with self._candles_lock:
-                            if not self.candles:
-                                self.candles = list(raw_candles)
+                            self.candles = list(fresh_bars)
+                        raw_candles = fresh_bars
+                        data_source = "REST_LIVE"
+                    else:
+                        # Fallback to cached candles if API returned empty
+                        raw_candles = self._cached_candles
+                        data_source = "REST_CACHED"
                 except Exception as e:
                     is_rate_limit = ("510" in str(e)) or (getattr(e, "code", None) in (510, 429))
+                    if not hasattr(self, "_consecutive_rate_limits"):
+                        self._consecutive_rate_limits = 0
                     if is_rate_limit:
-                        self._rate_limit_backoff_until = now + 5.0
+                        self._consecutive_rate_limits += 1
+                        backoff = min(30.0, 5.0 * (1.5 ** min(self._consecutive_rate_limits - 1, 4)))
+                        self._rate_limit_backoff_until = now + backoff
                         logger.warning(
                             f"[MLStrategy] Hit API rate limit (510/429) fetching klines for {symbol}. "
-                            f"Engaging 5.0s backoff: {e}"
+                            f"Engaging {backoff:.1f}s backoff (strike {self._consecutive_rate_limits}): {e}"
                         )
                     else:
                         logger.warning(f"[MLStrategy] Error fetching klines for {symbol}: {e}")
                     raw_candles = self._cached_candles
+                    data_source = "REST_CACHED"
 
         if not raw_candles or len(raw_candles) < min(self.warmup_candles, 50):
             logger.debug(f"[MLStrategy] Insufficient candles for warmup ({len(raw_candles) if raw_candles else 0}).")
@@ -331,6 +355,8 @@ class MLStrategy(BaseStrategy):
         action = dec["action"]
         confidence = dec["confidence"]
 
+        self.last_data_source = data_source
+
         # Periodic ML Radar Telemetry Logging (every 4s when scanning)
         if not hasattr(self, "_last_radar_log_time"):
             self._last_radar_log_time = 0.0
@@ -351,7 +377,7 @@ class MLStrategy(BaseStrategy):
                     pu = 0.001
                 atr_ticks = (curr_atr / pu) if pu > 0 else 0
                 logger.info(
-                    f"[ML RADAR] {symbol} Price: {curr_price:.4f} USDT | ATR(14): {curr_atr:.4f} ({atr_ticks:.1f}t) | "
+                    f"[ML RADAR] {symbol} Price: {curr_price:.4f} USDT [{data_source}] | ATR(14): {curr_atr:.4f} ({atr_ticks:.1f}t) | "
                     f"P(BUY): {p_buy:.1%} [T:{thresh_buy:.1%}] | P(SELL): {p_sell:.1%} [T:{thresh_sell:.1%}] | "
                     f"P(WAIT): {p_wait:.1%} | Action: {action}"
                 )
@@ -462,6 +488,7 @@ class MLStrategy(BaseStrategy):
             "model_loaded": (self.model is not None and self.model.is_trained),
             "remaining_cooldown_sec": round(self.get_remaining_cooldown(time.time()), 1),
             "feed": feed_stats,
+            "data_source": getattr(self, "last_data_source", "REST"),
             "in_memory_candles": len(self.candles),
             "last_prediction": self.last_prediction
         }
