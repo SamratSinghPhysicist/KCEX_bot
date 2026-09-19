@@ -4,22 +4,22 @@
 | Metric | Value | Benchmark / Target | Status |
 | :--- | :--- | :--- | :--- |
 | **Asset Symbol** | `SOLUSDT` | Microstructure Engine | Active |
-| **Out-of-Sample Window** | `89,265` 1m bars | August 1–31, 2026 (Pure OOS) | Zero Leakage |
-| **Total Trades** | `1` | High Conviction Only | Validated |
-| **Win Rate** | **`100.0%`** | Breakeven: `33.33%` | ✅ EDGE |
-| **Profit Factor** | **`36080160320.64`** | Target: > 1.25 | ✅ PASS |
-| **Total Net PnL** | **`0.36%`** | Positive Edge | ✅ PROFITABLE |
+| **Out-of-Sample Window** | `132,465` 1m bars | August 1–31, 2026 (Pure OOS) | Zero Leakage |
+| **Total Trades** | `0` | High Conviction Only | Validated |
+| **Win Rate** | **`0.0%`** | Breakeven: `50.0%` | ⚠️ SUB-PAR |
+| **Profit Factor** | **`0.0`** | Target: > 1.25 | ⚠️ MONITOR |
+| **Total Net PnL** | **`0.0%`** | Positive Edge | ❌ LOSS |
 | **Max Drawdown** | **`0.0%`** | < 15.0% | ✅ CONTROLLED |
-| **Daily Sharpe Ratio** | **`2.45`** | Daily Aggregation ($\sqrt{365.25}$) | Institutional Metric |
-| **Daily Sortino Ratio** | **`1130404.13`** | Downside Deviation | Institutional Metric |
+| **Daily Sharpe Ratio** | **`0.0`** | Daily Aggregation ($\sqrt{365.25}$) | Institutional Metric |
+| **Daily Sortino Ratio** | **`0.0`** | Downside Deviation | Institutional Metric |
 | **t-statistic (p-value)** | **`0.0 (p=1.0)`** | $H_0: \mu = 0$ | Two-tailed |
-| **Binomial Test p-value** | **`0.3333`** | $H_0: p \le p_{be}$ | One-tailed |
-| **Expectancy / Trade** | **`$36.08`** | Positive Expected Value | Validated |
+| **Binomial Test p-value** | **`1.0`** | $H_0: p \le p_{be}$ | One-tailed |
+| **Expectancy / Trade** | **`$0.0`** | Positive Expected Value | Validated |
 
 ---
 
 ## ⚖️ Directional Trade Breakdown
-- **LONG Trades**: `1` trades | Win Rate: `100.0%` | PnL: `$+36.08`
+- **LONG Trades**: `0` trades | Win Rate: `0.0%` | PnL: `$+0.00`
 - **SHORT Trades**: `0` trades | Win Rate: `0.0%` | PnL: `$+0.00`
 
 ---
@@ -43,7 +43,7 @@
 
 | Slippage (Ticks) | Trades | Win Rate | Profit Factor | Net PnL | Daily Sharpe | Max DD | t-stat (p-val) | Binomial p |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1.0 ticks** | `1` | `100.0%` | **`36084885640.18`** | **`+0.4%`** | `2.45` | `0.0%` | `0.00 (p=1.000)` | `0.3333` |
-| **2.0 ticks** | `1` | `100.0%` | **`36080160320.64`** | **`+0.4%`** | `2.45` | `0.0%` | `0.00 (p=1.000)` | `0.3333` |
-| **3.0 ticks** | `1` | `100.0%` | **`36075436115.04`** | **`+0.4%`** | `2.45` | `0.0%` | `0.00 (p=1.000)` | `0.3333` |
-| **5.0 ticks** | `1` | `100.0%` | **`12497761018.15`** | **`+0.1%`** | `2.45` | `0.0%` | `0.00 (p=1.000)` | `0.3333` |
+| **1.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |
+| **2.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |
+| **3.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |
+| **5.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |

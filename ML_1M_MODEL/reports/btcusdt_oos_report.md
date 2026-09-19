@@ -4,7 +4,7 @@
 | Metric | Value | Benchmark / Target | Status |
 | :--- | :--- | :--- | :--- |
 | **Asset Symbol** | `BTCUSDT` | Microstructure Engine | Active |
-| **Out-of-Sample Window** | `89,265` 1m bars | August 1–31, 2026 (Pure OOS) | Zero Leakage |
+| **Out-of-Sample Window** | `132,465` 1m bars | August 1–31, 2026 (Pure OOS) | Zero Leakage |
 | **Total Trades** | `0` | High Conviction Only | Validated |
 | **Win Rate** | **`0.0%`** | Breakeven: `50.0%` | ⚠️ SUB-PAR |
 | **Profit Factor** | **`0.0`** | Target: > 1.25 | ⚠️ MONITOR |

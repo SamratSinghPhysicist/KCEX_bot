@@ -12,26 +12,30 @@
     "embargo_bars": 30
   },
   "train_metrics": {
-    "train_samples": 566770,
-    "test_samples": 89265,
+    "train_samples": 3536069,
+    "test_samples": 132465,
     "num_features": 30,
-    "train_accuracy": 0.6915,
-    "train_log_loss": 0.7603,
+    "train_accuracy": 0.654,
+    "train_log_loss": 0.8359,
     "top_features": [
       {
-        "feature": "dist_ema15m_21",
-        "importance": 0.0003333333333333706
-      },
-      {
-        "feature": "ret_15m",
+        "feature": "atr_norm",
         "importance": 0.0001666666666666853
       },
       {
-        "feature": "atr_norm",
-        "importance": 3.700743415417188e-17
+        "feature": "dist_ema9",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema50",
+        "importance": 0.0
       },
       {
         "feature": "dist_ema200",
+        "importance": 0.0
+      },
+      {
+        "feature": "dist_ema15m_21",
         "importance": 0.0
       },
       {
@@ -39,30 +43,26 @@
         "importance": 0.0
       },
       {
-        "feature": "dist_ema9",
+        "feature": "spread_9_21",
         "importance": 0.0
       },
       {
-        "feature": "bb_width",
+        "feature": "spread_21_50",
         "importance": 0.0
       },
       {
-        "feature": "dist_vwap",
+        "feature": "spread_50_200",
         "importance": 0.0
       },
       {
         "feature": "trend_score",
-        "importance": 0.0
-      },
-      {
-        "feature": "trend_htf",
         "importance": 0.0
       }
     ]
   },
   "oos_metrics": {
     "symbol": "BTCUSDT",
-    "test_bars": 89265,
+    "test_bars": 132465,
     "total_trades": 0,
     "win_rate_pct": 0.0,
     "breakeven_win_rate_pct": 50.0,

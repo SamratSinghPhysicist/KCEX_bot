@@ -4,22 +4,22 @@
 | Metric | Value | Benchmark / Target | Status |
 | :--- | :--- | :--- | :--- |
 | **Asset Symbol** | `DOGEUSDT` | Microstructure Engine | Active |
-| **Out-of-Sample Window** | `89,265` 1m bars | August 1–31, 2026 (Pure OOS) | Zero Leakage |
-| **Total Trades** | `5` | High Conviction Only | Validated |
-| **Win Rate** | **`20.0%`** | Breakeven: `33.33%` | ⚠️ SUB-PAR |
-| **Profit Factor** | **`0.47`** | Target: > 1.25 | ⚠️ MONITOR |
-| **Total Net PnL** | **`-1.16%`** | Positive Edge | ❌ LOSS |
-| **Max Drawdown** | **`1.73%`** | < 15.0% | ✅ CONTROLLED |
-| **Daily Sharpe Ratio** | **`-2.68`** | Daily Aggregation ($\sqrt{365.25}$) | Institutional Metric |
-| **Daily Sortino Ratio** | **`-2.74`** | Downside Deviation | Institutional Metric |
-| **t-statistic (p-value)** | **`-0.67 (p=0.5381)`** | $H_0: \mu = 0$ | Two-tailed |
-| **Binomial Test p-value** | **`0.8683`** | $H_0: p \le p_{be}$ | One-tailed |
-| **Expectancy / Trade** | **`$-23.23`** | Positive Expected Value | Validated |
+| **Out-of-Sample Window** | `132,465` 1m bars | August 1–31, 2026 (Pure OOS) | Zero Leakage |
+| **Total Trades** | `0` | High Conviction Only | Validated |
+| **Win Rate** | **`0.0%`** | Breakeven: `50.0%` | ⚠️ SUB-PAR |
+| **Profit Factor** | **`0.0`** | Target: > 1.25 | ⚠️ MONITOR |
+| **Total Net PnL** | **`0.0%`** | Positive Edge | ❌ LOSS |
+| **Max Drawdown** | **`0.0%`** | < 15.0% | ✅ CONTROLLED |
+| **Daily Sharpe Ratio** | **`0.0`** | Daily Aggregation ($\sqrt{365.25}$) | Institutional Metric |
+| **Daily Sortino Ratio** | **`0.0`** | Downside Deviation | Institutional Metric |
+| **t-statistic (p-value)** | **`0.0 (p=1.0)`** | $H_0: \mu = 0$ | Two-tailed |
+| **Binomial Test p-value** | **`1.0`** | $H_0: p \le p_{be}$ | One-tailed |
+| **Expectancy / Trade** | **`$0.0`** | Positive Expected Value | Validated |
 
 ---
 
 ## ⚖️ Directional Trade Breakdown
-- **LONG Trades**: `5` trades | Win Rate: `20.0%` | PnL: `$-116.15`
+- **LONG Trades**: `0` trades | Win Rate: `0.0%` | PnL: `$+0.00`
 - **SHORT Trades**: `0` trades | Win Rate: `0.0%` | PnL: `$+0.00`
 
 ---
@@ -43,7 +43,7 @@
 
 | Slippage (Ticks) | Trades | Win Rate | Profit Factor | Net PnL | Daily Sharpe | Max DD | t-stat (p-val) | Binomial p |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1.0 ticks** | `5` | `20.0%` | **`0.50`** | **`-1.0%`** | `-2.42` | `1.6%` | `-0.61 (p=0.576)` | `0.8683` |
-| **2.0 ticks** | `5` | `20.0%` | **`0.47`** | **`-1.2%`** | `-2.68` | `1.7%` | `-0.67 (p=0.538)` | `0.8683` |
-| **3.0 ticks** | `5` | `20.0%` | **`0.45`** | **`-1.3%`** | `-2.93` | `1.8%` | `-0.74 (p=0.503)` | `0.8683` |
-| **5.0 ticks** | `5` | `20.0%` | **`0.41`** | **`-1.5%`** | `-3.35` | `2.0%` | `-0.86 (p=0.440)` | `0.8683` |
+| **1.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |
+| **2.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |
+| **3.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |
+| **5.0 ticks** | `0` | `0.0%` | **`0.00`** | **`+0.0%`** | `0.00` | `0.0%` | `0.00 (p=1.000)` | `1.0000` |
