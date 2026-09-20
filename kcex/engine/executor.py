@@ -292,8 +292,10 @@ class TradeExecutionEngine:
         self.logger.info(f"Target Leverage: {self.config.leverage}x isolated")
         is_ml_strat = getattr(self.config, "strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
         if is_ml_strat or getattr(self.config, "dynamic_tp", False):
-            self.logger.info("Min-Profit Take Profit rule: Dynamic ATR Target (~1.9x ATR, calibrated per signal)")
-            self.logger.info("Stop Loss rule: Dynamic ATR Stop (~1.0x ATR, calibrated per signal)")
+            tp_mult = getattr(self.config, "tp_atr_mult", 3.0)
+            sl_mult = getattr(self.config, "sl_atr_mult", 1.5)
+            self.logger.info(f"Min-Profit Take Profit rule: Dynamic ATR Target (~{tp_mult:.1f}x ATR, calibrated per signal)")
+            self.logger.info(f"Stop Loss rule: Dynamic ATR Stop (~{sl_mult:.1f}x ATR, calibrated per signal)")
         else:
             self.logger.info(f"Min-Profit Take Profit rule: Entry Price +/- {self.config.tp_ticks} pu (Tick Size)")
             if getattr(self.config, "sl_ticks", None):

@@ -189,6 +189,10 @@ class ExecutionConfig:
     entry_queue_qty: float = 200.0              # Estimated entry queue depth
     tp_queue_qty: float = 200.0                 # Estimated TP queue depth
 
+    # 11. Machine Learning 1M Alpha Engine ATR Targets (Triple Barrier 2:1 Asymmetric Payoff)
+    tp_atr_mult: float = 3.0                    # Dynamic Take Profit: 3.0x ATR
+    sl_atr_mult: float = 1.5                    # Dynamic Stop Loss: 1.5x ATR
+
     poll_interval_seconds: float = 0.5
     logs_dir: str = field(default_factory=lambda: os.path.join(ROOT_DIR, "logs"))
 

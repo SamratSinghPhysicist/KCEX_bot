@@ -216,12 +216,12 @@ def get_model_config(symbol: str, preset: str = "rapid") -> ModelConfig:
             # Rapid Scalping Preset (High Frequency: ~80-100 trades/mo, 10-15m horizons, rapid compounding)
             return ModelConfig(
                 symbol="TRUMPUSDT",
-                horizon_bars=12,
+                horizon_bars=15,
                 min_profit_pct=0.0028,
-                tp_atr_mult=1.9,
-                sl_atr_mult=1.0,
-                label_tp_mult=1.9,
-                label_sl_mult=1.0,
+                tp_atr_mult=3.0,
+                sl_atr_mult=1.5,
+                label_tp_mult=3.0,
+                label_sl_mult=1.5,
                 confidence_threshold=0.38,
                 confidence_threshold_sell=0.38,
                 edge_threshold=0.015,

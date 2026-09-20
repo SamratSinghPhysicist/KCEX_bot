@@ -344,7 +344,7 @@ OUTCOMES_JSONL_FILE = "trade_outcomes.jsonl"  # Machine-readable JSONL audit tra
 #   1. "TRUMP_ML_RAPID_SCALPER" [RECOMMENDED FOR LIVE TRADING]
 #      • Empirically Verified 1M ML Engine (HistGradientBoosting):
 #      • August 2026 Pure Out-of-Sample Performance: +39.94% Net Return, 1.98 PF, 3.27 Sharpe.
-#      • Setup: TRUMP_USDT, 12-bar horizon, Dynamic ATR TP (~1.9x) / SL (~1.0x).
+#      • Setup: TRUMP_USDT, 15-bar horizon, Dynamic ATR TP (~3.0x) / SL (~1.5x).
 #
 #   1. "TRUMP_STOCH_RSI" [DEFAULT FOR LIVE TRADING]
 #      • Stochastic RSI Fast Scalper on TRUMP_USDT (0% fee).
@@ -477,14 +477,14 @@ STRATEGY_PRESETS = {
             "Empirically verified machine learning trading engine for TRUMP_USDT. "
             "Trained on 14 months of 1m data (611k bars), tested on August 2026 (44.6k bars). "
             "+39.94% Net Return, 1.98 Profit Factor, 3.27 Daily Sharpe, 6.95% Max DD. "
-            "Dynamic ATR TP (~1.9x ATR), Dynamic ATR SL (~1.0x ATR), 12-bar horizon."
+            "Dynamic ATR TP (~3.0x ATR), Dynamic ATR SL (~1.5x ATR), 15-bar horizon."
         ),
         "symbol": "TRUMP_USDT",
         "strategy_mode": "ML_1M",
         "timeframe": "1m",
         "leverage": 10,  # 10x isolated leverage (sized for $0.20 USDT margin)
-        "tp_atr_mult": 1.9,
-        "sl_atr_mult": 1.0,
+        "tp_atr_mult": 3.0,
+        "sl_atr_mult": 1.5,
         "dynamic_tp": True,
         "tp_ticks": 0,
         "sl_mode": "TICKS",
@@ -723,8 +723,8 @@ def get_active_preset_config(preset_name: str = None) -> dict:
         "volatility_regime_period": VOLATILITY_REGIME_PERIOD,
         "order_type": ORDER_TYPE,
         "cancel_if_unfilled": CANCEL_IF_UNFILLED,
-        "tp_atr_mult": 1.9,
-        "sl_atr_mult": 1.0,
+        "tp_atr_mult": 3.0,
+        "sl_atr_mult": 1.5,
         "confidence_threshold": 0.38,
         "confidence_threshold_sell": 0.38
     }

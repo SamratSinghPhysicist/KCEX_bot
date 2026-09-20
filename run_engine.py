@@ -158,7 +158,7 @@ def prompt_user_settings():
         print(f"      • Symbol: {preset_cfg.get('symbol')}")
         print(f"      • Strategy: {preset_cfg.get('strategy_mode', 'ML_1M')}")
         if is_ml_preset:
-            print(f"      • Take Profit: Dynamic ATR (~{preset_cfg.get('tp_atr_mult', 1.9)}x ATR) | Stop Loss: Dynamic ATR (~{preset_cfg.get('sl_atr_mult', 1.0)}x ATR)")
+            print(f"      • Take Profit: Dynamic ATR (~{preset_cfg.get('tp_atr_mult', 3.0)}x ATR) | Stop Loss: Dynamic ATR (~{preset_cfg.get('sl_atr_mult', 1.5)}x ATR)")
             print(f"      • Signal Mode: DIRECT (Momentum / Machine Learning Alpha)")
         elif is_smc_preset:
             print(f"      • Take Profit: Dynamic 1:2 R:R (with 50% partial close at 1:1 & Breakeven Lock)")
@@ -347,6 +347,8 @@ def prompt_user_settings():
             simultaneous_mode=preset_cfg.get("simultaneous_mode", False),
             entry_queue_qty=preset_cfg.get("entry_queue_qty", 200.0),
             tp_queue_qty=preset_cfg.get("tp_queue_qty", 200.0),
+            tp_atr_mult=float(preset_cfg.get("tp_atr_mult", 3.0)),
+            sl_atr_mult=float(preset_cfg.get("sl_atr_mult", 1.5)),
             poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.2),
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -995,6 +997,8 @@ def prompt_user_settings():
         ratchet_breakeven_ticks=get_setting("RATCHET_BREAKEVEN_TICKS", 2.5),
         slippage_enabled=slippage_enabled_val,
         slippage_ticks=slippage_ticks_val,
+        tp_atr_mult=float(get_setting("TP_ATR_MULT", 3.0)),
+        sl_atr_mult=float(get_setting("SL_ATR_MULT", 1.5)),
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -1702,6 +1706,8 @@ def main():
             hourly_filter_enabled=args.hourly_filter if args.hourly_filter is not None else get_setting("HOURLY_FILTER_ENABLED", False),
             hourly_blacklist_utc=get_setting("HOURLY_BLACKLIST_UTC", [2, 3, 4, 5, 17]),
             direction_bias=args.direction_bias or get_setting("DIRECTION_BIAS", "BOTH"),
+            tp_atr_mult=float(preset_cfg.get("tp_atr_mult", get_setting("TP_ATR_MULT", 3.0))),
+            sl_atr_mult=float(preset_cfg.get("sl_atr_mult", get_setting("SL_ATR_MULT", 1.5))),
             poll_interval_seconds=poll_int,
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -1806,8 +1812,10 @@ def main():
         bias_desc = config.direction.value
 
     if is_ml:
-        tp_display = "Dynamic ATR (~1.9x ATR, calibrated dynamically per signal)"
-        sl_display = "Dynamic ATR (~1.0x ATR, calibrated dynamically per signal)"
+        tp_mult = getattr(config, "tp_atr_mult", 3.0)
+        sl_mult = getattr(config, "sl_atr_mult", 1.5)
+        tp_display = f"Dynamic ATR (~{tp_mult:.1f}x ATR, calibrated dynamically per signal)"
+        sl_display = f"Dynamic ATR (~{sl_mult:.1f}x ATR, calibrated dynamically per signal)"
         sig_mode_str = "DIRECT (Momentum / Machine Learning Alpha)"
         ratch_desc = "DISABLED (Preserves full ML expansion targets)" if not getattr(config, "ratchet_enabled", False) else f"ENABLED (T1: +{config.ratchet_trigger_ticks:g}t -> -{config.ratchet_tighten_ticks:g}t, T2: +{config.ratchet_breakeven_ticks:g}t -> BE)"
     else:

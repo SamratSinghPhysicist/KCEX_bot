@@ -432,9 +432,9 @@ class MLStrategy(BaseStrategy):
                 f"🔥 [ML ALPHA TRIGGER] HIGH-CONVICTION {action} SIGNAL DETECTED 🔥\n"
                 f"   • Conviction     : {confidence:.1%} (P({action})={confidence:.1%} vs P(WAIT)={dec['prob_wait']:.1%})\n"
                 f"   • Reference Price: {curr_price:.4f} USDT | 1m ATR = {curr_atr:.4f} USDT ({(curr_atr / pu if pu > 0 else 0):.1f} ticks)\n"
-                f"   • Dynamic Target : TP = {dec['suggested_tp']} (+{tp_ticks} ticks / ~{getattr(self.model.cfg, 'tp_atr_mult', 1.9):.1f}x ATR)\n"
-                f"   • Dynamic Stop   : SL = {dec['suggested_sl']} (-{sl_ticks} ticks / ~{getattr(self.model.cfg, 'sl_atr_mult', 1.0):.1f}x ATR)\n"
-                f"   • Reward / Risk  : {dec['risk_reward_ratio']} : 1 | Horizon = {getattr(self.model.cfg, 'horizon_bars', 5)} bars (5m)\n"
+                f"   • Dynamic Target : TP = {dec['suggested_tp']} (+{tp_ticks} ticks / ~{getattr(self.model.cfg, 'tp_atr_mult', 3.0):.1f}x ATR)\n"
+                f"   • Dynamic Stop   : SL = {dec['suggested_sl']} (-{sl_ticks} ticks / ~{getattr(self.model.cfg, 'sl_atr_mult', 1.5):.1f}x ATR)\n"
+                f"   • Reward / Risk  : {dec['risk_reward_ratio']} : 1 | Horizon = {getattr(self.model.cfg, 'horizon_bars', 15)} bars (15m)\n"
                 f"=============================================================================="
             )
             return sig
