@@ -14,6 +14,15 @@ import sys
 import os
 import time
 import argparse
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+try:
+    from sklearn.exceptions import InconsistentVersionWarning
+    warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
+except ImportError:
+    pass
 
 # Ensure utf-8 output encoding and unbuffered line streaming in containers/Railway
 if hasattr(sys.stdout, 'reconfigure'):

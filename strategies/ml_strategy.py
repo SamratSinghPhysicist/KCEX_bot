@@ -16,9 +16,18 @@ import sys
 import time
 import threading
 import logging
+import warnings
 from typing import Optional, Dict, Any, List
 import numpy as np
 import pandas as pd
+
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+try:
+    from sklearn.exceptions import InconsistentVersionWarning
+    warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
+except ImportError:
+    pass
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
@@ -347,6 +356,14 @@ class MLStrategy(BaseStrategy):
                 symbol=self.clean_symbol
             )
             dec = decisions[0]
+            dec["curr_price"] = curr_price
+            dec["curr_atr"] = curr_atr
+            try:
+                pu_val = getattr(self.market, "get_tick_size", lambda s: 0.001)(symbol)
+                pu = float(pu_val) if pu_val and isinstance(pu_val, (int, float)) else 0.001
+            except Exception:
+                pu = 0.001
+            dec["atr_ticks"] = (curr_atr / pu) if pu > 0 else 0.0
             self.last_prediction = dec
         except Exception as e:
             logger.error(f"[MLStrategy] Prediction execution error: {e}")
@@ -357,10 +374,10 @@ class MLStrategy(BaseStrategy):
 
         self.last_data_source = data_source
 
-        # Periodic ML Radar Telemetry Logging (every 4s when scanning)
+        # Internal ML Radar Telemetry (logged at DEBUG level; central executor presents consolidated info)
         if not hasattr(self, "_last_radar_log_time"):
             self._last_radar_log_time = 0.0
-        if now - self._last_radar_log_time >= 4.0:
+        if now - self._last_radar_log_time >= 5.0:
             self._last_radar_log_time = now
             try:
                 p_buy = float(dec.get("prob_buy", 0.0))
@@ -376,7 +393,7 @@ class MLStrategy(BaseStrategy):
                 except Exception:
                     pu = 0.001
                 atr_ticks = (curr_atr / pu) if pu > 0 else 0
-                logger.info(
+                logger.debug(
                     f"[ML RADAR] {symbol} Price: {curr_price:.4f} USDT [{data_source}] | ATR(14): {curr_atr:.4f} ({atr_ticks:.1f}t) | "
                     f"P(BUY): {p_buy:.1%} [T:{thresh_buy:.1%}] | P(SELL): {p_sell:.1%} [T:{thresh_sell:.1%}] | "
                     f"P(WAIT): {p_wait:.1%} | Action: {action}"

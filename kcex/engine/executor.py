@@ -1225,7 +1225,7 @@ class TradeExecutionEngine:
 
             # Periodic Real-Time Position Telemetry
             now = time.time()
-            if (now - last_heartbeat_time) >= 3.5:
+            if (now - last_heartbeat_time) >= 5.0:
                 last_heartbeat_time = now
                 pu = (10 ** -precision)
                 dist_tp_ticks = (exact_tp - exec_price) / pu if direction == OrderDirection.LONG else (exec_price - exact_tp) / pu
@@ -1239,8 +1239,9 @@ class TradeExecutionEngine:
                     u_roe = 0.0
                 elapsed_hold = now - monitor_start_time
                 self.logger.info(
-                    f"📊 [LIVE POSITION] Price: {exec_price:.{precision}f} USDT | Target TP: {exact_tp:.{precision}f} ({dist_tp_ticks:+.1f}t) | "
-                    f"Stop SL: {exact_sl:.{precision}f} ({dist_sl_ticks:+.1f}t) | Unrealized: {u_ticks:+.1f}t ({u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
+                    f"[LIVE POSITION] {direction.value} @ {entry_price:.{precision}f} | Mark: {exec_price:.{precision}f} | "
+                    f"TP: {exact_tp:.{precision}f} ({dist_tp_ticks:+.1f}t) | SL: {exact_sl:.{precision}f} ({dist_sl_ticks:+.1f}t) | "
+                    f"Unrealized: {u_ticks:+.1f}t ({u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
                 )
 
             # -----------------------------------------------------------------
@@ -1851,9 +1852,9 @@ class TradeExecutionEngine:
                                 f"[DRY-RUN DURATION TIGHTEN] Trade open {elapsed:.1f}s. SL tightened to entry {exact_sl:.{ps}f} USDT."
                             )
 
-                # Periodic status report every ~3.5 seconds
+                # Periodic status report every ~5.0 seconds
                 poll_interval = max(0.1, self.config.poll_interval_seconds)
-                status_freq = int(max(1, 3.5 / poll_interval))
+                status_freq = int(max(1, 5.0 / poll_interval))
                 if poll_count % status_freq == 0:
                     u_diff = (effective_close_price - entry_price) if direction == OrderDirection.LONG else (entry_price - effective_close_price)
                     u_ticks = u_diff / pu if pu > 0 else 0.0
@@ -1867,8 +1868,8 @@ class TradeExecutionEngine:
                     dist_sl_ticks = (effective_close_price - exact_sl) / pu if direction == OrderDirection.LONG else (exact_sl - effective_close_price) / pu
                     elapsed_hold = time.time() - open_time
                     self.logger.info(
-                        f"📊 [DRY-RUN POSITION] Price: {effective_close_price:.{ps}f} USDT | Target TP: {exact_tp:.{ps}f} ({dist_tp_ticks:+.1f}t) | "
-                        f"Stop SL: {exact_sl:.{ps}f} ({dist_sl_ticks:+.1f}t) | "
+                        f"[DRY-RUN POSITION] {direction.value} @ {entry_price:.{ps}f} | Mark: {effective_close_price:.{ps}f} | "
+                        f"TP: {exact_tp:.{ps}f} ({dist_tp_ticks:+.1f}t) | Stop: {exact_sl:.{ps}f} ({dist_sl_ticks:+.1f}t) | "
                         f"Unrealized: {u_ticks:+.1f}t ({u_pnl_usdt:+.4f} USDT / INR {u_pnl_inr:+.2f} | {u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
                     )
 
@@ -2121,21 +2122,21 @@ class TradeExecutionEngine:
                 else:
                     # Log periodic diagnostics while hunting for entry signal
                     now = time.time()
-                    if now - last_diag_log >= 4.0:
+                    if now - last_diag_log >= 5.0:
                         last_diag_log = now
                         try:
                             diag = self.strategy.get_diagnostics()
+                            prec = contract.price_precision
                             if diag and "fast_ema" in diag:
                                 c_f = diag.get('fast_ema', 0.0)
                                 c_s = diag.get('slow_ema', 0.0)
                                 diff = diag.get('diff', 0.0)
                                 diff_pct = diag.get('diff_pct', 0.0)
-                                prec = contract.price_precision
                                 self.logger.info(
-                                    f"[HUNTING ENTRY] EMA({diag.get('preset', '5/13')}) {diag.get('interval', 'Min1')} | "
+                                    f"[SCANNING] {contract.symbol} | EMA({diag.get('preset', '5/13')}) {diag.get('interval', 'Min1')} | "
                                     f"Fast: {c_f:.{prec}f} | Slow: {c_s:.{prec}f} | "
                                     f"Diff: {diff:+.{prec}f} ({diff_pct:+.2f}%) | "
-                                    f"Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
+                                    f"Trend: {diag.get('trend', 'NEUTRAL')} | Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
                                 )
                             elif diag and (diag.get("strategy") == "STOCHASTIC_RSI" or ("k" in diag and "d" in diag)):
                                 k_val = diag.get('k', 50.0)
@@ -2145,18 +2146,18 @@ class TradeExecutionEngine:
                                 preset = diag.get('preset', 'FAST_SCALP')
                                 inv = diag.get('interval', 'Min1')
                                 self.logger.info(
-                                    f"[HUNTING ENTRY] StochRSI({preset}) {inv} | "
-                                    f"%K: {k_val:.1f} | %D: {d_val:.1f} | Diff: {diff_kd:+.1f} | "
-                                    f"Zone: {zone} | Trend: {diag.get('trend', 'NEUTRAL')} | Bar Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
+                                    f"[SCANNING] {contract.symbol} | StochRSI({preset}) {inv} | "
+                                    f"%K: {k_val:.1f} | %D: {d_val:.1f} (Diff: {diff_kd:+.1f}) | "
+                                    f"Zone: {zone} | Trend: {diag.get('trend', 'NEUTRAL')} | Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
                                 )
                             elif diag and "obi_z" in diag:
                                 feed_info = diag.get("feed", {})
-                                ws_status = "LIVE WS" if feed_info.get("connected") else "CONNECTING"
-                                b_bid = f"{diag.get('best_bid'):.{contract.price_precision}f}" if diag.get('best_bid') else "N/A"
-                                b_ask = f"{diag.get('best_ask'):.{contract.price_precision}f}" if diag.get('best_ask') else "N/A"
+                                ws_status = "WS" if feed_info.get("connected") else "REST"
+                                b_bid = f"{diag.get('best_bid'):.{prec}f}" if diag.get('best_bid') else "N/A"
+                                b_ask = f"{diag.get('best_ask'):.{prec}f}" if diag.get('best_ask') else "N/A"
                                 self.logger.info(
-                                    f"[HUNTING ENTRY] {ws_status} | Bid/Ask: {b_bid} / {b_ask} (Spread: {diag.get('spread_ticks', 0):.1f} pu) | "
-                                    f"OBI z={diag.get('obi_z', 0):+.2f} | Delta z={diag.get('delta_z', 0):+.2f} | VAMP z={diag.get('vamp_z', 0):+.2f}"
+                                    f"[SCANNING] {contract.symbol} [{ws_status}] | Bid/Ask: {b_bid} / {b_ask} (Spread: {diag.get('spread_ticks', 0):.1f}t) | "
+                                    f"OBI: {diag.get('obi_z', 0):+.2f} | Delta: {diag.get('delta_z', 0):+.2f} | VAMP: {diag.get('vamp_z', 0):+.2f}"
                                 )
                             elif diag and (diag.get("strategy") == "ML_1M_MODEL" or "last_prediction" in diag):
                                 last_p = diag.get("last_prediction") or {}
@@ -2165,17 +2166,24 @@ class TradeExecutionEngine:
                                     p_sell = last_p.get("prob_sell", 0.0)
                                     p_wait = last_p.get("prob_wait", 0.0)
                                     act = last_p.get("action", "WAIT")
-                                    conf = last_p.get("confidence", 0.0)
                                     rem_cd = diag.get("remaining_cooldown_sec", 0.0)
-                                    ds = diag.get("data_source")
-                                    if ds:
-                                        ws_badge = f" [{ds}]"
+                                    ds = diag.get("data_source") or ("WS" if diag.get("feed", {}).get("connected") else "REST")
+                                    curr_p = last_p.get("curr_price")
+                                    curr_atr = last_p.get("curr_atr")
+                                    atr_t = last_p.get("atr_ticks")
+                                    p_prec = max(4, prec)
+                                    price_str = f"Price: {curr_p:.{p_prec}f} USDT | " if curr_p is not None else ""
+                                    if curr_atr is not None and atr_t is not None:
+                                        atr_str = f"ATR(14): {curr_atr:.{p_prec}f} ({atr_t:.1f}t) | "
+                                    elif curr_atr is not None:
+                                        atr_str = f"ATR(14): {curr_atr:.{p_prec}f} | "
                                     else:
-                                        feed_info = diag.get("feed", {})
-                                        ws_badge = " [WS LIVE]" if feed_info.get("connected") else " [REST]"
+                                        atr_str = ""
+                                    cd_str = f" | CD: {rem_cd:.1f}s" if rem_cd > 0 else ""
                                     self.logger.info(
-                                        f"[HUNTING ENTRY] ML 1M Radar ({contract.symbol}){ws_badge} | Action: {act} (Conviction: {conf:.1%}) | "
-                                        f"P(BUY): {p_buy:.1%} | P(SELL): {p_sell:.1%} | P(WAIT): {p_wait:.1%} | Cooldown: {rem_cd:.1f}s"
+                                        f"[SCANNING] {contract.symbol} [{ds}] | {price_str}{atr_str}"
+                                        f"P(BUY): {p_buy:.1%} | P(SELL): {p_sell:.1%} | P(WAIT): {p_wait:.1%} -> Action: {act}"
+                                        f"{cd_str}"
                                     )
                         except Exception as de:
                             self.logger.debug("Diagnostics fetch error: %s", de)
