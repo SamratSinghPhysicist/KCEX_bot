@@ -1,0 +1,40 @@
+{
+  "symbol": "TRUMPUSDT",
+  "config": {
+    "horizon_bars": 15,
+    "tp_atr_mult": 3.0,
+    "sl_atr_mult": 1.5,
+    "confidence_threshold": 0.4,
+    "confidence_threshold_sell": 0.38,
+    "min_profit_pct": 0.0028,
+    "leverage": 20.0,
+    "embargo_bars": 20
+  },
+  "live_metrics": {
+    "symbol": "TRUMPUSDT",
+    "total_trades": 14,
+    "win_rate_pct": 64.29,
+    "breakeven_win_rate_pct": 33.33,
+    "profit_factor": 9.76,
+    "max_drawdown_pct": 3.41,
+    "sharpe_ratio_daily": 3.24,
+    "sortino_ratio_daily": 67.19,
+    "t_statistic": 2.43,
+    "p_value_two_tailed": 0.0305,
+    "binom_p_value": 0.0174,
+    "total_pnl_pct": 47.3,
+    "final_equity_usd": 0.338783,
+    "avg_win_usd": 0.013466,
+    "avg_loss_usd": -0.002483,
+    "expectancy_usd": 0.00777,
+    "long_trades": 13,
+    "long_win_rate_pct": 69.23,
+    "long_pnl_usd": 0.11091,
+    "short_trades": 1,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": -0.002129,
+    "signal_share_buy_pct": 0.0,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 100.0
+  }
+}

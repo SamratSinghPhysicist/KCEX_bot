@@ -1,0 +1,91 @@
+{
+  "symbol": "TRUMPUSDT",
+  "display_name": "TRUMP",
+  "fee_schedule": {
+    "roundtrip_fee_pct": 0.1,
+    "per_side_fee_pct": 0.05,
+    "leverage": 20.0,
+    "slippage_ticks": 2.0
+  },
+  "performance": {
+    "total_trades": 14,
+    "win_rate_pct": 64.29,
+    "breakeven_win_rate_pct": 33.33,
+    "profit_factor": 7.74,
+    "total_pnl_pct": 43.33,
+    "final_equity_usd": 14333.25,
+    "max_drawdown_pct": 3.99,
+    "sharpe_ratio_daily": 8.3,
+    "sortino_ratio_daily": 82.02,
+    "t_statistic": 2.26,
+    "p_value_two_tailed": 0.0417,
+    "binom_p_value": 0.0174,
+    "avg_win_usd": 552.9,
+    "avg_loss_usd": -128.58,
+    "expectancy_usd": 309.52,
+    "long_trades": 13,
+    "long_win_rate_pct": 69.23,
+    "long_pnl_usd": 4451.6,
+    "short_trades": 1,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": -118.36
+  },
+  "fee_sensitivity_matrix": [
+    {
+      "fee_rate_pct": 0.0,
+      "win_rate_pct": 64.29,
+      "profit_factor": 9.76,
+      "net_pnl_pct": 47.3,
+      "final_equity_usd": 14729.71
+    },
+    {
+      "fee_rate_pct": 0.02,
+      "win_rate_pct": 64.29,
+      "profit_factor": 9.29,
+      "net_pnl_pct": 46.5,
+      "final_equity_usd": 14649.61
+    },
+    {
+      "fee_rate_pct": 0.04,
+      "win_rate_pct": 64.29,
+      "profit_factor": 8.86,
+      "net_pnl_pct": 45.7,
+      "final_equity_usd": 14569.92
+    },
+    {
+      "fee_rate_pct": 0.06,
+      "win_rate_pct": 64.29,
+      "profit_factor": 8.46,
+      "net_pnl_pct": 44.91,
+      "final_equity_usd": 14490.63
+    },
+    {
+      "fee_rate_pct": 0.08,
+      "win_rate_pct": 64.29,
+      "profit_factor": 8.09,
+      "net_pnl_pct": 44.12,
+      "final_equity_usd": 14411.74
+    },
+    {
+      "fee_rate_pct": 0.1,
+      "win_rate_pct": 64.29,
+      "profit_factor": 7.74,
+      "net_pnl_pct": 43.33,
+      "final_equity_usd": 14333.25
+    },
+    {
+      "fee_rate_pct": 0.15,
+      "win_rate_pct": 64.29,
+      "profit_factor": 6.97,
+      "net_pnl_pct": 41.39,
+      "final_equity_usd": 14138.75
+    },
+    {
+      "fee_rate_pct": 0.2,
+      "win_rate_pct": 64.29,
+      "profit_factor": 6.3,
+      "net_pnl_pct": 39.47,
+      "final_equity_usd": 13946.7
+    }
+  ]
+}

@@ -1,0 +1,275 @@
+[
+  {
+    "symbol": "TRUMPUSDT",
+    "display_name": "TRUMP",
+    "fee_schedule": {
+      "roundtrip_fee_pct": 0.1,
+      "per_side_fee_pct": 0.05,
+      "leverage": 20.0,
+      "slippage_ticks": 2.0
+    },
+    "performance": {
+      "total_trades": 14,
+      "win_rate_pct": 64.29,
+      "breakeven_win_rate_pct": 33.33,
+      "profit_factor": 7.74,
+      "total_pnl_pct": 43.33,
+      "final_equity_usd": 14333.25,
+      "max_drawdown_pct": 3.99,
+      "sharpe_ratio_daily": 8.3,
+      "sortino_ratio_daily": 82.02,
+      "t_statistic": 2.26,
+      "p_value_two_tailed": 0.0417,
+      "binom_p_value": 0.0174,
+      "avg_win_usd": 552.9,
+      "avg_loss_usd": -128.58,
+      "expectancy_usd": 309.52,
+      "long_trades": 13,
+      "long_win_rate_pct": 69.23,
+      "long_pnl_usd": 4451.6,
+      "short_trades": 1,
+      "short_win_rate_pct": 0.0,
+      "short_pnl_usd": -118.36
+    },
+    "fee_sensitivity_matrix": [
+      {
+        "fee_rate_pct": 0.0,
+        "win_rate_pct": 64.29,
+        "profit_factor": 9.76,
+        "net_pnl_pct": 47.3,
+        "final_equity_usd": 14729.71
+      },
+      {
+        "fee_rate_pct": 0.02,
+        "win_rate_pct": 64.29,
+        "profit_factor": 9.29,
+        "net_pnl_pct": 46.5,
+        "final_equity_usd": 14649.61
+      },
+      {
+        "fee_rate_pct": 0.04,
+        "win_rate_pct": 64.29,
+        "profit_factor": 8.86,
+        "net_pnl_pct": 45.7,
+        "final_equity_usd": 14569.92
+      },
+      {
+        "fee_rate_pct": 0.06,
+        "win_rate_pct": 64.29,
+        "profit_factor": 8.46,
+        "net_pnl_pct": 44.91,
+        "final_equity_usd": 14490.63
+      },
+      {
+        "fee_rate_pct": 0.08,
+        "win_rate_pct": 64.29,
+        "profit_factor": 8.09,
+        "net_pnl_pct": 44.12,
+        "final_equity_usd": 14411.74
+      },
+      {
+        "fee_rate_pct": 0.1,
+        "win_rate_pct": 64.29,
+        "profit_factor": 7.74,
+        "net_pnl_pct": 43.33,
+        "final_equity_usd": 14333.25
+      },
+      {
+        "fee_rate_pct": 0.15,
+        "win_rate_pct": 64.29,
+        "profit_factor": 6.97,
+        "net_pnl_pct": 41.39,
+        "final_equity_usd": 14138.75
+      },
+      {
+        "fee_rate_pct": 0.2,
+        "win_rate_pct": 64.29,
+        "profit_factor": 6.3,
+        "net_pnl_pct": 39.47,
+        "final_equity_usd": 13946.7
+      }
+    ]
+  },
+  {
+    "symbol": "1000000MOGUSDT",
+    "display_name": "MOG",
+    "fee_schedule": {
+      "roundtrip_fee_pct": 0.1,
+      "per_side_fee_pct": 0.05,
+      "leverage": 20.0,
+      "slippage_ticks": 2.0
+    },
+    "performance": {
+      "total_trades": 10,
+      "win_rate_pct": 70.0,
+      "breakeven_win_rate_pct": 33.33,
+      "profit_factor": 1.94,
+      "total_pnl_pct": 1.79,
+      "final_equity_usd": 10179.23,
+      "max_drawdown_pct": 0.95,
+      "sharpe_ratio_daily": 7.89,
+      "sortino_ratio_daily": 19.91,
+      "t_statistic": 0.82,
+      "p_value_two_tailed": 0.4354,
+      "binom_p_value": 0.0197,
+      "avg_win_usd": 52.94,
+      "avg_loss_usd": -63.78,
+      "expectancy_usd": 17.92,
+      "long_trades": 10,
+      "long_win_rate_pct": 70.0,
+      "long_pnl_usd": 179.23,
+      "short_trades": 0,
+      "short_win_rate_pct": 0.0,
+      "short_pnl_usd": 0.0
+    },
+    "fee_sensitivity_matrix": [
+      {
+        "fee_rate_pct": 0.0,
+        "win_rate_pct": 70.0,
+        "profit_factor": 3.91,
+        "net_pnl_pct": 3.84,
+        "final_equity_usd": 10384.29
+      },
+      {
+        "fee_rate_pct": 0.02,
+        "win_rate_pct": 70.0,
+        "profit_factor": 3.38,
+        "net_pnl_pct": 3.43,
+        "final_equity_usd": 10342.98
+      },
+      {
+        "fee_rate_pct": 0.04,
+        "win_rate_pct": 70.0,
+        "profit_factor": 2.94,
+        "net_pnl_pct": 3.02,
+        "final_equity_usd": 10301.82
+      },
+      {
+        "fee_rate_pct": 0.06,
+        "win_rate_pct": 70.0,
+        "profit_factor": 2.55,
+        "net_pnl_pct": 2.61,
+        "final_equity_usd": 10260.81
+      },
+      {
+        "fee_rate_pct": 0.08,
+        "win_rate_pct": 70.0,
+        "profit_factor": 2.22,
+        "net_pnl_pct": 2.2,
+        "final_equity_usd": 10219.95
+      },
+      {
+        "fee_rate_pct": 0.1,
+        "win_rate_pct": 70.0,
+        "profit_factor": 1.94,
+        "net_pnl_pct": 1.79,
+        "final_equity_usd": 10179.23
+      },
+      {
+        "fee_rate_pct": 0.15,
+        "win_rate_pct": 70.0,
+        "profit_factor": 1.35,
+        "net_pnl_pct": 0.78,
+        "final_equity_usd": 10078.07
+      },
+      {
+        "fee_rate_pct": 0.2,
+        "win_rate_pct": 60.0,
+        "profit_factor": 0.91,
+        "net_pnl_pct": -0.22,
+        "final_equity_usd": 9977.82
+      }
+    ]
+  },
+  {
+    "symbol": "MELANIAUSDT",
+    "display_name": "MELANIA",
+    "fee_schedule": {
+      "roundtrip_fee_pct": 0.1,
+      "per_side_fee_pct": 0.05,
+      "leverage": 20.0,
+      "slippage_ticks": 2.0
+    },
+    "performance": {
+      "total_trades": 27,
+      "win_rate_pct": 33.33,
+      "breakeven_win_rate_pct": 33.33,
+      "profit_factor": 0.88,
+      "total_pnl_pct": -3.54,
+      "final_equity_usd": 9645.64,
+      "max_drawdown_pct": 16.15,
+      "sharpe_ratio_daily": -3.25,
+      "sortino_ratio_daily": -4.76,
+      "t_statistic": -0.21,
+      "p_value_two_tailed": 0.8375,
+      "binom_p_value": 0.5719,
+      "avg_win_usd": 281.39,
+      "avg_loss_usd": -160.38,
+      "expectancy_usd": -13.12,
+      "long_trades": 27,
+      "long_win_rate_pct": 33.33,
+      "long_pnl_usd": -354.35,
+      "short_trades": 0,
+      "short_win_rate_pct": 0.0,
+      "short_pnl_usd": 0.0
+    },
+    "fee_sensitivity_matrix": [
+      {
+        "fee_rate_pct": 0.0,
+        "win_rate_pct": 37.04,
+        "profit_factor": 1.07,
+        "net_pnl_pct": 1.81,
+        "final_equity_usd": 10181.18
+      },
+      {
+        "fee_rate_pct": 0.02,
+        "win_rate_pct": 37.04,
+        "profit_factor": 1.03,
+        "net_pnl_pct": 0.72,
+        "final_equity_usd": 10071.83
+      },
+      {
+        "fee_rate_pct": 0.04,
+        "win_rate_pct": 37.04,
+        "profit_factor": 0.99,
+        "net_pnl_pct": -0.36,
+        "final_equity_usd": 9963.61
+      },
+      {
+        "fee_rate_pct": 0.06,
+        "win_rate_pct": 37.04,
+        "profit_factor": 0.95,
+        "net_pnl_pct": -1.43,
+        "final_equity_usd": 9856.52
+      },
+      {
+        "fee_rate_pct": 0.08,
+        "win_rate_pct": 37.04,
+        "profit_factor": 0.91,
+        "net_pnl_pct": -2.49,
+        "final_equity_usd": 9750.53
+      },
+      {
+        "fee_rate_pct": 0.1,
+        "win_rate_pct": 33.33,
+        "profit_factor": 0.88,
+        "net_pnl_pct": -3.54,
+        "final_equity_usd": 9645.64
+      },
+      {
+        "fee_rate_pct": 0.15,
+        "win_rate_pct": 33.33,
+        "profit_factor": 0.8,
+        "net_pnl_pct": -6.12,
+        "final_equity_usd": 9388.15
+      },
+      {
+        "fee_rate_pct": 0.2,
+        "win_rate_pct": 33.33,
+        "profit_factor": 0.73,
+        "net_pnl_pct": -8.63,
+        "final_equity_usd": 9137.28
+      }
+    ]
+  }
+]

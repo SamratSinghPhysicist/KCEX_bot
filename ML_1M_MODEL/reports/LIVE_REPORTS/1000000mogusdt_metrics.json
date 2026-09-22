@@ -1,0 +1,40 @@
+{
+  "symbol": "1000000MOGUSDT",
+  "config": {
+    "horizon_bars": 15,
+    "tp_atr_mult": 3.0,
+    "sl_atr_mult": 1.5,
+    "confidence_threshold": 0.4,
+    "confidence_threshold_sell": 0.48,
+    "min_profit_pct": 0.002,
+    "leverage": 20.0,
+    "embargo_bars": 30
+  },
+  "live_metrics": {
+    "symbol": "1000000MOGUSDT",
+    "total_trades": 10,
+    "win_rate_pct": 70.0,
+    "breakeven_win_rate_pct": 33.33,
+    "profit_factor": 3.91,
+    "max_drawdown_pct": 0.75,
+    "sharpe_ratio_daily": 4.41,
+    "sortino_ratio_daily": 25.32,
+    "t_statistic": 1.72,
+    "p_value_two_tailed": 0.1189,
+    "binom_p_value": 0.0197,
+    "total_pnl_pct": 3.84,
+    "final_equity_usd": 0.238839,
+    "avg_win_usd": 0.001696,
+    "avg_loss_usd": -0.001012,
+    "expectancy_usd": 0.000884,
+    "long_trades": 10,
+    "long_win_rate_pct": 70.0,
+    "long_pnl_usd": 0.008838,
+    "short_trades": 0,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": 0.0,
+    "signal_share_buy_pct": 0.0,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 100.0
+  }
+}

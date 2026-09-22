@@ -1,0 +1,40 @@
+{
+  "symbol": "MELANIAUSDT",
+  "config": {
+    "horizon_bars": 15,
+    "tp_atr_mult": 3.0,
+    "sl_atr_mult": 1.5,
+    "confidence_threshold": 0.4,
+    "confidence_threshold_sell": 0.48,
+    "min_profit_pct": 0.002,
+    "leverage": 20.0,
+    "embargo_bars": 30
+  },
+  "live_metrics": {
+    "symbol": "MELANIAUSDT",
+    "total_trades": 27,
+    "win_rate_pct": 37.04,
+    "breakeven_win_rate_pct": 33.33,
+    "profit_factor": 1.07,
+    "max_drawdown_pct": 15.1,
+    "sharpe_ratio_daily": 0.82,
+    "sortino_ratio_daily": 1.55,
+    "t_statistic": 0.2,
+    "p_value_two_tailed": 0.8443,
+    "binom_p_value": 0.4108,
+    "total_pnl_pct": 1.81,
+    "final_equity_usd": 0.234167,
+    "avg_win_usd": 0.006481,
+    "avg_loss_usd": -0.00379,
+    "expectancy_usd": 0.000154,
+    "long_trades": 27,
+    "long_win_rate_pct": 37.04,
+    "long_pnl_usd": 0.004169,
+    "short_trades": 0,
+    "short_win_rate_pct": 0.0,
+    "short_pnl_usd": 0.0,
+    "signal_share_buy_pct": 0.0,
+    "signal_share_sell_pct": 0.0,
+    "signal_share_wait_pct": 100.0
+  }
+}
