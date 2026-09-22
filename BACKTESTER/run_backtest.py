@@ -260,7 +260,9 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             volume_filter_enabled=preset_cfg.get("volume_filter_enabled", False),
             volume_filter_multiplier=preset_cfg.get("volume_filter_multiplier", 1.2),
             queue_dynamics_enabled=preset_cfg.get("queue_dynamics_enabled", False),
-            simulate_intra_tick_liquidation=preset_cfg.get("simulate_intra_tick_liquidation", True)
+            simulate_intra_tick_liquidation=preset_cfg.get("simulate_intra_tick_liquidation", True),
+            risk_reward_ratio=float(preset_cfg.get("risk_reward_ratio", 2.0)),
+            pivot_len=int(preset_cfg.get("pivot_len", 5))
         )
         return config, target
 
@@ -340,7 +342,25 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     ema_preset = "5/13"
     stoch_preset = "FAST_SCALP"
     invert_signal = False
-    if strategy_mode == "EMA_CROSSOVER":
+    risk_reward_ratio = 2.0
+    pivot_len = 5
+
+    if strategy_mode == "ORDER_BLOCK_DEMAND":
+        print("\n   🏛️ Vivek Yadav SMC (Order Block + Demand) Parameters:")
+        print("   • Dynamic Target: SL anchored to Zone Extrema & 1:2 Risk-Reward Take Profit")
+        rr_in = input("   Risk-to-Reward Ratio (e.g. 2.0 for 1:2 RR) [default: 2.0]: ").strip()
+        try:
+            risk_reward_ratio = float(rr_in) if rr_in else 2.0
+        except ValueError:
+            risk_reward_ratio = 2.0
+        pivot_in = input("   Pivot Lookback Window (candles for swing highs/lows) [default: 5]: ").strip()
+        try:
+            pivot_len = int(pivot_in) if pivot_in else 5
+        except ValueError:
+            pivot_len = 5
+        invert_signal = False
+
+    elif strategy_mode == "EMA_CROSSOVER":
         print("\n   EMA Length Preset:")
         print("   [1] 5 / 13 (Fast Scalp) [Default]")
         print("   [2] 9 / 21 (Standard Momentum)")
@@ -350,8 +370,16 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             ema_preset = "9/21"
         elif ep_choice == "3":
             ema_preset = "3/8"
+        invert_signal = False
+
+    elif strategy_mode == "SMART_STRATEGY":
+        print("\n   Smart Strategy (Multi-Regime Autonomous Scalping):")
+        print("   • Dynamically routes between Momentum (EMA 5/13) and Range (Stoch RSI Fast Scalp)")
+        print("   • Uses sub-ATR compression filter and volatility climax circuit breaker")
+        invert_signal = False
+
     else:
-        # STOCH_RSI or SMART_STRATEGY
+        # STOCH_RSI
         print("\n   Stochastic RSI Preset:")
         print("   [1] FAST_SCALP   (9/9/3/3, OS: 20, OB: 80) [Default / Recommended for HFT]")
         print("   [2] STANDARD     (14/14/3/3, OS: 20, OB: 80)")
@@ -398,61 +426,83 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         end_val = input("   Enter End Date (YYYY-MM-DD) [default: 2026-08-31]: ").strip() or "2026-08-31"
 
     # 6. TP & SL Parameters
-    print("\n6. Execution & Risk Parameters:")
-    tp_input = input("   Take Profit Ticks (pu away from entry) [default: 5 for DOGE, 2 for TRUMP]: ").strip()
-    def_tp = 5 if "DOGE" in selected_symbol else 2
-    tp_ticks = int(tp_input) if tp_input.isdigit() else def_tp
-
-    sl_price = None
-    sl_mode_input = input("   Stop Loss Mode ([1] ROE % on margin, [2] TICKS, [3] PRICE %) [default: 2 (TICKS)]: ").strip()
-    if sl_mode_input == "1":
-        sl_mode = "ROE"
-        sl_roe_input = input("   Stop Loss ROE % on margin [default: 25.0%]: ").strip()
-        sl_roe = float(sl_roe_input) if sl_roe_input else 25.0
-        sl_ticks = None
-    elif sl_mode_input == "3":
-        sl_mode = "PRICE_PCT"
-        sl_p_input = input("   Stop Loss Price % [default: 0.5]: ").strip()
-        sl_price = float(sl_p_input) if sl_p_input else 0.5
-        sl_ticks = None
-        sl_roe = 25.0
-    else:
+    if strategy_mode == "ORDER_BLOCK_DEMAND":
+        print("\n6. Execution & Risk Parameters:")
+        print("   ✅ Dynamic SMC Order Execution: SL placed at Zone Boundary, TP placed at 1:2 R:R")
+        tp_ticks = 10
         sl_mode = "TICKS"
-        sl_t_input = input("   Stop Loss Ticks [default: 2 for DOGE, 10 for TRUMP]: ").strip()
-        def_sl_t = 2 if "DOGE" in selected_symbol else 10
-        sl_ticks = int(sl_t_input) if sl_t_input.isdigit() else def_sl_t
+        sl_ticks = 5
         sl_roe = 25.0
+        sl_price = None
 
-    lev_input = input("   Leverage Multiplier [default: 75]: ").strip()
-    leverage = int(lev_input) if lev_input.isdigit() else 75
+        lev_input = input("   Leverage Multiplier [default: 25]: ").strip()
+        leverage = int(lev_input) if lev_input.isdigit() else 25
 
-    cap_input = input("   Initial Wallet Capital (USDT) [default: 100.0]: ").strip()
-    capital = float(cap_input) if cap_input else 100.0
+        cap_input = input("   Initial Wallet Capital (USDT) [default: 100.0]: ").strip()
+        capital = float(cap_input) if cap_input else 100.0
 
-    max_input = input("   Max Trades limit (0 = run entire period) [default: 0]: ").strip()
-    max_trades = int(max_input) if max_input.isdigit() else 0
+        max_input = input("   Max Trades limit (0 = run entire period) [default: 0]: ").strip()
+        max_trades = int(max_input) if max_input.isdigit() else 0
+    else:
+        print("\n6. Execution & Risk Parameters:")
+        tp_input = input("   Take Profit Ticks (pu away from entry) [default: 5 for DOGE, 2 for TRUMP]: ").strip()
+        def_tp = 5 if "DOGE" in selected_symbol else 2
+        tp_ticks = int(tp_input) if tp_input.isdigit() else def_tp
+
+        sl_price = None
+        sl_mode_input = input("   Stop Loss Mode ([1] ROE % on margin, [2] TICKS, [3] PRICE %) [default: 2 (TICKS)]: ").strip()
+        if sl_mode_input == "1":
+            sl_mode = "ROE"
+            sl_roe_input = input("   Stop Loss ROE % on margin [default: 25.0%]: ").strip()
+            sl_roe = float(sl_roe_input) if sl_roe_input else 25.0
+            sl_ticks = None
+        elif sl_mode_input == "3":
+            sl_mode = "PRICE_PCT"
+            sl_p_input = input("   Stop Loss Price % [default: 0.5]: ").strip()
+            sl_price = float(sl_p_input) if sl_p_input else 0.5
+            sl_ticks = None
+            sl_roe = 25.0
+        else:
+            sl_mode = "TICKS"
+            sl_t_input = input("   Stop Loss Ticks [default: 2 for DOGE, 10 for TRUMP]: ").strip()
+            def_sl_t = 2 if "DOGE" in selected_symbol else 10
+            sl_ticks = int(sl_t_input) if sl_t_input.isdigit() else def_sl_t
+            sl_roe = 25.0
+
+        lev_input = input("   Leverage Multiplier [default: 75]: ").strip()
+        leverage = int(lev_input) if lev_input.isdigit() else 75
+
+        cap_input = input("   Initial Wallet Capital (USDT) [default: 100.0]: ").strip()
+        capital = float(cap_input) if cap_input else 100.0
+
+        max_input = input("   Max Trades limit (0 = run entire period) [default: 0]: ").strip()
+        max_trades = int(max_input) if max_input.isdigit() else 0
 
     # 7. Phase V2.2 Champion Micro-Excursion Tick Ratchet
-    print("\n7. Phase V2.2 Champion Micro-Excursion Tick Ratchet:")
-    print("   • Dynamic in-position trailing protection based on millisecond excursion (MFE)")
-    print("   • Tier 1: When MFE >= +1.0t and position stalls >= 10s -> Tightens SL to -1.0t")
-    print("   • Tier 2: When MFE >= +2.5t -> Locks SL to Breakeven (0.0t)")
-    r_in = input("   Enable Tick Ratchet? [Y/n]: ").strip().lower()
-    ratchet_enabled = r_in not in ("n", "no", "0")
     ratchet_trigger_ticks = 1.0
     ratchet_stall_seconds = 10.0
     ratchet_tighten_ticks = 1.0
     ratchet_breakeven_ticks = 2.5
-    if ratchet_enabled:
-        custom_r = input("   Customize Ratchet thresholds? [y/N, default: N]: ").strip().lower()
-        if custom_r in ("y", "yes", "1"):
-            try:
-                ratchet_trigger_ticks = float(input("      Tier 1 trigger MFE ticks [default: 1.0]: ").strip() or "1.0")
-                ratchet_stall_seconds = float(input("      Tier 1 stall seconds [default: 10.0]: ").strip() or "10.0")
-                ratchet_tighten_ticks = float(input("      Tier 1 tightened SL distance ticks [default: 1.0]: ").strip() or "1.0")
-                ratchet_breakeven_ticks = float(input("      Tier 2 Breakeven trigger ticks [default: 2.5]: ").strip() or "2.5")
-            except ValueError:
-                pass
+
+    if strategy_mode == "ORDER_BLOCK_DEMAND":
+        ratchet_enabled = False
+    else:
+        print("\n7. Phase V2.2 Champion Micro-Excursion Tick Ratchet:")
+        print("   • Dynamic in-position trailing protection based on millisecond excursion (MFE)")
+        print("   • Tier 1: When MFE >= +1.0t and position stalls >= 10s -> Tightens SL to -1.0t")
+        print("   • Tier 2: When MFE >= +2.5t -> Locks SL to Breakeven (0.0t)")
+        r_in = input("   Enable Tick Ratchet? [Y/n]: ").strip().lower()
+        ratchet_enabled = r_in not in ("n", "no", "0")
+        if ratchet_enabled:
+            custom_r = input("   Customize Ratchet thresholds? [y/N, default: N]: ").strip().lower()
+            if custom_r in ("y", "yes", "1"):
+                try:
+                    ratchet_trigger_ticks = float(input("      Tier 1 trigger MFE ticks [default: 1.0]: ").strip() or "1.0")
+                    ratchet_stall_seconds = float(input("      Tier 1 stall seconds [default: 10.0]: ").strip() or "10.0")
+                    ratchet_tighten_ticks = float(input("      Tier 1 tightened SL distance ticks [default: 1.0]: ").strip() or "1.0")
+                    ratchet_breakeven_ticks = float(input("      Tier 2 Breakeven trigger ticks [default: 2.5]: ").strip() or "2.5")
+                except ValueError:
+                    pass
 
     # 8. Realistic Adverse Slippage Simulation
     print("\n8. Realistic Adverse Slippage Engine:")
@@ -518,13 +568,6 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         fee_mode = "LIVE"
 
     # 12. Trade Optimization & Regime Filters (Optional)
-    print("\n12. Trade Optimization & Regime Filters:")
-    print("   [1] Baseline / Disabled (Standard raw strategy execution) [Default]")
-    print("   [2] Enable Duration Time-Stop (Monitor >60s, Auto-Exit at 90s)")
-    print("   [3] Enable Full Institutional Safeguards (Duration + HTF 200 EMA + ADX + Hourly)")
-    print("   [4] Custom Filter Configuration")
-    filter_choice = input("   Select Filter Mode [default: 1 (Baseline / Disabled)]: ").strip()
-
     dur_enabled = False
     dur_deep_s = 60.0
     dur_max_s = 90.0
@@ -539,36 +582,44 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     hourly_bl = []
     dir_bias = "BOTH"
 
-    if filter_choice == "2":
-        dur_enabled = True
-    elif filter_choice == "3":
-        dur_enabled = True
-        adx_enabled = True
-        htf_enabled = True
-        hourly_enabled = True
-        hourly_bl = [2, 3, 4, 5, 17]
-    elif filter_choice == "4":
-        d_in = input("   Enable Duration Filter? [y/N]: ").strip().lower()
-        if d_in in ("y", "yes", "1"):
+    if strategy_mode != "ORDER_BLOCK_DEMAND":
+        print("\n12. Trade Optimization & Regime Filters:")
+        print("   [1] Baseline / Disabled (Standard raw strategy execution) [Default]")
+        print("   [2] Enable Duration Time-Stop (Monitor >60s, Auto-Exit at 90s)")
+        print("   [3] Enable Full Institutional Safeguards (Duration + HTF 200 EMA + ADX + Hourly)")
+        print("   [4] Custom Filter Configuration")
+        filter_choice = input("   Select Filter Mode [default: 1 (Baseline / Disabled)]: ").strip()
+
+        if filter_choice == "2":
             dur_enabled = True
-            hold_in = input("   Max hold seconds [default: 90]: ").strip()
-            dur_max_s = float(hold_in) if hold_in else 90.0
-            act_in = input("   Action on timeout (CLOSE / SCRATCH_OR_MARKET / TIGHTEN_SL) [default: CLOSE]: ").strip().upper()
-            dur_act = act_in if act_in in ("CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL") else "CLOSE"
-        h_in = input("   Enable HTF 200 EMA Trend Filter? [y/N]: ").strip().lower()
-        if h_in in ("y", "yes", "1"):
-            htf_enabled = True
-        a_in = input("   Enable ADX Chop Filter? [y/N]: ").strip().lower()
-        if a_in in ("y", "yes", "1"):
+        elif filter_choice == "3":
+            dur_enabled = True
             adx_enabled = True
-        hr_in = input("   Enable Hourly Session Blacklist? [y/N]: ").strip().lower()
-        if hr_in in ("y", "yes", "1"):
+            htf_enabled = True
             hourly_enabled = True
-            bl_in = input("   Comma-separated UTC hours to block [default: 2,3,4,5,17]: ").strip()
-            hourly_bl = [int(x.strip()) for x in bl_in.split(",") if x.strip().isdigit()] if bl_in else [2, 3, 4, 5, 17]
-        bias_in = input("   Directional Bias (BOTH / LONG_ONLY / SHORT_ONLY) [default: BOTH]: ").strip().upper()
-        if bias_in in ("LONG_ONLY", "SHORT_ONLY"):
-            dir_bias = bias_in
+            hourly_bl = [2, 3, 4, 5, 17]
+        elif filter_choice == "4":
+            d_in = input("   Enable Duration Filter? [y/N]: ").strip().lower()
+            if d_in in ("y", "yes", "1"):
+                dur_enabled = True
+                hold_in = input("   Max hold seconds [default: 90]: ").strip()
+                dur_max_s = float(hold_in) if hold_in else 90.0
+                act_in = input("   Action on timeout (CLOSE / SCRATCH_OR_MARKET / TIGHTEN_SL) [default: CLOSE]: ").strip().upper()
+                dur_act = act_in if act_in in ("CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL") else "CLOSE"
+            h_in = input("   Enable HTF 200 EMA Trend Filter? [y/N]: ").strip().lower()
+            if h_in in ("y", "yes", "1"):
+                htf_enabled = True
+            a_in = input("   Enable ADX Chop Filter? [y/N]: ").strip().lower()
+            if a_in in ("y", "yes", "1"):
+                adx_enabled = True
+            hr_in = input("   Enable Hourly Session Blacklist? [y/N]: ").strip().lower()
+            if hr_in in ("y", "yes", "1"):
+                hourly_enabled = True
+                bl_in = input("   Comma-separated UTC hours to block [default: 2,3,4,5,17]: ").strip()
+                hourly_bl = [int(x.strip()) for x in bl_in.split(",") if x.strip().isdigit()] if bl_in else [2, 3, 4, 5, 17]
+            bias_in = input("   Directional Bias (BOTH / LONG_ONLY / SHORT_ONLY) [default: BOTH]: ").strip().upper()
+            if bias_in in ("LONG_ONLY", "SHORT_ONLY"):
+                dir_bias = bias_in
 
     config = BacktestConfig(
         symbol=selected_symbol,
@@ -627,6 +678,8 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         smart_ema_preset=ema_preset,
         smart_stoch_preset=stoch_preset,
         smart_interval=selected_tf,
+        risk_reward_ratio=risk_reward_ratio,
+        pivot_len=pivot_len
     )
     return config, target
 
@@ -688,6 +741,8 @@ def main():
     parser.add_argument("--ratchet-tighten-ticks", type=float, default=1.0, help="Tightened SL distance in ticks (default: 1.0)")
     parser.add_argument("--ratchet-breakeven-ticks", type=float, default=2.5, help="MFE in ticks required for Ratchet Tier 2 Breakeven lock (default: 2.5)")
     parser.add_argument("--execution-style", type=str, default="PURE_MARKET", choices=["PURE_MARKET", "MAKER_HYBRID"], help="Order execution style: PURE_MARKET or MAKER_HYBRID")
+    parser.add_argument("--pivot-len", type=int, default=5, help="SMC Pivot Lookback Window (candles for swing highs/lows, default: 5)")
+    parser.add_argument("--risk-reward-ratio", "--rr", type=float, default=2.0, help="SMC Risk-to-Reward Ratio (default: 2.0)")
 
     # Research V3 & V3.1 Quantitative Feature Flags (Purely Toggleable)
     parser.add_argument("--use-atr-targets", dest="use_atr_targets", action="store_true", default=None, help="Enable ATR-calibrated dynamic profit targets and stops (Target Dilution Law)")
@@ -968,7 +1023,9 @@ def main():
             volume_filter_multiplier=vol_filt_mult,
             queue_dynamics_enabled=queue_dyn,
             resting_limit_tp=resting_tp,
-            simulate_intra_tick_liquidation=sim_liq
+            simulate_intra_tick_liquidation=sim_liq,
+            risk_reward_ratio=args.risk_reward_ratio if (args.risk_reward_ratio is not None and args.risk_reward_ratio != 2.0 or "risk_reward_ratio" not in preset_cfg) else float(preset_cfg.get("risk_reward_ratio", 2.0)),
+            pivot_len=args.pivot_len if (args.pivot_len is not None and args.pivot_len != 5 or "pivot_len" not in preset_cfg) else int(preset_cfg.get("pivot_len", 5))
         )
 
     # Dispatch to appropriate execution target

@@ -358,6 +358,8 @@ def prompt_user_settings():
             tp_queue_qty=preset_cfg.get("tp_queue_qty", 200.0),
             tp_atr_mult=float(preset_cfg.get("tp_atr_mult", 3.0)),
             sl_atr_mult=float(preset_cfg.get("sl_atr_mult", 1.5)),
+            risk_reward_ratio=float(preset_cfg.get("risk_reward_ratio", 2.0)),
+            pivot_len=int(preset_cfg.get("pivot_len", 5)),
             poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.2),
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -480,8 +482,12 @@ def prompt_user_settings():
     stoch_interval_val = default_stoch_interval
     stoch_zone_val = default_stoch_zone
 
+    smc_rr_val = float(get_setting("RISK_REWARD_RATIO", 2.0))
+    smc_pivot_len_val = int(get_setting("PIVOT_LEN", 5))
+
     if strat_str in ("1", "EMA", "EMA_CROSSOVER", "CROSSOVER", "ema", "ema_crossover"):
         strat_mode_val = "EMA_CROSSOVER"
+        invert_signal_val = False
         print("\n   EMA Crossover Preset:")
         print("   [1] 5 / 13  -> Fibonacci Scalp (Fast: 5, Slow: 13) [Default / Recommended]")
         print("   [2] 9 / 21  -> Momentum / Intraday Trend Scalp (Fast: 9, Slow: 21)")
@@ -534,6 +540,7 @@ def prompt_user_settings():
         strat_mode_val = "SMART_STRATEGY"
         bi_directional_val = True
         dir_val = OrderDirection.LONG
+        invert_signal_val = False
         print("\n   ✅ Active Smart Strategy: Autonomous Multi-Regime Micro-Scalping")
         print("      • Classifies 1m candles into 5 microstructure regimes")
         print("      • Strong Momentum Trends -> Routes to EMA Crossover (5/13)")
@@ -546,12 +553,22 @@ def prompt_user_settings():
         strat_mode_val = "ORDER_BLOCK_DEMAND"
         bi_directional_val = True
         dir_val = OrderDirection.LONG
-        print("\n   ✅ Active Strategy: Order Block + Demand Strategy (Smart Money Concepts)")
+        invert_signal_val = False
+        print("\n   🏛️ Active Strategy: Order Block + Demand Strategy (Smart Money Concepts - Vivek Yadav)")
         print("      • Strict Body-Close Break of Structure (BOS)")
         print("      • Full Wick-to-Wick Order Block & Demand/Supply Block Tracking")
-        print("      • 3-5 Consecutive Impulse Candles + FVG Imbalance Validation")
-        print("      • Weakness on Approach & Rejection Wick Confirmation")
         print("      • Dynamic 1:2 Risk-to-Reward Ratio and Safe Zone Stops")
+        rr_in = input(f"   Risk-to-Reward Ratio (e.g. 2.0 for 1:2 RR) [default: {smc_rr_val}]: ").strip()
+        try:
+            smc_rr_val = float(rr_in) if rr_in else smc_rr_val
+        except ValueError:
+            pass
+        pivot_in = input(f"   Pivot Lookback Window (candles for swing highs/lows) [default: {smc_pivot_len_val}]: ").strip()
+        try:
+            smc_pivot_len_val = int(pivot_in) if pivot_in else smc_pivot_len_val
+        except ValueError:
+            pass
+        print(f"   ✅ Active SMC Config: R:R = 1:{smc_rr_val:g}, Pivot Lookback = {smc_pivot_len_val} bars")
 
     else:
         # Default: STOCH_RSI
@@ -671,36 +688,50 @@ def prompt_user_settings():
                 pass
 
     # 5. Take-Profit rule (pu ticks)
-    print("\n5. Guaranteed Min-Profit Take-Profit (TP):")
-    print(f"   Distance in price units (pu). For {sym_val}, 1 pu = {pu_val:.{ps_val}f} USDT.")
-    print(f"   {default_tp} pu = +{default_tp * pu_val:.{ps_val}f} USDT target offset.")
-    tp_str = input(f"   TP Ticks [default: {default_tp} pu]: ").strip()
-    try:
-        tp_val = int(tp_str) if tp_str else default_tp
-    except ValueError:
-        tp_val = default_tp
+    if strat_mode_val == "ORDER_BLOCK_DEMAND":
+        print("\n5. Dynamic Smart Money Concepts Take-Profit (TP):")
+        print("   ✅ Dynamic SMC Target: 1:2 Risk-to-Reward Ratio calculated from Order Block zone.")
+        tp_val = default_tp or 10
+        dynamic_tp_val = True
+    else:
+        print("\n5. Guaranteed Min-Profit Take-Profit (TP):")
+        print(f"   Distance in price units (pu). For {sym_val}, 1 pu = {pu_val:.{ps_val}f} USDT.")
+        print(f"   {default_tp} pu = +{default_tp * pu_val:.{ps_val}f} USDT target offset.")
+        tp_str = input(f"   TP Ticks [default: {default_tp} pu]: ").strip()
+        try:
+            tp_val = int(tp_str) if tp_str else default_tp
+        except ValueError:
+            tp_val = default_tp
 
-    default_dyn_tp = get_setting("DYNAMIC_TP", False)
-    print("   Take-Profit Sizing Mode:")
-    print(f"   [1] FIXED TP   -> Strictly exit at exactly {tp_val} pu tick(s) [Recommended]")
-    print(f"   [2] DYNAMIC TP -> Allow signal strength to dynamically scale TP (1 to 3 pu)")
-    tp_mode_str = input(f"   Select TP Mode [default: {'1 (FIXED)' if not default_dyn_tp else '2 (DYNAMIC)'}]: ").strip()
-    dynamic_tp_val = (tp_mode_str == "2") if tp_mode_str else default_dyn_tp
+        default_dyn_tp = get_setting("DYNAMIC_TP", False)
+        print("   Take-Profit Sizing Mode:")
+        print(f"   [1] FIXED TP   -> Strictly exit at exactly {tp_val} pu tick(s) [Recommended]")
+        print(f"   [2] DYNAMIC TP -> Allow signal strength to dynamically scale TP (1 to 3 pu)")
+        tp_mode_str = input(f"   Select TP Mode [default: {'1 (FIXED)' if not default_dyn_tp else '2 (DYNAMIC)'}]: ").strip()
+        dynamic_tp_val = (tp_mode_str == "2") if tp_mode_str else default_dyn_tp
 
     # 6. Stop Loss
-    if default_sl_mode == "TICKS" and default_sl_ticks:
-        default_sl_hint = f"{default_sl_ticks} ticks ({default_sl_ticks * pu_val:.{ps_val}f} USDT)"
-    elif default_sl_mode == "PRICE_PCT" and default_sl_price:
-        default_sl_hint = f"{default_sl_price}% price"
+    if strat_mode_val == "ORDER_BLOCK_DEMAND":
+        print("\n6. Dynamic Smart Money Concepts Stop Loss (SL):")
+        print("   ✅ Structural Zone Stop: Anchored to Order Block boundary (low for Long, high for Short).")
+        sl_mode_val = "TICKS"
+        sl_ticks_val = default_sl_ticks or 5
+        sl_roe_val = None
+        sl_price_val = None
     else:
-        default_sl_hint = f"{default_sl_roe}% ROE"
+        if default_sl_mode == "TICKS" and default_sl_ticks:
+            default_sl_hint = f"{default_sl_ticks} ticks ({default_sl_ticks * pu_val:.{ps_val}f} USDT)"
+        elif default_sl_mode == "PRICE_PCT" and default_sl_price:
+            default_sl_hint = f"{default_sl_price}% price"
+        else:
+            default_sl_hint = f"{default_sl_roe}% ROE"
 
-    print("\n6. Stop Loss (SL) Configuration:")
-    print("   Format options:")
-    print(f"     - By Ticks : Enter '10' or '10t' (e.g. 10 ticks = {10 * pu_val:.{ps_val}f} USDT) [Recommended]")
-    print("     - By ROE % : Enter '25%' or '50roe' (percentage loss on margin)")
-    print("     - By Price%: Enter '0.5p' or '0.5%' (percentage move of coin price)")
-    sl_str = input(f"   Stop Loss [default: {default_sl_hint}]: ").strip()
+        print("\n6. Stop Loss (SL) Configuration:")
+        print("   Format options:")
+        print(f"     - By Ticks : Enter '10' or '10t' (e.g. 10 ticks = {10 * pu_val:.{ps_val}f} USDT) [Recommended]")
+        print("     - By ROE % : Enter '25%' or '50roe' (percentage loss on margin)")
+        print("     - By Price%: Enter '0.5p' or '0.5%' (percentage move of coin price)")
+        sl_str = input(f"   Stop Loss [default: {default_sl_hint}]: ").strip()
     
     sl_mode_val = default_sl_mode
     sl_ticks_val = default_sl_ticks if default_sl_mode == "TICKS" else None
@@ -828,19 +859,22 @@ def prompt_user_settings():
         order_type_val = "MARKET"
 
     # Tick Ratchet
-    default_ratchet = get_setting("RATCHET_ENABLED", True)
-    print("\n   Phase V2.2 Champion Micro-Excursion Tick Ratchet:")
-    print("   • Dynamic in-position trailing protection based on millisecond excursion (MFE)")
-    print("   • Tier 1: When MFE >= +1.0t and position stalls >= 10s -> Tightens SL to -1.0t")
-    print("   • Tier 2: When MFE >= +2.5t -> Locks SL to Breakeven (0.0t)")
-    def_r_str = "Y/n" if default_ratchet else "y/N"
-    r_in = input(f"   Enable Tick Ratchet? [{def_r_str}]: ").strip().lower()
-    if r_in in ("y", "yes", "1"):
-        ratchet_enabled_val = True
-    elif r_in in ("n", "no", "0"):
+    if strat_mode_val == "ORDER_BLOCK_DEMAND":
         ratchet_enabled_val = False
     else:
-        ratchet_enabled_val = default_ratchet
+        default_ratchet = get_setting("RATCHET_ENABLED", True)
+        print("\n   Phase V2.2 Champion Micro-Excursion Tick Ratchet:")
+        print("   • Dynamic in-position trailing protection based on millisecond excursion (MFE)")
+        print("   • Tier 1: When MFE >= +1.0t and position stalls >= 10s -> Tightens SL to -1.0t")
+        print("   • Tier 2: When MFE >= +2.5t -> Locks SL to Breakeven (0.0t)")
+        def_r_str = "Y/n" if default_ratchet else "y/N"
+        r_in = input(f"   Enable Tick Ratchet? [{def_r_str}]: ").strip().lower()
+        if r_in in ("y", "yes", "1"):
+            ratchet_enabled_val = True
+        elif r_in in ("n", "no", "0"):
+            ratchet_enabled_val = False
+        else:
+            ratchet_enabled_val = default_ratchet
 
     # Slippage simulation (primarily for Dry-Run)
     default_slip_en = get_setting("SLIPPAGE_ENABLED", False)
@@ -879,13 +913,6 @@ def prompt_user_settings():
         max_val = default_max
 
     # 10. Trade Optimization & Regime Filters
-    print("\n10. Trade Optimization & Regime Filters:")
-    print("   [1] Baseline / Disabled (Standard raw strategy execution) [Default]")
-    print("   [2] Enable Duration Time-Stop (Monitor >60s, Auto-Exit at 90s)")
-    print("   [3] Enable Full Institutional Safeguards (Duration + HTF 200 EMA + ADX + Hourly)")
-    print("   [4] Custom Filter Configuration")
-    filter_choice = input("   Select Filter Mode [default: 1 (Baseline / Disabled)]: ").strip()
-
     dur_enabled = get_setting("DURATION_FILTER_ENABLED", False)
     dur_deep_s = get_setting("DURATION_DEEP_MONITOR_SECONDS", 60.0)
     dur_max_s = get_setting("DURATION_MAX_HOLD_SECONDS", 90.0)
@@ -900,36 +927,50 @@ def prompt_user_settings():
     hourly_bl = get_setting("HOURLY_BLACKLIST_UTC", [2, 3, 4, 5, 17])
     dir_bias = get_setting("DIRECTION_BIAS", "BOTH")
 
-    if filter_choice == "2":
-        dur_enabled = True
-    elif filter_choice == "3":
-        dur_enabled = True
-        adx_enabled = True
-        htf_enabled = True
-        hourly_enabled = True
-        hourly_bl = [2, 3, 4, 5, 17]
-    elif filter_choice == "4":
-        d_in = input("   Enable Duration Filter? [y/N]: ").strip().lower()
-        if d_in in ("y", "yes", "1"):
+    if strat_mode_val == "ORDER_BLOCK_DEMAND":
+        dur_enabled = False
+        adx_enabled = False
+        htf_enabled = False
+        hourly_enabled = False
+        dir_bias = "BOTH"
+    else:
+        print("\n10. Trade Optimization & Regime Filters:")
+        print("   [1] Baseline / Disabled (Standard raw strategy execution) [Default]")
+        print("   [2] Enable Duration Time-Stop (Monitor >60s, Auto-Exit at 90s)")
+        print("   [3] Enable Full Institutional Safeguards (Duration + HTF 200 EMA + ADX + Hourly)")
+        print("   [4] Custom Filter Configuration")
+        filter_choice = input("   Select Filter Mode [default: 1 (Baseline / Disabled)]: ").strip()
+
+        if filter_choice == "2":
             dur_enabled = True
-            hold_in = input(f"   Max hold seconds [default: {dur_max_s}]: ").strip()
-            dur_max_s = float(hold_in) if hold_in else dur_max_s
-            act_in = input(f"   Action on timeout (CLOSE / SCRATCH_OR_MARKET / TIGHTEN_SL) [default: {dur_act}]: ").strip().upper()
-            dur_act = act_in if act_in in ("CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL") else dur_act
-        h_in = input("   Enable HTF 200 EMA Trend Filter? [y/N]: ").strip().lower()
-        if h_in in ("y", "yes", "1"):
-            htf_enabled = True
-        a_in = input("   Enable ADX Chop Filter? [y/N]: ").strip().lower()
-        if a_in in ("y", "yes", "1"):
+        elif filter_choice == "3":
+            dur_enabled = True
             adx_enabled = True
-        hr_in = input("   Enable Hourly Session Blacklist? [y/N]: ").strip().lower()
-        if hr_in in ("y", "yes", "1"):
+            htf_enabled = True
             hourly_enabled = True
-            bl_in = input("   Comma-separated UTC hours to block [default: 2,3,4,5,17]: ").strip()
-            hourly_bl = [int(x.strip()) for x in bl_in.split(",") if x.strip().isdigit()] if bl_in else [2, 3, 4, 5, 17]
-        bias_in = input(f"   Directional Bias (BOTH / LONG_ONLY / SHORT_ONLY) [default: {dir_bias}]: ").strip().upper()
-        if bias_in in ("LONG_ONLY", "SHORT_ONLY", "BOTH"):
-            dir_bias = bias_in
+            hourly_bl = [2, 3, 4, 5, 17]
+        elif filter_choice == "4":
+            d_in = input("   Enable Duration Filter? [y/N]: ").strip().lower()
+            if d_in in ("y", "yes", "1"):
+                dur_enabled = True
+                hold_in = input(f"   Max hold seconds [default: {dur_max_s}]: ").strip()
+                dur_max_s = float(hold_in) if hold_in else dur_max_s
+                act_in = input(f"   Action on timeout (CLOSE / SCRATCH_OR_MARKET / TIGHTEN_SL) [default: {dur_act}]: ").strip().upper()
+                dur_act = act_in if act_in in ("CLOSE", "SCRATCH_OR_MARKET", "TIGHTEN_SL") else dur_act
+            h_in = input("   Enable HTF 200 EMA Trend Filter? [y/N]: ").strip().lower()
+            if h_in in ("y", "yes", "1"):
+                htf_enabled = True
+            a_in = input("   Enable ADX Chop Filter? [y/N]: ").strip().lower()
+            if a_in in ("y", "yes", "1"):
+                adx_enabled = True
+            hr_in = input("   Enable Hourly Session Blacklist? [y/N]: ").strip().lower()
+            if hr_in in ("y", "yes", "1"):
+                hourly_enabled = True
+                bl_in = input("   Comma-separated UTC hours to block [default: 2,3,4,5,17]: ").strip()
+                hourly_bl = [int(x.strip()) for x in bl_in.split(",") if x.strip().isdigit()] if bl_in else [2, 3, 4, 5, 17]
+            bias_in = input(f"   Directional Bias (BOTH / LONG_ONLY / SHORT_ONLY) [default: {dir_bias}]: ").strip().upper()
+            if bias_in in ("LONG_ONLY", "SHORT_ONLY", "BOTH"):
+                dir_bias = bias_in
 
     print("=" * 78 + "\n")
 
@@ -1008,6 +1049,8 @@ def prompt_user_settings():
         slippage_ticks=slippage_ticks_val,
         tp_atr_mult=float(get_setting("TP_ATR_MULT", 3.0)),
         sl_atr_mult=float(get_setting("SL_ATR_MULT", 1.5)),
+        risk_reward_ratio=smc_rr_val,
+        pivot_len=smc_pivot_len_val,
         poll_interval_seconds=get_setting("POLL_INTERVAL_SECONDS", 0.3),
         logs_dir=get_setting("LOGS_DIR", "logs"),
         realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),
@@ -1083,6 +1126,18 @@ def parse_args():
         type=int,
         default=None,
         help="Take profit distance in price unit (pu) ticks (default: 2)"
+    )
+    parser.add_argument(
+        "--pivot-len",
+        type=int,
+        default=None,
+        help="SMC Pivot Lookback Window (candles for swing highs/lows, default: 5)"
+    )
+    parser.add_argument(
+        "--risk-reward-ratio", "--rr",
+        type=float,
+        default=None,
+        help="SMC Risk-to-Reward Ratio (default: 2.0)"
     )
     parser.add_argument(
         "--sl-ticks",
@@ -1717,6 +1772,8 @@ def main():
             direction_bias=args.direction_bias or get_setting("DIRECTION_BIAS", "BOTH"),
             tp_atr_mult=float(preset_cfg.get("tp_atr_mult", get_setting("TP_ATR_MULT", 3.0))),
             sl_atr_mult=float(preset_cfg.get("sl_atr_mult", get_setting("SL_ATR_MULT", 1.5))),
+            risk_reward_ratio=args.risk_reward_ratio if args.risk_reward_ratio is not None else float(preset_cfg.get("risk_reward_ratio", get_setting("RISK_REWARD_RATIO", 2.0))),
+            pivot_len=args.pivot_len if args.pivot_len is not None else int(preset_cfg.get("pivot_len", get_setting("PIVOT_LEN", 5))),
             poll_interval_seconds=poll_int,
             logs_dir=get_setting("LOGS_DIR", "logs"),
             realtime_log_file=get_setting("REALTIME_LOG_FILE", "engine_realtime.log"),

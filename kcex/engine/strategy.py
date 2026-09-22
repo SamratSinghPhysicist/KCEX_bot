@@ -151,6 +151,7 @@ class MasterplanStrategy:
                     cooldown_seconds=self.config.cooldown_seconds,
                     require_closed_candle=getattr(self.config, "smart_require_closed_candle", True),
                     risk_reward_ratio=getattr(self.config, "risk_reward_ratio", 2.0),
+                    pivot_len=getattr(self.config, "pivot_len", 5),
                     buffer_ticks=getattr(self.config, "buffer_ticks", 1),
                     min_sl_ticks=getattr(self.config, "min_sl_ticks", 3),
                     max_sl_ticks=getattr(self.config, "max_sl_ticks", 35)

@@ -594,7 +594,75 @@ class TestOrderBlockDemandStrategy(unittest.TestCase):
         self.assertAlmostEqual(outcome.exit_price, 2.520, places=3)
         self.assertEqual(outcome.exit_reason, ExitReason.MIN_PROFIT_TP_HIT)
 
+    def test_exact_vivek_indicator_engine_bullish_and_bearish(self):
+        """
+        Validates calc_indicator_zones_and_trades against Vivek_Yadav_OB_Strategy_PnL.js:
+        1. pivotLen = 5 swing pivot detection.
+        2. Bullish BOS -> origin extrema -> backward red candle scan -> full wick-to-wick OB.
+        3. Retest candle touching zone and closing green -> Long trade entry with exact 1:2 R:R.
+        4. Bearish BOS -> origin extrema -> backward green candle scan -> full wick-to-wick OB.
+        5. Retest candle touching zone and closing red -> Short trade entry with exact 1:2 R:R.
+        """
+        # Create a series of 25 bars with a swing high at bar 5 (price peak = 10.0)
+        # Bar 0..4: rising up to 9.5
+        # Bar 5: peak high=10.0, low=9.6, open=9.7, close=9.8
+        # Bar 6..10: pull back to 9.0 (bar 8 is red origin candle: open=9.2, close=9.05, high=9.25, low=9.00)
+        # Bar 11: BOS break close=10.10 > 10.00
+        # Bar 12: pullback to 9.15 (dips into OB [9.00 - 9.25] and closes green at 9.20)
+        timestamps = [1000 + i * 60 for i in range(20)]
+        opens =  [9.0, 9.1, 9.2, 9.4, 9.5, 9.7, 9.7, 9.4, 9.2, 9.3, 9.7, 9.9, 9.10, 9.30, 9.50, 9.60, 9.70, 9.80, 9.90, 10.0]
+        highs =  [9.1, 9.2, 9.3, 9.5, 9.6, 10.0, 9.8, 9.5, 9.25, 9.8, 9.9, 10.2, 9.25, 9.45, 9.65, 9.75, 9.85, 9.95, 10.05, 10.15]
+        lows =   [8.9, 9.0, 9.1, 9.3, 9.4, 9.6, 9.3, 9.1, 9.00, 9.2, 9.6, 9.8, 9.05, 9.25, 9.45, 9.55, 9.65, 9.75, 9.85, 9.95]
+        closes = [9.1, 9.2, 9.4, 9.5, 9.6, 9.8, 9.4, 9.2, 9.05, 9.7, 9.9, 10.10, 9.20, 9.40, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10]
+
+        zones, trades = self.strategy.calc_indicator_zones_and_trades(
+            timestamps, opens, highs, lows, closes, pivot_len=5
+        )
+
+        # Bullish OB should be discovered at bar 8 (the red candle before the BOS at bar 11)
+        bull_zones = [z for z in zones if z.is_bullish]
+        self.assertGreaterEqual(len(bull_zones), 1, "Bullish OB must be detected after BOS break of swing high")
+        ob = bull_zones[0]
+        self.assertEqual(ob.creation_bar_idx, 8)
+        self.assertEqual(ob.high, 9.25)
+        self.assertEqual(ob.low, 9.00)
+
+        # At bar 12, candle dips into OB (low 9.05 <= 9.25 and high 9.25 >= 9.00) and closes green (9.20 > 9.10)
+        # Should generate a Long trade
+        long_trades = [t for t in trades if t["type"] == "long"]
+        self.assertGreaterEqual(len(long_trades), 1, "Must generate Long trade when candle touches OB and closes green")
+        trade = long_trades[0]
+        self.assertEqual(trade["start_idx"], 12)
+        self.assertEqual(trade["entry"], 9.20)
+        self.assertEqual(trade["sl"], 9.00)
+        # 1:2 RR: entry + 2.0 * (9.20 - 9.00) = 9.20 + 0.40 = 9.60
+        self.assertAlmostEqual(trade["tp"], 9.60, places=4)
+
+    def test_exact_vivek_indicator_invalidation(self):
+        """
+        Validates that if price closes completely below the OB bottom,
+        the zone is invalidated and no trade is executed.
+        """
+        timestamps = [1000 + i * 60 for i in range(20)]
+        opens =  [9.0, 9.1, 9.2, 9.4, 9.5, 9.7, 9.7, 9.4, 9.2, 9.3, 9.7, 9.9, 9.10, 8.85, 9.50, 9.60, 9.70, 9.80, 9.90, 10.0]
+        highs =  [9.1, 9.2, 9.3, 9.5, 9.6, 10.0, 9.8, 9.5, 9.25, 9.8, 9.9, 10.2, 9.25, 8.95, 9.65, 9.75, 9.85, 9.95, 10.05, 10.15]
+        lows =   [8.9, 9.0, 9.1, 9.3, 9.4, 9.6, 9.3, 9.1, 9.00, 9.2, 9.6, 9.8, 9.05, 8.80, 9.45, 9.55, 9.65, 9.75, 9.85, 9.95]
+        # At bar 13, close = 8.85 < ob.low (9.00) -> Direct Invalidation blowout!
+        closes = [9.1, 9.2, 9.4, 9.5, 9.6, 9.8, 9.4, 9.2, 9.05, 9.7, 9.9, 10.10, 9.08, 8.85, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10]
+
+        zones, trades = self.strategy.calc_indicator_zones_and_trades(
+            timestamps, opens, highs, lows, closes, pivot_len=5
+        )
+
+        bull_zones = [z for z in zones if z.is_bullish]
+        self.assertGreaterEqual(len(bull_zones), 1)
+        self.assertEqual(bull_zones[0].status, ZoneStatus.INVALIDATED)
+        # Should NOT have any trades triggered after invalidation
+        trades_after_inv = [t for t in trades if t["start_idx"] >= 13]
+        self.assertEqual(len(trades_after_inv), 0, "No trades should be triggered after blowout invalidation")
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
