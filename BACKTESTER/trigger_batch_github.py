@@ -14,6 +14,13 @@ import argparse
 import requests
 from typing import Optional, Dict, Any, List
 
+# Ensure utf-8 output encoding on Windows consoles
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
@@ -167,10 +174,51 @@ class GitHubBatchRunner:
                         print(f"{Style.GREEN}{Style.BOLD}🎉 Multi-Asset Matrix Backtests Completed Successfully!{Style.RESET}")
                     else:
                         print(f"{Style.RED}⚠️ Matrix run concluded with status: {conclusion}{Style.RESET}")
+                    self.download_artifacts(run_id)
                     break
 
             except Exception:
                 pass
+
+    def download_artifacts(self, run_id: int, output_dir: str = "BACKTESTER/reports"):
+        """Downloads and extracts all matrix artifact ZIPs from the completed workflow run."""
+        import zipfile
+        os.makedirs(output_dir, exist_ok=True)
+        url = f"{self.api_base}/actions/runs/{run_id}/artifacts"
+
+        print(f"\n[*] Fetching generated matrix artifacts for Run #{run_id}...")
+        resp = requests.get(url, headers=self.headers, timeout=10)
+        if resp.status_code != 200:
+            print(f"[!] Could not retrieve artifact list: HTTP {resp.status_code}")
+            return
+
+        artifacts = resp.json().get("artifacts", [])
+        if not artifacts:
+            print(f"[!] No artifacts found for run #{run_id}.")
+            return
+
+        print(f"[+] Found {len(artifacts)} artifact package(s). Downloading...")
+        for art in artifacts:
+            name = art.get("name")
+            art_id = art.get("id")
+            download_url = f"{self.api_base}/actions/artifacts/{art_id}/zip"
+            zip_dest = os.path.join(output_dir, f"{name}.zip")
+
+            try:
+                dl = requests.get(download_url, headers=self.headers, stream=True, timeout=60)
+                if dl.status_code == 200:
+                    with open(zip_dest, "wb") as f:
+                        for chunk in dl.iter_content(chunk_size=65536):
+                            if chunk:
+                                f.write(chunk)
+                    # Extract contents
+                    with zipfile.ZipFile(zip_dest, "r") as z:
+                        z.extractall(output_dir)
+                    print(f"  ✓ Downloaded & Extracted: {name}")
+            except Exception as e:
+                print(f"  [!] Failed to download artifact {name}: {e}")
+
+        print(f"\n[+] All matrix reports successfully saved to: {os.path.abspath(output_dir)}")
 
 
 def main():
