@@ -657,174 +657,128 @@ class BacktestExecutionEngine:
             # Attempt High-Fidelity Tick Stream Monitoring if enabled
             hit_via_ticks = False
             if self.config.use_tick_data:
-                # Determine maximum bound for tick streaming from candle TP/SL breach
-                candidate_end_ms = None
-                for c_chk in all_candles[entry_idx + 1:]:
-                    if direction == OrderDirection.LONG:
-                        if c_chk.high >= exact_tp or c_chk.low <= exact_sl:
-                            candidate_end_ms = c_chk.close_time_ms
+                # 1. Smart Money Concepts: 1:1 Partial TP & Breakeven Lock candidate check
+                if is_smc_sig and partial_tp_enabled and target_1to1 and not partial_tp_executed:
+                    partial_candle = None
+                    for c_chk in all_candles[entry_idx + 1:]:
+                        if direction == OrderDirection.LONG and c_chk.high >= target_1to1:
+                            partial_candle = c_chk
                             break
-                    else:
-                        if c_chk.low <= exact_tp or c_chk.high >= exact_sl:
-                            candidate_end_ms = c_chk.close_time_ms
+                        elif direction == OrderDirection.SHORT and c_chk.low <= target_1to1:
+                            partial_candle = c_chk
                             break
 
-                tick_gen = self.tick_streamer.stream_ticks(
-                    self.symbol,
-                    start_ms=entry_ms,
-                    end_ms=candidate_end_ms
-                )
-                for tick in tick_gen:
-                    # Phase V2.2 Champion Micro-Excursion Tick Ratchet
-                    if getattr(self.config, "ratchet_enabled", False):
-                        favorable_ticks = (tick.price - entry_price) / pu if direction == OrderDirection.LONG else (entry_price - tick.price) / pu
-                        elapsed_sec = (tick.timestamp_ms / 1000.0) - open_time_sec
+                    if partial_candle:
+                        p_ticks = self.tick_streamer.stream_ticks(
+                            self.symbol,
+                            start_ms=partial_candle.open_time_ms,
+                            end_ms=partial_candle.close_time_ms
+                        )
+                        for tick in p_ticks:
+                            hit_1to1 = (tick.price >= target_1to1) if direction == OrderDirection.LONG else (tick.price <= target_1to1)
+                            if hit_1to1:
+                                if remaining_vol >= 2:
+                                    close_vol = remaining_vol // 2
+                                    partial_fill_price = target_1to1
+                                    partial_tp_executed = True
+                                    remaining_vol -= close_vol
+                                    new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                                    exact_sl = round(new_be_sl, ps)
+                                else:
+                                    if smc_1x_mode == "1TO1_TP":
+                                        exit_price = target_1to1
+                                        exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                                        exit_time_sec = tick.timestamp_ms / 1000.0
+                                        hit_via_ticks = True
+                                    else:
+                                        partial_tp_executed = True
+                                        new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                                        exact_sl = round(new_be_sl, ps)
+                                break
 
-                        # Tier 1: Stalled >= 10s at >= +1.0t -> Tighten SL to -1 tick
-                        t1_trig = float(getattr(self.config, "ratchet_trigger_ticks", 1.0))
-                        t1_stall = float(getattr(self.config, "ratchet_stall_seconds", 10.0))
-                        t1_tight = float(getattr(self.config, "ratchet_tighten_ticks", 1.0))
-                        if favorable_ticks >= t1_trig and elapsed_sec >= t1_stall:
-                            new_sl = entry_price - (t1_tight * pu) if direction == OrderDirection.LONG else entry_price + (t1_tight * pu)
-                            if (direction == OrderDirection.LONG and new_sl > exact_sl) or (direction == OrderDirection.SHORT and new_sl < exact_sl):
-                                exact_sl = round(new_sl, ps)
-
-                        # Tier 2: Favorable excursion >= +2.5t -> Lock at Breakeven (0.0t)
-                        t2_trig = float(getattr(self.config, "ratchet_breakeven_ticks", 2.5))
-                        if favorable_ticks >= t2_trig:
-                            be_sl = round(entry_price, ps)
-                            if (direction == OrderDirection.LONG and be_sl > exact_sl) or (direction == OrderDirection.SHORT and be_sl < exact_sl):
-                                exact_sl = be_sl
-
-                    # 75x Maintenance Margin Liquidation Barrier Check
-                    if getattr(self.config, "simulate_intra_tick_liquidation", True) and leverage > 0:
-                        mmr = float(getattr(self.contract, "maintenance_margin_ratio", 0.01) or 0.01)
+                # 2. Final Exit Candidate Candle Resolution
+                if not hit_via_ticks:
+                    candidate_candle = None
+                    for idx_chk in range(entry_idx + 1, len(all_candles)):
+                        c_chk = all_candles[idx_chk]
                         if direction == OrderDirection.LONG:
-                            liq_p = entry_price * (1.0 - (1.0 / float(leverage)) + mmr)
-                            if tick.price <= liq_p:
-                                exit_price = round(liq_p, ps)
-                                exit_reason = ExitReason.LIQUIDATION_HIT
-                                exit_time_sec = tick.timestamp_ms / 1000.0
-                                hit_via_ticks = True
+                            if c_chk.high >= exact_tp or c_chk.low <= exact_sl:
+                                candidate_candle = c_chk
+                                exit_candle_idx = idx_chk
                                 break
                         else:
-                            liq_p = entry_price * (1.0 + (1.0 / float(leverage)) - mmr)
-                            if tick.price >= liq_p:
-                                exit_price = round(liq_p, ps)
-                                exit_reason = ExitReason.LIQUIDATION_HIT
-                                exit_time_sec = tick.timestamp_ms / 1000.0
-                                hit_via_ticks = True
+                            if c_chk.low <= exact_tp or c_chk.high >= exact_sl:
+                                candidate_candle = c_chk
+                                exit_candle_idx = idx_chk
                                 break
 
-                    # Smart Money Concepts: 1:1 Partial TP & Breakeven Lock (Tick Stream)
-                    if is_smc_sig and partial_tp_enabled and target_1to1 and not partial_tp_executed:
-                        hit_1to1 = (tick.price >= target_1to1) if direction == OrderDirection.LONG else (tick.price <= target_1to1)
-                        if hit_1to1:
-                            if remaining_vol >= 2:
-                                close_vol = remaining_vol // 2
-                                partial_fill_price = target_1to1
-                                partial_tp_executed = True
-                                remaining_vol -= close_vol
-                                new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
-                                exact_sl = round(new_be_sl, ps)
-                            else:
-                                if smc_1x_mode == "1TO1_TP":
-                                    exit_price = target_1to1
+                    if candidate_candle:
+                        tick_gen = self.tick_streamer.stream_ticks(
+                            self.symbol,
+                            start_ms=candidate_candle.open_time_ms,
+                            end_ms=candidate_candle.close_time_ms
+                        )
+                        for tick in tick_gen:
+                            # 75x Maintenance Margin Liquidation Barrier Check
+                            if getattr(self.config, "simulate_intra_tick_liquidation", True) and leverage > 0:
+                                mmr = float(getattr(self.contract, "maintenance_margin_ratio", 0.01) or 0.01)
+                                if direction == OrderDirection.LONG:
+                                    liq_p = entry_price * (1.0 - (1.0 / float(leverage)) + mmr)
+                                    if tick.price <= liq_p:
+                                        exit_price = round(liq_p, ps)
+                                        exit_reason = ExitReason.LIQUIDATION_HIT
+                                        exit_time_sec = tick.timestamp_ms / 1000.0
+                                        hit_via_ticks = True
+                                        break
+                                else:
+                                    liq_p = entry_price * (1.0 + (1.0 / float(leverage)) - mmr)
+                                    if tick.price >= liq_p:
+                                        exit_price = round(liq_p, ps)
+                                        exit_reason = ExitReason.LIQUIDATION_HIT
+                                        exit_time_sec = tick.timestamp_ms / 1000.0
+                                        hit_via_ticks = True
+                                        break
+
+                            if direction == OrderDirection.LONG:
+                                if tick.price >= exact_tp:
+                                    exit_price = exact_tp
                                     exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                                     exit_time_sec = tick.timestamp_ms / 1000.0
                                     hit_via_ticks = True
                                     break
-                                else:  # 1TO2_WITH_BE
-                                    partial_tp_executed = True
-                                    new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
-                                    exact_sl = round(new_be_sl, ps)
-
-                    if direction == OrderDirection.LONG:
-                        # TP hit (Maker limit order fills at exact TP, 0 exit slippage)
-                        if tick.price >= exact_tp:
-                            exit_price = exact_tp
-                            exit_reason = ExitReason.MIN_PROFIT_TP_HIT
-                            exit_time_sec = tick.timestamp_ms / 1000.0
-                            hit_via_ticks = True
-                            break
-                        # SL hit (Market stop order crosses spread)
-                        elif tick.price <= exact_sl:
-                            exit_price = exact_sl
-                            if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
-                                exit_price = round(exact_sl - (self.config.slippage_ticks * pu), ps)
-
-                            if abs(exact_sl - entry_price) <= (0.2 * pu):
-                                exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
-                            elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
-                                exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
-                            else:
-                                exit_reason = ExitReason.STOP_LOSS_HIT
-                            exit_time_sec = tick.timestamp_ms / 1000.0
-                            hit_via_ticks = True
-                            break
-                    else: # SHORT
-                        # TP hit (Maker limit order fills at exact TP, 0 exit slippage)
-                        if tick.price <= exact_tp:
-                            exit_price = exact_tp
-                            exit_reason = ExitReason.MIN_PROFIT_TP_HIT
-                            exit_time_sec = tick.timestamp_ms / 1000.0
-                            hit_via_ticks = True
-                            break
-                        # SL hit (Market stop order crosses spread)
-                        elif tick.price >= exact_sl:
-                            exit_price = exact_sl
-                            if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
-                                exit_price = round(exact_sl + (self.config.slippage_ticks * pu), ps)
-
-                            if abs(exact_sl - entry_price) <= (0.2 * pu):
-                                exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
-                            elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
-                                exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
-                            else:
-                                exit_reason = ExitReason.STOP_LOSS_HIT
-                            exit_time_sec = tick.timestamp_ms / 1000.0
-                            hit_via_ticks = True
-                            break
-
-                    # Duration Monitoring & Time-Decay Safeguard
-                    if getattr(self.config, "duration_filter_enabled", False):
-                        tick_time_sec = tick.timestamp_ms / 1000.0
-                        elapsed_sec = tick_time_sec - open_time_sec
-                        max_hold_s = float(getattr(self.config, "duration_max_hold_seconds", 90.0))
-                        if elapsed_sec >= max_hold_s:
-                            action = (getattr(self.config, "duration_action", "CLOSE") or "CLOSE").upper()
-                            if action == "CLOSE":
-                                exit_price = tick.price
-                                exit_reason = ExitReason.TIMEOUT_CLOSE
-                                exit_time_sec = tick_time_sec
-                                hit_via_ticks = True
-                                break
-                            elif action == "SCRATCH_OR_MARKET":
-                                u_diff = (tick.price - entry_price) if direction == OrderDirection.LONG else (entry_price - tick.price)
-                                if u_diff >= -1.0 * pu:
-                                    exit_price = tick.price
-                                    exit_reason = ExitReason.DURATION_SCRATCH
-                                    exit_time_sec = tick_time_sec
+                                elif tick.price <= exact_sl:
+                                    exit_price = exact_sl
+                                    if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
+                                        exit_price = round(exact_sl - (self.config.slippage_ticks * pu), ps)
+                                    if abs(exact_sl - entry_price) <= (0.2 * pu):
+                                        exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                                    elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                                        exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                                    else:
+                                        exit_reason = ExitReason.STOP_LOSS_HIT
+                                    exit_time_sec = tick.timestamp_ms / 1000.0
                                     hit_via_ticks = True
                                     break
-                                else:
-                                    if direction == OrderDirection.LONG:
-                                        exact_sl = max(exact_sl, entry_price)
+                            else: # SHORT
+                                if tick.price <= exact_tp:
+                                    exit_price = exact_tp
+                                    exit_reason = ExitReason.MIN_PROFIT_TP_HIT
+                                    exit_time_sec = tick.timestamp_ms / 1000.0
+                                    hit_via_ticks = True
+                                    break
+                                elif tick.price >= exact_sl:
+                                    exit_price = exact_sl
+                                    if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
+                                        exit_price = round(exact_sl + (self.config.slippage_ticks * pu), ps)
+                                    if abs(exact_sl - entry_price) <= (0.2 * pu):
+                                        exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                                    elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                                        exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
                                     else:
-                                        exact_sl = min(exact_sl, entry_price)
-                            elif action == "TIGHTEN_SL":
-                                if direction == OrderDirection.LONG:
-                                    exact_sl = max(exact_sl, entry_price)
-                                else:
-                                    exact_sl = min(exact_sl, entry_price)
-
-                if hit_via_ticks:
-                    # Find candle index matching exit_time_sec
-                    exit_ms = int(exit_time_sec * 1000)
-                    for idx in range(entry_idx, len(all_candles)):
-                        if all_candles[idx].close_time_ms >= exit_ms:
-                            exit_candle_idx = idx
-                            break
+                                        exit_reason = ExitReason.STOP_LOSS_HIT
+                                    exit_time_sec = tick.timestamp_ms / 1000.0
+                                    hit_via_ticks = True
+                                    break
 
             # If ticks not available or no hit found via ticks, use Candle High/Low Fallback
             if not hit_via_ticks and self.config.tick_fallback_to_candle:
@@ -1082,6 +1036,11 @@ class BacktestExecutionEngine:
             smc_zone_type=signal.metadata.get("zone_type") if (is_smc_sig and signal and signal.metadata) else None,
             smc_zone_high=signal.metadata.get("zone_high") if (is_smc_sig and signal and signal.metadata) else None,
             smc_zone_low=signal.metadata.get("zone_low") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_zone_mid=signal.metadata.get("zone_mid") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_zone_creation_bar_idx=signal.metadata.get("zone_creation_bar_idx") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_zone_creation_time_utc=signal.metadata.get("zone_creation_time_utc") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_bos_bar_idx=signal.metadata.get("bos_bar_idx") if (is_smc_sig and signal and signal.metadata) else None,
+            smc_bos_price=signal.metadata.get("bos_price") if (is_smc_sig and signal and signal.metadata) else None,
             smc_fvg_size=signal.metadata.get("fvg_size") if (is_smc_sig and signal and signal.metadata) else None,
             smc_target_1to1=signal.metadata.get("target_1to1_price") if (is_smc_sig and signal and signal.metadata) else None,
             smc_target_1to2=signal.metadata.get("target_1to2_price") if (is_smc_sig and signal and signal.metadata) else None,
