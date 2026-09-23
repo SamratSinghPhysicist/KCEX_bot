@@ -3,13 +3,15 @@ High-Performance Multi-Asset Batch Backtest Runner
 ===================================================
 Executes exhaustive parameter sweeps (Timeframes, Fees, Slippages) across
 multiple trading assets using the Order Block + Demand strategy.
-Generates comprehensive comparative CSV and Markdown reports.
+Generates comprehensive comparative CSV, Markdown reports, and detailed trade logs.
 """
 
 import os
 import sys
+import glob
 import time
 import json
+import csv
 import argparse
 import datetime
 from typing import List, Dict, Any, Optional, Tuple
@@ -37,6 +39,7 @@ from BACKTESTER.engine.downloader import ensure_market_data
 DEFAULT_ASSETS = [
     "BTC_USDT",
     "XAU_USDT",
+    "XAG_USDT",
     "ETH_USDT",
     "SOL_USDT",
     "DOGE_USDT",
@@ -67,29 +70,36 @@ def run_batch_for_symbol(
     margin_pct: float = 10.0,
     strategy: str = "ORDER_BLOCK_DEMAND",
     reports_dir: str = "BACKTESTER/reports",
-    base_dir: str = "BACKTESTER"
-) -> List[Dict[str, Any]]:
-    """Runs all combinations for a single asset and returns collected results."""
+    base_dir: str = "BACKTESTER",
+    tag: Optional[str] = None
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Runs all combinations for a single asset and returns (matrix_results, trade_results)."""
     canonical = canonicalize_symbol(symbol)
     if "MOG" in canonical:
         canonical = "1000000MOG_USDT"
     elif "XAU" in canonical:
         canonical = "XAU_USDT"
+    elif "XAG" in canonical:
+        canonical = "XAG_USDT"
     elif "CL" in canonical:
         canonical = "CL_USDT"
 
-    # Handle CLUSDT listing date (listed 2026-04-01)
+    # Handle asset listing dates
     effective_start = start_date
     if "CL" in canonical and start_date < "2026-04-01":
         effective_start = "2026-04-01"
         print(f"[*] Note: {canonical} listed on Binance on 2026-04-01. Using start date: {effective_start}")
+    elif "XAG" in canonical and start_date < "2026-01-07":
+        effective_start = "2026-01-07"
+        print(f"[*] Note: {canonical} listed on Binance on 2026-01-07. Using start date: {effective_start}")
 
     os.makedirs(reports_dir, exist_ok=True)
     loader = OHLCVLoader(data_dir=os.path.join(base_dir, "OHLCV_Data_Binance"))
     start_ms = parse_timestamp_ms(effective_start)
     end_ms = parse_timestamp_ms(end_date)
 
-    results: List[Dict[str, Any]] = []
+    matrix_results: List[Dict[str, Any]] = []
+    trade_results: List[Dict[str, Any]] = []
 
     print("\n" + "=" * 80)
     print(f"🚀 INITIATING BATCH MATRIX SWEEP: {canonical}")
@@ -102,7 +112,7 @@ def run_batch_for_symbol(
 
     # Preload 1m disambiguation candles once if higher timeframes will be run
     sub_1m_candles = None
-    needs_sub_1m = any(tf != "1m" for tf in timeframes)
+    needs_sub_1m = any(normalize_timeframe(tf) != "1m" for tf in timeframes)
     if needs_sub_1m:
         print(f"[*] Ensuring 1m sub-candles for {canonical} disambiguation...")
         ensure_market_data(
@@ -119,7 +129,7 @@ def run_batch_for_symbol(
             start_ms=start_ms,
             end_ms=end_ms
         )
-        print(f"    Loaded {len(sub_1m_candles)} 1m sub-candles.")
+        print(f"    Loaded {len(sub_1m_candles) if sub_1m_candles else 0} 1m sub-candles.")
 
     for tf in timeframes:
         norm_tf = normalize_timeframe(tf)
@@ -214,7 +224,40 @@ def run_batch_for_symbol(
                     "total_fees_usdt": round(summary.total_fees_usdt, 2),
                     "final_balance_usdt": round(summary.final_balance_usdt, 2)
                 }
-                results.append(res_row)
+                matrix_results.append(res_row)
+
+                # Record individual trade-by-trade outcomes
+                for o in outcomes:
+                    trade_results.append({
+                        "symbol": canonical,
+                        "timeframe": norm_tf,
+                        "fidelity": fidelity_label,
+                        "fee_schedule": fee_lbl,
+                        "maker_fee_pct": m_pct,
+                        "taker_fee_pct": t_pct,
+                        "slippage_ticks": slip,
+                        "trade_id": o.trade_id,
+                        "direction": o.direction.name if hasattr(o.direction, "name") else str(o.direction),
+                        "entry_time_utc": format_ms_to_utc(int(o.open_time * 1000)),
+                        "exit_time_utc": format_ms_to_utc(int(o.close_time * 1000)),
+                        "duration_seconds": round(o.duration_seconds, 1),
+                        "entry_price": o.entry_price,
+                        "exit_price": o.exit_price,
+                        "min_profit_tp_price": o.min_profit_tp_price,
+                        "stop_loss_price": o.stop_loss_price,
+                        "underlying_quantity": o.underlying_quantity,
+                        "vol_contracts": o.vol_contracts,
+                        "margin_used_usdt": round(o.margin_used_usdt, 2),
+                        "notional_value_usdt": round(o.notional_value_usdt, 2),
+                        "net_pnl_usdt": round(o.realized_pnl_usdt, 4),
+                        "roe_percentage": round(o.roe_percentage, 2),
+                        "pnl_percentage": round(o.pnl_percentage, 4),
+                        "fee_open_usdt": round(o.fee_open_usdt, 4),
+                        "fee_close_usdt": round(o.fee_close_usdt, 4),
+                        "fee_total_usdt": round(o.fee_total_usdt, 4),
+                        "exit_reason": o.exit_reason.name if hasattr(o.exit_reason, "name") else str(o.exit_reason),
+                        "balance_after_trade_usdt": round(o.balance_after_trade_usdt, 2) if o.balance_after_trade_usdt is not None else None
+                    })
 
                 roi_sign = "+" if res_row["net_roi_pct"] >= 0 else ""
                 print(
@@ -227,16 +270,28 @@ def run_batch_for_symbol(
         print(f"    Completed {norm_tf} sweep in {t_tf_elapsed:.1f}s.")
 
     # Generate Reports
-    export_matrix_reports(canonical, results, reports_dir)
-    return results
+    export_matrix_reports(
+        symbol=canonical,
+        results=matrix_results,
+        trades=trade_results,
+        reports_dir=reports_dir,
+        tag=tag
+    )
+    return matrix_results, trade_results
 
 
-def export_matrix_reports(symbol: str, results: List[Dict[str, Any]], reports_dir: str):
-    """Exports both CSV and rich Markdown matrix reports."""
-    import csv
+def export_matrix_reports(
+    symbol: str,
+    results: List[Dict[str, Any]],
+    trades: List[Dict[str, Any]],
+    reports_dir: str,
+    tag: Optional[str] = None
+):
+    """Exports CSV, Markdown matrix reports, and trade-by-trade records."""
+    suffix = f"_{tag}" if tag else ""
 
-    # 1. Export CSV
-    csv_file = os.path.join(reports_dir, f"{symbol}_batch_matrix.csv")
+    # 1. Export Matrix CSV
+    csv_file = os.path.join(reports_dir, f"{symbol}{suffix}_batch_matrix.csv")
     if results:
         headers = list(results[0].keys())
         with open(csv_file, "w", newline="", encoding="utf-8") as f:
@@ -245,17 +300,25 @@ def export_matrix_reports(symbol: str, results: List[Dict[str, Any]], reports_di
             writer.writerows(results)
         print(f"\n[+] Saved Matrix CSV: {csv_file}")
 
-    # 2. Export Markdown Report
-    md_file = os.path.join(reports_dir, f"{symbol}_batch_matrix.md")
-    
-    # Sort for best performers
+    # 2. Export Trade-by-Trade CSV
+    trades_file = os.path.join(reports_dir, f"{symbol}{suffix}_trades.csv")
+    if trades:
+        trade_headers = list(trades[0].keys())
+        with open(trades_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=trade_headers)
+            writer.writeheader()
+            writer.writerows(trades)
+        print(f"[+] Saved Trades CSV ({len(trades)} trades): {trades_file}")
+
+    # 3. Export Markdown Report
+    md_file = os.path.join(reports_dir, f"{symbol}{suffix}_batch_matrix.md")
     sorted_by_pnl = sorted(results, key=lambda x: x["net_pnl_usdt"], reverse=True)
     top_5 = sorted_by_pnl[:5]
 
     lines = []
-    lines.append(f"# 📊 Backtest Matrix Results: {symbol}")
+    lines.append(f"# 📊 Backtest Matrix Results: {symbol} {suffix.strip('_')}")
     lines.append(f"**Strategy:** `Order Block + Demand` | **Initial Capital:** `$100.00` | **Leverage:** `10x` | **Margin Sizing:** `10%`")
-    lines.append(f"**Date Range:** `2026-01-01` to `2026-08-31` | **Total Runs:** `{len(results)}`")
+    lines.append(f"**Total Sweep Runs:** `{len(results)}` | **Total Trades Logged:** `{len(trades)}`")
     lines.append("\n---\n")
 
     lines.append("## 🏆 Top 5 Best Performing Configurations")
@@ -298,6 +361,140 @@ def export_matrix_reports(symbol: str, results: List[Dict[str, Any]], reports_di
             print(f"[!] Could not write to GITHUB_STEP_SUMMARY: {e}")
 
 
+def consolidate_reports(symbol: str, reports_dir: str):
+    """Gathers all partial matrix CSVs and trade CSVs for a symbol and generates unified reports."""
+    canonical = canonicalize_symbol(symbol)
+    if "MOG" in canonical:
+        canonical = "1000000MOG_USDT"
+    elif "XAU" in canonical:
+        canonical = "XAU_USDT"
+    elif "XAG" in canonical:
+        canonical = "XAG_USDT"
+    elif "CL" in canonical:
+        canonical = "CL_USDT"
+
+    print(f"\n[*] Consolidating reports for {canonical} in {reports_dir}...")
+
+    # 1. Gather all matrix CSVs
+    matrix_files = glob.glob(os.path.join(reports_dir, f"{canonical}*batch_matrix*.csv"))
+    master_matrix_path = os.path.abspath(os.path.join(reports_dir, f"{canonical}_batch_matrix.csv"))
+    chunk_matrix_files = [f for f in matrix_files if os.path.abspath(f) != master_matrix_path]
+    if not chunk_matrix_files and os.path.exists(master_matrix_path):
+        chunk_matrix_files = [master_matrix_path]
+
+    all_matrix_rows: List[Dict[str, Any]] = []
+    seen_matrix_keys = set()
+
+    for mf in sorted(chunk_matrix_files):
+        with open(mf, "r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                for k in ["total_trades", "winning_trades", "losing_trades", "slippage_ticks"]:
+                    if k in row and row[k] != "":
+                        try:
+                            row[k] = int(float(row[k]))
+                        except ValueError:
+                            pass
+                for k in ["win_rate_pct", "profit_factor", "net_pnl_usdt", "net_roi_pct", "max_drawdown_pct", "expectancy_usdt", "total_fees_usdt", "final_balance_usdt", "maker_fee_pct", "taker_fee_pct"]:
+                    if k in row and row[k] != "":
+                        try:
+                            row[k] = float(row[k])
+                        except ValueError:
+                            pass
+
+                key = (row.get("timeframe"), row.get("fee_schedule"), row.get("slippage_ticks"))
+                if key not in seen_matrix_keys:
+                    seen_matrix_keys.add(key)
+                    all_matrix_rows.append(row)
+
+    print(f"[+] Consolidated {len(all_matrix_rows)} matrix run configuration(s).")
+
+    # 2. Gather all trade CSVs
+    trade_files = glob.glob(os.path.join(reports_dir, f"{canonical}*trades*.csv"))
+    master_trade_path = os.path.abspath(os.path.join(reports_dir, f"{canonical}_all_trades.csv"))
+    chunk_trade_files = [f for f in trade_files if os.path.abspath(f) != master_trade_path]
+
+    all_trades: List[Dict[str, Any]] = []
+    seen_trade_keys = set()
+
+    for tf in sorted(chunk_trade_files):
+        with open(tf, "r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                key = (row.get("timeframe"), row.get("fee_schedule"), row.get("slippage_ticks"), row.get("trade_id"), row.get("entry_time_utc"))
+                if key not in seen_trade_keys:
+                    seen_trade_keys.add(key)
+                    all_trades.append(row)
+
+    print(f"[+] Consolidated {len(all_trades)} trade-by-trade record(s).")
+
+    # 3. Export unified files
+    if all_matrix_rows:
+        headers = list(all_matrix_rows[0].keys())
+        with open(master_matrix_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=headers)
+            writer.writeheader()
+            writer.writerows(all_matrix_rows)
+        print(f"[+] Saved Master Matrix CSV: {master_matrix_path}")
+
+        md_file = os.path.join(reports_dir, f"{canonical}_batch_matrix.md")
+        sorted_by_pnl = sorted(all_matrix_rows, key=lambda x: float(x.get("net_pnl_usdt", 0)), reverse=True)
+        top_5 = sorted_by_pnl[:5]
+
+        lines = []
+        lines.append(f"# 📊 Backtest Matrix Results: {canonical}")
+        lines.append(f"**Strategy:** `Order Block + Demand` | **Initial Capital:** `$100.00` | **Leverage:** `10x` | **Margin Sizing:** `10%`")
+        lines.append(f"**Total Sweep Runs:** `{len(all_matrix_rows)}` | **Total Closed Trades Logged:** `{len(all_trades)}`")
+        lines.append("\n---\n")
+
+        lines.append("## 🏆 Top 5 Best Performing Configurations")
+        lines.append("| Rank | Timeframe | Fee Schedule | Slippage | Trades | Win Rate | Profit Factor | Net PnL | ROI % | Max DD % |")
+        lines.append("| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |")
+        for idx, r in enumerate(top_5, 1):
+            roi = float(r.get('net_roi_pct', 0))
+            sign = "+" if roi >= 0 else ""
+            lines.append(
+                f"| **#{idx}** | `{r['timeframe']}` | {r['fee_schedule']} | `{r['slippage_ticks']}t` | "
+                f"`{r['total_trades']}` | `{r['win_rate_pct']}%` | `{r['profit_factor']}` | "
+                f"**`${float(r['net_pnl_usdt']):+.2f}`** | **`{sign}{roi}%`** | `{r['max_drawdown_pct']}%` |"
+            )
+        lines.append("\n---\n")
+
+        lines.append("## 📋 Comprehensive Results Table")
+        lines.append("| Timeframe | Fidelity | Fee Schedule | Slip | Trades | Win Rate | PF | Net PnL (USDT) | ROI % | Max DD % | Final Balance |")
+        lines.append("| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |")
+        for r in all_matrix_rows:
+            roi = float(r.get('net_roi_pct', 0))
+            sign = "+" if roi >= 0 else ""
+            fid_short = "TICKS" if "TICKS" in str(r.get('fidelity', '')) else "OHLCV"
+            lines.append(
+                f"| `{r['timeframe']}` | `{fid_short}` | {r['fee_schedule']} | `{r['slippage_ticks']}t` | "
+                f"`{r['total_trades']}` | `{r['win_rate_pct']}%` | `{r['profit_factor']}` | "
+                f"`${float(r['net_pnl_usdt']):+.2f}` | `{sign}{roi}%` | `{r['max_drawdown_pct']}%` | `${float(r.get('final_balance_usdt', 0)):.2f}` |"
+            )
+
+        md_content = "\n".join(lines)
+        with open(md_file, "w", encoding="utf-8") as f:
+            f.write(md_content)
+        print(f"[+] Saved Master Markdown Report: {md_file}")
+
+        gh_summary = os.getenv("GITHUB_STEP_SUMMARY")
+        if gh_summary:
+            try:
+                with open(gh_summary, "a", encoding="utf-8") as gf:
+                    gf.write("\n\n" + md_content + "\n")
+            except Exception:
+                pass
+
+    if all_trades:
+        trade_headers = list(all_trades[0].keys())
+        with open(master_trade_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=trade_headers)
+            writer.writeheader()
+            writer.writerows(all_trades)
+        print(f"[+] Saved Master Trades CSV: {master_trade_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Multi-Asset Batch Strategy Backtest Runner")
     parser.add_argument("--symbols", type=str, default="BTC_USDT", help="Comma-separated trading symbols (e.g. BTC_USDT,ETH_USDT,ALL)")
@@ -311,10 +508,16 @@ def main():
     parser.add_argument("--strategy", type=str, default="ORDER_BLOCK_DEMAND", help="Strategy to evaluate")
     parser.add_argument("--reports-dir", type=str, default="BACKTESTER/reports", help="Output directory for reports")
     parser.add_argument("--base-dir", type=str, default="BACKTESTER", help="Base data directory")
+    parser.add_argument("--tag", type=str, default=None, help="Optional suffix tag for output report files")
+    parser.add_argument("--consolidate", action="store_true", help="Consolidate partial chunk reports for symbol")
 
     args = parser.parse_args()
 
     sym_str = args.symbol or args.symbols
+    if args.consolidate:
+        consolidate_reports(symbol=sym_str, reports_dir=args.reports_dir)
+        return
+
     if sym_str.strip().upper() == "ALL":
         target_symbols = DEFAULT_ASSETS
     else:
@@ -336,7 +539,8 @@ def main():
             margin_pct=args.margin_pct,
             strategy=args.strategy,
             reports_dir=args.reports_dir,
-            base_dir=args.base_dir
+            base_dir=args.base_dir,
+            tag=args.tag
         )
 
     t_all_elapsed = time.time() - t_all_start

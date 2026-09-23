@@ -657,7 +657,23 @@ class BacktestExecutionEngine:
             # Attempt High-Fidelity Tick Stream Monitoring if enabled
             hit_via_ticks = False
             if self.config.use_tick_data:
-                tick_gen = self.tick_streamer.stream_ticks(self.symbol, start_ms=entry_ms)
+                # Determine maximum bound for tick streaming from candle TP/SL breach
+                candidate_end_ms = None
+                for c_chk in all_candles[entry_idx + 1:]:
+                    if direction == OrderDirection.LONG:
+                        if c_chk.high >= exact_tp or c_chk.low <= exact_sl:
+                            candidate_end_ms = c_chk.close_time_ms
+                            break
+                    else:
+                        if c_chk.low <= exact_tp or c_chk.high >= exact_sl:
+                            candidate_end_ms = c_chk.close_time_ms
+                            break
+
+                tick_gen = self.tick_streamer.stream_ticks(
+                    self.symbol,
+                    start_ms=entry_ms,
+                    end_ms=candidate_end_ms
+                )
                 for tick in tick_gen:
                     # Phase V2.2 Champion Micro-Excursion Tick Ratchet
                     if getattr(self.config, "ratchet_enabled", False):

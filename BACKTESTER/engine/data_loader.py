@@ -185,6 +185,8 @@ class OHLCVLoader:
             candidates.extend(["1000000MOGUSDT", "1000000MOG_USDT", "MOGUSDT", "MOG_USDT"])
         elif "XAU" in clean:
             candidates.extend(["XAUUSDT", "XAU_USDT"])
+        elif "XAG" in clean:
+            candidates.extend(["XAGUSDT", "XAG_USDT"])
         elif "CL" in clean:
             candidates.extend(["CLUSDT", "CL_USDT"])
 
@@ -319,6 +321,8 @@ class TickTradeStreamer:
             candidates.extend(["1000000MOGUSDT", "1000000MOG_USDT", "MOGUSDT", "MOG_USDT"])
         elif "XAU" in clean:
             candidates.extend(["XAUUSDT", "XAU_USDT"])
+        elif "XAG" in clean:
+            candidates.extend(["XAGUSDT", "XAG_USDT"])
         elif "CL" in clean:
             candidates.extend(["CLUSDT", "CL_USDT"])
 

@@ -220,6 +220,24 @@ DEFAULT_CONTRACTS: Dict[str, Dict[str, Any]] = {
         "taker_fee_rate": 0.0001,
         "depth_steps": ["0.01"]
     },
+    "XAG_USDT": {
+        "base_coin": "XAG",
+        "quote_coin": "USDT",
+        "contract_size": 0.01,
+        "price_unit": 0.01,
+        "volume_unit": 1.0,
+        "price_precision": 2,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 1000000.0,
+        "min_leverage": 1,
+        "max_leverage": 75,
+        "maintenance_margin_ratio": 0.0067,
+        "initial_margin_ratio": 0.0133,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.01"]
+    },
     "1000000MOG_USDT": {
         "base_coin": "1000000MOG",
         "quote_coin": "USDT",
