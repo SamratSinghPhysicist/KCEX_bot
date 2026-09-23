@@ -139,7 +139,7 @@ class PairBacktestManager:
     ) -> Dict[str, Optional[int]]:
         """Dispatches runs for all symbols sequentially with slight stagger."""
         print(f"\n{Style.CYAN}{'='*80}{Style.RESET}")
-        print(f"{Style.BOLD}     DISPATCHING PARALLEL PAIR BACKTEST RUNS (4 WORKERS PER PAIR){Style.RESET}")
+        print(f"{Style.BOLD}     DISPATCHING PARALLEL PAIR BACKTEST RUNS (10 WORKERS PER PAIR){Style.RESET}")
         print(f"{Style.CYAN}{'='*80}{Style.RESET}")
         print(f"Target Assets: {', '.join(symbols)}")
         print(f"Date Range:    {start_date} to {end_date}")

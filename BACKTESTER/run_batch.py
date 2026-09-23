@@ -519,6 +519,8 @@ def main():
     parser.add_argument("--reports-dir", type=str, default="BACKTESTER/reports", help="Output directory for reports")
     parser.add_argument("--base-dir", type=str, default="BACKTESTER", help="Base data directory")
     parser.add_argument("--tag", type=str, default=None, help="Optional suffix tag for output report files")
+    parser.add_argument("--fee-indices", type=str, default="0,1,2", help="Comma-separated fee schedule indices (0=0.02/0.05, 1=0.00/0.01, 2=0.10/0.10)")
+    parser.add_argument("--slippage-ticks", type=str, default="1,2,3,4,5,6,7", help="Comma-separated slippage tick values (e.g. 1,2,3 or 4,5,6,7)")
     parser.add_argument("--consolidate", action="store_true", help="Consolidate partial chunk reports for symbol")
 
     args = parser.parse_args()
@@ -535,13 +537,18 @@ def main():
 
     target_tfs = [t.strip().lower() for t in args.timeframes.split(",") if t.strip()]
 
+    # Parse fee schedules and slippages
+    fee_idxs = [int(x.strip()) for x in args.fee_indices.split(",") if x.strip()]
+    target_fees = [FEE_SCHEDULES[i] for i in fee_idxs if 0 <= i < len(FEE_SCHEDULES)]
+    target_slips = [int(x.strip()) for x in args.slippage_ticks.split(",") if x.strip()]
+
     t_all_start = time.time()
     for s in target_symbols:
         run_batch_for_symbol(
             symbol=s,
             timeframes=target_tfs,
-            fee_schedules=FEE_SCHEDULES,
-            slippage_ticks=SLIPPAGE_TICKS,
+            fee_schedules=target_fees,
+            slippage_ticks=target_slips,
             start_date=args.start,
             end_date=args.end,
             capital=args.capital,

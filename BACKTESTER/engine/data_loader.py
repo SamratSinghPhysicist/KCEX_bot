@@ -339,6 +339,26 @@ class TickTradeStreamer:
             return []
         return sorted(glob.glob(os.path.join(sym_dir, "*.csv")))
 
+    def _get_symbol_file_metas(self, symbol: str) -> List[Tuple[str, int, int, int]]:
+        """Returns cached list of (fpath, file_size, first_ts, last_ts) for symbol."""
+        if not hasattr(self, "_file_meta_cache"):
+            self._file_meta_cache = {}
+        if symbol in self._file_meta_cache:
+            return self._file_meta_cache[symbol]
+
+        files = self.get_trade_files(symbol)
+        metas = []
+        for fpath in files:
+            sz = os.path.getsize(fpath)
+            if sz == 0:
+                continue
+            ok_last, last_ts = self._get_file_last_ts(fpath)
+            ok_first, first_ts = self._get_file_first_ts(fpath)
+            if ok_first and ok_last and first_ts is not None and last_ts is not None:
+                metas.append((fpath, sz, first_ts, last_ts))
+        self._file_meta_cache[symbol] = metas
+        return metas
+
     def stream_ticks(
         self,
         symbol: str,
@@ -349,24 +369,16 @@ class TickTradeStreamer:
         Yields TradeTick instances chronologically starting from start_ms up to end_ms.
         Uses binary offset seek to start reading exactly around start_ms.
         """
-        files = self.get_trade_files(symbol)
-        if not files:
+        metas = self._get_symbol_file_metas(symbol)
+        if not metas:
             return
 
-        for fpath in files:
-            file_size = os.path.getsize(fpath)
-            if file_size == 0:
-                continue
-
-            # Determine whether this file covers our target time range
-            # Check last timestamp of the file
-            _, file_last_ts = self._get_file_last_ts(fpath)
-            if file_last_ts and file_last_ts < start_ms:
+        for fpath, file_size, file_first_ts, file_last_ts in metas:
+            if file_last_ts < start_ms:
                 # File is entirely in the past, skip
                 continue
 
-            _, file_first_ts = self._get_file_first_ts(fpath)
-            if end_ms and file_first_ts and file_first_ts > end_ms:
+            if end_ms and file_first_ts > end_ms:
                 # File is entirely in the future, stop
                 break
 

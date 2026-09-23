@@ -52,20 +52,73 @@ on:
 
 jobs:
   matrix-worker:
-    name: Worker ${{ matrix.tf_label }} (${{ inputs.symbol }})
+    name: Worker ${{ matrix.worker_id }}-${{ matrix.tag }} (${{ inputs.symbol }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - tf_label: "1m"
+          # 1m Split (6 workers):
+          # Fee 0 (Maker 0.02% / Taker 0.05%)
+          - worker_id: "w01"
+            tag: "1m_f0_s1-3"
             timeframes: "1m"
-          - tf_label: "5m"
+            fee_indices: "0"
+            slippage_ticks: "1,2,3"
+          - worker_id: "w02"
+            tag: "1m_f0_s4-7"
+            timeframes: "1m"
+            fee_indices: "0"
+            slippage_ticks: "4,5,6,7"
+          # Fee 1 (Maker 0.00% / Taker 0.01%)
+          - worker_id: "w03"
+            tag: "1m_f1_s1-3"
+            timeframes: "1m"
+            fee_indices: "1"
+            slippage_ticks: "1,2,3"
+          - worker_id: "w04"
+            tag: "1m_f1_s4-7"
+            timeframes: "1m"
+            fee_indices: "1"
+            slippage_ticks: "4,5,6,7"
+          # Fee 2 (Maker 0.10% / Taker 0.10%)
+          - worker_id: "w05"
+            tag: "1m_f2_s1-3"
+            timeframes: "1m"
+            fee_indices: "2"
+            slippage_ticks: "1,2,3"
+          - worker_id: "w06"
+            tag: "1m_f2_s4-7"
+            timeframes: "1m"
+            fee_indices: "2"
+            slippage_ticks: "4,5,6,7"
+
+          # 5m Split (3 workers):
+          # Fee 0 (Maker 0.02% / Taker 0.05%)
+          - worker_id: "w07"
+            tag: "5m_f0"
             timeframes: "5m"
-          - tf_label: "15m-1h"
-            timeframes: "15m,1h"
-          - tf_label: "4h-1d"
-            timeframes: "4h,1d"
+            fee_indices: "0"
+            slippage_ticks: "1,2,3,4,5,6,7"
+          # Fee 1 (Maker 0.00% / Taker 0.01%)
+          - worker_id: "w08"
+            tag: "5m_f1"
+            timeframes: "5m"
+            fee_indices: "1"
+            slippage_ticks: "1,2,3,4,5,6,7"
+          # Fee 2 (Maker 0.10% / Taker 0.10%)
+          - worker_id: "w09"
+            tag: "5m_f2"
+            timeframes: "5m"
+            fee_indices: "2"
+            slippage_ticks: "1,2,3,4,5,6,7"
+
+          # Higher Timeframes (1 worker): 15m, 1h, 4h, 1d (all fees & slippages)
+          - worker_id: "w10"
+            tag: "htf_all"
+            timeframes: "15m,1h,4h,1d"
+            fee_indices: "0,1,2"
+            slippage_ticks: "1,2,3,4,5,6,7"
 
     steps:
       - name: Checkout Code
@@ -88,13 +141,13 @@ jobs:
           path: |
             BACKTESTER/OHLCV_Data_Binance
             BACKTESTER/Historical_Trades_Data_Binance
-          key: worker-data-${{ inputs.symbol }}-${{ matrix.tf_label }}-${{ inputs.start_date }}-${{ inputs.end_date }}
+          key: worker-data-${{ inputs.symbol }}-${{ matrix.tag }}-${{ inputs.start_date }}-${{ inputs.end_date }}
           restore-keys: |
-            worker-data-${{ inputs.symbol }}-${{ matrix.tf_label }}-
+            worker-data-${{ inputs.symbol }}-${{ matrix.tag }}-
             worker-data-${{ inputs.symbol }}-
             worker-data-
 
-      - name: Execute Worker Timeframe Sweep
+      - name: Execute Worker Sweep
         run: |
           python BACKTESTER/run_batch.py \
             --symbol "${{ inputs.symbol }}" \
@@ -105,17 +158,19 @@ jobs:
             --capital "${{ inputs.capital }}" \
             --leverage "${{ inputs.leverage }}" \
             --margin-pct "${{ inputs.margin_pct }}" \
-            --tag "${{ matrix.tf_label }}"
+            --fee-indices "${{ matrix.fee_indices }}" \
+            --slippage-ticks "${{ matrix.slippage_ticks }}" \
+            --tag "${{ matrix.tag }}"
 
       - name: Upload Worker Chunk Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: chunk-${{ inputs.symbol }}-${{ matrix.tf_label }}
+          name: chunk-${{ inputs.symbol }}-${{ matrix.tag }}
           path: |
-            BACKTESTER/reports/${{ inputs.symbol }}_${{ matrix.tf_label }}_batch_matrix.csv
-            BACKTESTER/reports/${{ inputs.symbol }}_${{ matrix.tf_label }}_batch_matrix.md
-            BACKTESTER/reports/${{ inputs.symbol }}_${{ matrix.tf_label }}_trades.csv
+            BACKTESTER/reports/${{ inputs.symbol }}_${{ matrix.tag }}_batch_matrix.csv
+            BACKTESTER/reports/${{ inputs.symbol }}_${{ matrix.tag }}_batch_matrix.md
+            BACKTESTER/reports/${{ inputs.symbol }}_${{ matrix.tag }}_trades.csv
           if-no-files-found: warn
           retention-days: 14
 
