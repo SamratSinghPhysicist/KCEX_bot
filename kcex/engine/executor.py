@@ -1040,6 +1040,42 @@ class TradeExecutionEngine:
             exit_reason = ExitReason.IMMEDIATE_PROFIT_CLOSE
             time.sleep(0.5)
         else:
+            # Pre-place 1:1 Take-Profit resting limit close order for SMC trades beforehand
+            pre_placed_tp1_order_id = None
+            tp1_contracts = (vol_contracts // 2) if vol_contracts >= 2 else 1
+            smc_1x_mode = str(getattr(self.config, "smc_1x_exit_mode", "1TO1_TP")).upper()
+            should_pre_place = (vol_contracts >= 2) or (smc_1x_mode == "1TO1_TP")
+            if is_smc_sig and signal and position_id and should_pre_place:
+                if signal.metadata and (not signal.metadata.get("target_1to1_price")) and entry_price and exact_sl:
+                    risk_dist = abs(entry_price - exact_sl)
+                    t1_calc = entry_price + risk_dist if direction == OrderDirection.LONG else entry_price - risk_dist
+                    signal.metadata["target_1to1_price"] = round(t1_calc, ps)
+                target_1to1 = float((signal.metadata or {}).get("target_1to1_price", 0.0))
+                partial_tp_enabled = bool((signal.metadata or {}).get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True)))
+                if partial_tp_enabled and target_1to1 > 0:
+                    try:
+                        time.sleep(1.0)
+                        self.logger.info(
+                            f"📋 [PRE-PLACING 1:1 TP LIMIT ORDER] Placing resting limit order on KCEX for {tp1_contracts} contract(s) "
+                            f"at 1:1 target ({target_1to1:.{ps}f} USDT)..."
+                        )
+                        close_res = self.trader.close_position_limit(
+                            symbol=symbol,
+                            side=direction.value,
+                            price=target_1to1,
+                            vol_contracts=tp1_contracts,
+                            position_id=position_id,
+                            leverage=leverage,
+                            is_isolated=self.config.is_isolated
+                        )
+                        pre_placed_tp1_order_id = str(close_res.get("data", {}).get("orderId") or "")
+                        self.logger.info(
+                            f"✅ [1:1 TP LIMIT ORDER PLACED] Order #{pre_placed_tp1_order_id} active on KCEX book | "
+                            f"Vol: {tp1_contracts} contract(s) @ {target_1to1:.{ps}f} USDT."
+                        )
+                    except Exception as e:
+                        self.logger.warning("Note: Pre-placing 1:1 limit close order: %s. Active monitor will manage 1:1 exit fallback.", e)
+
             # Active position monitoring loop
             self.logger.info("Entering active position monitoring loop...")
             exit_price, exit_reason, close_order_id = self._monitor_live_position(
@@ -1053,7 +1089,9 @@ class TradeExecutionEngine:
                 precision=ps,
                 entry_price=entry_price,
                 open_time=open_time,
-                signal=signal
+                signal=signal,
+                pre_placed_tp1_order_id=pre_placed_tp1_order_id,
+                tp1_contracts=tp1_contracts
             )
 
         close_time = time.time()
@@ -1280,7 +1318,9 @@ class TradeExecutionEngine:
         precision: int = 4,
         entry_price: Optional[float] = None,
         open_time: Optional[float] = None,
-        signal: Optional[TradeSignal] = None
+        signal: Optional[TradeSignal] = None,
+        pre_placed_tp1_order_id: Optional[str] = None,
+        tp1_contracts: int = 1
     ) -> tuple[float, ExitReason, Optional[str]]:
         """
         Polls ticker and open positions until the position closes.
@@ -1297,11 +1337,18 @@ class TradeExecutionEngine:
         last_heartbeat_time = 0.0
 
         # SMC 1:1 Partial TP and Breakeven Runner state
-        is_smc = bool(signal and signal.metadata and "ORDER_BLOCK" in str(signal.metadata.get("strategy_mode", "")).upper())
-        target_1to1 = float(signal.metadata.get("target_1to1_price", 0.0)) if is_smc else None
-        partial_tp_enabled = bool(signal.metadata.get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True))) if is_smc else False
-        be_buf_ticks = int(signal.metadata.get("breakeven_buffer_ticks", getattr(self.config, "breakeven_buffer_ticks", 1))) if is_smc else 1
-        smc_1x_mode = str(getattr(self.config, "smc_1x_exit_mode", "1TO2_WITH_BE")).upper()
+        is_smc = bool(
+            (signal and signal.metadata and "ORDER_BLOCK" in str(signal.metadata.get("strategy_mode", "")).upper())
+            or ("OrderBlock" in str(getattr(signal, "sub_strategy_name", "")))
+            or (getattr(self.config, "strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"))
+        )
+        target_1to1 = float((signal.metadata or {}).get("target_1to1_price", 0.0)) if (is_smc and signal and signal.metadata) else None
+        if is_smc and (target_1to1 is None or target_1to1 == 0.0) and entry_price and exact_sl:
+            risk_dist = abs(entry_price - exact_sl)
+            target_1to1 = round(entry_price + risk_dist if direction == OrderDirection.LONG else entry_price - risk_dist, precision)
+        partial_tp_enabled = bool((signal.metadata or {}).get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True))) if (is_smc and signal and signal.metadata) else getattr(self.config, "partial_tp_enabled", True)
+        be_buf_ticks = int((signal.metadata or {}).get("breakeven_buffer_ticks", getattr(self.config, "breakeven_buffer_ticks", 1))) if (is_smc and signal and signal.metadata) else getattr(self.config, "breakeven_buffer_ticks", 1)
+        smc_1x_mode = str(getattr(self.config, "smc_1x_exit_mode", "1TO1_TP")).upper()
         partial_tp_executed = False
         remaining_vol = vol_contracts
 
@@ -1323,17 +1370,32 @@ class TradeExecutionEngine:
             try:
                 open_pos = self.trader.get_open_positions(symbol)
                 pos_still_open = False
+                current_hold_vol = 0
                 for p in open_pos:
                     if position_id and int(p.get("positionId", 0)) == int(position_id):
-                        if float(p.get("holdVol", 0)) > 0:
+                        current_hold_vol = int(p.get("holdVol", 0))
+                        if current_hold_vol > 0:
                             pos_still_open = True
                             break
                     elif float(p.get("holdVol", 0)) > 0:
+                        current_hold_vol = int(p.get("holdVol", 0))
                         pos_still_open = True
                         break
 
                 if not pos_still_open:
                     self.logger.info("Position closed on KCEX. Reconciling fill records...")
+                    if pre_placed_tp1_order_id and not partial_tp_executed:
+                        try:
+                            self.trader.cancel_order(pre_placed_tp1_order_id)
+                        except Exception:
+                            pass
+                    if vol_contracts == 1 and pre_placed_tp1_order_id and target_1to1:
+                        pu = (10 ** -precision)
+                        reached_1to1 = (last_seen_price >= target_1to1 - (0.5 * pu)) if direction == OrderDirection.LONG else (last_seen_price <= target_1to1 + (0.5 * pu))
+                        if reached_1to1:
+                            return target_1to1, ExitReason.MIN_PROFIT_TP_HIT, pre_placed_tp1_order_id
+                        elif (last_seen_price <= exact_sl + (0.5 * pu) if direction == OrderDirection.LONG else last_seen_price >= exact_sl - (0.5 * pu)):
+                            return exact_sl, ExitReason.STOP_LOSS_HIT, None
                     return last_seen_price, ExitReason.UNKNOWN, None
             except Exception as e:
                 self.logger.debug("Position check error: %s", e)
@@ -1399,73 +1461,70 @@ class TradeExecutionEngine:
             # Smart Money Concepts: 1:1 Partial Take Profit & Breakeven Lock
             # -----------------------------------------------------------------
             if is_smc and partial_tp_enabled and target_1to1 and not partial_tp_executed and entry_price:
-                hit_1to1 = (exec_price >= target_1to1) if direction == OrderDirection.LONG else (exec_price <= target_1to1)
-                if hit_1to1:
+                # 1:1 is filled if:
+                # (A) Exchange holdVol has decreased by tp1_contracts (pre-placed limit order executed on book)
+                # (B) Executable price touched or surpassed target_1to1
+                limit_filled = bool(pos_still_open and current_hold_vol > 0 and current_hold_vol <= (vol_contracts - tp1_contracts))
+                price_hit_1to1 = (exec_price >= target_1to1) if direction == OrderDirection.LONG else (exec_price <= target_1to1)
+
+                if limit_filled or price_hit_1to1:
+                    partial_tp_executed = True
+                    if signal and signal.metadata:
+                        signal.metadata["partial_tp_hit"] = True
+
                     pu = (10 ** -precision)
-                    if remaining_vol >= 2:
-                        close_vol = remaining_vol // 2
-                        self.logger.info(
-                            f"🎉 [SMC 1:1 PARTIAL TP HIT] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
-                            f"Closing 50% ({close_vol} contracts) at market to secure 1R profit..."
-                        )
-                        try:
-                            self.trader.close_position(
-                                position_id=position_id or 0,
-                                symbol=symbol,
-                                side=side_str,
-                                vol_contracts=close_vol,
-                                leverage=leverage,
-                                is_isolated=self.config.is_isolated,
-                                is_market=True,
-                                price=exec_price
-                            )
-                            remaining_vol -= close_vol
-                            vol_contracts = remaining_vol
-                            partial_tp_executed = True
-                            if signal and signal.metadata:
-                                signal.metadata["partial_tp_hit"] = True
-                            # Move SL to Breakeven (+buffer ticks in profit)
-                            new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
-                            exact_sl = round(new_be_sl, precision)
+                    if vol_contracts >= 2:
+                        remaining_vol = current_hold_vol if (pos_still_open and current_hold_vol > 0) else (vol_contracts - tp1_contracts)
+                        if limit_filled:
                             self.logger.info(
-                                f"🔒 [SMC BREAKEVEN SL LOCKED] Stop Loss moved to BREAKEVEN +{be_buf_ticks}t ({exact_sl:.{precision}f} USDT). "
-                                f"Remaining {remaining_vol} contract(s) now running risk-free towards 1:2 R:R target ({exact_tp:.{precision}f} USDT)!"
+                                f"🎉 [SMC 1:1 PRE-PLACED LIMIT TP FILLED] Resting limit order #{pre_placed_tp1_order_id} filled on KCEX book! "
+                                f"Closed 50% ({tp1_contracts} contracts) at exact 1:1 target ({target_1to1:.{precision}f} USDT)."
                             )
-                            if position_id:
+                        else:
+                            self.logger.info(
+                                f"🎉 [SMC 1:1 TARGET REACHED] Executable price ({exec_price:.{precision}f} USDT) reached 1:1. "
+                                f"Closing 50% ({tp1_contracts} contracts) at market..."
+                            )
+                            if pre_placed_tp1_order_id:
                                 try:
-                                    self.trader.set_position_tp_sl(
-                                        symbol=symbol,
-                                        position_id=position_id,
-                                        take_profit_price=exact_tp,
-                                        stop_loss_price=exact_sl
-                                    )
-                                except Exception as e:
-                                    self.logger.debug("Failed updating server-side SL on partial TP: %s", e)
-                        except Exception as e:
-                            self.logger.warning("Partial close error at 1:1: %s", e)
-                    else:
-                        # 1 contract volume handling
-                        if smc_1x_mode == "1TO1_TP":
-                            self.logger.info(
-                                f"🎯 [SMC 1X TARGET 1:1 HIT] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
-                                f"Closing single-contract position at 1:1..."
-                            )
+                                    self.trader.cancel_order(pre_placed_tp1_order_id)
+                                except Exception:
+                                    pass
                             try:
-                                res = self.trader.close_position(
+                                self.trader.close_position(
                                     position_id=position_id or 0,
                                     symbol=symbol,
                                     side=side_str,
-                                    vol_contracts=remaining_vol,
+                                    vol_contracts=tp1_contracts,
                                     leverage=leverage,
                                     is_isolated=self.config.is_isolated,
                                     is_market=True,
                                     price=exec_price
                                 )
-                                close_order_id = str(res.get("data", {}).get("orderId") or "")
-                                return exec_price, ExitReason.MIN_PROFIT_TP_HIT, close_order_id
                             except Exception as e:
-                                self.logger.warning("Market close error on 1x 1:1 TP: %s", e)
-                        else:  # 1TO2_WITH_BE
+                                self.logger.warning("Market close error on 1:1 fallback: %s", e)
+
+                        # Move SL to Breakeven (+buffer ticks in profit)
+                        new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
+                        exact_sl = round(new_be_sl, precision)
+                        self.logger.info(
+                            f"🔒 [SMC BREAKEVEN SL LOCKED] Stop Loss moved to BREAKEVEN +{be_buf_ticks}t ({exact_sl:.{precision}f} USDT). "
+                            f"Remaining {remaining_vol} contract(s) now running risk-free towards 1:2 R:R target ({exact_tp:.{precision}f} USDT)!"
+                        )
+                        if position_id:
+                            try:
+                                self.trader.set_position_tp_sl(
+                                    symbol=symbol,
+                                    position_id=position_id,
+                                    take_profit_price=exact_tp,
+                                    stop_loss_price=exact_sl
+                                )
+                            except Exception as e:
+                                self.logger.debug("Failed updating server-side SL on partial TP: %s", e)
+
+                    else:
+                        # 1 contract volume handling
+                        if smc_1x_mode == "1TO2_WITH_BE":
                             partial_tp_executed = True
                             if signal and signal.metadata:
                                 signal.metadata["partial_tp_hit"] = True
@@ -1486,6 +1545,39 @@ class TradeExecutionEngine:
                                     )
                                 except Exception as e:
                                     self.logger.debug("Failed updating server-side SL on 1x BE: %s", e)
+                        else:
+                            # 1 contract volume: full close at 1:1
+                            if limit_filled or not pos_still_open:
+                                self.logger.info(
+                                    f"🎯 [SMC 1-CONTRACT 1:1 TP FILLED] Pre-placed limit order #{pre_placed_tp1_order_id} filled on KCEX! "
+                                    f"Closed full 1-contract position at 1:1 target ({target_1to1:.{precision}f} USDT)."
+                                )
+                                return target_1to1, ExitReason.MIN_PROFIT_TP_HIT, pre_placed_tp1_order_id
+                            else:
+                                self.logger.info(
+                                    f"🎯 [SMC 1-CONTRACT 1:1 TP HIT] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
+                                    f"Closing full 1-contract position at market..."
+                                )
+                                if pre_placed_tp1_order_id:
+                                    try:
+                                        self.trader.cancel_order(pre_placed_tp1_order_id)
+                                    except Exception:
+                                        pass
+                                try:
+                                    res = self.trader.close_position(
+                                        position_id=position_id or 0,
+                                        symbol=symbol,
+                                        side=side_str,
+                                        vol_contracts=1,
+                                        leverage=leverage,
+                                        is_isolated=self.config.is_isolated,
+                                        is_market=True,
+                                        price=exec_price
+                                    )
+                                    close_order_id = str(res.get("data", {}).get("orderId") or "")
+                                    return exec_price, ExitReason.MIN_PROFIT_TP_HIT, close_order_id
+                                except Exception as e:
+                                    self.logger.warning("Market close error on 1-contract 1:1 TP: %s", e)
 
             # 3. Check if executable price reached Min-Profit TP (bid for LONG, ask for SHORT)
             if self.strategy.is_better_than_min_profit(direction, exec_price, exact_tp, entry_price=entry_price):
@@ -1544,24 +1636,6 @@ class TradeExecutionEngine:
                 except Exception as e:
                     self.logger.warning("Market close error on SL: %s", e)
 
-            # 3. Check if position closed via server-side attached TP or SL
-            try:
-                open_pos = self.trader.get_open_positions(symbol)
-                pos_still_open = False
-                for p in open_pos:
-                    if position_id and int(p.get("positionId", 0)) == int(position_id):
-                        if float(p.get("holdVol", 0)) > 0:
-                            pos_still_open = True
-                            break
-                    elif float(p.get("holdVol", 0)) > 0:
-                        pos_still_open = True
-                        break
-
-                if not pos_still_open:
-                    self.logger.info("Position closed on KCEX. Reconciling fill records...")
-                    return last_seen_price, ExitReason.UNKNOWN, None
-            except Exception as e:
-                self.logger.debug("Position check error: %s", e)
 
             # 4. Duration-Based Monitoring & Time-Decay Exit Actions
             if getattr(self.config, "duration_filter_enabled", False):
@@ -1601,6 +1675,11 @@ class TradeExecutionEngine:
 
         # If shutdown was requested during trade, market close immediately
         self.logger.warning("Shutdown received while in position. Closing position...")
+        if pre_placed_tp1_order_id and not partial_tp_executed:
+            try:
+                self.trader.cancel_order(pre_placed_tp1_order_id)
+            except Exception:
+                pass
         try:
             self.trader.close_position(
                 position_id=position_id or 0,

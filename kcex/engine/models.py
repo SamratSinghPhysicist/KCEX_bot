@@ -181,7 +181,7 @@ class ExecutionConfig:
     # 9. Smart Money Concepts (Order Block + Demand Strategy) Controls
     partial_tp_enabled: bool = True             # Enable 1:1 Partial TP + Breakeven Lock + 1:2 Runner
     breakeven_buffer_ticks: int = 1             # Buffer in ticks added when locking Stop Loss to Breakeven (+1 to +5 ticks)
-    smc_1x_exit_mode: str = "1TO2_WITH_BE"      # For 1-contract positions: "1TO2_WITH_BE" (Lock BE at 1:1, run to 1:2) or "1TO1_TP" (Close at 1:1)
+    smc_1x_exit_mode: str = "1TO1_TP"           # For 1-contract positions: "1TO1_TP" (Close 1 contract at 1:1) or "1TO2_WITH_BE" (Lock BE at 1:1, run to 1:2)
     risk_reward_ratio: float = 2.0              # Strict 1:2 Risk-Reward ratio from entry to SL
     pivot_len: int = 5                          # 5-bar rolling swing high / low confirmation
 
