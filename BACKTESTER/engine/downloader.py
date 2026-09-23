@@ -46,6 +46,27 @@ def normalize_timeframe(tf: str) -> str:
 
 BINANCE_VISION_BASE = "https://data.binance.vision/data/futures/um/monthly"
 
+BINANCE_SYMBOL_MAP = {
+    "MOG_USDT": "1000000MOGUSDT",
+    "MOGUSDT": "1000000MOGUSDT",
+    "1000000MOG_USDT": "1000000MOGUSDT",
+    "1000000MOGUSDT": "1000000MOGUSDT",
+    "XAU_USDT": "XAUUSDT",
+    "XAUUSDT": "XAUUSDT",
+    "CL_USDT": "CLUSDT",
+    "CLUSDT": "CLUSDT",
+    "BTC_USDT": "BTCUSDT",
+    "BTCUSDT": "BTCUSDT",
+    "ETH_USDT": "ETHUSDT",
+    "ETHUSDT": "ETHUSDT",
+    "SOL_USDT": "SOLUSDT",
+    "SOLUSDT": "SOLUSDT",
+    "DOGE_USDT": "DOGEUSDT",
+    "DOGEUSDT": "DOGEUSDT",
+    "TRUMP_USDT": "TRUMPUSDT",
+    "TRUMPUSDT": "TRUMPUSDT",
+}
+
 
 def generate_month_list(start_date_str: str, end_date_str: str) -> List[Tuple[int, int]]:
     """Generates a list of (year, month) tuples between two dates."""
@@ -132,13 +153,14 @@ def ensure_market_data(
 
     canonical = canonicalize_symbol(symbol)
     sym_clean = canonical.replace("_", "")
+    binance_sym = BINANCE_SYMBOL_MAP.get(canonical, BINANCE_SYMBOL_MAP.get(sym_clean, sym_clean))
     norm_tf = normalize_timeframe(timeframe)
 
     months = generate_month_list(start_date, end_date)
-    print(f"[*] Verifying historical market data for {canonical} ({norm_tf}) across {len(months)} month(s)...")
+    print(f"[*] Verifying historical market data for {canonical} (Binance: {binance_sym}, {norm_tf}) across {len(months)} month(s)...")
 
-    ohlcv_dest_dir = os.path.join(base_dir, "OHLCV_Data_Binance", sym_clean, norm_tf)
-    trades_dest_dir = os.path.join(base_dir, "Historical_Trades_Data_Binance", canonical)
+    ohlcv_dest_dir = os.path.join(base_dir, "OHLCV_Data_Binance", binance_sym, norm_tf)
+    trades_dest_dir = os.path.join(base_dir, "Historical_Trades_Data_Binance", binance_sym)
 
     all_ok = True
 
@@ -146,10 +168,10 @@ def ensure_market_data(
         ym_str = f"{y:04d}-{m:02d}"
 
         # 1. Check / Download Primary OHLCV
-        expected_kline_csv = f"{sym_clean}-{norm_tf}-{ym_str}.csv"
+        expected_kline_csv = f"{binance_sym}-{norm_tf}-{ym_str}.csv"
         kline_path = os.path.join(ohlcv_dest_dir, expected_kline_csv)
         if not os.path.exists(kline_path):
-            kline_url = f"{BINANCE_VISION_BASE}/klines/{sym_clean}/{norm_tf}/{sym_clean}-{norm_tf}-{ym_str}.zip"
+            kline_url = f"{BINANCE_VISION_BASE}/klines/{binance_sym}/{norm_tf}/{binance_sym}-{norm_tf}-{ym_str}.zip"
             ok = download_and_extract_zip(kline_url, ohlcv_dest_dir, expected_kline_csv)
             if not ok:
                 all_ok = False
@@ -158,19 +180,19 @@ def ensure_market_data(
 
         # 1b. If primary timeframe != "1m", also ensure 1m OHLCV exists for sub-candle disambiguation
         if norm_tf != "1m":
-            ohlcv_1m_dir = os.path.join(base_dir, "OHLCV_Data_Binance", sym_clean, "1m")
-            expected_1m_csv = f"{sym_clean}-1m-{ym_str}.csv"
+            ohlcv_1m_dir = os.path.join(base_dir, "OHLCV_Data_Binance", binance_sym, "1m")
+            expected_1m_csv = f"{binance_sym}-1m-{ym_str}.csv"
             kline_1m_path = os.path.join(ohlcv_1m_dir, expected_1m_csv)
             if not os.path.exists(kline_1m_path):
-                kline_1m_url = f"{BINANCE_VISION_BASE}/klines/{sym_clean}/1m/{sym_clean}-1m-{ym_str}.zip"
+                kline_1m_url = f"{BINANCE_VISION_BASE}/klines/{binance_sym}/1m/{binance_sym}-1m-{ym_str}.zip"
                 download_and_extract_zip(kline_1m_url, ohlcv_1m_dir, expected_1m_csv)
 
         # 2. Check / Download Trades (if requested)
         if download_trades:
-            expected_trades_csv = f"{sym_clean}-trades-{ym_str}.csv"
+            expected_trades_csv = f"{binance_sym}-trades-{ym_str}.csv"
             trades_path = os.path.join(trades_dest_dir, expected_trades_csv)
             if not os.path.exists(trades_path):
-                trades_url = f"{BINANCE_VISION_BASE}/trades/{sym_clean}/{sym_clean}-trades-{ym_str}.zip"
+                trades_url = f"{BINANCE_VISION_BASE}/trades/{binance_sym}/{binance_sym}-trades-{ym_str}.zip"
                 ok = download_and_extract_zip(trades_url, trades_dest_dir, expected_trades_csv)
                 if not ok:
                     all_ok = False

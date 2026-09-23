@@ -181,6 +181,13 @@ class OHLCVLoader:
         with_us = canonicalize_symbol(clean)
 
         candidates = [with_us, no_us, clean]
+        if "MOG" in clean:
+            candidates.extend(["1000000MOGUSDT", "1000000MOG_USDT", "MOGUSDT", "MOG_USDT"])
+        elif "XAU" in clean:
+            candidates.extend(["XAUUSDT", "XAU_USDT"])
+        elif "CL" in clean:
+            candidates.extend(["CLUSDT", "CL_USDT"])
+
         for c in candidates:
             p = os.path.join(self.data_dir, c)
             if os.path.isdir(p):
@@ -308,6 +315,13 @@ class TickTradeStreamer:
         with_us = canonicalize_symbol(clean)
 
         candidates = [with_us, no_us, clean]
+        if "MOG" in clean:
+            candidates.extend(["1000000MOGUSDT", "1000000MOG_USDT", "MOGUSDT", "MOG_USDT"])
+        elif "XAU" in clean:
+            candidates.extend(["XAUUSDT", "XAU_USDT"])
+        elif "CL" in clean:
+            candidates.extend(["CLUSDT", "CL_USDT"])
+
         for c in candidates:
             p = os.path.join(self.data_dir, c)
             if os.path.isdir(p):

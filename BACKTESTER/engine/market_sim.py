@@ -183,6 +183,78 @@ DEFAULT_CONTRACTS: Dict[str, Dict[str, Any]] = {
         "maker_fee_rate": 0.0,
         "taker_fee_rate": 0.0001,
         "depth_steps": ["0.0001"]
+    },
+    "XAU_USDT": {
+        "base_coin": "XAU",
+        "quote_coin": "USDT",
+        "contract_size": 0.001,
+        "price_unit": 0.01,
+        "volume_unit": 1.0,
+        "price_precision": 2,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 1000000.0,
+        "min_leverage": 1,
+        "max_leverage": 100,
+        "maintenance_margin_ratio": 0.005,
+        "initial_margin_ratio": 0.01,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.01"]
+    },
+    "CL_USDT": {
+        "base_coin": "CL",
+        "quote_coin": "USDT",
+        "contract_size": 0.01,
+        "price_unit": 0.01,
+        "volume_unit": 1.0,
+        "price_precision": 2,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 1000000.0,
+        "min_leverage": 1,
+        "max_leverage": 50,
+        "maintenance_margin_ratio": 0.01,
+        "initial_margin_ratio": 0.02,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.01"]
+    },
+    "1000000MOG_USDT": {
+        "base_coin": "1000000MOG",
+        "quote_coin": "USDT",
+        "contract_size": 1.0,
+        "price_unit": 0.0001,
+        "volume_unit": 1.0,
+        "price_precision": 4,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 10000000.0,
+        "min_leverage": 1,
+        "max_leverage": 50,
+        "maintenance_margin_ratio": 0.01,
+        "initial_margin_ratio": 0.02,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.0001"]
+    },
+    "MOG_USDT": {
+        "base_coin": "1000000MOG",
+        "quote_coin": "USDT",
+        "contract_size": 1.0,
+        "price_unit": 0.0001,
+        "volume_unit": 1.0,
+        "price_precision": 4,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 10000000.0,
+        "min_leverage": 1,
+        "max_leverage": 50,
+        "maintenance_margin_ratio": 0.01,
+        "initial_margin_ratio": 0.02,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.0001"]
     }
 }
 
@@ -215,6 +287,8 @@ class BacktestMarket:
         self._candle_cache: Dict[str, List[Candle]] = {}
         # Precomputed list of timestamps for fast binary search slicing
         self._candle_timestamps: Dict[str, List[int]] = {}
+
+        # Cached ContractInfo instances
         self._contracts: Dict[str, ContractInfo] = {}
 
     def set_candles(self, symbol: str, timeframe: str, candles: List[Candle]) -> None:
@@ -230,6 +304,27 @@ class BacktestMarket:
             pu = self.get_contract_detail(canonical).price_unit
             self.current_bid = self.current_price - (0.5 * pu)
             self.current_ask = self.current_price + (0.5 * pu)
+
+    def set_current_price(self, price: float, pu: float = 0.001):
+        self.current_price = price
+        self.current_bid = round(price - pu, 6)
+        self.current_ask = round(price + pu, 6)
+
+    def advance_clock(self, timestamp_ms: int):
+        self.current_time_ms = timestamp_ms
+
+    def register_candles(self, symbol: str, timeframe: str, candles: List[Candle]):
+        norm_tf = normalize_timeframe(timeframe)
+        canonical = canonicalize_symbol(symbol)
+        key = f"{canonical}_{norm_tf}"
+        self._candle_cache[key] = candles
+        self._candle_timestamps[key] = [c.open_time_ms for c in candles]
+        if candles:
+            last = candles[-1]
+            self.current_price = last.close
+            pu = self.get_contract_detail(symbol).price_unit
+            self.current_bid = round(last.close - pu, 6)
+            self.current_ask = round(last.close + pu, 6)
 
     def set_time(self, timestamp_ms: int, current_price: Optional[float] = None, bid: Optional[float] = None, ask: Optional[float] = None) -> None:
         """Advances the virtual market clock."""
@@ -260,15 +355,14 @@ class BacktestMarket:
         if canonical in self._contracts:
             return self._contracts[canonical]
 
-        # 1. Attempt to fetch live contract metadata from KCEX if fee_mode is LIVE
+        # 1. Attempt to fetch live contract metadata from KCEX if reachable
         live_info: Optional[ContractInfo] = None
-        if self.fee_mode == "LIVE":
-            try:
-                from kcex.market import KCEXMarket
-                k_market = KCEXMarket()
-                live_info = k_market.get_contract_detail(canonical)
-            except Exception:
-                live_info = None
+        try:
+            from kcex.market import KCEXMarket
+            k_market = KCEXMarket()
+            live_info = k_market.get_contract_detail(canonical)
+        except Exception:
+            live_info = None
 
         if live_info is not None:
             base_coin = live_info.base_coin

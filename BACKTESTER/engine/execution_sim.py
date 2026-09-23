@@ -301,7 +301,11 @@ class BacktestExecutionEngine:
         # Step 3: If no sub-candles or timeframe is already 1m, declare Stop Loss Hit (conservative)
         return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), c.close_time_ms / 1000.0
 
-    def run(self) -> List[TradeOutcome]:
+    def run(
+        self,
+        preloaded_candles: Optional[List[Candle]] = None,
+        preloaded_sub_candles_1m: Optional[List[Candle]] = None
+    ) -> List[TradeOutcome]:
         """
         Executes the backtesting simulation over historical data.
         Returns the complete list of TradeOutcome records.
@@ -309,14 +313,17 @@ class BacktestExecutionEngine:
         start_ms = parse_timestamp_ms(self.config.start_time)
         end_ms = parse_timestamp_ms(self.config.end_time)
 
-        # 1. Load primary candles
+        # 1. Load primary candles (or use preloaded)
         norm_tf = normalize_timeframe(self.config.timeframe)
-        candles = self.ohlcv_loader.load_candles(
-            symbol=self.symbol,
-            timeframe=norm_tf,
-            start_ms=start_ms,
-            end_ms=end_ms
-        )
+        if preloaded_candles is not None:
+            candles = preloaded_candles
+        else:
+            candles = self.ohlcv_loader.load_candles(
+                symbol=self.symbol,
+                timeframe=norm_tf,
+                start_ms=start_ms,
+                end_ms=end_ms
+            )
 
         if not candles:
             # Automatically download from Binance Vision if data is not locally present
@@ -351,12 +358,15 @@ class BacktestExecutionEngine:
 
         # If primary timeframe is not 1m, load 1m candles for lower-timeframe sub-candle disambiguation
         if norm_tf != "1m":
-            self.sub_candles_1m = self.ohlcv_loader.load_candles(
-                symbol=self.symbol,
-                timeframe="1m",
-                start_ms=start_ms,
-                end_ms=end_ms
-            )
+            if preloaded_sub_candles_1m is not None:
+                self.sub_candles_1m = preloaded_sub_candles_1m
+            else:
+                self.sub_candles_1m = self.ohlcv_loader.load_candles(
+                    symbol=self.symbol,
+                    timeframe="1m",
+                    start_ms=start_ms,
+                    end_ms=end_ms
+                )
             if not self.sub_candles_1m:
                 try:
                     from BACKTESTER.engine.downloader import ensure_market_data
