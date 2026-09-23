@@ -113,28 +113,10 @@ on:
           - "MARGIN_PCT"
           - "FIXED_MARGIN"
 
-      margin_pct:
-        description: "Percentage of Available Margin to risk per trade (if MARGIN_PCT mode, e.g. 10.0 for 10%)"
+      volume_value:
+        description: "Volume Value (e.g. 2.0 for 2x min, 5 for 5 contracts, 10 for 10% margin, or 5.0 for 5 USDT fixed margin)"
         required: false
-        default: "10.0"
-        type: string
-
-      fixed_margin:
-        description: "Fixed Margin per trade in USDT (if FIXED_MARGIN mode, e.g. 5.0 for 5 USDT margin)"
-        required: false
-        default: "5.0"
-        type: string
-
-      volume_contracts:
-        description: "Number of Contracts per trade (if CONTRACTS mode, e.g. 2, 5, 10)"
-        required: false
-        default: "2"
-        type: string
-
-      volume_multiplier:
-        description: "Volume Multiplier (if MULTIPLIER mode, e.g. 2.0 for TRUMP 2x min, 1.0 for DOGE 1x min)"
-        required: false
-        default: "2.0"
+        default: "1.0"
         type: string
 
       tp_ticks:
@@ -269,10 +251,7 @@ jobs:
             --maker-fee "${{ inputs.maker_fee }}" \
             --taker-fee "${{ inputs.taker_fee }}" \
             --volume-mode "${{ inputs.volume_mode }}" \
-            --contracts "${{ inputs.volume_contracts }}" \
-            --volume-multiplier "${{ inputs.volume_multiplier }}" \
-            --margin-pct "${{ inputs.margin_pct }}" \
-            --fixed-margin "${{ inputs.fixed_margin }}" \
+            --volume-value "${{ inputs.volume_value }}" \
             --tp-ticks "${{ inputs.tp_ticks }}" \
             --sl-mode "${{ inputs.sl_mode }}" \
             --sl-ticks "${{ inputs.sl_ticks }}" \

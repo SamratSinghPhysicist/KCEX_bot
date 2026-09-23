@@ -227,16 +227,22 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         is_ml = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
         is_smc = "ORDER_BLOCK" in chosen_preset or "DEMAND" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "SMC")
         v_mult = float(preset_cfg.get("volume_multiplier", 1.0 if is_ml else (1.0 if "DOGE" in p_sym else 2.0)))
-        lev_val = int(preset_cfg.get("leverage", 30 if is_ml else (25 if is_smc else 75)))
+        p_def_lev = int(preset_cfg.get("leverage", 30 if is_ml else (25 if is_smc else 75)))
 
-        # 6. Trade Volume / Quantity Sizing
+        # 6. Leverage Multiplier
+        print(f"\n6. Select Leverage Multiplier for {p_sym}:")
+        print(f"   Preset default: {p_def_lev}x Isolated")
+        lev_input = input(f"   Enter leverage multiplier (1 to 100) [default: {p_def_lev}]: ").strip()
+        lev_val = int(lev_input) if (lev_input.isdigit() and int(lev_input) > 0) else p_def_lev
+
+        # 7. Trade Volume / Quantity Sizing
         p_def_mult = v_mult
-        print("\n6. Trade Volume / Quantity Sizing:")
+        print("\n7. Trade Volume / Quantity Sizing:")
         print(f"   [1] Preset Default Multiplier ({p_def_mult:g}x min) [Default]")
         print("   [2] Exact Number of Contracts (e.g. 2, 5, 10)")
         print("   [3] Minimum Volume (1x min contract)")
-        print("   [4] Percentage of Available Margin (e.g. 10% of wallet balance, margin * leverage = position size)")
-        print("   [5] Fixed Margin per Trade in USDT (e.g. 5 USDT margin, margin * leverage = position size)")
+        print(f"   [4] Percentage of Available Margin (e.g. 10% of wallet balance, margin * {lev_val}x leverage = position size)")
+        print(f"   [5] Fixed Margin per Trade in USDT (e.g. 5 USDT margin, margin * {lev_val}x leverage = position size)")
         p_vol_choice = input(f"   Select sizing mode [default: 1 (Multiplier {p_def_mult:g}x min)]: ").strip()
         p_vol_mode = "MULTIPLIER"
         p_vol_contracts = None
@@ -813,6 +819,7 @@ def main():
     parser.add_argument("--tp-ticks", type=int, default=2, help="Take profit ticks away from entry")
     parser.add_argument("--sl-mode", type=str, default="ROE", choices=["ROE", "TICKS", "PRICE_PCT"], help="Stop loss mode")
     parser.add_argument("--volume-mode", type=str, default=None, choices=["MULTIPLIER", "CONTRACTS", "MIN", "MARGIN_PCT", "FIXED_MARGIN", "margin_pct", "fixed_margin", "multiplier", "contracts", "min"], help="Volume sizing mode: MULTIPLIER, CONTRACTS, MIN, MARGIN_PCT, or FIXED_MARGIN")
+    parser.add_argument("--volume-value", type=float, default=None, help="Numeric value for the selected volume mode (multiplier, contracts, margin %, or fixed margin USDT)")
     parser.add_argument("--contracts", "--volume-contracts", dest="volume_contracts", type=int, default=None, help="Number of contracts per trade (e.g. 2, 5, 10)")
     parser.add_argument("--volume-multiplier", type=float, default=None, help="Multiplier of minimum contract volume (e.g. 2.0 = 2x min, 1.0 = 1x min)")
     parser.add_argument("--margin-pct", type=float, default=None, help="Percentage of available margin to risk per trade (e.g. 10.0 for 10%%)")
@@ -914,6 +921,16 @@ def main():
         elif args.volume_contracts is not None and not args.volume_mode:
             vol_mode = "CONTRACTS"
 
+        if args.volume_value is not None:
+            if vol_mode == "MARGIN_PCT":
+                margin_pct = float(args.volume_value)
+            elif vol_mode == "FIXED_MARGIN":
+                fixed_margin_usdt = float(args.volume_value)
+            elif vol_mode == "CONTRACTS":
+                vol_contracts = int(round(args.volume_value))
+            elif vol_mode == "MULTIPLIER":
+                vol_mult = float(args.volume_value)
+
         if args.volume_multiplier is not None:
             vol_mult = args.volume_multiplier
         elif preset_cfg.get("volume_multiplier") is not None:
@@ -991,6 +1008,11 @@ def main():
                     if "queue_dynamics_enabled" in qj: args.queue_dynamics_enabled = bool(qj["queue_dynamics_enabled"])
                     if "resting_limit_tp" in qj: args.resting_limit_tp = bool(qj["resting_limit_tp"])
                     if "simulate_intra_tick_liquidation" in qj: args.simulate_intra_tick_liquidation = bool(qj["simulate_intra_tick_liquidation"])
+                    if "margin_pct" in qj and qj["margin_pct"] is not None: margin_pct = float(qj["margin_pct"])
+                    if "fixed_margin_usdt" in qj and qj["fixed_margin_usdt"] is not None: fixed_margin_usdt = float(qj["fixed_margin_usdt"])
+                    if "fixed_margin" in qj and qj["fixed_margin"] is not None: fixed_margin_usdt = float(qj["fixed_margin"])
+                    if "volume_contracts" in qj and qj["volume_contracts"] is not None: vol_contracts = int(qj["volume_contracts"])
+                    if "volume_multiplier" in qj and qj["volume_multiplier"] is not None: vol_mult = float(qj["volume_multiplier"])
             except Exception as e:
                 print(f"[!] Warning: Failed to parse --quant-params-json: {e}")
 

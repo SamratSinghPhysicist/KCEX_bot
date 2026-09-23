@@ -187,10 +187,16 @@ class GitHubBacktestRunner:
         end_date = str(config.end_time)[:10] if config.end_time else "2026-08-31"
 
         vol_mode = config.volume_mode or "MULTIPLIER"
-        vol_contracts = str(config.volume_contracts or 2)
-        vol_multiplier = str(config.volume_multiplier if config.volume_multiplier is not None else (2.0 if "TRUMP" in sym else 1.0))
-        margin_pct = str(config.margin_pct if config.margin_pct is not None else 10.0)
-        fixed_margin = str(config.fixed_margin_usdt if config.fixed_margin_usdt is not None else 5.0)
+        if vol_mode == "MARGIN_PCT":
+            vol_val = str(config.margin_pct if config.margin_pct is not None else 10.0)
+        elif vol_mode == "FIXED_MARGIN":
+            vol_val = str(config.fixed_margin_usdt if config.fixed_margin_usdt is not None else 5.0)
+        elif vol_mode == "CONTRACTS":
+            vol_val = str(config.volume_contracts or (2 if "TRUMP" in sym else 1))
+        elif vol_mode == "MIN":
+            vol_val = "1.0"
+        else: # MULTIPLIER
+            vol_val = str(config.volume_multiplier if config.volume_multiplier is not None else (2.0 if "TRUMP" in sym else 1.0))
 
         maker_fee = str(config.maker_fee_override * 100.0) if config.maker_fee_override is not None else "0.0"
         taker_fee = str(config.taker_fee_override * 100.0) if config.taker_fee_override is not None else "0.0"
@@ -242,7 +248,11 @@ class GitHubBacktestRunner:
             "volume_filter_multiplier": float(getattr(config, "volume_filter_multiplier", 1.2)),
             "queue_dynamics_enabled": bool(getattr(config, "queue_dynamics_enabled", False)),
             "resting_limit_tp": bool(getattr(config, "resting_limit_tp", False)),
-            "simulate_intra_tick_liquidation": bool(getattr(config, "simulate_intra_tick_liquidation", True))
+            "simulate_intra_tick_liquidation": bool(getattr(config, "simulate_intra_tick_liquidation", True)),
+            "margin_pct": float(config.margin_pct) if config.margin_pct is not None else None,
+            "fixed_margin_usdt": float(config.fixed_margin_usdt) if config.fixed_margin_usdt is not None else None,
+            "volume_contracts": int(config.volume_contracts) if config.volume_contracts is not None else None,
+            "volume_multiplier": float(config.volume_multiplier) if config.volume_multiplier is not None else None
         }
 
         return {
@@ -258,10 +268,7 @@ class GitHubBacktestRunner:
             "maker_fee": maker_fee,
             "taker_fee": taker_fee,
             "volume_mode": vol_mode,
-            "volume_contracts": vol_contracts,
-            "volume_multiplier": vol_multiplier,
-            "margin_pct": margin_pct,
-            "fixed_margin": fixed_margin,
+            "volume_value": vol_val,
             "tp_ticks": str(config.tp_ticks),
             "sl_mode": config.sl_mode,
             "sl_ticks": str(config.sl_ticks or 10),
@@ -496,16 +503,17 @@ class GitHubBacktestRunner:
         print(f"Strategy:         {inputs['strategy']}")
         print(f"Leverage:         {inputs['leverage']}x Isolated")
         v_mode = inputs.get("volume_mode", "MULTIPLIER")
+        v_val = inputs.get("volume_value", "1.0")
         if v_mode == "MARGIN_PCT":
-            v_desc = f"{inputs.get('margin_pct')}% Available Margin (Dynamic Sizing)"
+            v_desc = f"{float(v_val):.1f}% Available Margin (Dynamic Sizing)"
         elif v_mode == "FIXED_MARGIN":
-            v_desc = f"{inputs.get('fixed_margin')} USDT Fixed Margin"
+            v_desc = f"{float(v_val):.2f} USDT Fixed Margin"
         elif v_mode == "CONTRACTS":
-            v_desc = f"{inputs.get('volume_contracts')} contracts"
+            v_desc = f"{int(float(v_val))} contracts"
         elif v_mode == "MIN":
             v_desc = "1x min volume"
         else:
-            v_desc = f"{inputs.get('volume_multiplier')}x min volume"
+            v_desc = f"{float(v_val):g}x min volume"
         print(f"Trade Volume:     {v_desc} ({v_mode})")
         strat_name = inputs.get('strategy', '')
         if strat_name in ('ORDER_BLOCK_DEMAND', 'ORDER_BOOK_DEMAND'):
