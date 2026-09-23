@@ -54,6 +54,19 @@ def test_dual_currency_logger_status_line_deduplication(tmp_path):
     assert emitted_4 is False
 
 
+def test_dual_currency_logger_scanning_status_deduplication(tmp_path):
+    log_file = tmp_path / "test_scan.log"
+    logger = DualCurrencyLogger(log_file=str(log_file))
+    logger._is_tty = False
+    logger._is_cloud_ci = True
+
+    scan_msg = "[SCANNING] TRUMP_USDT [Min15] | Zones: 3 (2 Demand, 1 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
+    # First emission allowed
+    assert logger.update_status_line(scan_msg, price=None, tag="SCANNING") is True
+    # Identical scan message immediately afterwards must be suppressed!
+    assert logger.update_status_line(scan_msg, price=None, tag="SCANNING") is False
+
+
 def test_dual_currency_logger_status_line_tty(tmp_path, monkeypatch):
     log_file = tmp_path / "test_tty.log"
     logger = DualCurrencyLogger(log_file=str(log_file))

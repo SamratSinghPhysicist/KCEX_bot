@@ -75,9 +75,14 @@ class DualCurrencyLogger:
         self._is_tty: bool = sys.stdout.isatty()
         self._is_cloud_ci: bool = bool(
             os.environ.get("RAILWAY_ENVIRONMENT") or
+            os.environ.get("RAILWAY_ENVIRONMENT_NAME") or
+            os.environ.get("RAILWAY_SERVICE_NAME") or
+            os.environ.get("RAILWAY_PROJECT_ID") or
+            os.environ.get("RAILWAY_DEPLOYMENT_ID") or
             os.environ.get("RAILWAY_STATIC_URL") or
             os.environ.get("GITHUB_ACTIONS") or
-            os.environ.get("CI")
+            os.environ.get("CI") or
+            not sys.stdout.isatty()
         )
 
     def _ensure_dir(self) -> None:
@@ -138,6 +143,12 @@ class DualCurrencyLogger:
             self._last_status_price is not None and
             price_rounded == self._last_status_price
         )
+        same_msg = (
+            not force and
+            self._last_status_msg is not None and
+            msg == self._last_status_msg
+        )
+        is_duplicate = same_price or same_msg
 
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -152,35 +163,39 @@ class DualCurrencyLogger:
                 self.logger.info(msg)
 
             # Record to log file conditionally (avoid blowing up log file with same prices)
-            if not same_price or (now - self._last_status_time >= heartbeat_sec) or force:
+            if not is_duplicate or (now - self._last_status_time >= heartbeat_sec) or force:
                 self._write_file_log(now_str, "INFO", msg)
                 self._last_status_time = now
-                self._last_status_price = price_rounded
+                if price_rounded is not None:
+                    self._last_status_price = price_rounded
 
             self._last_status_msg = msg
             return True
 
         # 2. Non-interactive / Cloud / CI (Railway, GitHub Actions, Docker)
-        if same_price:
+        if is_duplicate:
             self._same_price_count += 1
-            # If price hasn't changed, suppress adding another line unless heartbeat interval passed
+            # If price/message hasn't changed, suppress adding another line unless heartbeat interval passed
             if (now - self._last_status_time) < heartbeat_sec:
-                return False  # Suppressed duplicate price update line!
+                return False  # Suppressed duplicate status line!
 
-            # Heartbeat line: show that price is steady
+            # Heartbeat line: show that status/price is steady
             hold_sec = int(now - self._last_status_time)
             annotated_msg = f"{msg} (steady {hold_sec}s)"
             self.clear_status_line()
             self.logger.info(annotated_msg)
             self._last_status_time = now
             self._last_status_msg = msg
+            if price_rounded is not None:
+                self._last_status_price = price_rounded
             self._same_price_count = 0
             return True
 
-        # Price changed, force=True, or first message
+        # Price/message changed, force=True, or first message
         self.clear_status_line()
         self.logger.info(msg)
-        self._last_status_price = price_rounded
+        if price_rounded is not None:
+            self._last_status_price = price_rounded
         self._last_status_time = now
         self._last_status_msg = msg
         self._same_price_count = 0

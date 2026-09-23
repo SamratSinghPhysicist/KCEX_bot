@@ -2318,7 +2318,8 @@ class TradeExecutionEngine:
                 else:
                     # Log periodic diagnostics while hunting for entry signal
                     now = time.time()
-                    if now - last_diag_log >= 2.0:
+                    diag_interval = 2.0 if (self.logger._is_tty and not self.logger._is_cloud_ci) else 10.0
+                    if now - last_diag_log >= diag_interval:
                         last_diag_log = now
                         try:
                             diag = self.strategy.get_diagnostics()

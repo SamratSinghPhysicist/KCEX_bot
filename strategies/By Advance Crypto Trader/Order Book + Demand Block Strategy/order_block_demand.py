@@ -1107,7 +1107,13 @@ class OrderBlockDemandStrategy(BaseStrategy):
         cached_price = None
         if self._cached_candles:
             try:
-                cached_price = float(self._cached_candles[-1].close if hasattr(self._cached_candles[-1], "close") else self._cached_candles[-1][4])
+                last_c = self._cached_candles[-1]
+                if hasattr(last_c, "close"):
+                    cached_price = float(last_c.close)
+                elif isinstance(last_c, dict):
+                    cached_price = float(last_c.get("close", 0.0))
+                elif isinstance(last_c, (list, tuple)) and len(last_c) >= 5:
+                    cached_price = float(last_c[4])
             except Exception:
                 pass
 
