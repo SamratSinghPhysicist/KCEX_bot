@@ -60,11 +60,23 @@ def test_dual_currency_logger_scanning_status_deduplication(tmp_path):
     logger._is_tty = False
     logger._is_cloud_ci = True
 
-    scan_msg = "[SCANNING] TRUMP_USDT [Min15] | Zones: 3 (2 Demand, 1 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
+    scan_msg_1 = "[SCANNING] TRUMP_USDT [Min15] | Price: 2.180 USDT | Zones: 6 (4 Demand, 2 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
     # First emission allowed
-    assert logger.update_status_line(scan_msg, price=None, tag="SCANNING") is True
+    assert logger.update_status_line(scan_msg_1, price=2.180, tag="SCANNING") is True
     # Identical scan message immediately afterwards must be suppressed!
-    assert logger.update_status_line(scan_msg, price=None, tag="SCANNING") is False
+    assert logger.update_status_line(scan_msg_1, price=2.180, tag="SCANNING") is False
+
+    # Price wobbles by 1 tick (2.181) while scanning: structure is identical, MUST be suppressed!
+    scan_msg_2 = "[SCANNING] TRUMP_USDT [Min15] | Price: 2.181 USDT | Zones: 6 (4 Demand, 2 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
+    assert logger.update_status_line(scan_msg_2, price=2.181, tag="SCANNING") is False
+
+    # Price wobbles to 2.179 while scanning: structure is identical, MUST be suppressed!
+    scan_msg_3 = "[SCANNING] TRUMP_USDT [Min15] | Price: 2.179 USDT | Zones: 6 (4 Demand, 2 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
+    assert logger.update_status_line(scan_msg_3, price=2.179, tag="SCANNING") is False
+
+    # BUT if zones change from 6 to 7 (genuine structural event): MUST be emitted!
+    scan_msg_4 = "[SCANNING] TRUMP_USDT [Min15] | Price: 2.179 USDT | Zones: 7 (4 Demand, 3 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
+    assert logger.update_status_line(scan_msg_4, price=2.179, tag="SCANNING") is True
 
 
 def test_dual_currency_logger_status_line_tty(tmp_path, monkeypatch):

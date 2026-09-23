@@ -135,6 +135,8 @@ class DualCurrencyLogger:
           (3) force is True
         - Writes to log file only when price changes or at heartbeat interval.
         """
+        import re
+
         now = time.time()
         price_rounded = round(price, 6) if price is not None else None
         same_price = (
@@ -148,7 +150,25 @@ class DualCurrencyLogger:
             self._last_status_msg is not None and
             msg == self._last_status_msg
         )
-        is_duplicate = same_price or same_msg
+
+        # For scanning: strip variable price string to compare structural state
+        same_structure = False
+        if tag == "SCANNING" and not force:
+            struct_curr = re.sub(r"Price:\s*[0-9\.]+\s*USDT\s*\|\s*", "", msg)
+            struct_last = re.sub(r"Price:\s*[0-9\.]+\s*USDT\s*\|\s*", "", self._last_status_msg or "")
+            if struct_last and struct_curr == struct_last:
+                same_structure = True
+            if heartbeat_sec == 30.0:
+                heartbeat_sec = 60.0
+
+        # For positions: strip variable hold time to compare position state
+        if tag in ("LIVE_POS", "POSITION", "DRY_RUN_POS") and not force:
+            pos_curr = re.sub(r"Hold:\s*[0-9\.]+\s*s", "", msg)
+            pos_last = re.sub(r"Hold:\s*[0-9\.]+\s*s", "", self._last_status_msg or "")
+            if pos_last and pos_curr == pos_last:
+                same_structure = True
+
+        is_duplicate = same_price or same_msg or same_structure
 
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -175,15 +195,13 @@ class DualCurrencyLogger:
         # 2. Non-interactive / Cloud / CI (Railway, GitHub Actions, Docker)
         if is_duplicate:
             self._same_price_count += 1
-            # If price/message hasn't changed, suppress adding another line unless heartbeat interval passed
+            # If price/message/structure hasn't changed, suppress adding another line unless heartbeat interval passed
             if (now - self._last_status_time) < heartbeat_sec:
                 return False  # Suppressed duplicate status line!
 
-            # Heartbeat line: show that status/price is steady
-            hold_sec = int(now - self._last_status_time)
-            annotated_msg = f"{msg} (steady {hold_sec}s)"
+            # Heartbeat line: show current status with latest price
             self.clear_status_line()
-            self.logger.info(annotated_msg)
+            self.logger.info(msg)
             self._last_status_time = now
             self._last_status_msg = msg
             if price_rounded is not None:
@@ -191,7 +209,7 @@ class DualCurrencyLogger:
             self._same_price_count = 0
             return True
 
-        # Price/message changed, force=True, or first message
+        # Structure/state changed, force=True, or first message
         self.clear_status_line()
         self.logger.info(msg)
         if price_rounded is not None:
