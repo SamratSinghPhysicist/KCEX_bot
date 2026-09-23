@@ -256,7 +256,17 @@ def run_batch_for_symbol(
                         "fee_close_usdt": round(o.fee_close_usdt, 4),
                         "fee_total_usdt": round(o.fee_total_usdt, 4),
                         "exit_reason": o.exit_reason.name if hasattr(o.exit_reason, "name") else str(o.exit_reason),
-                        "balance_after_trade_usdt": round(o.balance_after_trade_usdt, 2) if o.balance_after_trade_usdt is not None else None
+                        "balance_after_trade_usdt": round(o.balance_after_trade_usdt, 2) if o.balance_after_trade_usdt is not None else None,
+                        "smc_zone_id": getattr(o, "smc_zone_id", None),
+                        "smc_zone_type": getattr(o, "smc_zone_type", None),
+                        "smc_zone_low": getattr(o, "smc_zone_low", None),
+                        "smc_zone_mid": getattr(o, "smc_zone_mid", None),
+                        "smc_zone_high": getattr(o, "smc_zone_high", None),
+                        "smc_candle_utc": getattr(o, "smc_zone_creation_time_utc", None),
+                        "smc_origin_bar": getattr(o, "smc_zone_creation_bar_idx", None),
+                        "smc_bos_bar": getattr(o, "smc_bos_bar_idx", None),
+                        "smc_target_1to1": getattr(o, "smc_target_1to1", None),
+                        "smc_target_1to2": getattr(o, "smc_target_1to2", None)
                     })
 
                 roi_sign = "+" if res_row["net_roi_pct"] >= 0 else ""

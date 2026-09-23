@@ -291,6 +291,14 @@ class TradeOutcome:
     smc_zone_type: Optional[str] = None
     smc_zone_high: Optional[float] = None
     smc_zone_low: Optional[float] = None
+    smc_zone_mid: Optional[float] = None
+    smc_zone_creation_bar_idx: Optional[int] = None
+    smc_zone_creation_ts: Optional[int] = None
+    smc_zone_creation_time_utc: Optional[str] = None
+    smc_bos_bar_idx: Optional[int] = None
+    smc_bos_price: Optional[float] = None
+    smc_trigger_candle_time_utc: Optional[str] = None
+    smc_trigger_bar_idx: Optional[int] = None
     smc_fvg_size: Optional[float] = None
     smc_target_1to1: Optional[float] = None
     smc_target_1to2: Optional[float] = None

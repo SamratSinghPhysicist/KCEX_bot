@@ -34,6 +34,7 @@ from __future__ import annotations
 import math
 import time
 import logging
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Dict, Any, List, Tuple, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
@@ -254,6 +255,10 @@ class OrderBlockDemandStrategy(BaseStrategy):
         self._cached_candles: List[Any] = []
         self._last_kline_fetch_ts: float = 0.0
         self._rate_limit_backoff_until: float = 0.0
+
+    @property
+    def timeframe(self) -> str:
+        return getattr(self, "interval", "Min15")
 
     def _refresh_contract_spec(self) -> None:
         """Inspects contract specifications for precise tick scaling."""
@@ -723,6 +728,57 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 self.history_zones.append(zone)
                 del self.active_zones[zid]
 
+    def _build_signal_metadata(
+        self,
+        zone: SmartMoneyZone,
+        entry_price: float,
+        sl_price: float,
+        tp_price: float,
+        risk_ticks: int,
+        target_ticks: int,
+        target_1to1_price: float,
+        current_candle_ts: int,
+        eval_idx: int,
+        prec: int
+    ) -> Dict[str, Any]:
+        zone_mid = round((zone.high + zone.low) / 2.0, prec)
+        zone_created_utc = datetime.fromtimestamp(zone.creation_ts / 1000.0, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC") if zone.creation_ts else "N/A"
+        trig_candle_utc = datetime.fromtimestamp(current_candle_ts / 1000.0, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC") if current_candle_ts else "N/A"
+
+        return {
+            "strategy_mode": "ORDER_BLOCK_DEMAND",
+            "zone_id": zone.zone_id,
+            "zone_type": zone.zone_type.value,
+            "zone_high": zone.high,
+            "zone_low": zone.low,
+            "zone_mid": zone_mid,
+            "zone_creation_bar_idx": zone.creation_bar_idx,
+            "zone_creation_ts": zone.creation_ts,
+            "zone_creation_time_utc": zone_created_utc,
+            "bos_bar_idx": zone.bos_bar_idx,
+            "bos_price": zone.bos_price,
+            "retest_bar_idx": zone.retest_bar_idx,
+            "confirmation_bar_idx": zone.confirmation_bar_idx,
+            "eval_bar_idx": eval_idx,
+            "trigger_candle_ts": current_candle_ts,
+            "trigger_candle_time_utc": trig_candle_utc,
+            "timeframe": self.timeframe,
+            "entry_price": round(entry_price, prec),
+            "stop_loss_price": sl_price,
+            "take_profit_price": tp_price,
+            "target_ticks": target_ticks,
+            "target_sl_ticks": risk_ticks,
+            "target_1to1_ticks": risk_ticks,
+            "target_1to1_price": target_1to1_price,
+            "target_1to2_ticks": target_ticks,
+            "target_1to2_price": tp_price,
+            "risk_reward_ratio": self.risk_reward_ratio,
+            "partial_tp_enabled": self.partial_tp_enabled,
+            "breakeven_buffer_ticks": self.breakeven_buffer_ticks,
+            "candle_timestamp": current_candle_ts,
+            "pivot_len": self.pivot_len
+        }
+
     def generate_signal(self, symbol: str) -> Optional[TradeSignal]:
         """
         Generates trading signals using the unified Vivek Yadav OB Strategy engine.
@@ -817,27 +873,18 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     tp_price = round(entry_price + (target_ticks * pu), prec)
                     target_1to1_price = round(entry_price + (risk_ticks * pu), prec)
 
-                    metadata = {
-                        "strategy_mode": "ORDER_BLOCK_DEMAND",
-                        "zone_id": zone.zone_id,
-                        "zone_type": zone.zone_type.value,
-                        "zone_high": zone.high,
-                        "zone_low": zone.low,
-                        "entry_price": round(entry_price, prec),
-                        "stop_loss_price": sl_price,
-                        "take_profit_price": tp_price,
-                        "target_ticks": target_ticks,
-                        "target_sl_ticks": risk_ticks,
-                        "target_1to1_ticks": risk_ticks,
-                        "target_1to1_price": target_1to1_price,
-                        "target_1to2_ticks": target_ticks,
-                        "target_1to2_price": tp_price,
-                        "risk_reward_ratio": self.risk_reward_ratio,
-                        "partial_tp_enabled": self.partial_tp_enabled,
-                        "breakeven_buffer_ticks": self.breakeven_buffer_ticks,
-                        "candle_timestamp": current_candle_ts,
-                        "pivot_len": self.pivot_len
-                    }
+                    metadata = self._build_signal_metadata(
+                        zone=zone,
+                        entry_price=entry_price,
+                        sl_price=sl_price,
+                        tp_price=tp_price,
+                        risk_ticks=risk_ticks,
+                        target_ticks=target_ticks,
+                        target_1to1_price=target_1to1_price,
+                        current_candle_ts=current_candle_ts,
+                        eval_idx=eval_idx,
+                        prec=prec
+                    )
                     best_signal = TradeSignal(
                         symbol=self.symbol,
                         direction=OrderDirection.LONG,
@@ -856,27 +903,18 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     tp_price = round(entry_price - (target_ticks * pu), prec)
                     target_1to1_price = round(entry_price - (risk_ticks * pu), prec)
 
-                    metadata = {
-                        "strategy_mode": "ORDER_BLOCK_DEMAND",
-                        "zone_id": zone.zone_id,
-                        "zone_type": zone.zone_type.value,
-                        "zone_high": zone.high,
-                        "zone_low": zone.low,
-                        "entry_price": round(entry_price, prec),
-                        "stop_loss_price": sl_price,
-                        "take_profit_price": tp_price,
-                        "target_ticks": target_ticks,
-                        "target_sl_ticks": risk_ticks,
-                        "target_1to1_ticks": risk_ticks,
-                        "target_1to1_price": target_1to1_price,
-                        "target_1to2_ticks": target_ticks,
-                        "target_1to2_price": tp_price,
-                        "risk_reward_ratio": self.risk_reward_ratio,
-                        "partial_tp_enabled": self.partial_tp_enabled,
-                        "breakeven_buffer_ticks": self.breakeven_buffer_ticks,
-                        "candle_timestamp": current_candle_ts,
-                        "pivot_len": self.pivot_len
-                    }
+                    metadata = self._build_signal_metadata(
+                        zone=zone,
+                        entry_price=entry_price,
+                        sl_price=sl_price,
+                        tp_price=tp_price,
+                        risk_ticks=risk_ticks,
+                        target_ticks=target_ticks,
+                        target_1to1_price=target_1to1_price,
+                        current_candle_ts=current_candle_ts,
+                        eval_idx=eval_idx,
+                        prec=prec
+                    )
                     best_signal = TradeSignal(
                         symbol=self.symbol,
                         direction=OrderDirection.SHORT,
@@ -935,27 +973,18 @@ class OrderBlockDemandStrategy(BaseStrategy):
                             tp_price = round(c_close + (target_ticks * pu), prec)
                             target_1to1_price = round(c_close + (risk_ticks * pu), prec)
 
-                            metadata = {
-                                "strategy_mode": "ORDER_BLOCK_DEMAND",
-                                "zone_id": zone.zone_id,
-                                "zone_type": zone.zone_type.value,
-                                "zone_high": zone.high,
-                                "zone_low": zone.low,
-                                "entry_price": round(c_close, prec),
-                                "stop_loss_price": sl_price,
-                                "take_profit_price": tp_price,
-                                "target_ticks": target_ticks,
-                                "target_sl_ticks": risk_ticks,
-                                "target_1to1_ticks": risk_ticks,
-                                "target_1to1_price": target_1to1_price,
-                                "target_1to2_ticks": target_ticks,
-                                "target_1to2_price": tp_price,
-                                "risk_reward_ratio": self.risk_reward_ratio,
-                                "partial_tp_enabled": self.partial_tp_enabled,
-                                "breakeven_buffer_ticks": self.breakeven_buffer_ticks,
-                                "candle_timestamp": current_candle_ts,
-                                "pivot_len": self.pivot_len
-                            }
+                            metadata = self._build_signal_metadata(
+                                zone=zone,
+                                entry_price=c_close,
+                                sl_price=sl_price,
+                                tp_price=tp_price,
+                                risk_ticks=risk_ticks,
+                                target_ticks=target_ticks,
+                                target_1to1_price=target_1to1_price,
+                                current_candle_ts=current_candle_ts,
+                                eval_idx=eval_idx,
+                                prec=prec
+                            )
                             best_signal = TradeSignal(
                                 symbol=self.symbol,
                                 direction=OrderDirection.LONG,
@@ -1009,27 +1038,18 @@ class OrderBlockDemandStrategy(BaseStrategy):
                             tp_price = round(c_close - (target_ticks * pu), prec)
                             target_1to1_price = round(c_close - (risk_ticks * pu), prec)
 
-                            metadata = {
-                                "strategy_mode": "ORDER_BLOCK_DEMAND",
-                                "zone_id": zone.zone_id,
-                                "zone_type": zone.zone_type.value,
-                                "zone_high": zone.high,
-                                "zone_low": zone.low,
-                                "entry_price": round(c_close, prec),
-                                "stop_loss_price": sl_price,
-                                "take_profit_price": tp_price,
-                                "target_ticks": target_ticks,
-                                "target_sl_ticks": risk_ticks,
-                                "target_1to1_ticks": risk_ticks,
-                                "target_1to1_price": target_1to1_price,
-                                "target_1to2_ticks": target_ticks,
-                                "target_1to2_price": tp_price,
-                                "risk_reward_ratio": self.risk_reward_ratio,
-                                "partial_tp_enabled": self.partial_tp_enabled,
-                                "breakeven_buffer_ticks": self.breakeven_buffer_ticks,
-                                "candle_timestamp": current_candle_ts,
-                                "pivot_len": self.pivot_len
-                            }
+                            metadata = self._build_signal_metadata(
+                                zone=zone,
+                                entry_price=c_close,
+                                sl_price=sl_price,
+                                tp_price=tp_price,
+                                risk_ticks=risk_ticks,
+                                target_ticks=target_ticks,
+                                target_1to1_price=target_1to1_price,
+                                current_candle_ts=current_candle_ts,
+                                eval_idx=eval_idx,
+                                prec=prec
+                            )
                             best_signal = TradeSignal(
                                 symbol=self.symbol,
                                 direction=OrderDirection.SHORT,
@@ -1082,14 +1102,30 @@ class OrderBlockDemandStrategy(BaseStrategy):
         }
 
     def get_diagnostics(self) -> Dict[str, Any]:
+        bullish_zones = [z for z in self.active_zones.values() if z.is_bullish]
+        bearish_zones = [z for z in self.active_zones.values() if z.is_bearish]
+        cached_price = None
+        if self._cached_candles:
+            try:
+                cached_price = float(self._cached_candles[-1].close if hasattr(self._cached_candles[-1], "close") else self._cached_candles[-1][4])
+            except Exception:
+                pass
+
         return {
+            "strategy": "ORDER_BLOCK_DEMAND",
+            "timeframe": self.timeframe,
             "active_zones_count": len(self.active_zones),
+            "demand_zones_count": len(bullish_zones),
+            "supply_zones_count": len(bearish_zones),
+            "cached_price": cached_price,
             "zones": [
                 {
                     "id": z.zone_id,
                     "type": z.zone_type.value,
                     "high": z.high,
                     "low": z.low,
+                    "mid": round((z.high + z.low) / 2.0, self._price_precision),
+                    "bar": z.creation_bar_idx,
                     "status": z.status.value
                 }
                 for z in list(self.active_zones.values())[-5:]

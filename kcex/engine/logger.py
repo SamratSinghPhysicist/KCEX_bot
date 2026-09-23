@@ -66,6 +66,20 @@ class DualCurrencyLogger:
         file_handler.setFormatter(file_fmt)
         self.logger.addHandler(file_handler)
 
+        # Single-line dynamic telemetry & price deduplication state
+        self._in_place_active = False
+        self._last_status_msg: Optional[str] = None
+        self._last_status_price: Optional[float] = None
+        self._last_status_time: float = 0.0
+        self._same_price_count: int = 0
+        self._is_tty: bool = sys.stdout.isatty()
+        self._is_cloud_ci: bool = bool(
+            os.environ.get("RAILWAY_ENVIRONMENT") or
+            os.environ.get("RAILWAY_STATIC_URL") or
+            os.environ.get("GITHUB_ACTIONS") or
+            os.environ.get("CI")
+        )
+
     def _ensure_dir(self) -> None:
         directory = os.path.dirname(self.log_file)
         if directory:
@@ -87,22 +101,121 @@ class DualCurrencyLogger:
         inr_val = price * self.inr_rate
         return f"{price:.{precision}f} USDT (INR {inr_val:.2f})"
 
+    def clear_status_line(self) -> None:
+        """Clears any in-place status line currently printed on console."""
+        if self._in_place_active:
+            try:
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+            except Exception:
+                pass
+            self._in_place_active = False
+
+    def update_status_line(
+        self,
+        msg: str,
+        price: Optional[float] = None,
+        tag: str = "STATUS",
+        force: bool = False,
+        heartbeat_sec: float = 30.0
+    ) -> bool:
+        """
+        Updates telemetry in a single line.
+        - On local interactive TTY: Updates the current line in-place using carriage return (\\r).
+        - On Cloud / CI (Railway, GitHub Actions) or non-TTY:
+          Suppresses duplicate identical-price log messages so logs are NOT flooded with same-price lines.
+          Only logs a new line when:
+          (1) Price moves (new price update)
+          (2) Heartbeat interval elapses (e.g. 30s) to confirm liveness
+          (3) force is True
+        - Writes to log file only when price changes or at heartbeat interval.
+        """
+        now = time.time()
+        price_rounded = round(price, 6) if price is not None else None
+        same_price = (
+            not force and
+            price_rounded is not None and
+            self._last_status_price is not None and
+            price_rounded == self._last_status_price
+        )
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # 1. Interactive Local TTY: update in-place on the same line
+        if self._is_tty and not self._is_cloud_ci:
+            try:
+                clean_msg = f"\r{now_str} [INFO] {msg}"
+                sys.stdout.write(f"{clean_msg:<120}")
+                sys.stdout.flush()
+                self._in_place_active = True
+            except Exception:
+                self.logger.info(msg)
+
+            # Record to log file conditionally (avoid blowing up log file with same prices)
+            if not same_price or (now - self._last_status_time >= heartbeat_sec) or force:
+                self._write_file_log(now_str, "INFO", msg)
+                self._last_status_time = now
+                self._last_status_price = price_rounded
+
+            self._last_status_msg = msg
+            return True
+
+        # 2. Non-interactive / Cloud / CI (Railway, GitHub Actions, Docker)
+        if same_price:
+            self._same_price_count += 1
+            # If price hasn't changed, suppress adding another line unless heartbeat interval passed
+            if (now - self._last_status_time) < heartbeat_sec:
+                return False  # Suppressed duplicate price update line!
+
+            # Heartbeat line: show that price is steady
+            hold_sec = int(now - self._last_status_time)
+            annotated_msg = f"{msg} (steady {hold_sec}s)"
+            self.clear_status_line()
+            self.logger.info(annotated_msg)
+            self._last_status_time = now
+            self._last_status_msg = msg
+            self._same_price_count = 0
+            return True
+
+        # Price changed, force=True, or first message
+        self.clear_status_line()
+        self.logger.info(msg)
+        self._last_status_price = price_rounded
+        self._last_status_time = now
+        self._last_status_msg = msg
+        self._same_price_count = 0
+        return True
+
+    def _write_file_log(self, timestamp_str: str, level: str, msg: str) -> None:
+        """Helper to append a clean formatted line directly to log file."""
+        try:
+            line = f"{timestamp_str} [{level:<7s}] {msg}\n"
+            with open(self.log_file, "a", encoding="utf-8") as f:
+                f.write(line)
+        except Exception:
+            pass
+
     def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        self.clear_status_line()
         self.logger.info(msg, *args, **kwargs)
 
     def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        self.clear_status_line()
         self.logger.warning(msg, *args, **kwargs)
 
     def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        self.clear_status_line()
         self.logger.error(msg, *args, **kwargs)
 
     def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
         self.logger.debug(msg, *args, **kwargs)
 
     def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        self.clear_status_line()
         self.logger.exception(msg, *args, **kwargs)
 
     def section(self, title: str) -> None:
+        self.clear_status_line()
         border = "=" * 76
         self.logger.info(border)
         self.logger.info(f"   {title}")
@@ -187,6 +300,27 @@ class TradeOutcomeLogger:
                 f"ML Model Alpha     : Conviction {outcome.ml_confidence:.1%} | P(BUY)={p_b:.1%} | P(SELL)={p_s:.1%} | P(WAIT)={p_w:.1%}"
             )
 
+        if getattr(outcome, "smc_zone_id", None) or getattr(outcome, "smc_zone_type", None):
+            zh = getattr(outcome, 'smc_zone_high', 0.0) or 0.0
+            zl = getattr(outcome, 'smc_zone_low', 0.0) or 0.0
+            zm = getattr(outcome, 'smc_zone_mid', None) or ((zh + zl) / 2.0 if (zh and zl) else 0.0)
+            z_time = getattr(outcome, 'smc_zone_creation_time_utc', None) or "N/A"
+            z_bar = getattr(outcome, 'smc_zone_creation_bar_idx', None)
+            bar_desc = f"Bar #{z_bar} | {z_time}" if z_bar is not None else f"{z_time}"
+            bos_desc = f" | BOS Bar #{outcome.smc_bos_bar_idx}" if getattr(outcome, 'smc_bos_bar_idx', None) is not None else ""
+            t1 = getattr(outcome, 'smc_target_1to1', None)
+            t2 = getattr(outcome, 'smc_target_1to2', None)
+            t1_str = f"{t1:.{ps}f} USDT" if t1 else "N/A"
+            t2_str = f"{t2:.{ps}f} USDT" if t2 else "N/A"
+            partial_badge = " [1:1 Partial TP Hit]" if getattr(outcome, 'smc_partial_tp_hit', False) else ""
+
+            card_lines.extend([
+                f"SMC Identified OB  : {outcome.smc_zone_type or 'ORDER_BLOCK'} (#{outcome.smc_zone_id}){partial_badge}",
+                f"  • OB Candle Loc  : {bar_desc}{bos_desc}",
+                f"  • Zone Boundary  : Low: {zl:.{ps}f} <---> Mid: {zm:.{ps}f} <---> High: {zh:.{ps}f} USDT",
+                f"  • Profit Targets : 1:1 TP: {t1_str} | 1:2 TP: {t2_str}"
+            ])
+
         card_lines.extend([
             "------------------------------------------------------------------------------",
             f"REALIZED PnL       : {pnl_sign}{outcome.realized_pnl_usdt:.6f} USDT ({pnl_sign}INR {outcome.realized_pnl_inr:.4f})",
@@ -261,6 +395,18 @@ class TradeOutcomeLogger:
                 "ml_tp_ticks": getattr(outcome, "ml_tp_ticks", None),
                 "ml_sl_ticks": getattr(outcome, "ml_sl_ticks", None),
                 "ml_atr_14": getattr(outcome, "ml_atr_14", None),
+                "smc_zone_id": getattr(outcome, "smc_zone_id", None),
+                "smc_zone_type": getattr(outcome, "smc_zone_type", None),
+                "smc_zone_high": getattr(outcome, "smc_zone_high", None),
+                "smc_zone_low": getattr(outcome, "smc_zone_low", None),
+                "smc_zone_mid": getattr(outcome, "smc_zone_mid", None),
+                "smc_zone_creation_bar_idx": getattr(outcome, "smc_zone_creation_bar_idx", None),
+                "smc_zone_creation_time_utc": getattr(outcome, "smc_zone_creation_time_utc", None),
+                "smc_bos_bar_idx": getattr(outcome, "smc_bos_bar_idx", None),
+                "smc_bos_price": getattr(outcome, "smc_bos_price", None),
+                "smc_target_1to1": getattr(outcome, "smc_target_1to1", None),
+                "smc_target_1to2": getattr(outcome, "smc_target_1to2", None),
+                "smc_partial_tp_hit": getattr(outcome, "smc_partial_tp_hit", None),
                 "cumulative_trades": self.cumulative.total_trades,
                 "cumulative_win_rate": self.cumulative.win_rate_pct,
                 "cumulative_net_pnl_usdt": self.cumulative.total_pnl_usdt,

@@ -503,10 +503,43 @@ class TradeExecutionEngine:
                 f"[ML ALPHA TRIGGER] Confidence: {conf_val:.1%} | Target TP: +{target_tp_ticks}t | SL: -{sl_ticks_to_use}t | R:R={rr_val}"
             )
         elif is_smc_sig:
+            ps = contract.price_precision
             z_type = signal.metadata.get("zone_type", "ORDER_BLOCK")
+            z_id = signal.metadata.get("zone_id", "N/A")
+            z_low = float(signal.metadata.get("zone_low", 0.0) or 0.0)
+            z_high = float(signal.metadata.get("zone_high", 0.0) or 0.0)
+            z_mid = float(signal.metadata.get("zone_mid", (z_low + z_high) / 2.0) or 0.0)
+            z_bar = signal.metadata.get("zone_creation_bar_idx")
+            z_time = signal.metadata.get("zone_creation_time_utc", "N/A")
+            bos_bar = signal.metadata.get("bos_bar_idx")
+            bos_p = signal.metadata.get("bos_price")
+            retest_bar = signal.metadata.get("retest_bar_idx")
+            trig_time = signal.metadata.get("trigger_candle_time_utc", "N/A")
+            eval_bar = signal.metadata.get("eval_bar_idx")
             rr_val = signal.metadata.get("risk_reward_ratio", 2.0)
+            t1_p = signal.metadata.get("target_1to1_price")
+            t2_p = signal.metadata.get("target_1to2_price")
+            tf = signal.metadata.get("timeframe", getattr(self.config, "timeframe", "15m"))
+
+            loc_str = f"Bar #{z_bar} ({z_time})" if z_bar is not None else str(z_time)
+            bos_str = f"Bar #{bos_bar} @ {bos_p:.{ps}f} USDT" if (bos_bar is not None and bos_p is not None) else (f"Bar #{bos_bar}" if bos_bar is not None else "N/A")
+            retest_str = f" | Retest Bar: #{retest_bar}" if retest_bar is not None else ""
+            t1_str = f"{t1_p:.{ps}f} USDT" if t1_p is not None else "N/A"
+            t2_str = f"{t2_p:.{ps}f} USDT" if t2_p is not None else "N/A"
+
             self.logger.info(
-                f"[SMC ORDER BLOCK TRIGGER] Zone: {z_type} | Target TP: +{target_tp_ticks}t | SL: -{sl_ticks_to_use}t | R:R={rr_val}"
+                f"\n{'='*78}\n"
+                f"🎯 [SMC ORDER BLOCK IDENTIFIED & TRIGGERED]\n"
+                f"{'='*78}\n"
+                f"Pair & Direction   : {symbol} [{direction.value}] | Timeframe: {tf} | Leverage: {leverage}x\n"
+                f"Identified Zone    : {z_type} (#{z_id})\n"
+                f"Candle Location    : {loc_str}\n"
+                f"Structure Break    : BOS {bos_str}{retest_str}\n"
+                f"Trigger Candle     : Bar #{eval_bar} ({trig_time})\n"
+                f"Zone Boundaries    : Low: {z_low:.{ps}f} <---> Mid (50%): {z_mid:.{ps}f} <---> High: {z_high:.{ps}f} USDT\n"
+                f"Target Levels      : 1:1 TP: {t1_str} (+{signal.metadata.get('target_1to1_ticks', target_tp_ticks // 2)}t) | "
+                f"1:2 TP: {t2_str} (+{target_tp_ticks}t) | SL: -{sl_ticks_to_use}t | R:R = 1:{rr_val}\n"
+                f"{'='*78}"
             )
 
         # Get fresh market snapshot
@@ -650,6 +683,14 @@ class TradeExecutionEngine:
                 outcome.smc_zone_type = signal.metadata.get("zone_type")
                 outcome.smc_zone_high = signal.metadata.get("zone_high")
                 outcome.smc_zone_low = signal.metadata.get("zone_low")
+                outcome.smc_zone_mid = signal.metadata.get("zone_mid")
+                outcome.smc_zone_creation_bar_idx = signal.metadata.get("zone_creation_bar_idx")
+                outcome.smc_zone_creation_ts = signal.metadata.get("zone_creation_ts")
+                outcome.smc_zone_creation_time_utc = signal.metadata.get("zone_creation_time_utc")
+                outcome.smc_bos_bar_idx = signal.metadata.get("bos_bar_idx")
+                outcome.smc_bos_price = signal.metadata.get("bos_price")
+                outcome.smc_trigger_candle_time_utc = signal.metadata.get("trigger_candle_time_utc")
+                outcome.smc_trigger_bar_idx = signal.metadata.get("eval_bar_idx")
                 outcome.smc_fvg_size = signal.metadata.get("fvg_size")
                 outcome.smc_target_1to1 = signal.metadata.get("target_1to1_price")
                 outcome.smc_target_1to2 = signal.metadata.get("target_1to2_price")
@@ -907,10 +948,52 @@ class TradeExecutionEngine:
         )
 
         ps = contract.price_precision
-        self.logger.info(
-            f"Position Filled: Entry Price = {entry_price:.{ps}f} USDT | "
-            f"Exact Min-Profit TP = {exact_tp:.{ps}f} USDT | Exact SL = {exact_sl:.{ps}f} USDT"
-        )
+        if is_smc_sig and signal and signal.metadata:
+            z_type = signal.metadata.get("zone_type", "ORDER_BLOCK")
+            z_id = signal.metadata.get("zone_id", "N/A")
+            z_low = float(signal.metadata.get("zone_low", 0.0) or 0.0)
+            z_high = float(signal.metadata.get("zone_high", 0.0) or 0.0)
+            z_mid = float(signal.metadata.get("zone_mid", (z_low + z_high) / 2.0) or 0.0)
+            z_bar = signal.metadata.get("zone_creation_bar_idx")
+            z_time = signal.metadata.get("zone_creation_time_utc", "N/A")
+            bos_bar = signal.metadata.get("bos_bar_idx")
+            bos_p = signal.metadata.get("bos_price")
+            retest_bar = signal.metadata.get("retest_bar_idx")
+            trig_time = signal.metadata.get("trigger_candle_time_utc", "N/A")
+            eval_bar = signal.metadata.get("eval_bar_idx")
+            t1_p = signal.metadata.get("target_1to1_price", exact_tp)
+            t2_p = signal.metadata.get("target_1to2_price", exact_tp)
+            tf = signal.metadata.get("timeframe", getattr(self.config, "timeframe", "15m"))
+
+            loc_str = f"Bar #{z_bar} ({z_time})" if z_bar is not None else str(z_time)
+            bos_str = f"Bar #{bos_bar} @ {bos_p:.{ps}f} USDT" if (bos_bar is not None and bos_p is not None) else (f"Bar #{bos_bar}" if bos_bar is not None else "N/A")
+            retest_str = f" | Retest Bar: #{retest_bar}" if retest_bar is not None else ""
+            t1_str = f"{t1_p:.{ps}f} USDT" if t1_p is not None else "N/A"
+            t2_str = f"{t2_p:.{ps}f} USDT" if t2_p is not None else "N/A"
+
+            self.logger.info(
+                f"\n{'='*78}\n"
+                f"🎯 [LIVE ORDER BLOCK TRADE EXECUTED & ACTIVE]\n"
+                f"{'='*78}\n"
+                f"Pair & Direction   : {symbol} [{direction.value}] | Timeframe: {tf} | Leverage: {leverage}x\n"
+                f"Volume Executed    : {vol_contracts} contract(s) ({underlying_qty:g} {contract.base_coin})\n"
+                f"Identified Zone    : {z_type} (#{z_id})\n"
+                f"Candle Location    : {loc_str}\n"
+                f"Structure Break    : BOS {bos_str}{retest_str}\n"
+                f"Trigger Candle     : Bar #{eval_bar} ({trig_time})\n"
+                f"Zone Boundaries    : Low: {z_low:.{ps}f} <---> Mid (50%): {z_mid:.{ps}f} <---> High: {z_high:.{ps}f} USDT\n"
+                f"Execution Levels   :\n"
+                f"  • Entry Fill     : {entry_price:.{ps}f} USDT\n"
+                f"  • Stop Loss      : {exact_sl:.{ps}f} USDT\n"
+                f"  • 1:1 TP Target  : {t1_str} (+{effective_tp_ticks // 2}t | 50% Partial Close + BE Lock)\n"
+                f"  • 1:2 TP Runner  : {t2_str} (+{effective_tp_ticks}t | Full Runner Exit)\n"
+                f"{'='*78}"
+            )
+        else:
+            self.logger.info(
+                f"Position Filled: Entry Price = {entry_price:.{ps}f} USDT | "
+                f"Exact Min-Profit TP = {exact_tp:.{ps}f} USDT | Exact SL = {exact_sl:.{ps}f} USDT"
+            )
 
         # Register server-side position TP/SL with exact prices
         if position_id:
@@ -1290,9 +1373,9 @@ class TradeExecutionEngine:
             # Executable price (bid for LONG, ask for SHORT)
             exec_price = (bid1 if bid1 > 0 else current_price) if direction == OrderDirection.LONG else (ask1 if ask1 > 0 else current_price)
 
-            # Periodic Real-Time Position Telemetry
+            # Periodic Real-Time Position Telemetry (single-line dynamic updates)
             now = time.time()
-            if (now - last_heartbeat_time) >= 5.0:
+            if (now - last_heartbeat_time) >= 1.0:
                 last_heartbeat_time = now
                 pu = (10 ** -precision)
                 dist_tp_ticks = (exact_tp - exec_price) / pu if direction == OrderDirection.LONG else (exec_price - exact_tp) / pu
@@ -1305,11 +1388,12 @@ class TradeExecutionEngine:
                     u_ticks = 0.0
                     u_roe = 0.0
                 elapsed_hold = now - monitor_start_time
-                self.logger.info(
+                status_msg = (
                     f"[LIVE POSITION] {direction.value} @ {entry_price:.{precision}f} | Mark: {exec_price:.{precision}f} | "
                     f"TP: {exact_tp:.{precision}f} ({dist_tp_ticks:+.1f}t) | SL: {exact_sl:.{precision}f} ({dist_sl_ticks:+.1f}t) | "
                     f"Unrealized: {u_ticks:+.1f}t ({u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
                 )
+                self.logger.update_status_line(status_msg, price=exec_price, tag="LIVE_POS")
 
             # -----------------------------------------------------------------
             # Smart Money Concepts: 1:1 Partial Take Profit & Breakeven Lock
@@ -1662,10 +1746,52 @@ class TradeExecutionEngine:
         base_coin = contract.base_coin or symbol.split('_')[0]
 
         exec_desc = "MAKER LIMIT QUEUE (0 Slippage Target)" if is_maker else "MARKET TAKER"
-        self.logger.info(
-            f"[DRY-RUN] Simulated Order Filled ({exec_desc}): Entry = {entry_price:.{ps}f} USDT | "
-            f"Min-Profit TP = {exact_tp:.{ps}f} USDT (+{effective_tp_ticks} pu) | SL = {exact_sl:.{ps}f} USDT ({sl_desc})"
-        )
+        if is_smc and signal and signal.metadata:
+            z_type = signal.metadata.get("zone_type", "ORDER_BLOCK")
+            z_id = signal.metadata.get("zone_id", "N/A")
+            z_low = float(signal.metadata.get("zone_low", 0.0) or 0.0)
+            z_high = float(signal.metadata.get("zone_high", 0.0) or 0.0)
+            z_mid = float(signal.metadata.get("zone_mid", (z_low + z_high) / 2.0) or 0.0)
+            z_bar = signal.metadata.get("zone_creation_bar_idx")
+            z_time = signal.metadata.get("zone_creation_time_utc", "N/A")
+            bos_bar = signal.metadata.get("bos_bar_idx")
+            bos_p = signal.metadata.get("bos_price")
+            retest_bar = signal.metadata.get("retest_bar_idx")
+            trig_time = signal.metadata.get("trigger_candle_time_utc", "N/A")
+            eval_bar = signal.metadata.get("eval_bar_idx")
+            t1_p = signal.metadata.get("target_1to1_price", exact_tp)
+            t2_p = signal.metadata.get("target_1to2_price", exact_tp)
+            tf = signal.metadata.get("timeframe", getattr(self.config, "timeframe", "15m"))
+
+            loc_str = f"Bar #{z_bar} ({z_time})" if z_bar is not None else str(z_time)
+            bos_str = f"Bar #{bos_bar} @ {bos_p:.{ps}f} USDT" if (bos_bar is not None and bos_p is not None) else (f"Bar #{bos_bar}" if bos_bar is not None else "N/A")
+            retest_str = f" | Retest Bar: #{retest_bar}" if retest_bar is not None else ""
+            t1_str = f"{t1_p:.{ps}f} USDT" if t1_p is not None else "N/A"
+            t2_str = f"{t2_p:.{ps}f} USDT" if t2_p is not None else "N/A"
+
+            self.logger.info(
+                f"\n{'='*78}\n"
+                f"🎯 [DRY-RUN ORDER BLOCK TRADE EXECUTED & ACTIVE]\n"
+                f"{'='*78}\n"
+                f"Pair & Direction   : {symbol} [{direction.value}] | Timeframe: {tf} | Leverage: {leverage}x\n"
+                f"Volume Executed    : {vol_contracts} contract(s) ({underlying_qty:g} {contract.base_coin}) [{exec_desc}]\n"
+                f"Identified Zone    : {z_type} (#{z_id})\n"
+                f"Candle Location    : {loc_str}\n"
+                f"Structure Break    : BOS {bos_str}{retest_str}\n"
+                f"Trigger Candle     : Bar #{eval_bar} ({trig_time})\n"
+                f"Zone Boundaries    : Low: {z_low:.{ps}f} <---> Mid (50%): {z_mid:.{ps}f} <---> High: {z_high:.{ps}f} USDT\n"
+                f"Execution Levels   :\n"
+                f"  • Entry Fill     : {entry_price:.{ps}f} USDT\n"
+                f"  • Stop Loss      : {exact_sl:.{ps}f} USDT ({sl_desc})\n"
+                f"  • 1:1 TP Target  : {t1_str} (+{effective_tp_ticks // 2}t | 50% Partial Close + BE Lock)\n"
+                f"  • 1:2 TP Runner  : {t2_str} (+{effective_tp_ticks}t | Full Runner Exit)\n"
+                f"{'='*78}"
+            )
+        else:
+            self.logger.info(
+                f"[DRY-RUN] Simulated Order Filled ({exec_desc}): Entry = {entry_price:.{ps}f} USDT | "
+                f"Min-Profit TP = {exact_tp:.{ps}f} USDT (+{effective_tp_ticks} pu) | SL = {exact_sl:.{ps}f} USDT ({sl_desc})"
+            )
 
         # 2. Check immediate profit condition at fill
         if self.strategy.is_better_than_min_profit(direction, entry_price, exact_tp):
@@ -1919,9 +2045,9 @@ class TradeExecutionEngine:
                                 f"[DRY-RUN DURATION TIGHTEN] Trade open {elapsed:.1f}s. SL tightened to entry {exact_sl:.{ps}f} USDT."
                             )
 
-                # Periodic status report every ~5.0 seconds
+                # Periodic status report (single-line dynamic updates)
                 poll_interval = max(0.1, self.config.poll_interval_seconds)
-                status_freq = int(max(1, 5.0 / poll_interval))
+                status_freq = int(max(1, 1.0 / poll_interval))
                 if poll_count % status_freq == 0:
                     u_diff = (effective_close_price - entry_price) if direction == OrderDirection.LONG else (entry_price - effective_close_price)
                     u_ticks = u_diff / pu if pu > 0 else 0.0
@@ -1934,16 +2060,19 @@ class TradeExecutionEngine:
                     dist_tp_ticks = (exact_tp - effective_close_price) / pu if direction == OrderDirection.LONG else (effective_close_price - exact_tp) / pu
                     dist_sl_ticks = (effective_close_price - exact_sl) / pu if direction == OrderDirection.LONG else (exact_sl - effective_close_price) / pu
                     elapsed_hold = time.time() - open_time
-                    self.logger.info(
+                    status_msg = (
                         f"[DRY-RUN POSITION] {direction.value} @ {entry_price:.{ps}f} | Mark: {effective_close_price:.{ps}f} | "
                         f"TP: {exact_tp:.{ps}f} ({dist_tp_ticks:+.1f}t) | Stop: {exact_sl:.{ps}f} ({dist_sl_ticks:+.1f}t) | "
                         f"Unrealized: {u_ticks:+.1f}t ({u_pnl_usdt:+.4f} USDT / INR {u_pnl_inr:+.2f} | {u_roe:+.2f}% ROE) | Hold: {elapsed_hold:.1f}s"
                     )
+                    self.logger.update_status_line(status_msg, price=effective_close_price, tag="DRY_POS")
 
             if self._shutdown_requested and exit_reason == ExitReason.UNKNOWN:
                 exit_price = last_price
                 exit_reason = ExitReason.MANUAL_CLOSE
                 self.logger.warning("[DRY-RUN] Manual close requested during trade.")
+
+        self.logger.clear_status_line()
 
         close_time = time.time()
         duration = max(0.1, close_time - open_time)
@@ -2189,22 +2318,40 @@ class TradeExecutionEngine:
                 else:
                     # Log periodic diagnostics while hunting for entry signal
                     now = time.time()
-                    if now - last_diag_log >= 5.0:
+                    if now - last_diag_log >= 2.0:
                         last_diag_log = now
                         try:
                             diag = self.strategy.get_diagnostics()
                             prec = contract.price_precision
-                            if diag and "fast_ema" in diag:
+                            if diag and (diag.get("strategy") == "ORDER_BLOCK_DEMAND" or "active_zones_count" in diag):
+                                tf = diag.get("timeframe", getattr(self.config, "timeframe", "15m"))
+                                z_cnt = diag.get("active_zones_count", 0)
+                                d_cnt = diag.get("demand_zones_count", 0)
+                                s_cnt = diag.get("supply_zones_count", 0)
+                                p_val = diag.get("cached_price")
+                                p_str = f"Price: {p_val:.{prec}f} USDT | " if p_val is not None else ""
+                                rej = diag.get("last_rejection_reason", "Hunting setups")
+                                zones_list = diag.get("zones", [])
+                                nearest_desc = ""
+                                if zones_list:
+                                    nz = zones_list[-1]
+                                    nearest_desc = f" | Active OB: {nz.get('type')} [{nz.get('low', 0):.{prec}f}-{nz.get('high', 0):.{prec}f}]"
+                                scan_msg = (
+                                    f"[SCANNING] {contract.symbol} [{tf}] | {p_str}Zones: {z_cnt} ({d_cnt} Demand, {s_cnt} Supply){nearest_desc} | Status: {rej}"
+                                )
+                                self.logger.update_status_line(scan_msg, price=p_val, tag="SCANNING")
+                            elif diag and "fast_ema" in diag:
                                 c_f = diag.get('fast_ema', 0.0)
                                 c_s = diag.get('slow_ema', 0.0)
                                 diff = diag.get('diff', 0.0)
                                 diff_pct = diag.get('diff_pct', 0.0)
-                                self.logger.info(
+                                scan_msg = (
                                     f"[SCANNING] {contract.symbol} | EMA({diag.get('preset', '5/13')}) {diag.get('interval', 'Min1')} | "
                                     f"Fast: {c_f:.{prec}f} | Slow: {c_s:.{prec}f} | "
                                     f"Diff: {diff:+.{prec}f} ({diff_pct:+.2f}%) | "
                                     f"Trend: {diag.get('trend', 'NEUTRAL')} | Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
                                 )
+                                self.logger.update_status_line(scan_msg, price=c_f, tag="SCANNING")
                             elif diag and (diag.get("strategy") == "STOCHASTIC_RSI" or ("k" in diag and "d" in diag)):
                                 k_val = diag.get('k', 50.0)
                                 d_val = diag.get('d', 50.0)
@@ -2212,20 +2359,22 @@ class TradeExecutionEngine:
                                 zone = diag.get('zone', 'NEUTRAL')
                                 preset = diag.get('preset', 'FAST_SCALP')
                                 inv = diag.get('interval', 'Min1')
-                                self.logger.info(
+                                scan_msg = (
                                     f"[SCANNING] {contract.symbol} | StochRSI({preset}) {inv} | "
                                     f"%K: {k_val:.1f} | %D: {d_val:.1f} (Diff: {diff_kd:+.1f}) | "
                                     f"Zone: {zone} | Trend: {diag.get('trend', 'NEUTRAL')} | Close In: {diag.get('time_to_bar_close_s', 0):.0f}s"
                                 )
+                                self.logger.update_status_line(scan_msg, price=k_val, tag="SCANNING")
                             elif diag and "obi_z" in diag:
                                 feed_info = diag.get("feed", {})
                                 ws_status = "WS" if feed_info.get("connected") else "REST"
                                 b_bid = f"{diag.get('best_bid'):.{prec}f}" if diag.get('best_bid') else "N/A"
                                 b_ask = f"{diag.get('best_ask'):.{prec}f}" if diag.get('best_ask') else "N/A"
-                                self.logger.info(
+                                scan_msg = (
                                     f"[SCANNING] {contract.symbol} [{ws_status}] | Bid/Ask: {b_bid} / {b_ask} (Spread: {diag.get('spread_ticks', 0):.1f}t) | "
                                     f"OBI: {diag.get('obi_z', 0):+.2f} | Delta: {diag.get('delta_z', 0):+.2f} | VAMP: {diag.get('vamp_z', 0):+.2f}"
                                 )
+                                self.logger.update_status_line(scan_msg, price=diag.get('best_bid'), tag="SCANNING")
                             elif diag and (diag.get("strategy") == "ML_1M_MODEL" or "last_prediction" in diag):
                                 last_p = diag.get("last_prediction") or {}
                                 if last_p:
@@ -2247,11 +2396,12 @@ class TradeExecutionEngine:
                                     else:
                                         atr_str = ""
                                     cd_str = f" | CD: {rem_cd:.1f}s" if rem_cd > 0 else ""
-                                    self.logger.info(
+                                    scan_msg = (
                                         f"[SCANNING] {contract.symbol} [{ds}] | {price_str}{atr_str}"
                                         f"P(BUY): {p_buy:.1%} | P(SELL): {p_sell:.1%} | P(WAIT): {p_wait:.1%} -> Action: {act}"
                                         f"{cd_str}"
                                     )
+                                    self.logger.update_status_line(scan_msg, price=curr_p, tag="SCANNING")
                         except Exception as de:
                             self.logger.debug("Diagnostics fetch error: %s", de)
 
