@@ -257,9 +257,11 @@ class PairBacktestManager:
         import glob
         import csv
 
-        matrix_files = glob.glob(os.path.join(reports_dir, "*_batch_matrix.csv"))
-        # Filter out chunk files
-        master_files = [f for f in matrix_files if not any(x in f for x in ("_1m_", "_5m_", "_15m-1h_", "_4h-1d_"))]
+        # Filter out chunk files (master file is strictly {SYMBOL}_batch_matrix.csv)
+        master_files = [
+            f for f in matrix_files
+            if not any(x in os.path.basename(f) for x in ("_1m", "_5m", "_15m", "_4h", "_htf", "_chunk"))
+        ]
 
         all_best = []
         for mf in sorted(master_files):
