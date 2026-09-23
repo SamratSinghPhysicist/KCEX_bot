@@ -76,7 +76,8 @@ class ExecutionConfig:
     simulated_balance_usdt: Optional[float] = None # Simulated wallet balance for dry-run/testing
     max_trades: int = 0                   # 0 = unlimited
     # Strategy selection
-    strategy_mode: str = "STOCH_RSI"      # "STOCH_RSI" or "EMA_CROSSOVER"
+    strategy_mode: str = "STOCH_RSI"      # "STOCH_RSI", "ORDER_BLOCK_DEMAND", "ML_1M", etc.
+    timeframe: str = "Min15"              # Strategy candle timeframe (e.g. "Min15", "Min1")
     bi_directional: bool = True           # True for autonomous Long/Short, False for fixed direction
     ema_preset: str = "5/13"              # "5/13", "9/21", "3/8", or "custom"
     ema_fast: int = 5                     # Fast EMA length

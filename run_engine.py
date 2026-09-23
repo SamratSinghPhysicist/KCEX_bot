@@ -322,10 +322,12 @@ def prompt_user_settings():
             mode=mode_val,
             leverage=lev_val,
             is_isolated=True,
-            cooldown_seconds=cooldown_val,
-            volume_mode="MULTIPLIER",
+            volume_mode=preset_cfg.get("volume_mode", "MULTIPLIER"),
             volume_multiplier=vol_mult,
+            volume_contracts=preset_cfg.get("volume_contracts"),
+            margin_pct=preset_cfg.get("margin_pct"),
             margin_fallback_pct=margin_fallback,
+            timeframe=preset_cfg.get("timeframe", "Min15"),
             tp_ticks=tp_ticks,
             dynamic_tp=dyn_tp,
             sl_mode=sl_mode,
@@ -1105,9 +1107,21 @@ def parse_args():
     parser.add_argument(
         "--volume-mode",
         type=str,
-        choices=["MIN", "MULTIPLIER", "CONTRACTS", "min", "multiplier", "contracts"],
+        choices=["MIN", "MULTIPLIER", "CONTRACTS", "MARGIN_PCT", "FIXED_MARGIN", "min", "multiplier", "contracts", "margin_pct", "fixed_margin"],
         default=None,
-        help="Volume mode: 'MIN', 'MULTIPLIER', or 'CONTRACTS'"
+        help="Volume mode: 'MIN', 'MULTIPLIER', 'CONTRACTS', 'MARGIN_PCT', or 'FIXED_MARGIN'"
+    )
+    parser.add_argument(
+        "--margin-pct",
+        type=float,
+        default=None,
+        help="Percentage of available wallet margin to commit per trade (e.g. 10.0 for 10%%)"
+    )
+    parser.add_argument(
+        "--timeframe", "--interval", "-tf",
+        type=str,
+        default=None,
+        help="Candle timeframe / interval for strategy evaluation (e.g. 'Min15', '15m', 'Min1', '1m', 'Min5', '5m')"
     )
     parser.add_argument(
         "--cooldown",
@@ -1560,6 +1574,8 @@ def main():
             vol_mult = 1.0 if "ML" in active_preset_name else 50.0
 
         vol_contracts = args.volume_contracts if args.volume_contracts is not None else (preset_cfg.get("volume_contracts") or get_setting("VOLUME_CONTRACTS", 1) if vol_mode == "CONTRACTS" else None)
+        margin_pct_val = args.margin_pct if args.margin_pct is not None else preset_cfg.get("margin_pct", get_setting("MARGIN_PCT", 10.0 if vol_mode == "MARGIN_PCT" else None))
+        timeframe_val = args.timeframe or preset_cfg.get("timeframe") or get_setting("TIMEFRAME", "Min15")
 
         tp_ticks = args.tp_ticks if args.tp_ticks is not None else (preset_cfg.get("tp_ticks") if "tp_ticks" in preset_cfg else get_setting("TP_TICKS", 2))
         if args.fixed_tp:
@@ -1705,7 +1721,9 @@ def main():
             volume_mode=vol_mode,
             volume_multiplier=vol_mult or 1.0,
             volume_contracts=vol_contracts,
+            margin_pct=margin_pct_val,
             margin_fallback_pct=preset_cfg.get("margin_fallback_pct", get_setting("MARGIN_FALLBACK_PCT", 25.0)),
+            timeframe=timeframe_val,
             tp_ticks=tp_ticks,
             dynamic_tp=dynamic_tp,
             sl_mode=sl_mode,
@@ -1830,10 +1848,14 @@ def main():
     except Exception as e:
         print(f"[Notice] Balance check skipped: {e}\n")
 
-    vol_desc = (
-        f"{config.volume_contracts} contract(s)" if config.volume_mode == "CONTRACTS" and config.volume_contracts
-        else f"{config.volume_multiplier:g}x min quantity"
-    )
+    if config.volume_mode == "CONTRACTS" and config.volume_contracts:
+        vol_desc = f"{config.volume_contracts} contract(s)"
+    elif config.volume_mode == "MARGIN_PCT" or config.margin_pct is not None:
+        pct_val = config.margin_pct if config.margin_pct is not None else 10.0
+        vol_desc = f"{pct_val:g}% Available Margin (Margin x {config.leverage}x Lev = Position Size)"
+    else:
+        vol_desc = f"{config.volume_multiplier:g}x min quantity"
+
     sl_desc = (
         f"{config.sl_ticks} ticks" if config.sl_ticks
         else f"{config.sl_price_pct}% coin price" if config.sl_price_pct
@@ -1843,10 +1865,15 @@ def main():
     is_stoch = config.strategy_mode in ("STOCH_RSI", "STOCHASTIC_RSI", "STOCH")
     is_micro = config.strategy_mode == "MICROSTRUCTURE"
     is_ml = config.strategy_mode in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
+    is_smc = config.strategy_mode in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC")
 
     if is_ml:
         strat_desc = "Machine Learning 1-Minute Multi-Horizon Alpha (Autonomous Bi-Directional)"
         bias_desc = "Autonomous (AI Dynamic Signal)"
+    elif is_smc:
+        tf_info = getattr(config, "timeframe", "Min15")
+        strat_desc = f"Vivek Yadav SMC Order Block + Demand Block ({tf_info}) [Autonomous Bi-Directional: LONG & SHORT]"
+        bias_desc = "Autonomous (SMC Zone Confirmation)"
     elif is_ema:
         preset_info = getattr(config, "ema_preset", "5/13")
         interval_info = getattr(config, "ema_interval", "Min1")
@@ -1884,6 +1911,11 @@ def main():
         sl_display = f"Dynamic ATR (~{sl_mult:.1f}x ATR, calibrated dynamically per signal)"
         sig_mode_str = "DIRECT (Momentum / Machine Learning Alpha)"
         ratch_desc = "DISABLED (Preserves full ML expansion targets)" if not getattr(config, "ratchet_enabled", False) else f"ENABLED (T1: +{config.ratchet_trigger_ticks:g}t -> -{config.ratchet_tighten_ticks:g}t, T2: +{config.ratchet_breakeven_ticks:g}t -> BE)"
+    elif is_smc:
+        tp_display = "Dynamic 1:2 R:R (50% partial at 1:1, Breakeven Lock, 1:2 runner)"
+        sl_display = f"Structural Zone Boundary + {getattr(config, 'breakeven_buffer_ticks', 1)}t buffer"
+        sig_mode_str = "DIRECT (Smart Money Concepts / Order Block)"
+        ratch_desc = "DISABLED (Preserves structural SMC swing targets)"
     else:
         tp_mode_desc = "(Dynamic via signals: 1-3 pu)" if config.dynamic_tp else f"(Fixed: strictly {config.tp_ticks} pu)"
         tp_display = f"+{config.tp_ticks} pu ticks {tp_mode_desc}"

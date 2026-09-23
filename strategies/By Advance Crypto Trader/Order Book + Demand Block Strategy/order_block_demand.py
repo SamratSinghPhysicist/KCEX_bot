@@ -205,7 +205,11 @@ class OrderBlockDemandStrategy(BaseStrategy):
         super().__init__(name=name)
         self.market = market
         self.symbol = symbol.upper()
-        self.interval = interval
+        try:
+            from kcex.market import normalize_kcex_interval
+            self.interval = normalize_kcex_interval(interval)
+        except Exception:
+            self.interval = interval
         self.pivot_len = pivot_len
         self.swing_left_bars = swing_left_bars or pivot_len
         self.swing_right_bars = swing_right_bars or pivot_len

@@ -88,7 +88,14 @@ MODE = os.getenv("KCEX_MODE", os.getenv("MODE", "live"))
 #   "MIN"        -> Always execute exactly minimum possible quantity (1x min_volume).
 #   "MULTIPLIER" -> Execute x times the contract's minimum volume (e.g. 1.0, 2.0, 5.0).
 #   "CONTRACTS"  -> Execute an exact integer number of contracts (e.g. 1, 2, 5).
-VOLUME_MODE = os.getenv("KCEX_VOLUME_MODE", os.getenv("VOLUME_MODE", "CONTRACTS"))
+#   "MARGIN_PCT" -> Dynamic position sizing committing % of available margin (quantity = margin * leverage).
+VOLUME_MODE = os.getenv("KCEX_VOLUME_MODE", os.getenv("VOLUME_MODE", "MARGIN_PCT"))
+
+# Dynamic Position Sizing (% of available wallet balance committed as margin):
+MARGIN_PCT = float(os.getenv("KCEX_MARGIN_PCT", os.getenv("MARGIN_PCT", "10.0")))
+
+# Strategy timeframe: "Min15" (15-minute), "Min1" (1-minute), "Min5", etc.
+TIMEFRAME = os.getenv("KCEX_TIMEFRAME", os.getenv("TIMEFRAME", "Min15"))
 
 # Default volume sizing: 1.0x min for TRUMP_USDT
 VOLUME_MULTIPLIER = float(os.getenv("KCEX_VOLUME_MULTIPLIER", os.getenv("VOLUME_MULTIPLIER", "1.0")))
@@ -188,14 +195,14 @@ POLL_INTERVAL_SECONDS = 0.2
 # =============================================================================
 # Strategy mode selection:
 #   "ORDER_BLOCK_DEMAND" -> Smart Money Concepts: Order Blocks + Demand/Supply Blocks (Vivek Yadav)
-#   "ML_1M"          -> 1-Minute Machine Learning Directional Alpha Engine (HistGradientBoosting) [Default]
+#   "ML_1M"          -> 1-Minute Machine Learning Directional Alpha Engine (HistGradientBoosting)
 #   "SMART_STRATEGY" -> Autonomous Regime-Adaptive Strategy (Switches Momentum EMA / Range Stoch RSI)
 #   "STOCH_RSI"      -> Stochastic RSI Fast Scalp & Reversal Strategy
 #   "EMA_CROSSOVER"  -> Fast / Slow EMA Crossover Strategy (5/13, 9/21, 3/8)
-STRATEGY_MODE = os.getenv("KCEX_STRATEGY_MODE", os.getenv("STRATEGY_MODE", "ML_1M"))
+STRATEGY_MODE = os.getenv("KCEX_STRATEGY_MODE", os.getenv("STRATEGY_MODE", "ORDER_BLOCK_DEMAND"))
 
 # Default Active Preset
-ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "TRUMP_ML_RAPID_SCALPER"))
+ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "TRUMP_ORDER_BLOCK_DEMAND"))
 
 # -----------------------------------------------------------------------------
 # Order Execution Type & Slippage Protection
@@ -367,7 +374,7 @@ OUTCOMES_JSONL_FILE = "trade_outcomes.jsonl"  # Machine-readable JSONL audit tra
 #   6. "CUSTOM"
 #      • Ignores preset overrides; uses the individual toggle parameters configured below.
 #
-ACTIVE_PRESET = "TRUMP_STOCH_RSI"
+ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "TRUMP_ORDER_BLOCK_DEMAND"))
 
 # -----------------------------------------------------------------------------
 # Individual Modular Feature Toggles (Used when ACTIVE_PRESET = "CUSTOM")
@@ -553,10 +560,11 @@ STRATEGY_PRESETS = {
         ),
         "symbol": "TRUMP_USDT",
         "strategy_mode": "ORDER_BLOCK_DEMAND",
-        "timeframe": "1m",
-        "leverage": 25,
-        "volume_mode": "MULTIPLIER",
-        "volume_multiplier": 2.0,
+        "timeframe": "Min15",
+        "leverage": 10,
+        "volume_mode": "MARGIN_PCT",
+        "margin_pct": 10.0,
+        "volume_multiplier": 1.0,
         "tp_ticks": 10,
         "dynamic_tp": True,
         "sl_mode": "TICKS",
@@ -683,6 +691,19 @@ def get_active_preset_config(preset_name: str = None) -> dict:
             cfg["volume_multiplier"] = VOLUME_MULTIPLIER
             cfg["margin_fallback_pct"] = MARGIN_FALLBACK_PCT
             cfg["cooldown_seconds"] = COOLDOWN_SECONDS
+        elif key == "TRUMP_ORDER_BLOCK_DEMAND":
+            if "KCEX_LEVERAGE" in os.environ or "LEVERAGE" in os.environ:
+                cfg["leverage"] = LEVERAGE
+            if "KCEX_VOLUME_MODE" in os.environ or "VOLUME_MODE" in os.environ:
+                cfg["volume_mode"] = VOLUME_MODE
+            if "KCEX_MARGIN_PCT" in os.environ or "MARGIN_PCT" in os.environ:
+                cfg["margin_pct"] = MARGIN_PCT
+            if "KCEX_TIMEFRAME" in os.environ or "TIMEFRAME" in os.environ:
+                cfg["timeframe"] = TIMEFRAME
+            if "KCEX_MARGIN_FALLBACK_PCT" in os.environ:
+                cfg["margin_fallback_pct"] = MARGIN_FALLBACK_PCT
+            if "KCEX_COOLDOWN" in os.environ:
+                cfg["cooldown_seconds"] = COOLDOWN_SECONDS
         elif key == "TRUMP_ML_RAPID_SCALPER":
             cfg["leverage"] = LEVERAGE
             cfg["volume_mode"] = VOLUME_MODE

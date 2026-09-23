@@ -40,6 +40,24 @@ class ContractInfo:
     raw_data: Dict[str, Any]
 
 
+def normalize_kcex_interval(interval: str) -> str:
+    """Normalizes interval strings like '15m', '15min', 'Min15' to KCEX API standard 'Min15'."""
+    i = str(interval or "Min1").strip()
+    mapping = {
+        "1m": "Min1", "1min": "Min1", "min1": "Min1", "Min1": "Min1",
+        "3m": "Min3", "3min": "Min3", "min3": "Min3", "Min3": "Min3",
+        "5m": "Min5", "5min": "Min5", "min5": "Min5", "Min5": "Min5",
+        "15m": "Min15", "15min": "Min15", "min15": "Min15", "Min15": "Min15",
+        "30m": "Min30", "30min": "Min30", "min30": "Min30", "Min30": "Min30",
+        "60m": "Min60", "1h": "Min60", "1hour": "Min60", "min60": "Min60", "Min60": "Min60",
+        "4h": "Hour4", "4hour": "Hour4", "hour4": "Hour4", "Hour4": "Hour4",
+        "1d": "Day1", "1day": "Day1", "day1": "Day1", "Day1": "Day1",
+        "1w": "Week1", "week1": "Week1", "Week1": "Week1",
+        "1M": "Month1", "month1": "Month1", "Month1": "Month1",
+    }
+    return mapping.get(i, mapping.get(i.lower(), i))
+
+
 class KCEXMarket:
     """
     Client for querying KCEX futures market data and symbol details.
@@ -253,14 +271,15 @@ class KCEXMarket:
         Returns:
             List[Dict]: Standardized candle records with timestamp, open, high, low, close, volume.
         """
+        interval = normalize_kcex_interval(interval)
         now = int(time.time())
         if end_time is None:
             end_time = now
         if start_time is None:
             # Estimate interval span in seconds
             seconds_map = {
-                "Min1": 60, "Min5": 300, "Min15": 900, "Min30": 1800,
-                "Min60": 3600, "Hour4": 14400, "Day1": 86400
+                "Min1": 60, "Min3": 180, "Min5": 300, "Min15": 900, "Min30": 1800,
+                "Min60": 3600, "Hour4": 14400, "Day1": 86400, "Week1": 604800, "Month1": 2592000
             }
             span = seconds_map.get(interval, 60) * limit
             start_time = end_time - span

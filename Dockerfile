@@ -23,5 +23,5 @@ COPY . .
 # Create logs directory
 RUN mkdir -p logs
 
-# Default command: Run ML 1M Bot on TRUMP_USDT in LIVE mode at 10x leverage with 1 contract
-CMD ["python", "run_engine.py", "--preset", "TRUMP_ML_RAPID_SCALPER", "--mode", "live", "--symbol", "TRUMP_USDT", "--leverage", "10", "--volume-mode", "CONTRACTS", "--volume-contracts", "1", "--non-interactive"]
+# Default command: Run Vivek Yadav SMC Order Block + Demand strategy on TRUMP_USDT in LIVE mode at 10x leverage, 15m timeframe, 10% margin sizing
+CMD ["python", "run_engine.py", "--preset", "TRUMP_ORDER_BLOCK_DEMAND", "--mode", "live", "--symbol", "TRUMP_USDT", "--leverage", "10", "--volume-mode", "MARGIN_PCT", "--margin-pct", "10.0", "--timeframe", "Min15", "--non-interactive"]

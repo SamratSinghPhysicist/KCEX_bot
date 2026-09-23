@@ -50,6 +50,7 @@ from strategies.tick_constrained_mm import (
     TickConstrainedMMStrategy,
     TickConstrainedConfig
 )
+from strategies.order_block_demand import OrderBlockDemandStrategy
 from strategies.filters import FilterPipeline
 
 
@@ -156,6 +157,20 @@ class TradeExecutionEngine:
                     symbol=self.config.symbol,
                     config=mm_cfg,
                     preferred_direction=pref_dir
+                )
+            elif strat_upper in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"):
+                sub_strat = OrderBlockDemandStrategy(
+                    market=self.market,
+                    symbol=self.config.symbol,
+                    interval=getattr(self.config, "timeframe", getattr(self.config, "ema_interval", "Min15")),
+                    preferred_direction=pref_dir,
+                    cooldown_seconds=self.config.cooldown_seconds,
+                    require_closed_candle=getattr(self.config, "smart_require_closed_candle", True),
+                    risk_reward_ratio=getattr(self.config, "risk_reward_ratio", 2.0),
+                    pivot_len=getattr(self.config, "pivot_len", 5),
+                    buffer_ticks=getattr(self.config, "buffer_ticks", 1),
+                    min_sl_ticks=getattr(self.config, "min_sl_ticks", 3),
+                    max_sl_ticks=getattr(self.config, "max_sl_ticks", 35)
                 )
             else:
                 sub_strat = StochasticRSIStrategy(
@@ -283,6 +298,9 @@ class TradeExecutionEngine:
         vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
         if vol_mode == "CONTRACTS" and getattr(self.config, "volume_contracts", None):
             vol_summary = f"{self.config.volume_contracts} contract(s)"
+        elif vol_mode == "MARGIN_PCT" or getattr(self.config, "margin_pct", None) is not None:
+            pct_val = float(getattr(self.config, "margin_pct", 10.0) or 10.0)
+            vol_summary = f"{pct_val:g}% available margin ({pct_val:g}% Margin x {self.config.leverage}x Lev = Position Size)"
         elif vol_mode == "MULTIPLIER" and getattr(self.config, "volume_multiplier", None):
             vol_summary = f"{self.config.volume_multiplier:g}x min quantity ({int(contract.min_volume)} min)"
         else:
@@ -291,7 +309,11 @@ class TradeExecutionEngine:
         self.logger.info(f"Position Sizing: {vol_summary} [Trade Qty != Margin; Committed Margin = Trade Qty / {self.config.leverage}x leverage]")
         self.logger.info(f"Target Leverage: {self.config.leverage}x isolated")
         is_ml_strat = getattr(self.config, "strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
-        if is_ml_strat or getattr(self.config, "dynamic_tp", False):
+        is_smc_strat = getattr(self.config, "strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC")
+        if is_smc_strat:
+            self.logger.info("Min-Profit Take Profit rule: Dynamic 1:2 R:R (50% partial close at 1:1 & Breakeven lock)")
+            self.logger.info(f"Stop Loss rule: Structural Order Block boundary + {getattr(self.config, 'buffer_ticks', 1)}t buffer")
+        elif is_ml_strat or getattr(self.config, "dynamic_tp", False):
             tp_mult = getattr(self.config, "tp_atr_mult", 3.0)
             sl_mult = getattr(self.config, "sl_atr_mult", 1.5)
             self.logger.info(f"Min-Profit Take Profit rule: Dynamic ATR Target (~{tp_mult:.1f}x ATR, calibrated per signal)")
