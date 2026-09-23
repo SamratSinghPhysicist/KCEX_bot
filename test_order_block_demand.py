@@ -661,6 +661,42 @@ class TestOrderBlockDemandStrategy(unittest.TestCase):
         trades_after_inv = [t for t in trades if t["start_idx"] >= 13]
         self.assertEqual(len(trades_after_inv), 0, "No trades should be triggered after blowout invalidation")
 
+    def test_opposing_bos_invalidates_prior_order_blocks(self):
+        """
+        SMC Core Rule (Vivek Yadav):
+        When market creates an opposing BOS (e.g. Bearish BOS), market structure shifts
+        to Lower Lows. All prior Bullish Order Blocks are FAILED / INVALIDATED.
+        Subsequent taps of the old Bullish OB must NEVER trigger Long trades.
+        """
+        # Part 1: Bullish sequence with swing high at bar 5 (10.0), origin red at bar 8 (9.0-9.25), BOS at bar 11 (10.10)
+        # Part 2: Pullback and consolidation forming a valid swing low at bar 16 (low=9.80) with 5 bars before and after
+        # Part 3: Bearish breakdown at bar 23 where close = 9.60 < 9.80 (Bearish BOS!)
+        # Part 4: Price drops further to 9.15 (inside old Bullish OB) at bar 25 and closes green (9.22)
+        timestamps = [1000 + i * 60 for i in range(27)]
+        opens =  [9.0, 9.1, 9.2, 9.4, 9.5, 9.7, 9.7, 9.4, 9.2, 9.3, 9.7, 9.9, 10.1, 10.2, 10.1, 10.0, 9.85, 10.0, 10.2, 10.1, 10.0, 9.95, 9.90, 9.60, 9.40, 9.15, 9.30]
+        highs =  [9.1, 9.2, 9.3, 9.5, 9.6, 10.0, 9.8, 9.5, 9.25, 9.8, 9.9, 10.2, 10.3, 10.4, 10.2, 10.1, 9.90, 10.4, 10.5, 10.3, 10.1, 10.0, 9.95, 9.70, 9.45, 9.25, 9.35]
+        lows =   [8.9, 9.0, 9.1, 9.3, 9.4, 9.6, 9.3, 9.1, 9.00, 9.2, 9.6, 9.85, 10.0, 10.1, 10.0, 9.90, 9.80, 9.95, 10.0, 9.95, 9.90, 9.88, 9.85, 9.55, 9.30, 9.12, 9.25]
+        closes = [9.1, 9.2, 9.4, 9.5, 9.6, 9.8, 9.4, 9.2, 9.05, 9.7, 9.9, 10.10, 10.2, 10.2, 10.1, 9.95, 9.85, 10.2, 10.3, 10.0, 9.95, 9.90, 9.85, 9.60, 9.35, 9.22, 9.32]
+
+        zones, trades = self.strategy.calc_indicator_zones_and_trades(
+            timestamps, opens, highs, lows, closes, pivot_len=5
+        )
+
+        # 1. Verify Bullish OB was formed at bar 8
+        bull_zones = [z for z in zones if z.is_bullish]
+        self.assertGreaterEqual(len(bull_zones), 1)
+        bull_ob = bull_zones[0]
+
+        # 2. Verify Bearish BOS occurred and invalidated the Bullish OB
+        bear_zones = [z for z in zones if z.is_bearish]
+        self.assertGreaterEqual(len(bear_zones), 1, "Bearish BOS must detect Bearish Supply Zone")
+        self.assertEqual(bull_ob.status, ZoneStatus.INVALIDATED, "Bullish OB must be INVALIDATED by Bearish BOS")
+        self.assertEqual(self.strategy.last_structure_bias, OrderDirection.SHORT)
+
+        # 3. Verify NO Long trades were taken after the Bearish BOS (even when price retested 9.20 at bar 25)
+        long_trades_after_bos = [t for t in trades if t["type"] == "long" and t["start_idx"] >= bull_ob.end_idx]
+        self.assertEqual(len(long_trades_after_bos), 0, "No Long trade should ever trigger on an invalidated/opposing BOS Order Block")
+
 
 if __name__ == "__main__":
     unittest.main()

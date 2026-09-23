@@ -354,9 +354,11 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
         last_swing_high = None  # Dict: {'idx': int, 'val': float}
         last_swing_low = None   # Dict: {'idx': int, 'val': float}
+        structure_bias: Optional[OrderDirection] = None
 
         is_red = lambda idx: closes[idx] < opens[idx]
         is_green = lambda idx: closes[idx] > opens[idx]
+        max_age = self.max_zone_age_bars if self.max_zone_age_bars > 0 else 60
 
         for i in range(p_len, n):
             cur_open = opens[i]
@@ -364,6 +366,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
             cur_low = lows[i]
             cur_close = closes[i]
             prev_close = closes[i - 1]
+            c_range = max(1e-12, cur_high - cur_low)
 
             # 1. Detect Swing Pivots at checkIdx = i - p_len
             check_idx = i - p_len
@@ -373,9 +376,9 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 if j < 0 or j >= n:
                     continue
                 if j != check_idx:
-                    if highs[j] > highs[check_idx]:
+                    if highs[j] >= highs[check_idx]:
                         is_sh = False
-                    if lows[j] < lows[check_idx]:
+                    if lows[j] <= lows[check_idx]:
                         is_sl = False
             if is_sh:
                 last_swing_high = {"idx": check_idx, "val": highs[check_idx]}
@@ -384,6 +387,13 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
             # 2. Bullish BOS & Demand Zone Detection
             if last_swing_high and prev_close <= last_swing_high["val"] and cur_close > last_swing_high["val"]:
+                structure_bias = OrderDirection.LONG
+                # Opposing BOS Structure Invalidation: Invalidate all prior Bearish Order Blocks
+                for prior_bear in bear_obs:
+                    if prior_bear.status == ZoneStatus.ACTIVE:
+                        prior_bear.status = ZoneStatus.INVALIDATED
+                        prior_bear.end_idx = i
+
                 sh_idx = last_swing_high["idx"]
                 origin_idx = sh_idx
                 min_val = lows[origin_idx]
@@ -418,6 +428,13 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
             # 3. Bearish BOS & Supply Zone Detection
             if last_swing_low and prev_close >= last_swing_low["val"] and cur_close < last_swing_low["val"]:
+                structure_bias = OrderDirection.SHORT
+                # Opposing BOS Structure Invalidation: Invalidate all prior Bullish Order Blocks
+                for prior_bull in bull_obs:
+                    if prior_bull.status == ZoneStatus.ACTIVE:
+                        prior_bull.status = ZoneStatus.INVALIDATED
+                        prior_bull.end_idx = i
+
                 sl_idx = last_swing_low["idx"]
                 origin_idx = sl_idx
                 max_val = highs[origin_idx]
@@ -450,15 +467,27 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 drawn_zones.append(ob)
                 last_swing_low = None
 
-            # 4. Test Zones for Mitigation, Invalidation & Trade Entry
+            # 4. Test Zones for Mitigation, Invalidation, Expiry & Trade Entry
             for ob in bull_obs:
                 if ob.status != ZoneStatus.ACTIVE:
                     continue
                 ob.end_idx = i
+                # Max Age Expiry
+                if (i - ob.creation_bar_idx) > max_age:
+                    ob.status = ZoneStatus.EXPIRED
+                    continue
+                # Direct blowout invalidation
                 if cur_close < ob.low:
                     ob.status = ZoneStatus.INVALIDATED
-                elif cur_low <= ob.high and cur_high >= ob.low:
-                    if is_green(i) and cur_close > ob.low:
+                    continue
+                # Market Structure Filter: Never take Longs when market structure is Bearish
+                if structure_bias is not None and structure_bias != OrderDirection.LONG:
+                    continue
+                # Retest & Rejection Check: Tap + Lower Wick + Green Close
+                if cur_low <= ob.high and cur_high >= ob.low:
+                    lower_wick = min(cur_open, cur_close) - cur_low
+                    wick_ratio = lower_wick / c_range
+                    if is_green(i) and cur_close > ob.low and wick_ratio >= self.min_rejection_wick_ratio:
                         ob.status = ZoneStatus.MITIGATED
                         entry = cur_close
                         sl = ob.low
@@ -478,10 +507,22 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 if ob.status != ZoneStatus.ACTIVE:
                     continue
                 ob.end_idx = i
+                # Max Age Expiry
+                if (i - ob.creation_bar_idx) > max_age:
+                    ob.status = ZoneStatus.EXPIRED
+                    continue
+                # Direct blowout invalidation
                 if cur_close > ob.high:
                     ob.status = ZoneStatus.INVALIDATED
-                elif cur_high >= ob.low and cur_low <= ob.high:
-                    if is_red(i) and cur_close < ob.high:
+                    continue
+                # Market Structure Filter: Never take Shorts when market structure is Bullish
+                if structure_bias is not None and structure_bias != OrderDirection.SHORT:
+                    continue
+                # Retest & Rejection Check: Tap + Upper Wick + Red Close
+                if cur_high >= ob.low and cur_low <= ob.high:
+                    upper_wick = cur_high - max(cur_open, cur_close)
+                    wick_ratio = upper_wick / c_range
+                    if is_red(i) and cur_close < ob.high and wick_ratio >= self.min_rejection_wick_ratio:
                         ob.status = ZoneStatus.MITIGATED
                         entry = cur_close
                         sl = ob.high
@@ -497,6 +538,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         }
                         drawn_trades.append(trade)
 
+        self.last_structure_bias = structure_bias
         return drawn_zones, drawn_trades
 
     def scan_for_order_blocks(
@@ -837,10 +879,28 @@ class OrderBlockDemandStrategy(BaseStrategy):
             closes=closes[:eval_idx + 1],
             pivot_len=self.pivot_len
         )
+        structure_bias = getattr(self, "last_structure_bias", None)
+
+        # Synchronize active zones with indicator zones: prune any invalidated / expired / mitigated
+        drawn_zone_map = {z.zone_id: z for z in drawn_zones}
+        for zid, z in list(self.active_zones.items()):
+            if zid in drawn_zone_map:
+                ind_z = drawn_zone_map[zid]
+                if ind_z.status in (ZoneStatus.INVALIDATED, ZoneStatus.EXPIRED, ZoneStatus.MITIGATED):
+                    z.status = ind_z.status
+                    self.resolved_origin_ts.add(z.creation_ts)
+                    self.history_zones.append(z)
+                    del self.active_zones[zid]
+            elif self.max_zone_age_bars > 0 and (eval_idx - z.creation_bar_idx) > self.max_zone_age_bars:
+                z.status = ZoneStatus.EXPIRED
+                self.resolved_origin_ts.add(z.creation_ts)
+                self.history_zones.append(z)
+                del self.active_zones[zid]
 
         for z in drawn_zones:
             if z.status == ZoneStatus.ACTIVE and z.zone_id not in self.active_zones and z.creation_ts not in self.resolved_origin_ts:
-                self.active_zones[z.zone_id] = z
+                if self.max_zone_age_bars <= 0 or (eval_idx - z.creation_bar_idx) <= self.max_zone_age_bars:
+                    self.active_zones[z.zone_id] = z
 
         # 2. Check for newly triggered trades on eval_idx from indicator calculation
         candidate_trade = None
@@ -848,6 +908,14 @@ class OrderBlockDemandStrategy(BaseStrategy):
             if t.get("start_idx") == eval_idx:
                 candidate_trade = t
                 break
+
+        # Filter candidate trade by structure_bias
+        if candidate_trade is not None:
+            t_type = candidate_trade["type"]
+            if t_type == "long" and structure_bias is not None and structure_bias != OrderDirection.LONG:
+                candidate_trade = None
+            elif t_type == "short" and structure_bias is not None and structure_bias != OrderDirection.SHORT:
+                candidate_trade = None
 
         # 3. Check pre-registered / existing active zones against eval_idx candle
         c_open = opens[eval_idx]
@@ -930,6 +998,13 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 if zone.creation_bar_idx >= eval_idx:
                     continue
 
+                if self.max_zone_age_bars > 0 and (eval_idx - zone.creation_bar_idx) > self.max_zone_age_bars:
+                    zone.status = ZoneStatus.EXPIRED
+                    self.resolved_origin_ts.add(zone.creation_ts)
+                    self.history_zones.append(zone)
+                    del self.active_zones[zid]
+                    continue
+
                 if zone.is_bullish:
                     # Invalidation check
                     if c_close < zone.low:
@@ -937,6 +1012,13 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         self.resolved_origin_ts.add(zone.creation_ts)
                         self.history_zones.append(zone)
                         del self.active_zones[zid]
+                        continue
+
+                    # Structure bias check: do not take Long in Bearish market structure
+                    if structure_bias is not None and structure_bias != OrderDirection.LONG:
+                        continue
+
+                    if self.preferred_direction is not None and self.preferred_direction != OrderDirection.LONG:
                         continue
 
                     # Tap & Rejection check (scan recent window [eval_idx - 2, eval_idx])
@@ -962,9 +1044,6 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         bars_since_retest = eval_idx - zone.retest_bar_idx
 
                         if is_green_confirm and (bars_since_retest in (0, 1, 2)):
-                            if self.preferred_direction is not None and self.preferred_direction != OrderDirection.LONG:
-                                continue
-
                             wick_low = zone.retest_wick_price if zone.retest_wick_price is not None else zone.low
                             sl_price = round(min(zone.low, wick_low) - (self.buffer_ticks * pu), prec)
                             risk_dist = c_close - sl_price
@@ -1004,6 +1083,13 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         del self.active_zones[zid]
                         continue
 
+                    # Structure bias check: do not take Short in Bullish market structure
+                    if structure_bias is not None and structure_bias != OrderDirection.SHORT:
+                        continue
+
+                    if self.preferred_direction is not None and self.preferred_direction != OrderDirection.SHORT:
+                        continue
+
                     # Tap & Rejection check (scan recent window [eval_idx - 2, eval_idx])
                     if zone.status == ZoneStatus.ACTIVE:
                         for bar_k in range(max(zone.creation_bar_idx + 1, eval_idx - 2), eval_idx + 1):
@@ -1027,9 +1113,6 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         bars_since_retest = eval_idx - zone.retest_bar_idx
 
                         if is_red_confirm and (bars_since_retest in (0, 1, 2)):
-                            if self.preferred_direction is not None and self.preferred_direction != OrderDirection.SHORT:
-                                continue
-
                             wick_high = zone.retest_wick_price if zone.retest_wick_price is not None else zone.high
                             sl_price = round(max(zone.high, wick_high) + (self.buffer_ticks * pu), prec)
                             risk_dist = sl_price - c_close

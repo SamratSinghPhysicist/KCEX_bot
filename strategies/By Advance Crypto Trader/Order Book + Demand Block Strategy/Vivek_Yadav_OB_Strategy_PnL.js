@@ -66,8 +66,8 @@ return {
       for (let j = checkIdx - pivotLen; j <= checkIdx + pivotLen; j++) {
         if (j < 0 || j >= n) continue;
         if (j !== checkIdx) {
-          if (dataList[j].high > dataList[checkIdx].high) isSH = false;
-          if (dataList[j].low < dataList[checkIdx].low) isSL = false;
+          if (dataList[j].high >= dataList[checkIdx].high) isSH = false;
+          if (dataList[j].low <= dataList[checkIdx].low) isSL = false;
         }
       }
       if (isSH) lastSwingHigh = { idx: checkIdx, val: dataList[checkIdx].high };
@@ -75,6 +75,16 @@ return {
 
       // 2. Bullish BOS & Demand Zone Detection
       if (lastSwingHigh && prev.close <= lastSwingHigh.val && cur.close > lastSwingHigh.val) {
+        structureBias = 'bull';
+        // Opposing BOS Structure Invalidation: Invalidate all prior Bearish OBs
+        for (let b = 0; b < bearOBs.length; b++) {
+          if (bearOBs[b].active) {
+            bearOBs[b].active = false;
+            bearOBs[b].invalidated = true;
+            bearOBs[b].endIdx = i;
+          }
+        }
+
         let originIdx = lastSwingHigh.idx;
         let minVal = dataList[originIdx].low;
         for (let j = lastSwingHigh.idx + 1; j < i; j++) {
@@ -103,6 +113,16 @@ return {
 
       // 3. Bearish BOS & Supply Zone Detection
       if (lastSwingLow && prev.close >= lastSwingLow.val && cur.close < lastSwingLow.val) {
+        structureBias = 'bear';
+        // Opposing BOS Structure Invalidation: Invalidate all prior Bullish OBs
+        for (let b = 0; b < bullOBs.length; b++) {
+          if (bullOBs[b].active) {
+            bullOBs[b].active = false;
+            bullOBs[b].invalidated = true;
+            bullOBs[b].endIdx = i;
+          }
+        }
+
         let originIdx = lastSwingLow.idx;
         let maxVal = dataList[originIdx].high;
         for (let j = lastSwingLow.idx + 1; j < i; j++) {
@@ -129,16 +149,35 @@ return {
         lastSwingLow = null;
       }
 
-      // 4. Test Zones for Mitigation, Invalidation & Trade Entry
+      // 4. Test Zones for Mitigation, Invalidation, Expiry & Trade Entry
+      const maxZoneAgeBars = 40;
+      const minRejectionWickRatio = 0.15;
+      const curRange = Math.max(1e-12, cur.high - cur.low);
+
       for (let b = 0; b < bullOBs.length; b++) {
         const ob = bullOBs[b];
         if (!ob.active) continue;
         ob.endIdx = i;
 
+        if (i - ob.startIdx > maxZoneAgeBars) {
+          ob.active = false;
+          continue;
+        }
+
         if (cur.close < ob.bottom) {
           ob.active = false;
-        } else if (cur.low <= ob.top && cur.high >= ob.bottom) {
-          if (isGreen(i) && cur.close > ob.bottom) {
+          ob.invalidated = true;
+          continue;
+        }
+
+        if (structureBias !== 'bull') {
+          continue;
+        }
+
+        if (cur.low <= ob.top && cur.high >= ob.bottom) {
+          const lowerWick = Math.min(cur.open, cur.close) - cur.low;
+          const wickRatio = lowerWick / curRange;
+          if (isGreen(i) && cur.close > ob.bottom && wickRatio >= minRejectionWickRatio) {
             ob.active = false;
             const entry = cur.close;
             const sl = ob.bottom;
@@ -155,10 +194,25 @@ return {
         if (!ob.active) continue;
         ob.endIdx = i;
 
+        if (i - ob.startIdx > maxZoneAgeBars) {
+          ob.active = false;
+          continue;
+        }
+
         if (cur.close > ob.top) {
           ob.active = false;
-        } else if (cur.high >= ob.bottom && cur.low <= ob.top) {
-          if (isRed(i) && cur.close < ob.top) {
+          ob.invalidated = true;
+          continue;
+        }
+
+        if (structureBias !== 'bear') {
+          continue;
+        }
+
+        if (cur.high >= ob.bottom && cur.low <= ob.top) {
+          const upperWick = cur.high - Math.max(cur.open, cur.close);
+          const wickRatio = upperWick / curRange;
+          if (isRed(i) && cur.close < ob.top && wickRatio >= minRejectionWickRatio) {
             ob.active = false;
             const entry = cur.close;
             const sl = ob.top;
