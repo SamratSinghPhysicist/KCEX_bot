@@ -116,6 +116,8 @@ class BacktestExecutionEngine:
         self.equity_curve: List[EquityPoint] = []
         self.trade_counter: int = 0
         self._interrupted: bool = False
+        self.sub_candles_1m: List[Candle] = []
+        self._sub_1m_timestamps: List[int] = []
 
         from strategies.filters import FilterPipeline
         self.filter_pipeline = FilterPipeline.from_config(self.config)
@@ -208,6 +210,97 @@ class BacktestExecutionEngine:
             sub_strategy=sub_strat
         )
 
+    def _get_sub_1m_candles(self, open_time_ms: int, close_time_ms: int) -> List[Candle]:
+        """Extracts 1m sub-candles spanning [open_time_ms, close_time_ms] using binary search."""
+        if not self.sub_candles_1m or not self._sub_1m_timestamps:
+            return []
+        import bisect
+        start_idx = bisect.bisect_left(self._sub_1m_timestamps, open_time_ms)
+        end_idx = bisect.bisect_right(self._sub_1m_timestamps, close_time_ms)
+        return self.sub_candles_1m[start_idx:end_idx]
+
+    def _resolve_candle_exit_order(
+        self,
+        c: Candle,
+        direction: OrderDirection,
+        entry_price: float,
+        exact_tp: float,
+        exact_sl: float,
+        pu: float,
+        ps: int,
+        apply_slip: bool,
+        slippage_ticks: int,
+        initial_sl: float
+    ) -> Tuple[float, ExitReason, float]:
+        """
+        Resolves the execution order when both TP and SL are breached in the same candle.
+        1. Checks if the candle open immediately triggered one level before entering the range.
+        2. If timeframe > 1m, queries 1m sub-candles spanning [c.open_time_ms, c.close_time_ms]
+           to determine which level was breached first chronologically.
+        3. If 1m sub-candles also breach both levels (or if timeframe is already 1m and open
+           does not clarify), declares STOP_LOSS_HIT as conservative risk-averse execution.
+        """
+        def _get_sl_exit_reason(sl_price: float) -> ExitReason:
+            if abs(sl_price - entry_price) <= (0.2 * pu):
+                return ExitReason.RATCHET_BREAKEVEN_HIT
+            elif abs(sl_price - entry_price) < abs(initial_sl - entry_price):
+                return ExitReason.RATCHET_TIGHTEN_HIT
+            return ExitReason.STOP_LOSS_HIT
+
+        def _calc_sl_price(sl_price: float) -> float:
+            if apply_slip and slippage_ticks > 0:
+                if direction == OrderDirection.LONG:
+                    return round(sl_price - (slippage_ticks * pu), ps)
+                else:
+                    return round(sl_price + (slippage_ticks * pu), ps)
+            return sl_price
+
+        # Step 1: Immediate clarification from candle open
+        if direction == OrderDirection.LONG:
+            if c.open >= exact_tp:
+                return exact_tp, ExitReason.MIN_PROFIT_TP_HIT, c.open_time_ms / 1000.0
+            elif c.open <= exact_sl:
+                return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), c.open_time_ms / 1000.0
+        else: # SHORT
+            if c.open <= exact_tp:
+                return exact_tp, ExitReason.MIN_PROFIT_TP_HIT, c.open_time_ms / 1000.0
+            elif c.open >= exact_sl:
+                return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), c.open_time_ms / 1000.0
+
+        # Step 2: Use lower timeframe (1m sub-candles) if available
+        sub_candles = self._get_sub_1m_candles(c.open_time_ms, c.close_time_ms)
+        if sub_candles:
+            for sub_c in sub_candles:
+                if direction == OrderDirection.LONG:
+                    sub_hit_tp = (sub_c.high >= exact_tp)
+                    sub_hit_sl = (sub_c.low <= exact_sl)
+                    if sub_hit_tp and not sub_hit_sl:
+                        return exact_tp, ExitReason.MIN_PROFIT_TP_HIT, sub_c.close_time_ms / 1000.0
+                    elif sub_hit_sl and not sub_hit_tp:
+                        return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), sub_c.close_time_ms / 1000.0
+                    elif sub_hit_tp and sub_hit_sl:
+                        # Discrepancy persists within this 1m sub-candle
+                        if sub_c.open >= exact_tp:
+                            return exact_tp, ExitReason.MIN_PROFIT_TP_HIT, sub_c.open_time_ms / 1000.0
+                        else:
+                            return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), sub_c.close_time_ms / 1000.0
+                else: # SHORT
+                    sub_hit_tp = (sub_c.low <= exact_tp)
+                    sub_hit_sl = (sub_c.high >= exact_sl)
+                    if sub_hit_tp and not sub_hit_sl:
+                        return exact_tp, ExitReason.MIN_PROFIT_TP_HIT, sub_c.close_time_ms / 1000.0
+                    elif sub_hit_sl and not sub_hit_tp:
+                        return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), sub_c.close_time_ms / 1000.0
+                    elif sub_hit_tp and sub_hit_sl:
+                        # Discrepancy persists within this 1m sub-candle
+                        if sub_c.open <= exact_tp:
+                            return exact_tp, ExitReason.MIN_PROFIT_TP_HIT, sub_c.open_time_ms / 1000.0
+                        else:
+                            return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), sub_c.close_time_ms / 1000.0
+
+        # Step 3: If no sub-candles or timeframe is already 1m, declare Stop Loss Hit (conservative)
+        return _calc_sl_price(exact_sl), _get_sl_exit_reason(exact_sl), c.close_time_ms / 1000.0
+
     def run(self) -> List[TradeOutcome]:
         """
         Executes the backtesting simulation over historical data.
@@ -255,6 +348,37 @@ class BacktestExecutionEngine:
                 self.symbol, norm_tf, format_ms_to_utc(start_ms), format_ms_to_utc(end_ms)
             )
             return []
+
+        # If primary timeframe is not 1m, load 1m candles for lower-timeframe sub-candle disambiguation
+        if norm_tf != "1m":
+            self.sub_candles_1m = self.ohlcv_loader.load_candles(
+                symbol=self.symbol,
+                timeframe="1m",
+                start_ms=start_ms,
+                end_ms=end_ms
+            )
+            if not self.sub_candles_1m:
+                try:
+                    from BACKTESTER.engine.downloader import ensure_market_data
+                    s_str = format_ms_to_utc(start_ms)[:10] if start_ms else "2026-07-01"
+                    e_str = format_ms_to_utc(end_ms)[:10] if end_ms else "2026-08-31"
+                    ensure_market_data(
+                        symbol=self.symbol,
+                        timeframe="1m",
+                        start_date=s_str,
+                        end_date=e_str,
+                        download_trades=False,
+                        base_dir="BACKTESTER"
+                    )
+                    self.sub_candles_1m = self.ohlcv_loader.load_candles(
+                        symbol=self.symbol,
+                        timeframe="1m",
+                        start_ms=start_ms,
+                        end_ms=end_ms
+                    )
+                except Exception as e:
+                    logger.debug("Failed to auto-download 1m candles for disambiguation: %s", e)
+            self._sub_1m_timestamps = [c.open_time_ms for c in self.sub_candles_1m]
 
         # Seed initial equity point
         self.equity_curve.append(EquityPoint(
@@ -345,6 +469,51 @@ class BacktestExecutionEngine:
 
         return self.outcomes
 
+    def _resolve_simulated_contracts(self, entry_price: float) -> int:
+        """Computes order volume in contracts according to volume_mode, leverage, and available balance."""
+        cs = self.contract.contract_size
+        leverage = self.config.leverage
+        min_vol = int(self.contract.min_volume)
+        vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
+
+        if vol_mode == "MARGIN_PCT" or (getattr(self.config, "margin_pct", None) is not None and vol_mode not in ("CONTRACTS", "MULTIPLIER", "MIN")):
+            pct = float(getattr(self.config, "margin_pct", 10.0) or 10.0)
+            avail_margin = max(0.0, self.wallet_balance_usdt)
+            desired_margin = (pct / 100.0) * avail_margin
+            target_notional = desired_margin * leverage if leverage > 0 else desired_margin
+            one_contract_notional = cs * entry_price
+            if one_contract_notional > 0:
+                raw_contracts = target_notional / one_contract_notional
+                vol_contracts = max(min_vol, int(round(raw_contracts)))
+            else:
+                vol_contracts = min_vol
+        elif vol_mode == "FIXED_MARGIN" or (getattr(self.config, "fixed_margin_usdt", None) is not None and vol_mode not in ("CONTRACTS", "MULTIPLIER", "MIN")):
+            desired_margin = float(getattr(self.config, "fixed_margin_usdt", 5.0) or 5.0)
+            target_notional = desired_margin * leverage if leverage > 0 else desired_margin
+            one_contract_notional = cs * entry_price
+            if one_contract_notional > 0:
+                raw_contracts = target_notional / one_contract_notional
+                vol_contracts = max(min_vol, int(round(raw_contracts)))
+            else:
+                vol_contracts = min_vol
+        elif getattr(self.config, "volume_contracts", None) is not None:
+            vol_contracts = max(min_vol, int(self.config.volume_contracts))
+        elif vol_mode == "MIN":
+            vol_contracts = min_vol
+        else: # MULTIPLIER
+            mult = max(1.0, float(getattr(self.config, "volume_multiplier", 1.0) or 1.0))
+            vol_contracts = max(min_vol, int(math.ceil(min_vol * mult)))
+
+        # Wallet balance cap safety: ensure volume does not exceed available balance if vol > min_vol
+        one_contract_notional = cs * entry_price
+        if one_contract_notional > 0 and leverage > 0 and self.wallet_balance_usdt > 0:
+            req_margin = (vol_contracts * one_contract_notional) / leverage
+            if req_margin > self.wallet_balance_usdt and vol_contracts > min_vol:
+                max_afford_contracts = int((self.wallet_balance_usdt * leverage) / one_contract_notional)
+                vol_contracts = max(min_vol, max_afford_contracts)
+
+        return vol_contracts
+
     def _execute_simulated_trade(
         self,
         trade_id: int,
@@ -397,15 +566,7 @@ class BacktestExecutionEngine:
                 return None, entry_idx
 
         # 2. Sizing & Margin
-        min_vol = int(self.contract.min_volume)
-        vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
-        if getattr(self.config, "volume_contracts", None) is not None:
-            vol_contracts = max(min_vol, int(self.config.volume_contracts))
-        elif vol_mode == "MIN":
-            vol_contracts = min_vol
-        else: # MULTIPLIER
-            mult = max(1.0, float(getattr(self.config, "volume_multiplier", 1.0) or 1.0))
-            vol_contracts = max(min_vol, int(math.ceil(min_vol * mult)))
+        vol_contracts = self._resolve_simulated_contracts(entry_price)
 
         underlying_qty = vol_contracts * cs
         notional_usdt = underlying_qty * entry_price
@@ -669,6 +830,26 @@ class BacktestExecutionEngine:
                     if is_smc_sig and partial_tp_enabled and target_1to1 and not partial_tp_executed:
                         hit_1to1 = (c.high >= target_1to1) if direction == OrderDirection.LONG else (c.low <= target_1to1)
                         if hit_1to1:
+                            # Check if SL also reached in this candle before target_1to1
+                            sl_in_c = (c.low <= exact_sl) if direction == OrderDirection.LONG else (c.high >= exact_sl)
+                            if sl_in_c:
+                                # Discrepancy: check 1m sub-candles to see if 1:1 hit before SL
+                                sub_candles = self._get_sub_1m_candles(c.open_time_ms, c.close_time_ms)
+                                target_first = False
+                                if sub_candles:
+                                    for sc in sub_candles:
+                                        sc_1to1 = (sc.high >= target_1to1) if direction == OrderDirection.LONG else (sc.low <= target_1to1)
+                                        sc_sl = (sc.low <= exact_sl) if direction == OrderDirection.LONG else (sc.high >= exact_sl)
+                                        if sc_1to1 and not sc_sl:
+                                            target_first = True
+                                            break
+                                        elif sc_sl:
+                                            break
+                                if not target_first:
+                                    # SL occurred first or simultaneously -> skip 1:1, full SL will trigger below
+                                    hit_1to1 = False
+
+                        if hit_1to1:
                             just_hit_1to1 = True
                             if remaining_vol >= 2:
                                 close_vol = remaining_vol // 2
@@ -690,33 +871,81 @@ class BacktestExecutionEngine:
                                     exact_sl = round(new_be_sl, ps)
 
                     if direction == OrderDirection.LONG:
-                        if c.high >= exact_tp:
+                        hit_tp = (c.high >= exact_tp)
+                        hit_sl = (c.close <= exact_sl if just_hit_1to1 else c.low <= exact_sl)
+
+                        if hit_tp and not hit_sl:
                             exit_price = exact_tp
                             exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx
                             break
-                        elif (c.close <= exact_sl if just_hit_1to1 else c.low <= exact_sl):
+                        elif hit_sl and not hit_tp:
                             exit_price = exact_sl
                             if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
                                 exit_price = round(exact_sl - (self.config.slippage_ticks * pu), ps)
-                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            if abs(exact_sl - entry_price) <= (0.2 * pu):
+                                exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                            elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                                exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                            else:
+                                exit_reason = ExitReason.STOP_LOSS_HIT
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx
                             break
+                        elif hit_tp and hit_sl:
+                            # Discrepancy! Both TP and SL breached in the same candle
+                            exit_price, exit_reason, exit_time_sec = self._resolve_candle_exit_order(
+                                c=c,
+                                direction=direction,
+                                entry_price=entry_price,
+                                exact_tp=exact_tp,
+                                exact_sl=exact_sl,
+                                pu=pu,
+                                ps=ps,
+                                apply_slip=apply_slip,
+                                slippage_ticks=getattr(self.config, "slippage_ticks", 0),
+                                initial_sl=initial_sl
+                            )
+                            exit_candle_idx = idx
+                            break
                     else: # SHORT
-                        if c.low <= exact_tp:
+                        hit_tp = (c.low <= exact_tp)
+                        hit_sl = (c.close >= exact_sl if just_hit_1to1 else c.high >= exact_sl)
+
+                        if hit_tp and not hit_sl:
                             exit_price = exact_tp
                             exit_reason = ExitReason.MIN_PROFIT_TP_HIT
                             exit_time_sec = c.close_time_ms / 1000.0
                             exit_candle_idx = idx
                             break
-                        elif (c.close >= exact_sl if just_hit_1to1 else c.high >= exact_sl):
+                        elif hit_sl and not hit_tp:
                             exit_price = exact_sl
                             if apply_slip and getattr(self.config, "slippage_ticks", 0) > 0:
                                 exit_price = round(exact_sl + (self.config.slippage_ticks * pu), ps)
-                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            if abs(exact_sl - entry_price) <= (0.2 * pu):
+                                exit_reason = ExitReason.RATCHET_BREAKEVEN_HIT
+                            elif abs(exact_sl - entry_price) < abs(initial_sl - entry_price):
+                                exit_reason = ExitReason.RATCHET_TIGHTEN_HIT
+                            else:
+                                exit_reason = ExitReason.STOP_LOSS_HIT
                             exit_time_sec = c.close_time_ms / 1000.0
+                            exit_candle_idx = idx
+                            break
+                        elif hit_tp and hit_sl:
+                            # Discrepancy! Both TP and SL breached in the same candle
+                            exit_price, exit_reason, exit_time_sec = self._resolve_candle_exit_order(
+                                c=c,
+                                direction=direction,
+                                entry_price=entry_price,
+                                exact_tp=exact_tp,
+                                exact_sl=exact_sl,
+                                pu=pu,
+                                ps=ps,
+                                apply_slip=apply_slip,
+                                slippage_ticks=getattr(self.config, "slippage_ticks", 0),
+                                initial_sl=initial_sl
+                            )
                             exit_candle_idx = idx
                             break
 

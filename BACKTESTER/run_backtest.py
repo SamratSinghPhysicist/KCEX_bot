@@ -217,10 +217,67 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             maker_fee = (float(m_input) / 100.0) if m_input else 0.0
             taker_fee = (float(t_input) / 100.0) if t_input else 0.0001
 
+        # 5. Simulation Data Fidelity
+        print("\n5. Simulation Data Fidelity:")
+        print("   [1] High-Fidelity Ticker Trades (Millisecond tick-by-tick streaming) [Default / Most Realistic]")
+        print("   [2] OHLCV Only (Fast candle simulation with 1m sub-candle disambiguation & conservative SL)")
+        fid_choice = input("   Select Fidelity Mode [default: 1 (Ticker Trades)]: ").strip()
+        use_tick_data = False if fid_choice in ("2", "ohlcv", "no-ticks", "candles") else True
+
         is_ml = "ML" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ML", "ML_1M", "ML_MODEL", "ML_1M_MODEL")
         is_smc = "ORDER_BLOCK" in chosen_preset or "DEMAND" in chosen_preset or preset_cfg.get("strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "SMC")
         v_mult = float(preset_cfg.get("volume_multiplier", 1.0 if is_ml else (1.0 if "DOGE" in p_sym else 2.0)))
         lev_val = int(preset_cfg.get("leverage", 30 if is_ml else (25 if is_smc else 75)))
+
+        # 6. Trade Volume / Quantity Sizing
+        p_def_mult = v_mult
+        print("\n6. Trade Volume / Quantity Sizing:")
+        print(f"   [1] Preset Default Multiplier ({p_def_mult:g}x min) [Default]")
+        print("   [2] Exact Number of Contracts (e.g. 2, 5, 10)")
+        print("   [3] Minimum Volume (1x min contract)")
+        print("   [4] Percentage of Available Margin (e.g. 10% of wallet balance, margin * leverage = position size)")
+        print("   [5] Fixed Margin per Trade in USDT (e.g. 5 USDT margin, margin * leverage = position size)")
+        p_vol_choice = input(f"   Select sizing mode [default: 1 (Multiplier {p_def_mult:g}x min)]: ").strip()
+        p_vol_mode = "MULTIPLIER"
+        p_vol_contracts = None
+        p_vol_multiplier = p_def_mult
+        p_margin_pct = None
+        p_fixed_margin = None
+        if p_vol_choice == "2":
+            p_vol_mode = "CONTRACTS"
+            c_input = input(f"   Enter number of contracts per trade [default: {int(p_def_mult)}]: ").strip()
+            p_vol_contracts = int(c_input) if c_input.isdigit() else int(p_def_mult)
+            p_vol_multiplier = None
+        elif p_vol_choice == "3":
+            p_vol_mode = "MIN"
+            p_vol_multiplier = 1.0
+            p_vol_contracts = None
+        elif p_vol_choice == "4":
+            p_vol_mode = "MARGIN_PCT"
+            pct_in = input("   Enter % of available margin to risk (e.g. 10 for 10%) [default: 10.0]: ").strip()
+            try:
+                p_margin_pct = float(pct_in) if pct_in else 10.0
+            except ValueError:
+                p_margin_pct = 10.0
+            p_vol_multiplier = None
+            p_vol_contracts = None
+        elif p_vol_choice == "5":
+            p_vol_mode = "FIXED_MARGIN"
+            fm_in = input("   Enter fixed margin per trade in USDT (e.g. 5.0) [default: 5.0]: ").strip()
+            try:
+                p_fixed_margin = float(fm_in) if fm_in else 5.0
+            except ValueError:
+                p_fixed_margin = 5.0
+            p_vol_multiplier = None
+            p_vol_contracts = None
+        else:
+            p_vol_mode = "MULTIPLIER"
+            m_input = input(f"   Enter Volume Multiplier [default: {p_def_mult:g}x min]: ").strip()
+            try:
+                p_vol_multiplier = float(m_input) if m_input else p_def_mult
+            except ValueError:
+                p_vol_multiplier = p_def_mult
+            p_vol_contracts = None
 
         config = BacktestConfig(
             symbol=p_sym,
@@ -229,8 +286,11 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             stoch_preset=preset_cfg.get("stoch_preset", "FAST_SCALP"),
             start_time=start_val,
             end_time=end_val,
-            volume_mode="MULTIPLIER",
-            volume_multiplier=v_mult,
+            volume_mode=p_vol_mode,
+            volume_contracts=p_vol_contracts,
+            volume_multiplier=p_vol_multiplier,
+            margin_pct=p_margin_pct,
+            fixed_margin_usdt=p_fixed_margin,
             tp_ticks=preset_cfg.get("tp_ticks", 0 if is_ml else (10 if is_smc else 5)),
             dynamic_tp=preset_cfg.get("dynamic_tp", True if (is_ml or is_smc) else False),
             sl_mode=preset_cfg.get("sl_mode", "TICKS"),
@@ -239,7 +299,7 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             leverage=lev_val,
             initial_balance_usdt=100.0,
             max_trades=0,
-            use_tick_data=True,
+            use_tick_data=use_tick_data,
             fee_mode=fee_mode,
             maker_fee_override=maker_fee,
             taker_fee_override=taker_fee,
@@ -527,10 +587,14 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
     print("   [1] Multiplier of Minimum Contract Volume (e.g. 2x min, 1x min) [Default]")
     print("   [2] Exact Number of Contracts (e.g. 2, 5, 10)")
     print("   [3] Minimum Volume (1x min contract)")
+    print("   [4] Percentage of Available Margin (e.g. 10% of wallet balance, margin * leverage = position size)")
+    print("   [5] Fixed Margin per Trade in USDT (e.g. 5 USDT margin, margin * leverage = position size)")
     vol_choice = input(f"   Select sizing mode [default: 1 (Multiplier {def_mult:g}x min)]: ").strip()
     vol_mode = "MULTIPLIER"
     vol_contracts = None
     vol_multiplier = def_mult
+    margin_pct = None
+    fixed_margin_usdt = None
     if vol_choice == "2":
         vol_mode = "CONTRACTS"
         c_input = input(f"   Enter number of contracts per trade [default: {int(def_mult)}]: ").strip()
@@ -540,10 +604,31 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         vol_mode = "MIN"
         vol_multiplier = 1.0
         vol_contracts = None
+    elif vol_choice == "4":
+        vol_mode = "MARGIN_PCT"
+        pct_in = input("   Enter % of available margin to risk (e.g. 10 for 10%) [default: 10.0]: ").strip()
+        try:
+            margin_pct = float(pct_in) if pct_in else 10.0
+        except ValueError:
+            margin_pct = 10.0
+        vol_multiplier = None
+        vol_contracts = None
+    elif vol_choice == "5":
+        vol_mode = "FIXED_MARGIN"
+        fm_in = input("   Enter fixed margin per trade in USDT (e.g. 5.0) [default: 5.0]: ").strip()
+        try:
+            fixed_margin_usdt = float(fm_in) if fm_in else 5.0
+        except ValueError:
+            fixed_margin_usdt = 5.0
+        vol_multiplier = None
+        vol_contracts = None
     else:
         vol_mode = "MULTIPLIER"
         m_input = input(f"   Enter Volume Multiplier [default: {def_mult:g}x min]: ").strip()
-        vol_multiplier = float(m_input) if m_input else def_mult
+        try:
+            vol_multiplier = float(m_input) if m_input else def_mult
+        except ValueError:
+            vol_multiplier = def_mult
         vol_contracts = None
 
     # 11. Fee Schedule Configuration
@@ -621,6 +706,13 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
             if bias_in in ("LONG_ONLY", "SHORT_ONLY"):
                 dir_bias = bias_in
 
+    # 13. Simulation Data Fidelity
+    print("\n13. Simulation Data Fidelity:")
+    print("   [1] High-Fidelity Ticker Trades (Millisecond tick-by-tick streaming) [Default / Most Realistic]")
+    print("   [2] OHLCV Only (Fast candle simulation with 1m sub-candle disambiguation & conservative SL)")
+    fid_choice = input("   Select Fidelity Mode [default: 1 (Ticker Trades)]: ").strip()
+    use_tick_data = False if fid_choice in ("2", "ohlcv", "no-ticks", "candles") else True
+
     config = BacktestConfig(
         symbol=selected_symbol,
         timeframe=selected_tf,
@@ -632,6 +724,8 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         volume_mode=vol_mode,
         volume_contracts=vol_contracts,
         volume_multiplier=vol_multiplier,
+        margin_pct=margin_pct,
+        fixed_margin_usdt=fixed_margin_usdt,
         tp_ticks=tp_ticks,
         sl_mode=sl_mode,
         sl_ticks=sl_ticks,
@@ -640,7 +734,7 @@ def run_interactive_wizard(scanner: DataScanner) -> Tuple[BacktestConfig, str]:
         leverage=leverage,
         initial_balance_usdt=capital,
         max_trades=max_trades,
-        use_tick_data=True,
+        use_tick_data=use_tick_data,
         fee_mode=fee_mode,
         maker_fee_override=maker_fee,
         taker_fee_override=taker_fee,
@@ -711,16 +805,18 @@ def main():
     parser.add_argument("--stoch-preset", type=str, default="FAST_SCALP", help="Stoch RSI preset")
     parser.add_argument("--start", type=str, default=None, help="Start date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)")
     parser.add_argument("--end", type=str, default=None, help="End date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)")
-    parser.add_argument("--ticks", dest="use_tick_data", action="store_true", default=True, help="Enable tick-by-tick simulation")
-    parser.add_argument("--no-ticks", dest="use_tick_data", action="store_false", help="Disable tick-by-tick simulation (candle high/low only)")
+    parser.add_argument("--ticks", dest="use_tick_data", action="store_true", default=True, help="Enable high-fidelity millisecond tick trades simulation (default)")
+    parser.add_argument("--no-ticks", dest="use_tick_data", action="store_false", help="Run OHLCV candle simulation only (discrepancies resolved via 1m sub-candles or conservative SL)")
     parser.add_argument("--fee-mode", type=str, default="LIVE", choices=["LIVE", "ZERO", "MANUAL"], help="Fee mode: LIVE, ZERO, or MANUAL")
     parser.add_argument("--maker-fee", type=float, default=None, help="Maker fee rate or percent (e.g. 0.0 or 0.02)")
     parser.add_argument("--taker-fee", type=float, default=None, help="Taker fee rate or percent (e.g. 0.0 or 0.05)")
     parser.add_argument("--tp-ticks", type=int, default=2, help="Take profit ticks away from entry")
     parser.add_argument("--sl-mode", type=str, default="ROE", choices=["ROE", "TICKS", "PRICE_PCT"], help="Stop loss mode")
-    parser.add_argument("--volume-mode", type=str, default=None, choices=["MULTIPLIER", "CONTRACTS", "MIN"], help="Volume sizing mode: MULTIPLIER, CONTRACTS, or MIN")
+    parser.add_argument("--volume-mode", type=str, default=None, choices=["MULTIPLIER", "CONTRACTS", "MIN", "MARGIN_PCT", "FIXED_MARGIN", "margin_pct", "fixed_margin", "multiplier", "contracts", "min"], help="Volume sizing mode: MULTIPLIER, CONTRACTS, MIN, MARGIN_PCT, or FIXED_MARGIN")
     parser.add_argument("--contracts", "--volume-contracts", dest="volume_contracts", type=int, default=None, help="Number of contracts per trade (e.g. 2, 5, 10)")
     parser.add_argument("--volume-multiplier", type=float, default=None, help="Multiplier of minimum contract volume (e.g. 2.0 = 2x min, 1.0 = 1x min)")
+    parser.add_argument("--margin-pct", type=float, default=None, help="Percentage of available margin to risk per trade (e.g. 10.0 for 10%%)")
+    parser.add_argument("--fixed-margin", "--fixed-margin-usdt", dest="fixed_margin_usdt", type=float, default=None, help="Fixed margin per trade in USDT (e.g. 5.0 for 5 USDT margin)")
     parser.add_argument("--sl-ticks", type=int, default=10, help="Stop loss ticks away from entry")
     parser.add_argument("--sl-roe", type=float, default=25.0, help="Stop loss ROE percent (e.g. 25.0)")
     parser.add_argument("--sl-price", type=float, default=None, help="Stop loss price percentage away from entry (e.g. 0.5)")
@@ -807,8 +903,17 @@ def main():
 
         sym_raw = args.symbol or preset_cfg.get("symbol", "TRUMP_USDT")
         sym = canonicalize_symbol(sym_raw)
-        vol_mode = args.volume_mode or preset_cfg.get("volume_mode", "MULTIPLIER")
+        vol_mode = (args.volume_mode.upper() if args.volume_mode else None) or preset_cfg.get("volume_mode", "MULTIPLIER")
         vol_contracts = args.volume_contracts or preset_cfg.get("volume_contracts")
+        margin_pct = args.margin_pct if args.margin_pct is not None else preset_cfg.get("margin_pct")
+        fixed_margin_usdt = args.fixed_margin_usdt if args.fixed_margin_usdt is not None else preset_cfg.get("fixed_margin_usdt")
+        if args.margin_pct is not None and not args.volume_mode:
+            vol_mode = "MARGIN_PCT"
+        elif args.fixed_margin_usdt is not None and not args.volume_mode:
+            vol_mode = "FIXED_MARGIN"
+        elif args.volume_contracts is not None and not args.volume_mode:
+            vol_mode = "CONTRACTS"
+
         if args.volume_multiplier is not None:
             vol_mult = args.volume_multiplier
         elif preset_cfg.get("volume_multiplier") is not None:
@@ -970,6 +1075,8 @@ def main():
             volume_mode=vol_mode,
             volume_contracts=vol_contracts,
             volume_multiplier=vol_mult,
+            margin_pct=margin_pct,
+            fixed_margin_usdt=fixed_margin_usdt,
             tp_ticks=tp_ticks,
             dynamic_tp=dynamic_tp,
             sl_mode=sl_mode,
@@ -1047,7 +1154,16 @@ def main():
     else:
         fee_summary = f"Maker {m_pct:.3f}% / Taker {t_pct:.3f}% ({config.fee_mode})"
 
-    vol_desc = f"{config.volume_contracts} contracts" if config.volume_contracts else f"{config.volume_multiplier}x min volume"
+    if config.volume_mode == "MARGIN_PCT":
+        vol_desc = f"{config.margin_pct:.1f}% Available Margin (Dynamic Sizing)"
+    elif config.volume_mode == "FIXED_MARGIN":
+        vol_desc = f"{config.fixed_margin_usdt:.2f} USDT Fixed Margin"
+    elif config.volume_mode == "CONTRACTS":
+        vol_desc = f"{config.volume_contracts} contracts"
+    elif config.volume_mode == "MIN":
+        vol_desc = "1x min volume"
+    else:
+        vol_desc = f"{config.volume_multiplier}x min volume"
 
     print("\n" + "=" * 78)
     print("                    STARTING LOCAL BACKTEST EXECUTION")
@@ -1057,7 +1173,7 @@ def main():
     print(f"Strategy:         {config.strategy_mode}")
     print(f"Date Range:       {config.start_time or 'Earliest'} -> {config.end_time or 'Latest'}")
     print(f"Trade Volume:     {vol_desc} ({config.volume_mode})")
-    print(f"High-Fid Ticks:   {'ENABLED (Streaming tick trades)' if config.use_tick_data else 'DISABLED (Candle High/Low)'}")
+    print(f"Simulation Mode:  {'HIGH-FIDELITY TICK TRADES (Streaming ms trades)' if config.use_tick_data else 'OHLCV ONLY (1m Sub-Candle Disambiguation & Conservative SL)'}")
     print(f"Fee Schedule:     {fee_summary}")
     print(f"Initial Capital:  {config.initial_balance_usdt:.2f} USDT")
     print(f"Leverage:         {config.leverage}x")

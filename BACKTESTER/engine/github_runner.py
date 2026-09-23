@@ -189,6 +189,8 @@ class GitHubBacktestRunner:
         vol_mode = config.volume_mode or "MULTIPLIER"
         vol_contracts = str(config.volume_contracts or 2)
         vol_multiplier = str(config.volume_multiplier if config.volume_multiplier is not None else (2.0 if "TRUMP" in sym else 1.0))
+        margin_pct = str(config.margin_pct if config.margin_pct is not None else 10.0)
+        fixed_margin = str(config.fixed_margin_usdt if config.fixed_margin_usdt is not None else 5.0)
 
         maker_fee = str(config.maker_fee_override * 100.0) if config.maker_fee_override is not None else "0.0"
         taker_fee = str(config.taker_fee_override * 100.0) if config.taker_fee_override is not None else "0.0"
@@ -258,6 +260,8 @@ class GitHubBacktestRunner:
             "volume_mode": vol_mode,
             "volume_contracts": vol_contracts,
             "volume_multiplier": vol_multiplier,
+            "margin_pct": margin_pct,
+            "fixed_margin": fixed_margin,
             "tp_ticks": str(config.tp_ticks),
             "sl_mode": config.sl_mode,
             "sl_ticks": str(config.sl_ticks or 10),
@@ -491,6 +495,18 @@ class GitHubBacktestRunner:
         print(f"Candle Timeframe: {inputs['timeframe']}")
         print(f"Strategy:         {inputs['strategy']}")
         print(f"Leverage:         {inputs['leverage']}x Isolated")
+        v_mode = inputs.get("volume_mode", "MULTIPLIER")
+        if v_mode == "MARGIN_PCT":
+            v_desc = f"{inputs.get('margin_pct')}% Available Margin (Dynamic Sizing)"
+        elif v_mode == "FIXED_MARGIN":
+            v_desc = f"{inputs.get('fixed_margin')} USDT Fixed Margin"
+        elif v_mode == "CONTRACTS":
+            v_desc = f"{inputs.get('volume_contracts')} contracts"
+        elif v_mode == "MIN":
+            v_desc = "1x min volume"
+        else:
+            v_desc = f"{inputs.get('volume_multiplier')}x min volume"
+        print(f"Trade Volume:     {v_desc} ({v_mode})")
         strat_name = inputs.get('strategy', '')
         if strat_name in ('ORDER_BLOCK_DEMAND', 'ORDER_BOOK_DEMAND'):
             print(f"Take Profit:      DYNAMIC (1:2 R:R | 50% exit at 1:1 + Breakeven Runner) [Fallback: +{inputs['tp_ticks']}t]")
@@ -503,7 +519,7 @@ class GitHubBacktestRunner:
             sl_lbl = f"{inputs['sl_mode']} ({inputs['sl_roe']}% ROE)" if inputs['sl_mode'] == 'ROE' else f"{inputs['sl_ticks']} ticks"
             print(f"Stop Loss:        {sl_lbl}")
         print(f"Date Range:       {inputs['start_date']} to {inputs['end_date']}")
-        print(f"Tick Simulation:  {'ENABLED' if inputs['use_ticks'] == 'true' else 'DISABLED'}")
+        print(f"Simulation Mode:  {'HIGH-FIDELITY TICK TRADES (Streaming ms trades)' if inputs['use_ticks'] == 'true' else 'OHLCV ONLY (1m Sub-Candle Disambiguation & Conservative SL)'}")
         filters = json.loads(inputs.get("filters_json", "{}")) if "filters_json" in inputs else {}
         dur_desc = (
             f"ENABLED (Monitor >{filters.get('duration_deep_monitor', 60.0)}s, Action: {filters.get('duration_action', 'CLOSE')} at {filters.get('duration_max_hold', 90.0)}s)"

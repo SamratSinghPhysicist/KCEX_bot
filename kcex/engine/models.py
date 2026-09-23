@@ -67,9 +67,11 @@ class ExecutionConfig:
     sl_ticks: Optional[int] = 150   # Number of pu ticks away from entry
     sl_price_pct: Optional[float] = None # Price move percentage away from entry
     # Trade Quantity / Volume settings (Note: Trade Quantity is NOT margin. Margin = Trade Quantity / Leverage)
-    volume_mode: str = "MULTIPLIER"       # "MIN", "MULTIPLIER", or "CONTRACTS"
+    volume_mode: str = "MULTIPLIER"       # "MIN", "MULTIPLIER", "CONTRACTS", "MARGIN_PCT", or "FIXED_MARGIN"
     volume_multiplier: float = 50.0       # x times min_volume (e.g. 50.0 = 50x min quantity for TRUMP)
     volume_contracts: Optional[int] = None # Exact number of contracts (e.g. 50)
+    margin_pct: Optional[float] = None    # Percentage of available margin to risk/commit (e.g. 10.0 = 10%)
+    fixed_margin_usdt: Optional[float] = None # Fixed USDT margin per trade (e.g. 5.0 USDT)
     margin_fallback_pct: float = 25.0     # Percentage of available margin to use if requested volume exceeds balance
     simulated_balance_usdt: Optional[float] = None # Simulated wallet balance for dry-run/testing
     max_trades: int = 0                   # 0 = unlimited

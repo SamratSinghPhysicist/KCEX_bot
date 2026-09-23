@@ -162,8 +162,15 @@ class BacktestReporter:
         m_fee_rate = getattr(contract, "maker_fee_rate", 0.0) if contract else 0.0
         t_fee_rate = getattr(contract, "taker_fee_rate", 0.0) if contract else 0.0
 
+        margin_pct = getattr(config, "margin_pct", None) if config else None
+        fixed_margin = getattr(config, "fixed_margin_usdt", None) if config else None
+
         # Detailed Volume Sizing Description
-        if vol_contracts is not None:
+        if vol_mode == "MARGIN_PCT" or (margin_pct is not None and vol_mode not in ("CONTRACTS", "MULTIPLIER", "MIN")):
+            vol_desc = f"{margin_pct:.1f}% Available Margin per trade (Dynamic Sizing, Margin × Leverage = Position Size)"
+        elif vol_mode == "FIXED_MARGIN" or (fixed_margin is not None and vol_mode not in ("CONTRACTS", "MULTIPLIER", "MIN")):
+            vol_desc = f"{fixed_margin:.2f} USDT Fixed Margin per trade (Margin × Leverage = Position Size)"
+        elif vol_contracts is not None:
             vol_desc = f"{vol_contracts} contract(s) ({vol_contracts * cs:.4g} {base_coin} per trade)"
         elif vol_mode == "MIN":
             vol_desc = f"Minimum volume: {int(min_vol)} contract(s) ({int(min_vol) * cs:.4g} {base_coin})"

@@ -139,6 +139,40 @@ class TestBacktesterSuite(unittest.TestCase):
         self.assertGreaterEqual(summary.win_rate_pct, 0.0)
         self.assertLessEqual(summary.win_rate_pct, 100.0)
 
+    def test_full_backtest_execution_ohlcv_only(self):
+        # Run backtest with use_tick_data=False (OHLCV only mode)
+        config = BacktestConfig(
+            symbol="TRUMP_USDT",
+            timeframe="1m",
+            strategy_mode="EMA_CROSSOVER",
+            ema_preset="5/13",
+            start_time="2026-07-01 00:00:00",
+            end_time="2026-07-03 00:00:00",
+            tp_ticks=2,
+            sl_mode="TICKS",
+            sl_ticks=10,
+            leverage=30,
+            max_trades=3,
+            initial_balance_usdt=100.0,
+            use_tick_data=False
+        )
+
+        engine = BacktestExecutionEngine(config=config)
+        outcomes = engine.run()
+
+        self.assertGreater(len(outcomes), 0)
+        self.assertLessEqual(len(outcomes), 3)
+
+        outcome = outcomes[0]
+        self.assertIn(outcome.exit_reason, [
+            ExitReason.MIN_PROFIT_TP_HIT,
+            ExitReason.STOP_LOSS_HIT,
+            ExitReason.IMMEDIATE_PROFIT_CLOSE,
+            ExitReason.MANUAL_CLOSE
+        ])
+        self.assertGreater(outcome.entry_price, 0.0)
+        self.assertGreater(outcome.exit_price, 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -74,7 +74,7 @@ on:
         type: string
 
       use_ticks:
-        description: "Enable High-Fidelity Millisecond Tick Trades"
+        description: "Simulation Data Fidelity: true = Ticker Trades (ms tick stream); false = OHLCV only (1m sub-candle disambiguation & conservative SL)"
         required: true
         default: true
         type: boolean
@@ -102,7 +102,7 @@ on:
         type: string
 
       volume_mode:
-        description: "Trade Volume Mode (CONTRACTS, MULTIPLIER, MIN)"
+        description: "Trade Volume Mode (CONTRACTS, MULTIPLIER, MIN, MARGIN_PCT, FIXED_MARGIN)"
         required: true
         default: "MULTIPLIER"
         type: choice
@@ -110,6 +110,20 @@ on:
           - "MULTIPLIER"
           - "CONTRACTS"
           - "MIN"
+          - "MARGIN_PCT"
+          - "FIXED_MARGIN"
+
+      margin_pct:
+        description: "Percentage of Available Margin to risk per trade (if MARGIN_PCT mode, e.g. 10.0 for 10%)"
+        required: false
+        default: "10.0"
+        type: string
+
+      fixed_margin:
+        description: "Fixed Margin per trade in USDT (if FIXED_MARGIN mode, e.g. 5.0 for 5 USDT margin)"
+        required: false
+        default: "5.0"
+        type: string
 
       volume_contracts:
         description: "Number of Contracts per trade (if CONTRACTS mode, e.g. 2, 5, 10)"
@@ -257,6 +271,8 @@ jobs:
             --volume-mode "${{ inputs.volume_mode }}" \
             --contracts "${{ inputs.volume_contracts }}" \
             --volume-multiplier "${{ inputs.volume_multiplier }}" \
+            --margin-pct "${{ inputs.margin_pct }}" \
+            --fixed-margin "${{ inputs.fixed_margin }}" \
             --tp-ticks "${{ inputs.tp_ticks }}" \
             --sl-mode "${{ inputs.sl_mode }}" \
             --sl-ticks "${{ inputs.sl_ticks }}" \

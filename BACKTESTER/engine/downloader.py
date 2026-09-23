@@ -145,7 +145,7 @@ def ensure_market_data(
     for y, m in months:
         ym_str = f"{y:04d}-{m:02d}"
 
-        # 1. Check / Download OHLCV
+        # 1. Check / Download Primary OHLCV
         expected_kline_csv = f"{sym_clean}-{norm_tf}-{ym_str}.csv"
         kline_path = os.path.join(ohlcv_dest_dir, expected_kline_csv)
         if not os.path.exists(kline_path):
@@ -155,6 +155,15 @@ def ensure_market_data(
                 all_ok = False
         else:
             print(f"[+] OHLCV exists: {expected_kline_csv}")
+
+        # 1b. If primary timeframe != "1m", also ensure 1m OHLCV exists for sub-candle disambiguation
+        if norm_tf != "1m":
+            ohlcv_1m_dir = os.path.join(base_dir, "OHLCV_Data_Binance", sym_clean, "1m")
+            expected_1m_csv = f"{sym_clean}-1m-{ym_str}.csv"
+            kline_1m_path = os.path.join(ohlcv_1m_dir, expected_1m_csv)
+            if not os.path.exists(kline_1m_path):
+                kline_1m_url = f"{BINANCE_VISION_BASE}/klines/{sym_clean}/1m/{sym_clean}-1m-{ym_str}.zip"
+                download_and_extract_zip(kline_1m_url, ohlcv_1m_dir, expected_1m_csv)
 
         # 2. Check / Download Trades (if requested)
         if download_trades:

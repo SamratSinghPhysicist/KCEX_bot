@@ -57,6 +57,132 @@ DEFAULT_CONTRACTS: Dict[str, Dict[str, Any]] = {
         "maker_fee_rate": 0.0,
         "taker_fee_rate": 0.0,
         "depth_steps": ["0.00001"]
+    },
+    "BTC_USDT": {
+        "base_coin": "BTC",
+        "quote_coin": "USDT",
+        "contract_size": 0.0001,
+        "price_unit": 0.1,
+        "volume_unit": 1.0,
+        "price_precision": 1,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 1000000.0,
+        "min_leverage": 1,
+        "max_leverage": 125,
+        "maintenance_margin_ratio": 0.004,
+        "initial_margin_ratio": 0.008,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.1"]
+    },
+    "ETH_USDT": {
+        "base_coin": "ETH",
+        "quote_coin": "USDT",
+        "contract_size": 0.001,
+        "price_unit": 0.01,
+        "volume_unit": 1.0,
+        "price_precision": 2,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 1000000.0,
+        "min_leverage": 1,
+        "max_leverage": 100,
+        "maintenance_margin_ratio": 0.005,
+        "initial_margin_ratio": 0.01,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.01"]
+    },
+    "SOL_USDT": {
+        "base_coin": "SOL",
+        "quote_coin": "USDT",
+        "contract_size": 0.01,
+        "price_unit": 0.01,
+        "volume_unit": 1.0,
+        "price_precision": 2,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 1000000.0,
+        "min_leverage": 1,
+        "max_leverage": 75,
+        "maintenance_margin_ratio": 0.0067,
+        "initial_margin_ratio": 0.0133,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.01"]
+    },
+    "XRP_USDT": {
+        "base_coin": "XRP",
+        "quote_coin": "USDT",
+        "contract_size": 10.0,
+        "price_unit": 0.0001,
+        "volume_unit": 1.0,
+        "price_precision": 4,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 5000000.0,
+        "min_leverage": 1,
+        "max_leverage": 75,
+        "maintenance_margin_ratio": 0.0067,
+        "initial_margin_ratio": 0.0133,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.0001"]
+    },
+    "PEPE_USDT": {
+        "base_coin": "PEPE",
+        "quote_coin": "USDT",
+        "contract_size": 100000.0,
+        "price_unit": 0.0000001,
+        "volume_unit": 1.0,
+        "price_precision": 7,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 50000000.0,
+        "min_leverage": 1,
+        "max_leverage": 50,
+        "maintenance_margin_ratio": 0.01,
+        "initial_margin_ratio": 0.02,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.0000001"]
+    },
+    "BNB_USDT": {
+        "base_coin": "BNB",
+        "quote_coin": "USDT",
+        "contract_size": 0.01,
+        "price_unit": 0.01,
+        "volume_unit": 1.0,
+        "price_precision": 2,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 1000000.0,
+        "min_leverage": 1,
+        "max_leverage": 75,
+        "maintenance_margin_ratio": 0.0067,
+        "initial_margin_ratio": 0.0133,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.01"]
+    },
+    "SUI_USDT": {
+        "base_coin": "SUI",
+        "quote_coin": "USDT",
+        "contract_size": 1.0,
+        "price_unit": 0.0001,
+        "volume_unit": 1.0,
+        "price_precision": 4,
+        "volume_precision": 0,
+        "min_volume": 1.0,
+        "max_volume": 5000000.0,
+        "min_leverage": 1,
+        "max_leverage": 50,
+        "maintenance_margin_ratio": 0.01,
+        "initial_margin_ratio": 0.02,
+        "maker_fee_rate": 0.0,
+        "taker_fee_rate": 0.0001,
+        "depth_steps": ["0.0001"]
     }
 }
 
@@ -163,14 +289,50 @@ class BacktestMarket:
             depth_steps = live_info.depth_steps
             raw_data = live_info.raw_data
         else:
-            # Fallback to preconfigured template
+            # Fallback to preconfigured template or dynamic estimator
             template = DEFAULT_CONTRACTS.get(canonical, {})
             base_coin = template.get("base_coin", canonical.split("_")[0])
             quote_coin = template.get("quote_coin", "USDT")
-            cs = float(template.get("contract_size", 1.0))
-            pu = float(template.get("price_unit", 0.001))
+            if canonical in DEFAULT_CONTRACTS:
+                cs = float(template.get("contract_size", 1.0))
+                pu = float(template.get("price_unit", 0.001))
+                ps = int(template.get("price_precision", 3))
+            else:
+                sample_p = self.current_price
+                if not sample_p or sample_p <= 0:
+                    for k, c_list in self._candle_cache.items():
+                        if k.startswith(canonical) and c_list:
+                            sample_p = c_list[-1].close
+                            break
+                sample_p = sample_p or 1.0
+
+                # Derive realistic contract size (aiming for 1 contract ~ 5 to 50 USDT notional)
+                if sample_p >= 10000:
+                    cs = 0.001
+                    pu = 0.1
+                    ps = 1
+                elif sample_p >= 1000:
+                    cs = 0.01
+                    pu = 0.01
+                    ps = 2
+                elif sample_p >= 100:
+                    cs = 0.1
+                    pu = 0.01
+                    ps = 2
+                elif sample_p >= 1:
+                    cs = 1.0
+                    pu = 0.001
+                    ps = 3
+                elif sample_p >= 0.01:
+                    cs = 10.0
+                    pu = 0.0001
+                    ps = 4
+                else:
+                    cs = 100000.0
+                    pu = 0.0000001
+                    ps = 7
+
             vu = float(template.get("volume_unit", 1.0))
-            ps = int(template.get("price_precision", 3))
             vs = int(template.get("volume_precision", 0))
             min_v = float(template.get("min_volume", 1.0))
             max_v = float(template.get("max_volume", 1000000.0))

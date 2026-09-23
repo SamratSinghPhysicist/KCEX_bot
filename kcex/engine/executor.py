@@ -386,7 +386,52 @@ class TradeExecutionEngine:
         # Committed Margin = Trade Quantity / Leverage
         min_vol = int(contract.min_volume)
         vol_mode = (getattr(self.config, "volume_mode", "MULTIPLIER") or "MULTIPLIER").upper()
-        if vol_mode == "CONTRACTS" and getattr(self.config, "volume_contracts", None):
+        if vol_mode == "MARGIN_PCT" or getattr(self.config, "margin_pct", None) is not None:
+            pct = float(getattr(self.config, "margin_pct", 10.0) or 10.0)
+            avail_margin = 100.0
+            if self.config.mode == EngineMode.LIVE:
+                try:
+                    balances = self.trader.get_usdt_balance()
+                    avail_margin = float(balances.get("available_usdt", 100.0) or 100.0)
+                except Exception:
+                    avail_margin = 100.0
+            elif getattr(self.config, "simulated_balance_usdt", None):
+                avail_margin = float(self.config.simulated_balance_usdt)
+
+            desired_margin = (pct / 100.0) * avail_margin
+            target_notional = desired_margin * leverage if leverage > 0 else desired_margin
+            current_price = getattr(self.strategy, "last_price", 0.0)
+            if not current_price or current_price <= 0:
+                try:
+                    t = self.market.get_ticker(symbol)
+                    current_price = float(t.get("lastPrice", 1.0))
+                except Exception:
+                    current_price = 1.0
+            one_contract_notional = cs * current_price
+            if one_contract_notional > 0:
+                raw_contracts = target_notional / one_contract_notional
+                vol_contracts = max(min_vol, int(round(raw_contracts)))
+            else:
+                vol_contracts = min_vol
+            vol_spec_desc = f"{vol_contracts} contract(s) ({pct:g}% margin -> ~{desired_margin:.2f} USDT)"
+        elif vol_mode == "FIXED_MARGIN" or getattr(self.config, "fixed_margin_usdt", None) is not None:
+            desired_margin = float(getattr(self.config, "fixed_margin_usdt", 5.0) or 5.0)
+            target_notional = desired_margin * leverage if leverage > 0 else desired_margin
+            current_price = getattr(self.strategy, "last_price", 0.0)
+            if not current_price or current_price <= 0:
+                try:
+                    t = self.market.get_ticker(symbol)
+                    current_price = float(t.get("lastPrice", 1.0))
+                except Exception:
+                    current_price = 1.0
+            one_contract_notional = cs * current_price
+            if one_contract_notional > 0:
+                raw_contracts = target_notional / one_contract_notional
+                vol_contracts = max(min_vol, int(round(raw_contracts)))
+            else:
+                vol_contracts = min_vol
+            vol_spec_desc = f"{vol_contracts} contract(s) ({desired_margin:.2f} USDT fixed margin)"
+        elif vol_mode == "CONTRACTS" and getattr(self.config, "volume_contracts", None):
             vol_contracts = max(min_vol, int(self.config.volume_contracts))
             vol_spec_desc = f"{vol_contracts} contract(s)"
         elif vol_mode == "MULTIPLIER" and getattr(self.config, "volume_multiplier", None):
