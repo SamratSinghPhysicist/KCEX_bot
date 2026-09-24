@@ -309,21 +309,24 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
         for b in raw_bars:
             if hasattr(b, "timestamp") and hasattr(b, "close"):
-                timestamps.append(int(getattr(b, "timestamp", 0)))
+                ts = int(getattr(b, "timestamp", 0))
+                timestamps.append(ts * 1000 if 0 < ts < 1e11 else ts)
                 opens.append(float(getattr(b, "open", 0.0)))
                 highs.append(float(getattr(b, "high", 0.0)))
                 lows.append(float(getattr(b, "low", 0.0)))
                 closes.append(float(getattr(b, "close", 0.0)))
                 volumes.append(float(getattr(b, "volume", 0.0)))
             elif isinstance(b, dict):
-                timestamps.append(int(b.get("timestamp", b.get("time", 0))))
+                ts = int(b.get("timestamp", b.get("time", 0)))
+                timestamps.append(ts * 1000 if 0 < ts < 1e11 else ts)
                 opens.append(float(b.get("open", 0.0)))
                 highs.append(float(b.get("high", 0.0)))
                 lows.append(float(b.get("low", 0.0)))
                 closes.append(float(b.get("close", 0.0)))
                 volumes.append(float(b.get("volume", 0.0)))
             elif isinstance(b, (list, tuple)) and len(b) >= 6:
-                timestamps.append(int(b[0]))
+                ts = int(b[0])
+                timestamps.append(ts * 1000 if 0 < ts < 1e11 else ts)
                 opens.append(float(b[1]))
                 highs.append(float(b[2]))
                 lows.append(float(b[3]))
@@ -372,14 +375,25 @@ class OrderBlockDemandStrategy(BaseStrategy):
             check_idx = i - p_len
             is_sh = True
             is_sl = True
-            for j in range(check_idx - p_len, check_idx + p_len + 1):
+            
+            # Left side (strict > and <)
+            for j in range(check_idx - p_len, check_idx):
                 if j < 0 or j >= n:
                     continue
-                if j != check_idx:
-                    if highs[j] >= highs[check_idx]:
-                        is_sh = False
-                    if lows[j] <= lows[check_idx]:
-                        is_sl = False
+                if highs[j] > highs[check_idx]:
+                    is_sh = False
+                if lows[j] < lows[check_idx]:
+                    is_sl = False
+                    
+            # Right side (relaxed >= and <=)
+            for j in range(check_idx + 1, check_idx + p_len + 1):
+                if j < 0 or j >= n:
+                    continue
+                if highs[j] >= highs[check_idx]:
+                    is_sh = False
+                if lows[j] <= lows[check_idx]:
+                    is_sl = False
+
             if is_sh:
                 last_swing_high = {"idx": check_idx, "val": highs[check_idx]}
             if is_sl:

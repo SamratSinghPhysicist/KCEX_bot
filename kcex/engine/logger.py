@@ -172,51 +172,23 @@ class DualCurrencyLogger:
 
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 1. Interactive Local TTY: update in-place on the same line
-        if self._is_tty and not self._is_cloud_ci:
-            try:
-                clean_msg = f"\r{now_str} [INFO] {msg}"
-                sys.stdout.write(f"{clean_msg:<120}")
-                sys.stdout.flush()
-                self._in_place_active = True
-            except Exception:
-                self.logger.info(msg)
-
-            # Record to log file conditionally (avoid blowing up log file with same prices)
-            if not is_duplicate or (now - self._last_status_time >= heartbeat_sec) or force:
-                self._write_file_log(now_str, "INFO", msg)
-                self._last_status_time = now
-                if price_rounded is not None:
-                    self._last_status_price = price_rounded
-
-            self._last_status_msg = msg
-            return True
-
-        # 2. Non-interactive / Cloud / CI (Railway, GitHub Actions, Docker)
-        if is_duplicate:
-            self._same_price_count += 1
-            # If price/message/structure hasn't changed, suppress adding another line unless heartbeat interval passed
-            if (now - self._last_status_time) < heartbeat_sec:
-                return False  # Suppressed duplicate status line!
-
-            # Heartbeat line: show current status with latest price
-            self.clear_status_line()
+        # 1. Update in-place on the same line (always, to satisfy single-line update requirement)
+        try:
+            clean_msg = f"\r{now_str} [INFO] {msg}"
+            sys.stdout.write(f"{clean_msg:<140}")
+            sys.stdout.flush()
+            self._in_place_active = True
+        except Exception:
             self.logger.info(msg)
+
+        # Record to log file conditionally (avoid blowing up log file with same prices)
+        if not is_duplicate or (now - self._last_status_time >= heartbeat_sec) or force:
+            self._write_file_log(now_str, "INFO", msg)
             self._last_status_time = now
-            self._last_status_msg = msg
             if price_rounded is not None:
                 self._last_status_price = price_rounded
-            self._same_price_count = 0
-            return True
 
-        # Structure/state changed, force=True, or first message
-        self.clear_status_line()
-        self.logger.info(msg)
-        if price_rounded is not None:
-            self._last_status_price = price_rounded
-        self._last_status_time = now
         self._last_status_msg = msg
-        self._same_price_count = 0
         return True
 
     def _write_file_log(self, timestamp_str: str, level: str, msg: str) -> None:

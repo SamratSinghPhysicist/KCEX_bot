@@ -1043,9 +1043,7 @@ class TradeExecutionEngine:
             # Pre-place 1:1 Take-Profit resting limit close order for SMC trades beforehand
             pre_placed_tp1_order_id = None
             tp1_contracts = (vol_contracts // 2) if vol_contracts >= 2 else 1
-            smc_1x_mode = str(getattr(self.config, "smc_1x_exit_mode", "1TO1_TP")).upper()
-            should_pre_place = (vol_contracts >= 2) or (smc_1x_mode == "1TO1_TP")
-            if is_smc_sig and signal and position_id and should_pre_place:
+            if is_smc_sig and signal and position_id:
                 if signal.metadata and (not signal.metadata.get("target_1to1_price")) and entry_price and exact_sl:
                     risk_dist = abs(entry_price - exact_sl)
                     t1_calc = entry_price + risk_dist if direction == OrderDirection.LONG else entry_price - risk_dist

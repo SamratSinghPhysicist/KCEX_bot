@@ -63,12 +63,19 @@ return {
       // 1. Detect Swing Pivots
       const checkIdx = i - pivotLen;
       let isSH = true, isSL = true;
-      for (let j = checkIdx - pivotLen; j <= checkIdx + pivotLen; j++) {
+      
+      // Left side
+      for (let j = checkIdx - pivotLen; j < checkIdx; j++) {
         if (j < 0 || j >= n) continue;
-        if (j !== checkIdx) {
-          if (dataList[j].high >= dataList[checkIdx].high) isSH = false;
-          if (dataList[j].low <= dataList[checkIdx].low) isSL = false;
-        }
+        if (dataList[j].high > dataList[checkIdx].high) isSH = false;
+        if (dataList[j].low < dataList[checkIdx].low) isSL = false;
+      }
+      
+      // Right side
+      for (let j = checkIdx + 1; j <= checkIdx + pivotLen; j++) {
+        if (j < 0 || j >= n) continue;
+        if (dataList[j].high >= dataList[checkIdx].high) isSH = false;
+        if (dataList[j].low <= dataList[checkIdx].low) isSL = false;
       }
       if (isSH) lastSwingHigh = { idx: checkIdx, val: dataList[checkIdx].high };
       if (isSL) lastSwingLow = { idx: checkIdx, val: dataList[checkIdx].low };
