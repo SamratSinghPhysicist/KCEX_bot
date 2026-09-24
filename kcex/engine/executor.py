@@ -1033,19 +1033,6 @@ class TradeExecutionEngine:
                 f"Exact Min-Profit TP = {exact_tp:.{ps}f} USDT | Exact SL = {exact_sl:.{ps}f} USDT"
             )
 
-        # Register server-side position TP/SL with exact prices
-        if position_id:
-            try:
-                self.trader.set_position_tp_sl(
-                    symbol=symbol,
-                    position_id=position_id,
-                    take_profit_price=exact_tp,
-                    stop_loss_price=exact_sl
-                )
-                self.logger.info(f"Server-side position TP/SL registered: TP {exact_tp:.{ps}f}, SL {exact_sl:.{ps}f}")
-            except Exception as e:
-                self.logger.warning("Note: Server-side stoporder registration: %s", e)
-
         # Check immediate profit close condition using executable price (bid for LONG, ask for SHORT)
         ticker = self.market.get_ticker(symbol)
         last_p = float(ticker.get("lastPrice", entry_price))
@@ -1078,39 +1065,23 @@ class TradeExecutionEngine:
             exit_reason = ExitReason.IMMEDIATE_PROFIT_CLOSE
             time.sleep(0.5)
         else:
-            # Pre-place 1:1 Take-Profit resting limit close order for SMC trades beforehand
+            # Register & verify server-side position TP/SL and pre-placed 1:1 limit orders (checking 2-3+ times)
             pre_placed_tp1_order_id = None
             tp1_contracts = (vol_contracts // 2) if vol_contracts >= 2 else 1
-            if is_smc_sig and signal and position_id:
-                if signal.metadata and (not signal.metadata.get("target_1to1_price")) and entry_price and exact_sl:
-                    risk_dist = abs(entry_price - exact_sl)
-                    t1_calc = entry_price + risk_dist if direction == OrderDirection.LONG else entry_price - risk_dist
-                    signal.metadata["target_1to1_price"] = round(t1_calc, ps)
-                target_1to1 = float((signal.metadata or {}).get("target_1to1_price", 0.0))
-                partial_tp_enabled = bool((signal.metadata or {}).get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True)))
-                if partial_tp_enabled and target_1to1 > 0:
-                    try:
-                        time.sleep(1.0)
-                        self.logger.info(
-                            f"📋 [PRE-PLACING 1:1 TP LIMIT ORDER] Placing resting limit order on KCEX for {tp1_contracts} contract(s) "
-                            f"at 1:1 target ({target_1to1:.{ps}f} USDT)..."
-                        )
-                        close_res = self.trader.close_position_limit(
-                            symbol=symbol,
-                            side=direction.value,
-                            price=target_1to1,
-                            vol_contracts=tp1_contracts,
-                            position_id=position_id,
-                            leverage=leverage,
-                            is_isolated=self.config.is_isolated
-                        )
-                        pre_placed_tp1_order_id = str(close_res.get("data", {}).get("orderId") or "")
-                        self.logger.info(
-                            f"✅ [1:1 TP LIMIT ORDER PLACED] Order #{pre_placed_tp1_order_id} active on KCEX book | "
-                            f"Vol: {tp1_contracts} contract(s) @ {target_1to1:.{ps}f} USDT."
-                        )
-                    except Exception as e:
-                        self.logger.warning("Note: Pre-placing 1:1 limit close order: %s. Active monitor will manage 1:1 exit fallback.", e)
+            if position_id:
+                pre_placed_tp1_order_id, tp1_contracts = self._setup_and_verify_position_orders(
+                    symbol=symbol,
+                    position_id=position_id,
+                    direction=direction,
+                    vol_contracts=vol_contracts,
+                    leverage=leverage,
+                    exact_tp=exact_tp,
+                    exact_sl=exact_sl,
+                    precision=ps,
+                    entry_price=entry_price,
+                    signal=signal,
+                    is_smc_sig=is_smc_sig
+                )
 
             # Active position monitoring loop
             self.logger.set_has_active_positions(True)
@@ -1346,6 +1317,183 @@ class TradeExecutionEngine:
 
         return exit_price, realized_pnl, exit_reason, close_order_id, reconciled_pos_id
 
+    def _setup_and_verify_position_orders(
+        self,
+        symbol: str,
+        position_id: Optional[int],
+        direction: OrderDirection,
+        vol_contracts: int,
+        leverage: int,
+        exact_tp: float,
+        exact_sl: float,
+        precision: int,
+        entry_price: Optional[float],
+        signal: Optional[TradeSignal],
+        is_smc_sig: bool,
+        max_attempts: int = 4
+    ) -> tuple[Optional[str], int]:
+        """
+        Registers and verifies server-side TP/SL stop orders and pre-placed 1:1 limit orders.
+        Checks 2-3 or more times (up to max_attempts) to ensure orders are confirmed on KCEX.
+        """
+        if not position_id:
+            return None, 1
+
+        pu = 10 ** -precision
+        is_long = (direction == OrderDirection.LONG)
+
+        # 1. Register & Verify Server-Side Position TP/SL (checking 2-3+ times)
+        tp_sl_verified = False
+        for attempt in range(1, max_attempts + 1):
+            try:
+                self.trader.set_position_tp_sl(
+                    symbol=symbol,
+                    position_id=position_id,
+                    take_profit_price=exact_tp,
+                    stop_loss_price=exact_sl
+                )
+                self.logger.info(
+                    f"📤 [{symbol}] Position TP/SL submitted to KCEX (Attempt {attempt}/{max_attempts}): "
+                    f"TP {exact_tp:.{precision}f}, SL {exact_sl:.{precision}f}"
+                )
+            except Exception as e:
+                self.logger.warning(f"⚠️ [{symbol}] Attempt {attempt}/{max_attempts} submitting TP/SL: {e}")
+
+            time.sleep(0.5)
+
+            try:
+                open_stops = self.trader.get_open_stop_orders()
+                for s in open_stops:
+                    pos_id_match = s.get("positionId") and int(s.get("positionId")) == int(position_id)
+                    sym_match = s.get("symbol") == symbol.upper()
+                    if pos_id_match or sym_match:
+                        tp_p = float(s.get("takeProfitPrice") or 0.0)
+                        sl_p = float(s.get("stopLossPrice") or 0.0)
+                        tp_match = (tp_p > 0 and abs(tp_p - exact_tp) <= (2 * pu))
+                        sl_match = (sl_p > 0 and abs(sl_p - exact_sl) <= (2 * pu))
+                        if tp_match or sl_match:
+                            tp_sl_verified = True
+                            self.logger.info(
+                                f"✅ [{symbol}] Server-side TP/SL VERIFIED on KCEX (Attempt {attempt}/{max_attempts})! "
+                                f"TP: {exact_tp:.{precision}f} | SL: {exact_sl:.{precision}f}"
+                            )
+                            break
+                if tp_sl_verified:
+                    break
+            except Exception as ce:
+                self.logger.debug(f"[{symbol}] Error querying open stop orders: {ce}")
+
+            if not tp_sl_verified:
+                self.logger.warning(f"⚠️ [{symbol}] Position TP/SL not yet confirmed on KCEX (Attempt {attempt}/{max_attempts}). Retrying...")
+
+        if not tp_sl_verified:
+            self.logger.warning(f"⚠️ [{symbol}] Could not verify server-side TP/SL after {max_attempts} checks. Software monitor will act as active fallback.")
+
+        # 2. Pre-place & Verify 1:1 Partial Close Limit Order for SMC trades
+        pre_placed_tp1_order_id = None
+        tp1_contracts = (vol_contracts // 2) if vol_contracts >= 2 else 1
+        pct_label = "50%" if vol_contracts >= 2 else "100% (min 1 contract)"
+
+        if is_smc_sig and signal:
+            if signal.metadata and (not signal.metadata.get("target_1to1_price")) and exact_sl:
+                ref_entry = entry_price if (entry_price and entry_price > 0) else float(signal.price or 0.0)
+                if ref_entry > 0:
+                    risk_dist = abs(ref_entry - exact_sl)
+                    t1_calc = ref_entry + risk_dist if is_long else ref_entry - risk_dist
+                    signal.metadata["target_1to1_price"] = round(t1_calc, precision)
+            target_1to1 = float((signal.metadata or {}).get("target_1to1_price", 0.0))
+            partial_tp_enabled = bool((signal.metadata or {}).get("partial_tp_enabled", getattr(self.config, "partial_tp_enabled", True)))
+
+            if partial_tp_enabled and target_1to1 > 0:
+                limit_order_verified = False
+                for attempt in range(1, max_attempts + 1):
+                    if pre_placed_tp1_order_id is None:
+                        try:
+                            self.logger.info(
+                                f"📋 [{symbol}] Pre-placing 1:1 TP Limit Order on KCEX for {tp1_contracts} contract(s) ({pct_label}) "
+                                f"at {target_1to1:.{precision}f} USDT (Attempt {attempt}/{max_attempts})..."
+                            )
+                            close_res = self.trader.close_position_limit(
+                                symbol=symbol,
+                                side=direction.value,
+                                price=target_1to1,
+                                vol_contracts=tp1_contracts,
+                                position_id=position_id,
+                                leverage=leverage,
+                                is_isolated=self.config.is_isolated
+                            )
+                            pre_placed_tp1_order_id = str((close_res.get("data") or {}).get("orderId") or "")
+                        except Exception as e:
+                            self.logger.warning(f"[{symbol}] Attempt {attempt}/{max_attempts} placing 1:1 limit order: {e}")
+
+                    time.sleep(0.6)
+                    if pre_placed_tp1_order_id:
+                        try:
+                            open_orders = self.trader.get_open_orders()
+                            for o in open_orders:
+                                oid = str(o.get("orderId") or "")
+                                if oid == pre_placed_tp1_order_id or (o.get("symbol") == symbol.upper() and abs(float(o.get("price") or 0.0) - target_1to1) <= (2 * pu)):
+                                    limit_order_verified = True
+                                    self.logger.info(
+                                        f"✅ [{symbol}] 1:1 TP Limit Order #{pre_placed_tp1_order_id} VERIFIED on KCEX book! "
+                                        f"Vol: {tp1_contracts} contract(s) ({pct_label}) @ {target_1to1:.{precision}f} USDT"
+                                    )
+                                    break
+                            if limit_order_verified:
+                                break
+                        except Exception as ce:
+                            self.logger.debug(f"[{symbol}] Error querying open orders: {ce}")
+
+                    if not limit_order_verified:
+                        self.logger.warning(f"⚠️ [{symbol}] 1:1 Limit order not yet verified on book (Attempt {attempt}/{max_attempts}). Retrying...")
+
+                if not limit_order_verified and pre_placed_tp1_order_id is None:
+                    self.logger.warning(f"⚠️ [{symbol}] Could not pre-place 1:1 limit order. Active software monitor will execute 1:1 exit at market.")
+
+        return pre_placed_tp1_order_id, tp1_contracts
+
+    def _update_and_verify_be_sl(
+        self,
+        symbol: str,
+        position_id: int,
+        exact_tp: float,
+        be_sl: float,
+        precision: int,
+        max_attempts: int = 3
+    ) -> bool:
+        """Checks 2-3 times until server-side breakeven SL is confirmed updated on KCEX."""
+        pu = 10 ** -precision
+        for attempt in range(1, max_attempts + 1):
+            try:
+                self.trader.set_position_tp_sl(
+                    symbol=symbol,
+                    position_id=position_id,
+                    take_profit_price=exact_tp,
+                    stop_loss_price=be_sl
+                )
+            except Exception as e:
+                self.logger.debug(f"[{symbol}] Attempt {attempt} updating BE SL: {e}")
+
+            time.sleep(0.5)
+            try:
+                open_stops = self.trader.get_open_stop_orders()
+                for s in open_stops:
+                    pos_id_match = s.get("positionId") and int(s.get("positionId")) == int(position_id)
+                    sym_match = s.get("symbol") == symbol.upper()
+                    if pos_id_match or sym_match:
+                        sl_p = float(s.get("stopLossPrice") or 0.0)
+                        if abs(sl_p - be_sl) <= (2 * pu):
+                            self.logger.info(
+                                f"✅ [{symbol}] Breakeven SL VERIFIED on KCEX (Attempt {attempt}/{max_attempts}): SL {be_sl:.{precision}f} USDT"
+                            )
+                            return True
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+        self.logger.warning(f"⚠️ [{symbol}] Could not confirm server-side BE SL on KCEX after {max_attempts} attempts. Software monitor will guard breakeven.")
+        return False
+
     def _monitor_live_position(
         self,
         symbol: str,
@@ -1556,72 +1704,47 @@ class TradeExecutionEngine:
                             f"Remaining {remaining_vol} contract(s) now running risk-free towards 1:2 R:R target ({exact_tp:.{precision}f} USDT)!"
                         )
                         if position_id:
-                            try:
-                                self.trader.set_position_tp_sl(
-                                    symbol=symbol,
-                                    position_id=position_id,
-                                    take_profit_price=exact_tp,
-                                    stop_loss_price=exact_sl
-                                )
-                            except Exception as e:
-                                self.logger.debug("Failed updating server-side SL on partial TP: %s", e)
+                            self._update_and_verify_be_sl(
+                                symbol=symbol,
+                                position_id=position_id,
+                                exact_tp=exact_tp,
+                                be_sl=exact_sl,
+                                precision=precision
+                            )
 
                     else:
-                        # 1 contract volume handling
-                        if smc_1x_mode == "1TO2_WITH_BE":
-                            partial_tp_executed = True
-                            if signal and signal.metadata:
-                                signal.metadata["partial_tp_hit"] = True
-                            new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
-                            exact_sl = round(new_be_sl, precision)
+                        # 1 contract volume: 50% partial closure is not allowed by exchange (min 1 contract), so close 100% at 1:1
+                        if limit_filled or not pos_still_open:
                             self.logger.info(
-                                f"🔒 [SMC 1-CONTRACT BE LOCK] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
-                                f"Stop Loss moved to BREAKEVEN +{be_buf_ticks}t ({exact_sl:.{precision}f} USDT). "
-                                f"Position is 100% risk-free, targeting 1:2 R:R ({exact_tp:.{precision}f} USDT)!"
+                                f"🎯 [SMC 1-CONTRACT 1:1 TP FILLED] Pre-placed limit order #{pre_placed_tp1_order_id} filled on KCEX! "
+                                f"Closed full 1-contract position at 1:1 target ({target_1to1:.{precision}f} USDT) as 50% split is disallowed."
                             )
-                            if position_id:
-                                try:
-                                    self.trader.set_position_tp_sl(
-                                        symbol=symbol,
-                                        position_id=position_id,
-                                        take_profit_price=exact_tp,
-                                        stop_loss_price=exact_sl
-                                    )
-                                except Exception as e:
-                                    self.logger.debug("Failed updating server-side SL on 1x BE: %s", e)
+                            return target_1to1, ExitReason.MIN_PROFIT_TP_HIT, pre_placed_tp1_order_id
                         else:
-                            # 1 contract volume: full close at 1:1
-                            if limit_filled or not pos_still_open:
-                                self.logger.info(
-                                    f"🎯 [SMC 1-CONTRACT 1:1 TP FILLED] Pre-placed limit order #{pre_placed_tp1_order_id} filled on KCEX! "
-                                    f"Closed full 1-contract position at 1:1 target ({target_1to1:.{precision}f} USDT)."
-                                )
-                                return target_1to1, ExitReason.MIN_PROFIT_TP_HIT, pre_placed_tp1_order_id
-                            else:
-                                self.logger.info(
-                                    f"🎯 [SMC 1-CONTRACT 1:1 TP HIT] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
-                                    f"Closing full 1-contract position at market..."
-                                )
-                                if pre_placed_tp1_order_id:
-                                    try:
-                                        self.trader.cancel_order(pre_placed_tp1_order_id)
-                                    except Exception:
-                                        pass
+                            self.logger.info(
+                                f"🎯 [SMC 1-CONTRACT 1:1 TP HIT] Price reached 1:1 target ({exec_price:.{precision}f} USDT). "
+                                f"Closing full 1-contract position at market (min contract is 1)..."
+                            )
+                            if pre_placed_tp1_order_id:
                                 try:
-                                    res = self.trader.close_position(
-                                        position_id=position_id or 0,
-                                        symbol=symbol,
-                                        side=side_str,
-                                        vol_contracts=1,
-                                        leverage=leverage,
-                                        is_isolated=self.config.is_isolated,
-                                        is_market=True,
-                                        price=exec_price
-                                    )
-                                    close_order_id = str(res.get("data", {}).get("orderId") or "")
-                                    return exec_price, ExitReason.MIN_PROFIT_TP_HIT, close_order_id
-                                except Exception as e:
-                                    self.logger.warning("Market close error on 1-contract 1:1 TP: %s", e)
+                                    self.trader.cancel_order(pre_placed_tp1_order_id)
+                                except Exception:
+                                    pass
+                            try:
+                                res = self.trader.close_position(
+                                    position_id=position_id or 0,
+                                    symbol=symbol,
+                                    side=side_str,
+                                    vol_contracts=1,
+                                    leverage=leverage,
+                                    is_isolated=self.config.is_isolated,
+                                    is_market=True,
+                                    price=exec_price
+                                )
+                                close_order_id = str(res.get("data", {}).get("orderId") or "")
+                                return exec_price, ExitReason.MIN_PROFIT_TP_HIT, close_order_id
+                            except Exception as e:
+                                self.logger.warning("Market close error on 1-contract 1:1 TP: %s", e)
 
             # 3. Check if executable price reached Min-Profit TP (bid for LONG, ask for SHORT)
             if self.strategy.is_better_than_min_profit(direction, exec_price, exact_tp, entry_price=entry_price):

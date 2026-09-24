@@ -117,6 +117,9 @@ def test_pre_placed_tp1_order_multi_contract(mock_engine):
         "code": 0,
         "data": {"orderId": "FINAL_TP2_CLOSE"}
     }
+    mock_engine.trader.get_open_stop_orders.return_value = [
+        {"positionId": 1001, "symbol": "TRUMP_USDT", "stopLossPrice": 2.5001, "takeProfitPrice": 2.5400}
+    ]
 
     exit_price, exit_reason, close_oid = mock_engine._monitor_live_position(
         symbol="TRUMP_USDT",
