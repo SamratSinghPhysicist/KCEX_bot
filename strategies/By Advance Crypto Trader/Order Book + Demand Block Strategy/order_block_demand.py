@@ -182,9 +182,9 @@ class OrderBlockDemandStrategy(BaseStrategy):
         market: KCEXMarket,
         symbol: str,
         interval: str = "Min1",
-        pivot_len: int = 5,
-        swing_left_bars: int = 5,
-        swing_right_bars: int = 5,
+        pivot_len: int = 3,
+        swing_left_bars: int = 3,
+        swing_right_bars: int = 3,
         min_impulse_candles: int = 2,
         max_impulse_candles: int = 5,
         min_rejection_wick_ratio: float = 0.15,
@@ -289,6 +289,18 @@ class OrderBlockDemandStrategy(BaseStrategy):
         self.trade_in_progress = False
         self.last_trade_closed_at = outcome.close_time or time.time()
         self.completed_trades_count += 1
+
+        # Double check: ensure any zone associated with this completed trade is permanently purged
+        traded_zid = getattr(outcome, "smc_zone_id", None)
+        if traded_zid:
+            for zid in list(self.active_zones.keys()):
+                az = self.active_zones[zid]
+                if zid == traded_zid or (hasattr(az, "creation_ts") and str(az.creation_ts) in str(traded_zid)):
+                    az.status = ZoneStatus.MITIGATED
+                    self.resolved_origin_ts.add(az.creation_ts)
+                    self.history_zones.append(az)
+                    del self.active_zones[zid]
+
         logger.info(
             "[%s] Completed trade #%d. Realized PnL: $%.4f. Cooldown %ds initiated.",
             self.name, outcome.trade_id, outcome.realized_pnl_usdt, int(self.cooldown_seconds)
@@ -423,7 +435,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     ob_idx = origin_idx
 
                 ob = SmartMoneyZone(
-                    zone_id=f"OB_BULL_{ob_idx}_{timestamps[ob_idx]}",
+                    zone_id=f"OB_BULL_{timestamps[ob_idx]}",
                     zone_type=ZoneType.BULLISH_ORDER_BLOCK,
                     symbol=self.symbol,
                     high=highs[ob_idx],
@@ -464,7 +476,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     ob_idx = origin_idx
 
                 ob = SmartMoneyZone(
-                    zone_id=f"OB_BEAR_{ob_idx}_{timestamps[ob_idx]}",
+                    zone_id=f"OB_BEAR_{timestamps[ob_idx]}",
                     zone_type=ZoneType.BEARISH_ORDER_BLOCK,
                     symbol=self.symbol,
                     high=highs[ob_idx],
@@ -607,7 +619,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         breaks_swing_high = breaks_origin_high or has_fvg
 
                     if breaks_swing_high:
-                        zid = f"OB_BULL_{origin_idx}_{origin_ts}"
+                        zid = f"OB_BULL_{origin_ts}"
                         zone = SmartMoneyZone(
                             zone_id=zid,
                             zone_type=ZoneType.BULLISH_ORDER_BLOCK,
@@ -656,7 +668,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         breaks_swing_low = breaks_origin_low or has_fvg
 
                     if breaks_swing_low:
-                        zid = f"OB_BEAR_{origin_idx}_{origin_ts}"
+                        zid = f"OB_BEAR_{origin_ts}"
                         zone = SmartMoneyZone(
                             zone_id=zid,
                             zone_type=ZoneType.BEARISH_ORDER_BLOCK,
@@ -712,7 +724,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 if consec_green >= 3 and lows[origin_idx] <= demand_ceiling:
                     fvg_gap = max(0.0, lows[origin_idx + 2] - highs[origin_idx]) if origin_idx + 2 < n else 0.0
                     zone = SmartMoneyZone(
-                        zone_id=f"DEMAND_{origin_idx}_{origin_ts}",
+                        zone_id=f"DEMAND_{origin_ts}",
                         zone_type=ZoneType.DEMAND_BLOCK,
                         symbol=self.symbol,
                         high=highs[origin_idx],
@@ -738,7 +750,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 if consec_red >= 3 and highs[origin_idx] >= supply_floor:
                     fvg_gap = max(0.0, lows[origin_idx] - highs[origin_idx + 2]) if origin_idx + 2 < n else 0.0
                     zone = SmartMoneyZone(
-                        zone_id=f"SUPPLY_{origin_idx}_{origin_ts}",
+                        zone_id=f"SUPPLY_{origin_ts}",
                         zone_type=ZoneType.SUPPLY_BLOCK,
                         symbol=self.symbol,
                         high=highs[origin_idx],
@@ -897,23 +909,55 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
         # Synchronize active zones with indicator zones: prune any invalidated / expired / mitigated
         drawn_zone_map = {z.zone_id: z for z in drawn_zones}
-        for zid, z in list(self.active_zones.items()):
-            if zid in drawn_zone_map:
-                ind_z = drawn_zone_map[zid]
-                if ind_z.status in (ZoneStatus.INVALIDATED, ZoneStatus.EXPIRED, ZoneStatus.MITIGATED):
-                    z.status = ind_z.status
+        drawn_ts_map = {z.creation_ts: z for z in drawn_zones}
+
+        # 1. Register all resolved / invalidated / mitigated / expired timestamps from indicator calculations
+        for z in drawn_zones:
+            if z.status in (ZoneStatus.INVALIDATED, ZoneStatus.MITIGATED, ZoneStatus.EXPIRED):
+                self.resolved_origin_ts.add(z.creation_ts)
+
+        # 2. Prune existing active zones that have been resolved, invalidated, mitigated, or expired
+        seen_creation_ts: Set[int] = set()
+        for zid, az in list(self.active_zones.items()):
+            # If resolved in current or prior cycles
+            if az.creation_ts in self.resolved_origin_ts:
+                del self.active_zones[zid]
+                continue
+
+            # If marked inactive in drawn_zones (by zone_id or creation_ts)
+            ind_z = drawn_zone_map.get(zid) or drawn_ts_map.get(az.creation_ts)
+            if ind_z and ind_z.status in (ZoneStatus.INVALIDATED, ZoneStatus.MITIGATED, ZoneStatus.EXPIRED):
+                az.status = ind_z.status
+                self.resolved_origin_ts.add(az.creation_ts)
+                self.history_zones.append(az)
+                del self.active_zones[zid]
+                continue
+
+            # Max age expiry check
+            if self.max_zone_age_bars > 0 and (eval_idx - az.creation_bar_idx) > self.max_zone_age_bars:
+                az.status = ZoneStatus.EXPIRED
+                self.resolved_origin_ts.add(az.creation_ts)
+                self.history_zones.append(az)
+                del self.active_zones[zid]
+                continue
+
+            # Deduplication check: only one active zone per origin candle creation_ts
+            if az.creation_ts and az.creation_ts in seen_creation_ts:
+                del self.active_zones[zid]
+                continue
+            if az.creation_ts:
+                seen_creation_ts.add(az.creation_ts)
+
+        # 3. Add genuinely new ACTIVE zones from drawn_zones (avoiding duplicate creation_ts)
+        for z in drawn_zones:
+            if z.status == ZoneStatus.ACTIVE and z.creation_ts not in self.resolved_origin_ts:
+                if self.max_zone_age_bars > 0 and (eval_idx - z.creation_bar_idx) > self.max_zone_age_bars:
+                    z.status = ZoneStatus.EXPIRED
                     self.resolved_origin_ts.add(z.creation_ts)
                     self.history_zones.append(z)
-                    del self.active_zones[zid]
-            elif self.max_zone_age_bars > 0 and (eval_idx - z.creation_bar_idx) > self.max_zone_age_bars:
-                z.status = ZoneStatus.EXPIRED
-                self.resolved_origin_ts.add(z.creation_ts)
-                self.history_zones.append(z)
-                del self.active_zones[zid]
+                    continue
 
-        for z in drawn_zones:
-            if z.status == ZoneStatus.ACTIVE and z.zone_id not in self.active_zones and z.creation_ts not in self.resolved_origin_ts:
-                if self.max_zone_age_bars <= 0 or (eval_idx - z.creation_bar_idx) <= self.max_zone_age_bars:
+                if not any(az.creation_ts == z.creation_ts for az in self.active_zones.values()):
                     self.active_zones[z.zone_id] = z
 
         # 2. Check for newly triggered trades on eval_idx from indicator calculation
@@ -1157,17 +1201,26 @@ class OrderBlockDemandStrategy(BaseStrategy):
                             best_zone_id = zid
                             break
 
-        if best_signal is not None and best_zone_id is not None:
+        if best_signal is not None:
             self.last_signal_candle_ts = current_candle_ts
             self.trade_in_progress = True
 
-            if best_zone_id in self.active_zones:
-                used_zone = self.active_zones[best_zone_id]
-                used_zone.status = ZoneStatus.MITIGATED
-                used_zone.confirmation_bar_idx = eval_idx
-                self.resolved_origin_ts.add(used_zone.creation_ts)
-                self.history_zones.append(used_zone)
-                del self.active_zones[best_zone_id]
+            traded_zid = best_zone_id or best_signal.metadata.get("zone_id")
+            traded_creation_ts = best_signal.metadata.get("zone_creation_ts")
+
+            # 1. Permanently register origin timestamp as resolved/consumed so it can never re-arm
+            if traded_creation_ts:
+                self.resolved_origin_ts.add(traded_creation_ts)
+
+            # 2. Immediately mark any matching zone in active_zones as MITIGATED and purge
+            for zid in list(self.active_zones.keys()):
+                az = self.active_zones[zid]
+                if zid == traded_zid or (traded_creation_ts and az.creation_ts == traded_creation_ts):
+                    az.status = ZoneStatus.MITIGATED
+                    az.confirmation_bar_idx = eval_idx
+                    self.resolved_origin_ts.add(az.creation_ts)
+                    self.history_zones.append(az)
+                    del self.active_zones[zid]
 
             logger.info(
                 "⚡ [ORDER BLOCK + DEMAND SIGNAL] %s on %s | Zone: %s [%.4f - %.4f] | TP: +%dt ($%.4f), SL: -%dt ($%.4f) | 1:%.1f RR",
@@ -1199,8 +1252,13 @@ class OrderBlockDemandStrategy(BaseStrategy):
         }
 
     def get_diagnostics(self) -> Dict[str, Any]:
-        bullish_zones = [z for z in self.active_zones.values() if z.is_bullish]
-        bearish_zones = [z for z in self.active_zones.values() if z.is_bearish]
+        valid_active_zones = [
+            z for z in self.active_zones.values()
+            if z.status in (ZoneStatus.ACTIVE, ZoneStatus.TESTED)
+            and z.creation_ts not in self.resolved_origin_ts
+        ]
+        bullish_zones = [z for z in valid_active_zones if z.is_bullish]
+        bearish_zones = [z for z in valid_active_zones if z.is_bearish]
         cached_price = None
         if self._cached_candles:
             try:
@@ -1214,10 +1272,17 @@ class OrderBlockDemandStrategy(BaseStrategy):
             except Exception:
                 pass
 
+        sorted_zones = valid_active_zones
+        if cached_price is not None:
+            sorted_zones = sorted(
+                valid_active_zones,
+                key=lambda z: min(abs(cached_price - z.high), abs(cached_price - z.low))
+            )
+
         return {
             "strategy": "ORDER_BLOCK_DEMAND",
             "timeframe": self.timeframe,
-            "active_zones_count": len(self.active_zones),
+            "active_zones_count": len(valid_active_zones),
             "demand_zones_count": len(bullish_zones),
             "supply_zones_count": len(bearish_zones),
             "cached_price": cached_price,
@@ -1231,7 +1296,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     "bar": z.creation_bar_idx,
                     "status": z.status.value
                 }
-                for z in list(self.active_zones.values())[-5:]
+                for z in sorted_zones[:5]
             ],
             "last_rejection_reason": self.last_rejection_reason
         }

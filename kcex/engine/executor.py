@@ -2410,9 +2410,9 @@ class TradeExecutionEngine:
                                 p_str = f"Price: {p_val:.{prec}f} USDT | " if p_val is not None else ""
                                 rej = diag.get("last_rejection_reason", "Hunting setups")
                                 zones_list = diag.get("zones", [])
-                                nearest_desc = ""
+                                nearest_desc = " | Active OB: None"
                                 if zones_list:
-                                    nz = zones_list[-1]
+                                    nz = zones_list[0]
                                     nearest_desc = f" | Active OB: {nz.get('type')} [{nz.get('low', 0):.{prec}f}-{nz.get('high', 0):.{prec}f}]"
                                 scan_msg = (
                                     f"[SCANNING] {contract.symbol} [{tf}] | {p_str}Zones: {z_cnt} ({d_cnt} Demand, {s_cnt} Supply){nearest_desc} | Status: {rej}"

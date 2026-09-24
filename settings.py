@@ -570,7 +570,7 @@ STRATEGY_PRESETS = {
         "sl_mode": "TICKS",
         "sl_ticks": 5,
         "risk_reward_ratio": 2.0,
-        "pivot_len": 5,
+        "pivot_len": 3,
         "partial_tp_enabled": True,
         "partial_tp_ratio": 0.5,
         "breakeven_buffer_ticks": 1,

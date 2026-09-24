@@ -169,10 +169,23 @@ class DualCurrencyLogger:
                 same_structure = True
 
         is_duplicate = same_price or same_msg or same_structure
-
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 1. Update in-place on the same line (always, to satisfy single-line update requirement)
+        # Cloud/CI environment (Railway, GitHub Actions, Docker without TTY)
+        if self._is_cloud_ci or not self._is_tty:
+            if is_duplicate and not force and (now - self._last_status_time < heartbeat_sec):
+                return False  # Suppress duplicate lines in cloud to prevent log flooding
+
+            self.clear_status_line()
+            self.logger.info(msg)
+            if price_rounded is not None:
+                self._last_status_price = price_rounded
+            self._last_status_time = now
+            self._last_status_msg = msg
+            self._write_file_log(now_str, "INFO", msg)
+            return True
+
+        # Interactive Local TTY: update in-place on the same line
         try:
             clean_msg = f"\r{now_str} [INFO] {msg}"
             sys.stdout.write(f"{clean_msg:<140}")

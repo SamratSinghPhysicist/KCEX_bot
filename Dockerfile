@@ -24,4 +24,4 @@ COPY . .
 RUN mkdir -p logs
 
 # Default command: Run Vivek Yadav SMC Order Block + Demand strategy on TRUMP_USDT in LIVE mode at 10x leverage, 15m timeframe, 10% margin sizing
-CMD ["python", "run_engine.py", "--preset", "TRUMP_ORDER_BLOCK_DEMAND", "--mode", "live", "--symbol", "TRUMP_USDT", "--leverage", "10", "--volume-mode", "MARGIN_PCT", "--margin-pct", "10.0", "--timeframe", "Min15", "--non-interactive"]
+CMD ["python", "run_engine.py", "--preset", "TRUMP_ORDER_BLOCK_DEMAND", "--mode", "live", "--symbol", "TRUMP_USDT", "--leverage", "10", "--volume-mode", "MARGIN_PCT", "--margin-pct", "10.0", "--timeframe", "Min15", "--pivot-len", "3", "--non-interactive"]
