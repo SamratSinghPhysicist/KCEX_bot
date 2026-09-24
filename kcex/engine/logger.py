@@ -140,7 +140,7 @@ class DualCurrencyLogger:
         - Background scanning and important trading events (signals, fills, TPs, SLs) continue logging immediately.
         """
         now = time.time()
-        price_rounded = round(price, 6) if price is not None else None
+        raw_price = price if price is not None else None
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Required interval: 5m (300s) if in position, 10m (600s) if idle
@@ -154,8 +154,8 @@ class DualCurrencyLogger:
 
             self.clear_status_line()
             self.logger.info(msg)
-            if price_rounded is not None:
-                self._last_status_price = price_rounded
+            if raw_price is not None:
+                self._last_status_price = raw_price
             self._last_status_time = now
             self._last_status_msg = msg
             self._write_file_log(now_str, "INFO", msg)
@@ -174,8 +174,8 @@ class DualCurrencyLogger:
         if (now - self._last_status_time >= required_interval) or force:
             self._write_file_log(now_str, "INFO", msg)
             self._last_status_time = now
-            if price_rounded is not None:
-                self._last_status_price = price_rounded
+            if raw_price is not None:
+                self._last_status_price = raw_price
 
         self._last_status_msg = msg
         return True

@@ -169,7 +169,7 @@ class AssetWorker:
                     active_ob_str = "None"
                     if zones:
                         z = zones[0]
-                        active_ob_str = f"{z.get('type')} [{z.get('low', 0):.4f}-{z.get('high', 0):.4f}]"
+                        active_ob_str = f"{z.get('type')} [{z.get('low')}-{z.get('high')}]"
                     self.last_status_msg = f"Zones: {len(zones)} | Active OB: {active_ob_str} | Status: {rej}"
                     time.sleep(2.0)
                     continue
@@ -259,26 +259,30 @@ class AssetWorker:
                 self.logger.warning(f"[{self.symbol}] Could not fetch balance: {e}")
                 return None
 
-        if avail_usdt <= 1.0 and self.mode == EngineMode.LIVE:
-            self.logger.warning(f"[{self.symbol}] Insufficient available margin ({avail_usdt:.2f} USDT). Aborting trade.")
-            return None
-
         # 2. Position sizing: 10% available margin @ 15x leverage
-        margin_to_use = avail_usdt * (self.margin_pct / 100.0)
-        notional_usdt = margin_to_use * self.leverage
         ticker = self.market.get_ticker(self.symbol)
         curr_price = float(ticker.get("lastPrice", 0.0) or ticker.get("fairPrice", 1.0))
 
         if curr_price <= 0:
             return None
 
+        one_contract_margin = (min_vol * cs * curr_price) / self.leverage
+        if avail_usdt < one_contract_margin and self.mode == EngineMode.LIVE:
+            self.logger.warning(
+                f"[{self.symbol}] Insufficient margin: Available: {avail_usdt} USDT, "
+                f"minimum required for 1 contract ({min_vol * cs} {self.contract.base_coin}) is {one_contract_margin} USDT. Aborting trade."
+            )
+            return None
+
+        margin_to_use = avail_usdt * (self.margin_pct / 100.0)
+        notional_usdt = margin_to_use * self.leverage
         raw_contracts = notional_usdt / (curr_price * cs)
-        vol_contracts = max(min_vol, int(math.floor(raw_contracts)))
+        vol_contracts = max(min_vol, int(raw_contracts))
         committed_margin = (vol_contracts * cs * curr_price) / self.leverage
 
         self.logger.info(
-            f"🚀 [{self.symbol}] SIZING: Available: {avail_usdt:.2f} USDT -> 10% Margin: {margin_to_use:.2f} USDT | "
-            f"{self.leverage}x Lev Notional: {notional_usdt:.2f} USDT -> Vol: {vol_contracts} contracts (Committed: {committed_margin:.2f} USDT)"
+            f"🚀 [{self.symbol}] SIZING: Available: {avail_usdt} USDT -> 10% Margin: {margin_to_use} USDT | "
+            f"{self.leverage}x Lev Notional: {notional_usdt} USDT -> Vol: {vol_contracts} contracts (Committed: {committed_margin} USDT)"
         )
 
         initial_sl = float(signal.metadata.get("stop_loss_price"))
@@ -443,7 +447,7 @@ class AssetWorker:
             u_diff = (exec_price - entry_price) if is_long else (entry_price - exec_price)
             u_roe = (u_diff / entry_price) * self.leverage * 100.0
             hold_sec = time.time() - open_time
-            self.active_position_desc = f"{direction.value} @ {entry_price:.{precision}f} ({u_roe:+.2f}% ROE) | Mark: {exec_price:.{precision}f} | Hold: {hold_sec/60:.1f}m"
+            self.active_position_desc = f"{direction.value} @ {entry_price} ({u_roe:+.2f}% ROE) | Mark: {exec_price} | Hold: {hold_sec/60:.1f}m"
 
             # 2. Check if position closed on exchange (via server-side SL or TP)
             if self.mode == EngineMode.LIVE and position_id:
@@ -697,7 +701,7 @@ class MultiAssetExecutionEngine:
             bals = worker0.trader.get_usdt_balance()
             avail = bals.get("available_usdt", 0.0)
             equity = bals.get("equity_usdt", 0.0)
-            bal_str = f"Avail: {avail:.2f} USDT | Equity: {equity:.2f} USDT"
+            bal_str = f"Avail: {avail} USDT | Equity: {equity} USDT"
         except Exception:
             pass
 
@@ -705,7 +709,7 @@ class MultiAssetExecutionEngine:
         self.logger.info(border)
         self.logger.info(f"[PORTFOLIO STATUS] {now_str} | Active Bot Trades: {active_count} | {bal_str}")
         for sym, w in self.workers.items():
-            p_str = f"{w.last_price:.4f} USDT" if w.last_price > 0 else "Querying..."
+            p_str = f"{w.last_price} USDT" if w.last_price > 0 else "Querying..."
             if w.in_position:
                 state_str = f"🔥 IN POSITION: {w.active_position_desc}"
             else:

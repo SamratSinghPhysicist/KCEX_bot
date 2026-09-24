@@ -262,7 +262,7 @@ class TradeExecutionEngine:
                 avail_usdt = balances.get("available_usdt", 0.0)
                 avail_inr = balances.get("available_inr", 0.0)
                 self.logger.info(
-                    f"Futures Wallet Available: {avail_usdt:.4f} USDT (INR {avail_inr:.2f})"
+                    f"Futures Wallet Available: {avail_usdt} USDT (INR {avail_inr:.2f})"
                 )
 
                 # Check if an existing open position exists
@@ -469,7 +469,7 @@ class TradeExecutionEngine:
                 vol_contracts = max(min_vol, int(round(raw_contracts)))
             else:
                 vol_contracts = min_vol
-            vol_spec_desc = f"{vol_contracts} contract(s) ({pct:g}% margin -> ~{desired_margin:.2f} USDT)"
+            vol_spec_desc = f"{vol_contracts} contract(s) ({pct:g}% margin -> ~{desired_margin} USDT)"
         elif vol_mode == "FIXED_MARGIN" or getattr(self.config, "fixed_margin_usdt", None) is not None:
             desired_margin = float(getattr(self.config, "fixed_margin_usdt", 5.0) or 5.0)
             target_notional = desired_margin * leverage if leverage > 0 else desired_margin
@@ -1185,8 +1185,8 @@ class TradeExecutionEngine:
             equity_usdt = balances.get("equity_usdt", 0.0)
             equity_inr = balances.get("equity_inr", 0.0)
             self.logger.info(
-                f"[BALANCE AFTER TRADE #{trade_id}] Available: {balance_after_usdt:.4f} USDT (INR {balance_after_inr:.2f}) | "
-                f"Equity: {equity_usdt:.4f} USDT (INR {equity_inr:.2f})"
+                f"[BALANCE AFTER TRADE #{trade_id}] Available: {balance_after_usdt} USDT (INR {balance_after_inr:.2f}) | "
+                f"Equity: {equity_usdt} USDT (INR {equity_inr:.2f})"
             )
         except Exception as e:
             self.logger.debug("Could not fetch balance after trade: %s", e)
@@ -2341,7 +2341,7 @@ class TradeExecutionEngine:
         try:
             if self.config.mode == EngineMode.LIVE:
                 bal = self.trader.get_usdt_balance()
-                final_bal_usdt = f"{bal.get('available_usdt', 0):.4f}"
+                final_bal_usdt = f"{bal.get('available_usdt', 0)}"
                 final_bal_inr = f"{bal.get('available_inr', 0):.2f}"
         except Exception:
             pass

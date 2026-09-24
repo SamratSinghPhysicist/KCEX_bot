@@ -809,7 +809,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
         eval_idx: int,
         prec: int
     ) -> Dict[str, Any]:
-        zone_mid = round((zone.high + zone.low) / 2.0, prec)
+        zone_mid = (zone.high + zone.low) / 2.0
         zone_created_utc = datetime.fromtimestamp(zone.creation_ts / 1000.0, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC") if zone.creation_ts else "N/A"
         trig_candle_utc = datetime.fromtimestamp(current_candle_ts / 1000.0, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC") if current_candle_ts else "N/A"
 
@@ -831,7 +831,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
             "trigger_candle_ts": current_candle_ts,
             "trigger_candle_time_utc": trig_candle_utc,
             "timeframe": self.timeframe,
-            "entry_price": round(entry_price, prec),
+            "entry_price": entry_price,
             "stop_loss_price": sl_price,
             "take_profit_price": tp_price,
             "target_ticks": target_ticks,
@@ -1291,7 +1291,6 @@ class OrderBlockDemandStrategy(BaseStrategy):
             z for z in self.active_zones.values()
             if z.status in (ZoneStatus.ACTIVE, ZoneStatus.TESTED)
             and z.creation_ts not in self.resolved_origin_ts
-            and (cached_price is None or ((not z.is_bearish or cached_price <= z.high) and (not z.is_bullish or cached_price >= z.low)))
         ]
         bullish_zones = [z for z in valid_active_zones if z.is_bullish]
         bearish_zones = [z for z in valid_active_zones if z.is_bearish]
@@ -1316,11 +1315,11 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     "type": z.zone_type.value,
                     "high": z.high,
                     "low": z.low,
-                    "mid": round((z.high + z.low) / 2.0, self._price_precision),
+                    "mid": (z.high + z.low) / 2.0,
                     "bar": z.creation_bar_idx,
                     "status": z.status.value
                 }
-                for z in sorted_zones[:5]
+                for z in sorted_zones
             ],
             "last_rejection_reason": self.last_rejection_reason
         }
