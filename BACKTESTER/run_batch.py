@@ -440,9 +440,13 @@ def consolidate_reports(symbol: str, reports_dir: str):
 
     # 3. Export unified files
     if all_matrix_rows:
-        headers = list(all_matrix_rows[0].keys())
+        headers = []
+        for r in all_matrix_rows:
+            for k in r.keys():
+                if k not in headers:
+                    headers.append(k)
         with open(master_matrix_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=headers)
+            writer = csv.DictWriter(f, fieldnames=headers, extrasaction="ignore")
             writer.writeheader()
             writer.writerows(all_matrix_rows)
         print(f"[+] Saved Master Matrix CSV: {master_matrix_path}")
@@ -497,9 +501,13 @@ def consolidate_reports(symbol: str, reports_dir: str):
                 pass
 
     if all_trades:
-        trade_headers = list(all_trades[0].keys())
+        trade_headers = []
+        for r in all_trades:
+            for k in r.keys():
+                if k not in trade_headers:
+                    trade_headers.append(k)
         with open(master_trade_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=trade_headers)
+            writer = csv.DictWriter(f, fieldnames=trade_headers, extrasaction="ignore")
             writer.writeheader()
             writer.writerows(all_trades)
         print(f"[+] Saved Master Trades CSV: {master_trade_path}")
