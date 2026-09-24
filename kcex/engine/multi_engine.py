@@ -25,7 +25,7 @@ import signal
 import logging
 import threading
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional, Set, Tuple
 
 from kcex.config import KCEXConfig
 from kcex.client import KCEXClient, KCEXAPIError
