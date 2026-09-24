@@ -138,9 +138,7 @@ jobs:
       - name: Cache Historical Market Data
         uses: actions/cache@v4
         with:
-          path: |
-            BACKTESTER/OHLCV_Data_Binance
-            BACKTESTER/Historical_Trades_Data_Binance
+          path: BACKTESTER/OHLCV_Data_Binance
           key: worker-data-${{ inputs.symbol }}-${{ matrix.tag }}-${{ inputs.start_date }}-${{ inputs.end_date }}
           restore-keys: |
             worker-data-${{ inputs.symbol }}-${{ matrix.tag }}-
