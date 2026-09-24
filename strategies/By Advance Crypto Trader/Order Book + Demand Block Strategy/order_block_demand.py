@@ -847,6 +847,10 @@ class OrderBlockDemandStrategy(BaseStrategy):
             "pivot_len": self.pivot_len
         }
 
+    def get_signal(self, symbol: Optional[str] = None) -> Optional[TradeSignal]:
+        """Convenience alias for generate_signal(symbol)."""
+        return self.generate_signal(symbol or self.symbol)
+
     def generate_signal(self, symbol: str) -> Optional[TradeSignal]:
         """
         Generates trading signals using the unified Vivek Yadav OB Strategy engine.

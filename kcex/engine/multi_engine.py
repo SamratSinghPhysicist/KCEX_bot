@@ -116,9 +116,25 @@ class AssetWorker:
         self.last_cooldown_end: float = 0.0
 
     def start(self) -> None:
-        """Starts worker background thread."""
+        """Starts worker background thread with initial warmup scan."""
         self.contract = self.market.get_contract_detail(self.symbol)
         self.strategy.start()
+        # Warmup scan: compute initial zones immediately
+        try:
+            if hasattr(self.strategy, "generate_signal"):
+                self.strategy.generate_signal(self.symbol)
+            elif hasattr(self.strategy, "get_signal"):
+                self.strategy.get_signal()
+            diag = self.strategy.get_diagnostics() if hasattr(self.strategy, "get_diagnostics") else {}
+            zones = diag.get("zones", [])
+            active_ob_str = "None"
+            if zones:
+                z = zones[0]
+                active_ob_str = f"{z.get('type')} [{z.get('low')}-{z.get('high')}]"
+            self.last_status_msg = f"Zones: {len(zones)} | Active OB: {active_ob_str} | Status: {diag.get('last_rejection_reason', 'Hunting setups')}"
+        except Exception as we:
+            self.logger.debug(f"[{self.symbol}] Warmup scan notice: {we}")
+
         self.running = True
         self.thread = threading.Thread(target=self._run_loop, daemon=True, name=f"Worker-{self.symbol}")
         self.thread.start()
@@ -157,9 +173,12 @@ class AssetWorker:
                 # 2. Check for trade signal
                 signal = None
                 try:
-                    signal = self.strategy.get_signal()
+                    if hasattr(self.strategy, "generate_signal"):
+                        signal = self.strategy.generate_signal(self.symbol)
+                    elif hasattr(self.strategy, "get_signal"):
+                        signal = self.strategy.get_signal()
                 except Exception as e:
-                    self.logger.debug(f"[{self.symbol}] Signal fetch error: {e}")
+                    self.logger.warning(f"[{self.symbol}] Signal fetch error: {e}")
 
                 if signal is None:
                     # Update status diagnostics
@@ -632,8 +651,12 @@ class MultiAssetExecutionEngine:
             self.logger.warning("\n[STOP] Caught SIGINT / SIGTERM. Stopping all workers...")
             self.stop()
 
-        signal.signal(signal.SIGINT, handle_sigint)
-        signal.signal(signal.SIGTERM, handle_sigint)
+        if threading.current_thread() is threading.main_thread():
+            try:
+                signal.signal(signal.SIGINT, handle_sigint)
+                signal.signal(signal.SIGTERM, handle_sigint)
+            except Exception:
+                pass
 
         self._print_startup_banner()
 
@@ -643,8 +666,9 @@ class MultiAssetExecutionEngine:
             time.sleep(0.5)
 
         self.logger.info("All 4 asset workers running concurrently. Telemetry throttled (10m idle / 5m active)...")
-
-        last_dashboard_time = 0.0
+        time.sleep(1.0)
+        self._print_portfolio_dashboard()
+        last_dashboard_time = time.time()
 
         while self.running and not self._shutdown_requested:
             try:
