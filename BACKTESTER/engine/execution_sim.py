@@ -657,60 +657,20 @@ class BacktestExecutionEngine:
             # Attempt High-Fidelity Tick Stream Monitoring if enabled
             hit_via_ticks = False
             if self.config.use_tick_data:
-                # 1. Smart Money Concepts: 1:1 Partial TP & Breakeven Lock candidate check
-                if is_smc_sig and partial_tp_enabled and target_1to1 and not partial_tp_executed:
-                    partial_candle = None
-                    for c_chk in all_candles[entry_idx + 1:]:
-                        if direction == OrderDirection.LONG and c_chk.high >= target_1to1:
-                            partial_candle = c_chk
+                # Chronological Exit Candidate Candle Resolution (strictly forward in time without lookahead)
+                candidate_candle = None
+                for idx_chk in range(entry_idx + 1, len(all_candles)):
+                    c_chk = all_candles[idx_chk]
+                    if direction == OrderDirection.LONG:
+                        if c_chk.high >= exact_tp or c_chk.low <= exact_sl:
+                            candidate_candle = c_chk
+                            exit_candle_idx = idx_chk
                             break
-                        elif direction == OrderDirection.SHORT and c_chk.low <= target_1to1:
-                            partial_candle = c_chk
+                    else:
+                        if c_chk.low <= exact_tp or c_chk.high >= exact_sl:
+                            candidate_candle = c_chk
+                            exit_candle_idx = idx_chk
                             break
-
-                    if partial_candle:
-                        p_ticks = self.tick_streamer.stream_ticks(
-                            self.symbol,
-                            start_ms=partial_candle.open_time_ms,
-                            end_ms=partial_candle.close_time_ms
-                        )
-                        for tick in p_ticks:
-                            hit_1to1 = (tick.price >= target_1to1) if direction == OrderDirection.LONG else (tick.price <= target_1to1)
-                            if hit_1to1:
-                                if remaining_vol >= 2:
-                                    close_vol = remaining_vol // 2
-                                    partial_fill_price = target_1to1
-                                    partial_tp_executed = True
-                                    remaining_vol -= close_vol
-                                    new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
-                                    exact_sl = round(new_be_sl, ps)
-                                else:
-                                    if smc_1x_mode == "1TO1_TP":
-                                        exit_price = target_1to1
-                                        exit_reason = ExitReason.MIN_PROFIT_TP_HIT
-                                        exit_time_sec = tick.timestamp_ms / 1000.0
-                                        hit_via_ticks = True
-                                    else:
-                                        partial_tp_executed = True
-                                        new_be_sl = entry_price + (be_buf_ticks * pu) if direction == OrderDirection.LONG else entry_price - (be_buf_ticks * pu)
-                                        exact_sl = round(new_be_sl, ps)
-                                break
-
-                # 2. Final Exit Candidate Candle Resolution
-                if not hit_via_ticks:
-                    candidate_candle = None
-                    for idx_chk in range(entry_idx + 1, len(all_candles)):
-                        c_chk = all_candles[idx_chk]
-                        if direction == OrderDirection.LONG:
-                            if c_chk.high >= exact_tp or c_chk.low <= exact_sl:
-                                candidate_candle = c_chk
-                                exit_candle_idx = idx_chk
-                                break
-                        else:
-                            if c_chk.low <= exact_tp or c_chk.high >= exact_sl:
-                                candidate_candle = c_chk
-                                exit_candle_idx = idx_chk
-                                break
 
                     if candidate_candle:
                         tick_gen = self.tick_streamer.stream_ticks(
