@@ -1079,6 +1079,12 @@ def parse_args():
         help="Trading pair symbol (e.g. BTC_USDT, DOGE_USDT, TRUMP_USDT, default from settings.py)"
     )
     parser.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated list of symbols for multi-asset trading (e.g. TRUMP_USDT,ETH_USDT,BTC_USDT,DOGE_USDT)"
+    )
+    parser.add_argument(
         "--direction",
         type=str,
         choices=["LONG", "SHORT", "long", "short"],
@@ -1972,12 +1978,47 @@ def main():
     if not is_interactive:
         runtime_limit = args.runtime_limit
 
-    engine = TradeExecutionEngine(
-        config=config,
-        mongo_logger=mongo_logger,
-        runtime_limit_seconds=runtime_limit
+    is_multi = (
+        getattr(config, "is_multi_asset", False)
+        or (locals().get("active_preset_name", "") == "MULTI_ASSET_SMC")
+        or (not is_interactive and (bool(getattr(args, "symbols", None)) or (getattr(args, "preset", "") and args.preset.upper() == "MULTI_ASSET_SMC")))
+        or (get_setting("ACTIVE_PRESET", "MULTI_ASSET_SMC").upper() == "MULTI_ASSET_SMC" and not (getattr(args, "symbol", None) if not is_interactive else None))
     )
-    engine.run()
+
+    if is_multi:
+        from kcex.engine.multi_engine import MultiAssetExecutionEngine
+        preset_cfg = settings.get_active_preset_config("MULTI_ASSET_SMC") if hasattr(settings, "get_active_preset_config") else {}
+        assets = preset_cfg.get("assets", None)
+        if not is_interactive and getattr(args, "symbols", None):
+            sym_list = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
+            tf_defaults = {"TRUMP_USDT": "Min15", "ETH_USDT": "Hour4", "BTC_USDT": "Min15", "DOGE_USDT": "Min15"}
+            pl_defaults = {"TRUMP_USDT": 3, "ETH_USDT": 5, "BTC_USDT": 5, "DOGE_USDT": 5}
+            assets = [
+                {
+                    "symbol": sym,
+                    "timeframe": tf_defaults.get(sym, getattr(config, "timeframe", "Min15")),
+                    "pivot_len": pl_defaults.get(sym, getattr(config, "pivot_len", 5)),
+                    "leverage": config.leverage
+                }
+                for sym in sym_list
+            ]
+
+        multi_engine = MultiAssetExecutionEngine(
+            assets=assets,
+            mode=config.mode,
+            leverage=config.leverage,
+            margin_pct=config.margin_pct if config.margin_pct is not None else 10.0,
+            risk_reward_ratio=config.risk_reward_ratio,
+            mongo_logger=mongo_logger
+        )
+        multi_engine.run()
+    else:
+        engine = TradeExecutionEngine(
+            config=config,
+            mongo_logger=mongo_logger,
+            runtime_limit_seconds=runtime_limit
+        )
+        engine.run()
 
 
 if __name__ == "__main__":

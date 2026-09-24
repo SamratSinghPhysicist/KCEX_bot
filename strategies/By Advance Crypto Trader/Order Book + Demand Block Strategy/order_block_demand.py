@@ -1096,12 +1096,12 @@ class OrderBlockDemandStrategy(BaseStrategy):
                                     zone.retest_wick_price = k_low
                                     break
 
-                    # Confirmation check (Candle T+1 or same candle green close)
+                    # Confirmation check (Must confirm on the very next candle T+1)
                     if zone.status == ZoneStatus.TESTED and zone.retest_bar_idx is not None:
                         is_green_confirm = (c_close > c_open) and (c_close >= zone.low)
                         bars_since_retest = eval_idx - zone.retest_bar_idx
 
-                        if is_green_confirm and (bars_since_retest in (0, 1, 2)):
+                        if bars_since_retest in (0, 1) and is_green_confirm:
                             wick_low = zone.retest_wick_price if zone.retest_wick_price is not None else zone.low
                             sl_price = round(min(zone.low, wick_low) - (self.buffer_ticks * pu), prec)
                             risk_dist = c_close - sl_price
@@ -1131,9 +1131,20 @@ class OrderBlockDemandStrategy(BaseStrategy):
                             )
                             best_zone_id = zid
                             break
+                        elif bars_since_retest >= 1 and not is_green_confirm:
+                            # Confirmation candle failed to close green on next bar -> INVALIDATE
+                            zone.status = ZoneStatus.INVALIDATED
+                            self.resolved_origin_ts.add(zone.creation_ts)
+                            self.history_zones.append(zone)
+                            del self.active_zones[zid]
+                            logger.info(
+                                "❌ [ZONE INVALIDATED] Bullish zone %s [%s - %s] invalidated: confirmation candle failed to close green on bar %d.",
+                                zid, zone.low, zone.high, eval_idx
+                            )
+                            continue
 
                 elif zone.is_bearish:
-                    # Invalidation check
+                    # Invalidation check (blowout above high)
                     if c_close > zone.high:
                         zone.status = ZoneStatus.INVALIDATED
                         self.resolved_origin_ts.add(zone.creation_ts)
@@ -1165,12 +1176,12 @@ class OrderBlockDemandStrategy(BaseStrategy):
                                     zone.retest_wick_price = k_high
                                     break
 
-                    # Confirmation check
+                    # Confirmation check (Must confirm on the very next candle T+1)
                     if zone.status == ZoneStatus.TESTED and zone.retest_bar_idx is not None:
                         is_red_confirm = (c_close < c_open) and (c_close <= zone.high)
                         bars_since_retest = eval_idx - zone.retest_bar_idx
 
-                        if is_red_confirm and (bars_since_retest in (0, 1, 2)):
+                        if bars_since_retest in (0, 1) and is_red_confirm:
                             wick_high = zone.retest_wick_price if zone.retest_wick_price is not None else zone.high
                             sl_price = round(max(zone.high, wick_high) + (self.buffer_ticks * pu), prec)
                             risk_dist = sl_price - c_close
@@ -1200,6 +1211,17 @@ class OrderBlockDemandStrategy(BaseStrategy):
                             )
                             best_zone_id = zid
                             break
+                        elif bars_since_retest >= 1 and not is_red_confirm:
+                            # Confirmation candle failed to close red on next bar -> INVALIDATE
+                            zone.status = ZoneStatus.INVALIDATED
+                            self.resolved_origin_ts.add(zone.creation_ts)
+                            self.history_zones.append(zone)
+                            del self.active_zones[zid]
+                            logger.info(
+                                "❌ [ZONE INVALIDATED] Bearish zone %s [%s - %s] invalidated: confirmation candle failed to close red on bar %d.",
+                                zid, zone.low, zone.high, eval_idx
+                            )
+                            continue
 
         if best_signal is not None:
             self.last_signal_candle_ts = current_candle_ts
@@ -1252,13 +1274,6 @@ class OrderBlockDemandStrategy(BaseStrategy):
         }
 
     def get_diagnostics(self) -> Dict[str, Any]:
-        valid_active_zones = [
-            z for z in self.active_zones.values()
-            if z.status in (ZoneStatus.ACTIVE, ZoneStatus.TESTED)
-            and z.creation_ts not in self.resolved_origin_ts
-        ]
-        bullish_zones = [z for z in valid_active_zones if z.is_bullish]
-        bearish_zones = [z for z in valid_active_zones if z.is_bearish]
         cached_price = None
         if self._cached_candles:
             try:
@@ -1271,6 +1286,15 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     cached_price = float(last_c[4])
             except Exception:
                 pass
+
+        valid_active_zones = [
+            z for z in self.active_zones.values()
+            if z.status in (ZoneStatus.ACTIVE, ZoneStatus.TESTED)
+            and z.creation_ts not in self.resolved_origin_ts
+            and (cached_price is None or ((not z.is_bearish or cached_price <= z.high) and (not z.is_bullish or cached_price >= z.low)))
+        ]
+        bullish_zones = [z for z in valid_active_zones if z.is_bullish]
+        bearish_zones = [z for z in valid_active_zones if z.is_bearish]
 
         sorted_zones = valid_active_zones
         if cached_price is not None:

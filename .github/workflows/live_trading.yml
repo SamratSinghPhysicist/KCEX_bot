@@ -16,16 +16,17 @@ on:
           - live
           - dry-run
       preset:
-        description: "Strategy Preset (e.g. TRUMP_STOCH_RSI, TRUMP_ML_RAPID_SCALPER or CUSTOM)"
+        description: "Strategy Preset (e.g. MULTI_ASSET_SMC, TRUMP_ORDER_BLOCK_DEMAND or CUSTOM)"
         required: false
-        default: "TRUMP_STOCH_RSI"
+        default: "MULTI_ASSET_SMC"
         type: choice
         options:
+          - MULTI_ASSET_SMC
+          - TRUMP_ORDER_BLOCK_DEMAND
+          - DOGE_ORDER_BLOCK_DEMAND
           - TRUMP_STOCH_RSI
           - TRUMP_ML_RAPID_SCALPER
           - DOGE_ML_MOMENTUM
-          - TRUMP_ORDER_BLOCK_DEMAND
-          - DOGE_ORDER_BLOCK_DEMAND
           - TRUMP_TICK_CONSTRAINED_MM
           - CUSTOM
       strategy:

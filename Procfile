@@ -1,1 +1,1 @@
-worker: python run_engine.py --preset TRUMP_ORDER_BLOCK_DEMAND --mode live --symbol TRUMP_USDT --leverage 10 --volume-mode MARGIN_PCT --margin-pct 10.0 --timeframe Min15 --non-interactive
+worker: python run_engine.py --preset MULTI_ASSET_SMC --mode live --leverage 15 --volume-mode MARGIN_PCT --margin-pct 10.0 --non-interactive

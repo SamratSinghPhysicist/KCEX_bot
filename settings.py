@@ -166,8 +166,8 @@ SL_PRICE_PCT = 0.5
 # =============================================================================
 # 5. LEVERAGE & MARGIN SETTINGS
 # =============================================================================
-# Position leverage multiplier (default: 10x for safe margin headroom on small accounts).
-LEVERAGE = int(os.getenv("KCEX_LEVERAGE", os.getenv("LEVERAGE", "10")))
+# Position leverage multiplier (default: 15x for optimal balance of purchasing power and liquidation safety).
+LEVERAGE = int(os.getenv("KCEX_LEVERAGE", os.getenv("LEVERAGE", "15")))
 
 # Margin mode: True for Isolated (openType=1), False for Cross (openType=2).
 # Isolated margin is strongly recommended to restrict risk strictly to position margin.
@@ -202,7 +202,7 @@ POLL_INTERVAL_SECONDS = 0.2
 STRATEGY_MODE = os.getenv("KCEX_STRATEGY_MODE", os.getenv("STRATEGY_MODE", "ORDER_BLOCK_DEMAND"))
 
 # Default Active Preset
-ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "TRUMP_ORDER_BLOCK_DEMAND"))
+ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "MULTI_ASSET_SMC"))
 
 # -----------------------------------------------------------------------------
 # Order Execution Type & Slippage Protection
@@ -363,18 +363,18 @@ OUTCOMES_JSONL_FILE = "trade_outcomes.jsonl"  # Machine-readable JSONL audit tra
 #
 #   3. "DOGE_ML_MOMENTUM"
 #      • Machine Learning 1M Momentum on DOGE_USDT with volatility scaling.
+#   1. "MULTI_ASSET_SMC" (RECOMMENDED)
+#      • Concurrent multi-pair portfolio on empirical best timeframes:
+#        TRUMP_USDT (15m), ETH_USDT (4h), BTC_USDT (15m), DOGE_USDT (15m) at 15x leverage.
 #
-#   4. "TRUMP_ORDER_BLOCK_DEMAND"
+#   2. "TRUMP_ORDER_BLOCK_DEMAND"
 #      • Smart Money Concepts (Vivek Yadav): Strict body-close BOS, wick-to-wick OB,
 #        3-5 candle Demand/Supply blocks + FVG, 1:1 Partial TP + Breakeven Lock + 1:2 Runner.
 #
-#   5. "DOGE_ORDER_BLOCK_DEMAND"
-#      • Smart Money Concepts on DOGE_USDT with 0% KCEX fees.
-#
-#   6. "CUSTOM"
+#   3. "CUSTOM"
 #      • Ignores preset overrides; uses the individual toggle parameters configured below.
 #
-ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "TRUMP_ORDER_BLOCK_DEMAND"))
+ACTIVE_PRESET = os.getenv("KCEX_ACTIVE_PRESET", os.getenv("ACTIVE_PRESET", "MULTI_ASSET_SMC"))
 
 # -----------------------------------------------------------------------------
 # Individual Modular Feature Toggles (Used when ACTIVE_PRESET = "CUSTOM")
@@ -551,6 +551,32 @@ STRATEGY_PRESETS = {
         "cancel_if_unfilled": False,
         "cooldown_seconds": 10.0
     },
+    "MULTI_ASSET_SMC": {
+        "name": "Multi-Asset Smart Money Concepts Portfolio (TRUMP 15m, ETH 4h, BTC 15m, DOGE 15m)",
+        "description": (
+            "Concurrent multi-asset portfolio trading Vivek Yadav SMC on optimal empirical timeframes: "
+            "TRUMP_USDT (15m), ETH_USDT (4h), BTC_USDT (15m), DOGE_USDT (15m) at 15x leverage. "
+            "50% partial exit at 1:1 R:R, Breakeven SL (+1 tick buffer), 1:2 runner, 10% margin sizing."
+        ),
+        "is_multi_asset": True,
+        "assets": [
+            {"symbol": "TRUMP_USDT", "timeframe": "Min15", "pivot_len": 3, "leverage": 15},
+            {"symbol": "ETH_USDT",   "timeframe": "Hour4", "pivot_len": 5, "leverage": 15},
+            {"symbol": "BTC_USDT",   "timeframe": "Min15", "pivot_len": 5, "leverage": 15},
+            {"symbol": "DOGE_USDT",  "timeframe": "Min15", "pivot_len": 5, "leverage": 15},
+        ],
+        "strategy_mode": "ORDER_BLOCK_DEMAND",
+        "leverage": 15,
+        "volume_mode": "MARGIN_PCT",
+        "margin_pct": 10.0,
+        "risk_reward_ratio": 2.0,
+        "partial_tp_enabled": True,
+        "partial_tp_ratio": 0.5,
+        "breakeven_buffer_ticks": 1,
+        "buffer_ticks": 1,
+        "execution_style": "PURE_MARKET",
+        "order_type": "MARKET"
+    },
     "TRUMP_ORDER_BLOCK_DEMAND": {
         "name": "TRUMP Order Block + Demand Strategy (Smart Money Concepts)",
         "description": (
@@ -677,7 +703,14 @@ def get_active_preset_config(preset_name: str = None) -> dict:
     key = (preset_name or ACTIVE_PRESET).upper()
     if key in STRATEGY_PRESETS and key != "CUSTOM":
         cfg = dict(STRATEGY_PRESETS[key])
-        if key == "TRUMP_STOCH_RSI":
+        if key == "MULTI_ASSET_SMC":
+            if "KCEX_LEVERAGE" in os.environ or "LEVERAGE" in os.environ:
+                cfg["leverage"] = LEVERAGE
+                for a in cfg.get("assets", []):
+                    a["leverage"] = LEVERAGE
+            if "KCEX_MARGIN_PCT" in os.environ or "MARGIN_PCT" in os.environ:
+                cfg["margin_pct"] = MARGIN_PCT
+        elif key == "TRUMP_STOCH_RSI":
             if "KCEX_LEVERAGE" in os.environ:
                 cfg["leverage"] = LEVERAGE
             if "KCEX_VOLUME_MULTIPLIER" in os.environ:

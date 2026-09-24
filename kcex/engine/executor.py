@@ -377,6 +377,40 @@ class TradeExecutionEngine:
                 self.strategy.sub_strategy.trade_in_progress = False
             return None
 
+        # Check active position concurrency to prevent duplicate positions in the same direction
+        # and avoid conflict with manual trades on the same account
+        if self.config.mode == EngineMode.LIVE:
+            try:
+                open_pos_list = self.trader.get_open_positions(contract.symbol)
+                for p in open_pos_list:
+                    h_vol = float(p.get("holdVol", 0) or p.get("vol", 0))
+                    if h_vol > 0:
+                        p_type = p.get("positionType")
+                        p_side = p.get("side")
+                        is_pos_long = (p_type == 1 or str(p_side).upper() in ("1", "LONG", "BUY"))
+                        if (signal.direction == OrderDirection.LONG and is_pos_long):
+                            self.logger.info(
+                                f"[CONCURRENCY] Active LONG already exists on {contract.symbol} (Hold: {h_vol:g} contracts). "
+                                f"Skipping new LONG signal to prevent duplicate exposure or manual trade conflict."
+                            )
+                            if hasattr(self.strategy, "on_trade_rejected"):
+                                self.strategy.on_trade_rejected()
+                            elif hasattr(self.strategy.sub_strategy, "trade_in_progress"):
+                                self.strategy.sub_strategy.trade_in_progress = False
+                            return None
+                        elif (signal.direction == OrderDirection.SHORT and not is_pos_long):
+                            self.logger.info(
+                                f"[CONCURRENCY] Active SHORT already exists on {contract.symbol} (Hold: {h_vol:g} contracts). "
+                                f"Skipping new SHORT signal to prevent duplicate exposure or manual trade conflict."
+                            )
+                            if hasattr(self.strategy, "on_trade_rejected"):
+                                self.strategy.on_trade_rejected()
+                            elif hasattr(self.strategy.sub_strategy, "trade_in_progress"):
+                                self.strategy.sub_strategy.trade_in_progress = False
+                            return None
+            except Exception as pe:
+                self.logger.debug("Concurrency position check error: %s", pe)
+
         self.trade_counter += 1
         trade_id = self.trade_counter
         symbol = contract.symbol
@@ -893,9 +927,13 @@ class TradeExecutionEngine:
         for p in open_positions:
             h_vol = float(p.get("holdVol", 0) or p.get("vol", 0))
             if h_vol > 0:
-                position_id = int(p.get("positionId"))
-                entry_price = float(p.get("openAvgPrice") or p.get("holdAvgPrice") or entry_price)
-                break
+                p_type = p.get("positionType")
+                p_side = p.get("side")
+                is_pos_long = (p_type == 1 or str(p_side).upper() in ("1", "LONG", "BUY"))
+                if (direction == OrderDirection.LONG and is_pos_long) or (direction == OrderDirection.SHORT and not is_pos_long):
+                    position_id = int(p.get("positionId"))
+                    entry_price = float(p.get("openAvgPrice") or p.get("holdAvgPrice") or entry_price)
+                    break
 
         # Calculate exact min-profit TP and exact SL from actual filled entry price
         atr_val = None
@@ -1075,22 +1113,26 @@ class TradeExecutionEngine:
                         self.logger.warning("Note: Pre-placing 1:1 limit close order: %s. Active monitor will manage 1:1 exit fallback.", e)
 
             # Active position monitoring loop
+            self.logger.set_has_active_positions(True)
             self.logger.info("Entering active position monitoring loop...")
-            exit_price, exit_reason, close_order_id = self._monitor_live_position(
-                symbol=symbol,
-                position_id=position_id,
-                direction=direction,
-                vol_contracts=vol_contracts,
-                leverage=leverage,
-                exact_tp=exact_tp,
-                exact_sl=exact_sl,
-                precision=ps,
-                entry_price=entry_price,
-                open_time=open_time,
-                signal=signal,
-                pre_placed_tp1_order_id=pre_placed_tp1_order_id,
-                tp1_contracts=tp1_contracts
-            )
+            try:
+                exit_price, exit_reason, close_order_id = self._monitor_live_position(
+                    symbol=symbol,
+                    position_id=position_id,
+                    direction=direction,
+                    vol_contracts=vol_contracts,
+                    leverage=leverage,
+                    exact_tp=exact_tp,
+                    exact_sl=exact_sl,
+                    precision=ps,
+                    entry_price=entry_price,
+                    open_time=open_time,
+                    signal=signal,
+                    pre_placed_tp1_order_id=pre_placed_tp1_order_id,
+                    tp1_contracts=tp1_contracts
+                )
+            finally:
+                self.logger.set_has_active_positions(False)
 
         close_time = time.time()
         duration = max(0.1, close_time - open_time)
@@ -1375,10 +1417,14 @@ class TradeExecutionEngine:
                         if current_hold_vol > 0:
                             pos_still_open = True
                             break
-                    elif float(p.get("holdVol", 0)) > 0:
-                        current_hold_vol = int(p.get("holdVol", 0))
-                        pos_still_open = True
-                        break
+                    elif not position_id and float(p.get("holdVol", 0)) > 0:
+                        p_type = p.get("positionType")
+                        p_side = p.get("side")
+                        is_pos_long = (p_type == 1 or str(p_side).upper() in ("1", "LONG", "BUY"))
+                        if (direction == OrderDirection.LONG and is_pos_long) or (direction == OrderDirection.SHORT and not is_pos_long):
+                            current_hold_vol = int(p.get("holdVol", 0))
+                            pos_still_open = True
+                            break
 
                 if not pos_still_open:
                     self.logger.info("Position closed on KCEX. Reconciling fill records...")

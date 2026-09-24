@@ -68,6 +68,7 @@ class DualCurrencyLogger:
 
         # Single-line dynamic telemetry & price deduplication state
         self._in_place_active = False
+        self._has_active_positions: bool = False
         self._last_status_msg: Optional[str] = None
         self._last_status_price: Optional[float] = None
         self._last_status_time: float = 0.0
@@ -84,6 +85,10 @@ class DualCurrencyLogger:
             os.environ.get("CI") or
             not sys.stdout.isatty()
         )
+
+    def set_has_active_positions(self, has_active: bool) -> None:
+        """Sets whether any position is currently open across any tracked pair."""
+        self._has_active_positions = bool(has_active)
 
     def _ensure_dir(self) -> None:
         directory = os.path.dirname(self.log_file)
@@ -127,54 +132,25 @@ class DualCurrencyLogger:
         """
         Updates telemetry in a single line.
         - On local interactive TTY: Updates the current line in-place using carriage return (\\r).
-        - On Cloud / CI (Railway, GitHub Actions) or non-TTY:
-          Suppresses duplicate identical-price log messages so logs are NOT flooded with same-price lines.
-          Only logs a new line when:
-          (1) Price moves (new price update)
-          (2) Heartbeat interval elapses (e.g. 30s) to confirm liveness
-          (3) force is True
-        - Writes to log file only when price changes or at heartbeat interval.
+        - On Cloud / CI (Railway, Docker without TTY):
+          Throttles periodic status & price telemetry lines to prevent messy log spamming:
+          * Every 10 minutes (600s) if NO position is active on any pair
+          * Every 5 minutes (300s) if ANY position is open on any pair
+          * Immediate logging when force=True
+        - Background scanning and important trading events (signals, fills, TPs, SLs) continue logging immediately.
         """
-        import re
-
         now = time.time()
         price_rounded = round(price, 6) if price is not None else None
-        same_price = (
-            not force and
-            price_rounded is not None and
-            self._last_status_price is not None and
-            price_rounded == self._last_status_price
-        )
-        same_msg = (
-            not force and
-            self._last_status_msg is not None and
-            msg == self._last_status_msg
-        )
-
-        # For scanning: strip variable price string to compare structural state
-        same_structure = False
-        if tag == "SCANNING" and not force:
-            struct_curr = re.sub(r"Price:\s*[0-9\.]+\s*USDT\s*\|\s*", "", msg)
-            struct_last = re.sub(r"Price:\s*[0-9\.]+\s*USDT\s*\|\s*", "", self._last_status_msg or "")
-            if struct_last and struct_curr == struct_last:
-                same_structure = True
-            if heartbeat_sec == 30.0:
-                heartbeat_sec = 60.0
-
-        # For positions: strip variable hold time to compare position state
-        if tag in ("LIVE_POS", "POSITION", "DRY_RUN_POS") and not force:
-            pos_curr = re.sub(r"Hold:\s*[0-9\.]+\s*s", "", msg)
-            pos_last = re.sub(r"Hold:\s*[0-9\.]+\s*s", "", self._last_status_msg or "")
-            if pos_last and pos_curr == pos_last:
-                same_structure = True
-
-        is_duplicate = same_price or same_msg or same_structure
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Cloud/CI environment (Railway, GitHub Actions, Docker without TTY)
+        # Required interval: 5m (300s) if in position, 10m (600s) if idle
+        required_interval = 300.0 if self._has_active_positions else 600.0
+
+        # Cloud/CI environment (Railway, Docker, non-interactive)
         if self._is_cloud_ci or not self._is_tty:
-            if is_duplicate and not force and (now - self._last_status_time < heartbeat_sec):
-                return False  # Suppress duplicate lines in cloud to prevent log flooding
+            # If not forced and interval has not elapsed, suppress repetitive status lines
+            if not force and (now - self._last_status_time < required_interval):
+                return False
 
             self.clear_status_line()
             self.logger.info(msg)
@@ -194,8 +170,8 @@ class DualCurrencyLogger:
         except Exception:
             self.logger.info(msg)
 
-        # Record to log file conditionally (avoid blowing up log file with same prices)
-        if not is_duplicate or (now - self._last_status_time >= heartbeat_sec) or force:
+        # Record to log file conditionally at heartbeat interval (5m in trade, 10m idle)
+        if (now - self._last_status_time >= required_interval) or force:
             self._write_file_log(now_str, "INFO", msg)
             self._last_status_time = now
             if price_rounded is not None:
