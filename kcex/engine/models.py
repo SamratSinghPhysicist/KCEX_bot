@@ -321,6 +321,16 @@ class TradeOutcome:
     def is_scratch(self) -> bool:
         return abs(self.realized_pnl_usdt) <= 1e-8
 
+    @property
+    def open_timestamp(self) -> float:
+        """Alias for open_time for backward compatibility."""
+        return self.open_time
+
+    @property
+    def close_timestamp(self) -> float:
+        """Alias for close_time for backward compatibility."""
+        return self.close_time
+
     def to_mongo_dict(self) -> Dict[str, Any]:
         """Serialize this trade outcome to a MongoDB-friendly dictionary."""
         return {

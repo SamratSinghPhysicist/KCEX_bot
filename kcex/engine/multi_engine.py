@@ -309,6 +309,7 @@ class AssetWorker:
         target_1to1 = float(signal.metadata.get("target_1to1_price", curr_price))
 
         position_id = None
+        order_id = None
         entry_price = curr_price
         open_time = time.time()
 
@@ -352,6 +353,7 @@ class AssetWorker:
             # Dry-run execution
             self.in_position = True
             entry_price = curr_price
+            order_id = "SIMULATED_ORDER"
 
         # 3. Monitor Position until Exit
         exit_price, exit_reason = self._monitor_position(
@@ -371,7 +373,8 @@ class AssetWorker:
         self.active_position_desc = ""
 
         # 4. Financial Reconciliation
-        duration = max(0.1, time.time() - open_time)
+        close_time = time.time()
+        duration = max(0.1, close_time - open_time)
         price_diff = (exit_price - entry_price) if is_long else (entry_price - exit_price)
         underlying_qty = vol_contracts * cs
         fee_rate = 0.0001  # KCEX 0.01% taker fee
@@ -379,6 +382,13 @@ class AssetWorker:
         realized_pnl_usdt = (underlying_qty * price_diff) - fee_total
         margin_usdt = (underlying_qty * entry_price) / self.leverage
         roe_pct = (realized_pnl_usdt / margin_usdt * 100.0) if margin_usdt > 0 else 0.0
+
+        inr_rate = self.market.get_inr_rate()
+        notional_usdt = underlying_qty * entry_price
+        notional_inr = notional_usdt * inr_rate
+        margin_inr = margin_usdt * inr_rate
+        realized_pnl_inr = realized_pnl_usdt * inr_rate
+        fee_total_inr = fee_total * inr_rate
 
         outcome = TradeOutcome(
             trade_id=self.trade_counter,
@@ -393,21 +403,36 @@ class AssetWorker:
             base_coin=self.contract.base_coin,
             entry_price=entry_price,
             exit_price=exit_price,
-            notional_value_usdt=underlying_qty * entry_price,
-            margin_used_usdt=margin_usdt,
-            fee_total_usdt=fee_total,
-            fee_open_usdt=fee_total / 2.0,
-            fee_close_usdt=fee_total / 2.0,
-            realized_pnl_usdt=realized_pnl_usdt,
-            roe_percentage=roe_pct,
-            pnl_percentage=(price_diff / entry_price * 100.0),
-            open_timestamp=open_time,
-            close_timestamp=time.time(),
-            duration_seconds=duration,
-            exit_reason=exit_reason,
             min_profit_tp_price=exact_tp,
             stop_loss_price=initial_sl,
-            inr_rate=self.market.get_inr_rate()
+            price_unit=pu,
+            price_precision=prec,
+            open_time=open_time,
+            close_time=close_time,
+            duration_seconds=duration,
+            notional_value_usdt=notional_usdt,
+            notional_value_inr=notional_inr,
+            margin_used_usdt=margin_usdt,
+            margin_used_inr=margin_inr,
+            realized_pnl_usdt=realized_pnl_usdt,
+            realized_pnl_inr=realized_pnl_inr,
+            pnl_percentage=(price_diff / entry_price * 100.0),
+            roe_percentage=roe_pct,
+            fee_open_usdt=fee_total / 2.0,
+            fee_close_usdt=fee_total / 2.0,
+            fee_total_usdt=fee_total,
+            fee_total_inr=fee_total_inr,
+            inr_rate=inr_rate,
+            exit_reason=exit_reason,
+            order_id=order_id,
+            position_id=position_id,
+            smc_zone_id=signal.metadata.get("zone_id") if signal.metadata else None,
+            smc_zone_type=signal.metadata.get("zone_type") if signal.metadata else None,
+            smc_zone_high=signal.metadata.get("zone_high") if signal.metadata else None,
+            smc_zone_low=signal.metadata.get("zone_low") if signal.metadata else None,
+            smc_target_1to1=target_1to1,
+            smc_target_1to2=exact_tp,
+            smc_partial_tp_hit=(exit_reason == ExitReason.RATCHET_BREAKEVEN_HIT or exit_reason == ExitReason.MIN_PROFIT_TP_HIT)
         )
 
         self.trade_counter += 1
