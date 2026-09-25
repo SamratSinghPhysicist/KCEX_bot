@@ -44,4 +44,7 @@ BACKTESTER/BookTicker_Data_Binance/
 # Large AI Research Analysis Dossiers & Archives
 AI_ANALYSIS/
 
+# Heavy Experiment Trade-by-Trade Logs (keep matrix and md reports tracked)
+experiments/**/reports/*trades.csv
+
 

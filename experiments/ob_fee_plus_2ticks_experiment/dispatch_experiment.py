@@ -234,10 +234,16 @@ def main():
     parser.add_argument("--margin-pct", type=float, default=10.0, help="Margin % per trade")
     parser.add_argument("--monitor", action="store_true", help="Monitor workflow until completion and download artifacts")
     parser.add_argument("--token", type=str, default=None, help="GitHub Personal Access Token")
+    parser.add_argument("--run-id", type=int, default=None, help="Monitor existing GitHub Actions run ID")
 
     args = parser.parse_args()
 
     dispatcher = ExperimentGitHubDispatcher(token=args.token)
+
+    if args.run_id:
+        print(f"\n[*] Attaching to existing run #{args.run_id}...")
+        dispatcher.monitor_and_download(args.run_id)
+        return
 
     if args.symbol.upper() == "ALL":
         print(f"\n[*] Dispatching All-Coins Parallel Matrix...")
