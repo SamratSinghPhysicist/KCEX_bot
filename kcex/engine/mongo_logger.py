@@ -128,7 +128,7 @@ class MongoTradeLogger:
     def log_executed_trade(
         self,
         outcome,  # TradeOutcome
-        config,   # ExecutionConfig
+        config=None,   # ExecutionConfig or Dict or None
         balance_before_usdt: Optional[float] = None,
         balance_before_inr: Optional[float] = None
     ) -> Optional[str]:
@@ -137,7 +137,7 @@ class MongoTradeLogger:
         
         Args:
             outcome: The TradeOutcome dataclass from the executor
-            config: The ExecutionConfig used for this session
+            config: The ExecutionConfig used for this session (optional)
             balance_before_usdt: Wallet balance before trade entry
             balance_before_inr: Wallet balance before trade entry (INR)
             
@@ -148,22 +148,30 @@ class MongoTradeLogger:
             return None
 
         try:
-            doc = outcome.to_mongo_dict()
+            doc = outcome.to_mongo_dict() if hasattr(outcome, "to_mongo_dict") else dict(outcome)
 
             # Enrich with session and environment metadata
             doc["session_id"] = self.session_id
             doc["logged_at"] = datetime.now(timezone.utc)
 
-            # Balance before trade
-            doc["balance_before_trade_usdt"] = balance_before_usdt
-            doc["balance_before_trade_inr"] = balance_before_inr
+            # Balance before trade (fallback to outcome attributes if not explicitly passed)
+            if balance_before_usdt is not None:
+                doc["balance_before_trade_usdt"] = balance_before_usdt
+            elif doc.get("balance_before_trade_usdt") is None:
+                doc["balance_before_trade_usdt"] = getattr(outcome, "balance_before_trade_usdt", None)
 
-            # PnL context: cumulative PnL before this trade
-            # (balance_before - initial balance gives cumulative PnL, but we store
-            #  the raw balance values for maximum flexibility in analytics)
+            if balance_before_inr is not None:
+                doc["balance_before_trade_inr"] = balance_before_inr
+            elif doc.get("balance_before_trade_inr") is None:
+                doc["balance_before_trade_inr"] = getattr(outcome, "balance_before_trade_inr", None)
 
-            # Strategy & Configuration snapshot
-            doc["config_snapshot"] = config.to_config_snapshot()
+            # Strategy & Configuration snapshot (safely handled if config is None or dict)
+            if hasattr(config, "to_config_snapshot"):
+                doc["config_snapshot"] = config.to_config_snapshot()
+            elif isinstance(config, dict):
+                doc["config_snapshot"] = config
+            else:
+                doc["config_snapshot"] = getattr(outcome, "config_snapshot", {})
 
             # Execution environment
             doc["execution_env"] = self.execution_env
@@ -173,17 +181,37 @@ class MongoTradeLogger:
             result = self._db[COLLECTION_TRADES].insert_one(doc)
             doc_id = str(result.inserted_id)
 
-            pnl_sign = "+" if outcome.realized_pnl_usdt > 0 else ""
+            trade_id = getattr(outcome, "trade_id", doc.get("trade_id", "?"))
+            pnl_val = getattr(outcome, "realized_pnl_usdt", doc.get("realized_pnl_usdt", 0.0))
+            pnl_sign = "+" if pnl_val > 0 else ""
+            sym = getattr(outcome, "symbol", doc.get("symbol", "?"))
             logger.info(
-                f"[MONGO] 📝 Trade #{outcome.trade_id} logged to MongoDB | "
-                f"PnL: {pnl_sign}{outcome.realized_pnl_usdt:.6f} USDT | "
+                f"[MONGO] 📝 Trade #{trade_id} [{sym}] logged to MongoDB | "
+                f"PnL: {pnl_sign}{pnl_val:.6f} USDT | "
                 f"Doc ID: {doc_id}"
             )
             return doc_id
 
         except Exception as e:
-            logger.warning(f"[MONGO] ⚠️ Failed to log trade #{outcome.trade_id} to MongoDB: {e}")
+            trade_id = getattr(outcome, "trade_id", "?")
+            logger.warning(f"[MONGO] ⚠️ Failed to log trade #{trade_id} to MongoDB: {e}")
             return None
+
+    def log_trade(
+        self,
+        outcome,
+        config=None,
+        balance_before_usdt: Optional[float] = None,
+        balance_before_inr: Optional[float] = None
+    ) -> Optional[str]:
+        """Backward-compatible alias for log_executed_trade."""
+        return self.log_executed_trade(
+            outcome=outcome,
+            config=config,
+            balance_before_usdt=balance_before_usdt,
+            balance_before_inr=balance_before_inr
+        )
+
 
     # =========================================================================
     # CANCELLED ORDER LOGGING
@@ -266,12 +294,19 @@ class MongoTradeLogger:
     # SESSION LOGGING
     # =========================================================================
 
-    def log_session_start(self, config) -> Optional[str]:
+    def log_session_start(self, config=None) -> Optional[str]:
         """Log session start to MongoDB with full configuration."""
         if not self._connect():
             return None
 
         try:
+            if hasattr(config, "to_config_snapshot"):
+                cfg_snap = config.to_config_snapshot()
+            elif isinstance(config, dict):
+                cfg_snap = config
+            else:
+                cfg_snap = {}
+
             doc = {
                 "session_id": self.session_id,
                 "event": "SESSION_START",
@@ -279,7 +314,7 @@ class MongoTradeLogger:
                 "execution_env": self.execution_env,
                 "github_run_id": self.github_run_id,
                 "github_run_number": self.github_run_number,
-                "config_snapshot": config.to_config_snapshot(),
+                "config_snapshot": cfg_snap,
                 "logged_at": datetime.now(timezone.utc),
             }
             result = self._db[COLLECTION_SESSIONS].insert_one(doc)
@@ -354,14 +389,22 @@ class MongoTradeLogger:
     # ANALYTICS QUERIES
     # =========================================================================
 
+    def _build_mode_match(self, mode_filter: Optional[str]) -> Optional[Dict[str, Any]]:
+        """Constructs case-insensitive mode query condition."""
+        if not mode_filter or mode_filter.upper() == "ALL":
+            return None
+        m = mode_filter.strip().lower()
+        return {"$in": [m, m.upper()]}
+
     def get_traded_symbols(self, mode_filter: str = "live") -> List[str]:
         """Fetch distinct symbols of traded pairs from MongoDB."""
         if not self._connect():
             return []
         try:
-            query = {"type": "EXECUTED"}
-            if mode_filter:
-                query["mode"] = mode_filter
+            query: Dict[str, Any] = {"type": "EXECUTED"}
+            mode_cond = self._build_mode_match(mode_filter)
+            if mode_cond:
+                query["mode"] = mode_cond
             symbols = self._db[COLLECTION_TRADES].distinct("symbol", query)
             return sorted([s for s in symbols if s])
         except Exception as e:
@@ -373,9 +416,10 @@ class MongoTradeLogger:
         if not self._connect():
             return []
         try:
-            match_stage = {"type": "EXECUTED"}
-            if mode_filter:
-                match_stage["mode"] = mode_filter
+            match_stage: Dict[str, Any] = {"type": "EXECUTED"}
+            mode_cond = self._build_mode_match(mode_filter)
+            if mode_cond:
+                match_stage["mode"] = mode_cond
             pipeline = [
                 {"$match": match_stage},
                 {
@@ -409,10 +453,11 @@ class MongoTradeLogger:
         if not self._connect():
             return []
         try:
-            query = {"type": "EXECUTED"}
-            if mode_filter:
-                query["mode"] = mode_filter
-            if symbol_filter:
+            query: Dict[str, Any] = {"type": "EXECUTED"}
+            mode_cond = self._build_mode_match(mode_filter)
+            if mode_cond:
+                query["mode"] = mode_cond
+            if symbol_filter and symbol_filter.upper() != "ALL":
                 sym = symbol_filter.strip().upper()
                 query["$or"] = [
                     {"symbol": sym},

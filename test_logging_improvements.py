@@ -37,13 +37,14 @@ def test_dual_currency_logger_status_line_deduplication(tmp_path):
     )
     assert emitted_2 is False, "Same-price message should be suppressed in cloud/CI mode!"
 
-    # 3. Third price update with NEW price should emit
+    # 3. Third price update after interval has passed should emit
+    logger._last_status_time -= 601.0
     emitted_3 = logger.update_status_line(
         msg="[DRY-RUN POSITION] LONG @ 2.4500 | Mark: 2.4550",
         price=2.4550,
         tag="POSITION"
     )
-    assert emitted_3 is True, "New price update must emit a log line!"
+    assert emitted_3 is True, "Price update after interval must emit a log line!"
 
     # 4. Same new price should be suppressed
     emitted_4 = logger.update_status_line(
@@ -74,9 +75,11 @@ def test_dual_currency_logger_scanning_status_deduplication(tmp_path):
     scan_msg_3 = "[SCANNING] TRUMP_USDT [Min15] | Price: 2.179 USDT | Zones: 6 (4 Demand, 2 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
     assert logger.update_status_line(scan_msg_3, price=2.179, tag="SCANNING") is False
 
-    # BUT if zones change from 6 to 7 (genuine structural event): MUST be emitted!
+    # BUT if interval passes and structural event occurs: MUST be emitted!
+    logger._last_status_time -= 601.0
     scan_msg_4 = "[SCANNING] TRUMP_USDT [Min15] | Price: 2.179 USDT | Zones: 7 (4 Demand, 3 Supply) | Active OB: BEARISH_ORDER_BLOCK [2.237-2.278] | Status: Hunting"
     assert logger.update_status_line(scan_msg_4, price=2.179, tag="SCANNING") is True
+
 
 
 def test_dual_currency_logger_status_line_tty(tmp_path, monkeypatch):

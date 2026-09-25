@@ -68,7 +68,8 @@ class AssetWorker:
         order_lock: threading.Lock,
         cooldown_seconds: float = 30.0,
         buffer_ticks: int = 1,
-        breakeven_buffer_ticks: int = 1
+        breakeven_buffer_ticks: int = 1,
+        shared_outcomes: Optional[List[TradeOutcome]] = None
     ):
         self.symbol = symbol.upper()
         self.timeframe = timeframe
@@ -84,6 +85,7 @@ class AssetWorker:
         self.cooldown_seconds = cooldown_seconds
         self.buffer_ticks = buffer_ticks
         self.breakeven_buffer_ticks = breakeven_buffer_ticks
+        self.shared_outcomes = shared_outcomes if shared_outcomes is not None else []
 
         # Thread-safe private API clients
         self.client = KCEXClient()
@@ -215,6 +217,18 @@ class AssetWorker:
                 # If trade entered, monitor until close
                 if outcome is not None:
                     self.last_cooldown_end = time.time() + self.cooldown_seconds
+                    if hasattr(self.strategy, "on_trade_completed"):
+                        try:
+                            self.strategy.on_trade_completed(outcome)
+                        except Exception as ce:
+                            self.logger.warning(f"[{self.symbol}] Strategy on_trade_completed error: {ce}")
+                else:
+                    if hasattr(self.strategy, "on_trade_rejected"):
+                        try:
+                            self.strategy.on_trade_rejected()
+                        except Exception as re:
+                            self.logger.warning(f"[{self.symbol}] Strategy on_trade_rejected error: {re}")
+
 
             except KCEXAPIError as ke:
                 self.logger.warning(f"[{self.symbol}] KCEX API error in loop: {ke}")
@@ -270,6 +284,7 @@ class AssetWorker:
 
         # 1. Fetch available USDT margin
         avail_usdt = 100.0  # default for dry-run
+        inr_rate = self.market.get_inr_rate()
         if self.mode == EngineMode.LIVE:
             try:
                 balances = self.trader.get_usdt_balance()
@@ -277,6 +292,9 @@ class AssetWorker:
             except Exception as e:
                 self.logger.warning(f"[{self.symbol}] Could not fetch balance: {e}")
                 return None
+        bal_before_usdt = avail_usdt
+        bal_before_inr = avail_usdt * inr_rate
+
 
         # 2. Position sizing: 10% available margin @ 15x leverage
         ticker = self.market.get_ticker(self.symbol)
@@ -407,6 +425,19 @@ class AssetWorker:
         realized_pnl_inr = realized_pnl_usdt * inr_rate
         fee_total_inr = fee_total * inr_rate
 
+        bal_after_usdt = None
+        bal_after_inr = None
+        if self.mode == EngineMode.LIVE:
+            try:
+                post_bals = self.trader.get_usdt_balance()
+                bal_after_usdt = post_bals.get("available_usdt", None)
+                if bal_after_usdt is not None:
+                    bal_after_inr = bal_after_usdt * inr_rate
+            except Exception:
+                pass
+
+        sig_meta = signal.metadata if signal and signal.metadata else {}
+        self.trade_counter += 1
         outcome = TradeOutcome(
             trade_id=self.trade_counter,
             symbol=self.symbol,
@@ -441,24 +472,62 @@ class AssetWorker:
             fee_total_inr=fee_total_inr,
             inr_rate=inr_rate,
             exit_reason=exit_reason,
+            balance_before_trade_usdt=bal_before_usdt,
+            balance_before_trade_inr=bal_before_inr,
+            balance_after_trade_usdt=bal_after_usdt,
+            balance_after_trade_inr=bal_after_inr,
             order_id=order_id,
             position_id=position_id,
-            smc_zone_id=signal.metadata.get("zone_id") if signal.metadata else None,
-            smc_zone_type=signal.metadata.get("zone_type") if signal.metadata else None,
-            smc_zone_high=signal.metadata.get("zone_high") if signal.metadata else None,
-            smc_zone_low=signal.metadata.get("zone_low") if signal.metadata else None,
-            smc_target_1to1=target_1to1,
-            smc_target_1to2=exact_tp,
+            smc_zone_id=sig_meta.get("zone_id"),
+            smc_zone_type=sig_meta.get("zone_type"),
+            smc_zone_high=sig_meta.get("zone_high"),
+            smc_zone_low=sig_meta.get("zone_low"),
+            smc_zone_mid=sig_meta.get("zone_mid"),
+            smc_zone_creation_bar_idx=sig_meta.get("zone_creation_bar_idx"),
+            smc_zone_creation_ts=sig_meta.get("zone_creation_ts"),
+            smc_zone_creation_time_utc=sig_meta.get("zone_creation_time_utc"),
+            smc_bos_bar_idx=sig_meta.get("bos_bar_idx"),
+            smc_bos_price=sig_meta.get("bos_price"),
+            smc_trigger_candle_time_utc=sig_meta.get("trigger_candle_time_utc"),
+            smc_trigger_bar_idx=sig_meta.get("eval_bar_idx"),
+            smc_fvg_size=sig_meta.get("fvg_size"),
+            smc_target_1to1=sig_meta.get("target_1to1_price", target_1to1),
+            smc_target_1to2=sig_meta.get("target_1to2_price", exact_tp),
             smc_partial_tp_hit=(exit_reason == ExitReason.RATCHET_BREAKEVEN_HIT or exit_reason == ExitReason.MIN_PROFIT_TP_HIT)
         )
 
-        self.trade_counter += 1
         self.outcome_logger.log_outcome(outcome)
+        if self.shared_outcomes is not None:
+            self.shared_outcomes.append(outcome)
+
+        worker_config = ExecutionConfig(
+            symbol=self.symbol,
+            direction=direction,
+            mode=self.mode,
+            leverage=self.leverage,
+            strategy_mode="ORDER_BLOCK_DEMAND",
+            timeframe=self.timeframe,
+            pivot_len=self.pivot_len,
+            risk_reward_ratio=self.risk_reward_ratio,
+            margin_pct=self.margin_pct,
+            partial_tp_enabled=True,
+            breakeven_buffer_ticks=self.breakeven_buffer_ticks
+        )
+
         if self.mongo_logger and self.mode == EngineMode.LIVE:
             try:
-                self.mongo_logger.log_trade(outcome, ExecutionConfig(symbol=self.symbol, leverage=self.leverage))
-            except Exception:
-                pass
+                doc_id = self.mongo_logger.log_executed_trade(
+                    outcome=outcome,
+                    config=worker_config,
+                    balance_before_usdt=bal_before_usdt,
+                    balance_before_inr=bal_before_inr
+                )
+                if doc_id:
+                    self.logger.info(f"[{self.symbol}] 📝 Trade #{self.trade_counter} logged to MongoDB (Doc ID: {doc_id})")
+                else:
+                    self.logger.warning(f"[{self.symbol}] ⚠️ Failed to log trade #{self.trade_counter} to MongoDB")
+            except Exception as me:
+                self.logger.warning(f"[{self.symbol}] ⚠️ MongoDB trade logging error: {me}")
 
         pnl_sign = "+" if realized_pnl_usdt >= 0 else ""
         self.logger.info(
@@ -866,6 +935,7 @@ class MultiAssetExecutionEngine:
         self.mongo_logger = mongo_logger
         self.running: bool = False
         self._shutdown_requested: bool = False
+        self.outcomes: List[TradeOutcome] = []
 
         # Shared loggers
         self.logger = DualCurrencyLogger(log_file="logs/engine_realtime.log")
@@ -904,7 +974,8 @@ class MultiAssetExecutionEngine:
                 shared_logger=self.logger,
                 shared_outcome_logger=self.outcome_logger,
                 shared_mongo_logger=self.mongo_logger,
-                order_lock=self.order_lock
+                order_lock=self.order_lock,
+                shared_outcomes=self.outcomes
             )
             self.workers[sym] = worker
 
@@ -925,6 +996,22 @@ class MultiAssetExecutionEngine:
             except Exception:
                 pass
 
+        # Log session start to MongoDB
+        if self.mongo_logger:
+            try:
+                session_config = {
+                    "strategy_mode": "ORDER_BLOCK_DEMAND",
+                    "mode": self.mode.value if hasattr(self.mode, "value") else str(self.mode),
+                    "portfolio_assets": self.asset_configs,
+                    "target_leverage": self.leverage,
+                    "margin_pct": self.margin_pct,
+                    "risk_reward_ratio": self.risk_reward_ratio,
+                    "execution_engine": "MultiAssetExecutionEngine",
+                }
+                self.mongo_logger.log_session_start(session_config)
+            except Exception as se:
+                self.logger.warning(f"Failed to log session start to MongoDB: {se}")
+
         self._print_startup_banner()
 
         # Start all workers
@@ -932,7 +1019,7 @@ class MultiAssetExecutionEngine:
             worker.start()
             time.sleep(0.5)
 
-        self.logger.info("All 4 asset workers running concurrently. Telemetry throttled (10m idle / 5m active)...")
+        self.logger.info("All asset workers running concurrently. Telemetry throttled (10m idle / 5m active)...")
         time.sleep(1.0)
         self._print_portfolio_dashboard()
         last_dashboard_time = time.time()
@@ -960,7 +1047,41 @@ class MultiAssetExecutionEngine:
         # Graceful shutdown of workers
         for sym, worker in self.workers.items():
             worker.stop()
+
+        # Log session end to MongoDB
+        if self.mongo_logger:
+            try:
+                tot_trades = len(self.outcomes)
+                wins = sum(1 for o in self.outcomes if o.is_profit)
+                losses = sum(1 for o in self.outcomes if o.is_loss)
+                scratches = sum(1 for o in self.outcomes if o.is_scratch)
+                tot_pnl_u = sum(o.realized_pnl_usdt for o in self.outcomes)
+                tot_pnl_i = sum(o.realized_pnl_inr for o in self.outcomes)
+                wr = (wins / tot_trades * 100.0) if tot_trades > 0 else 0.0
+                best_t = max([o.realized_pnl_usdt for o in self.outcomes], default=0.0)
+                worst_t = min([o.realized_pnl_usdt for o in self.outcomes], default=0.0)
+                fees_u = sum(o.fee_total_usdt for o in self.outcomes)
+                fees_i = sum(o.fee_total_inr for o in self.outcomes)
+
+                self.mongo_logger.log_session_end(
+                    total_trades=tot_trades,
+                    winning_trades=wins,
+                    losing_trades=losses,
+                    scratch_trades=scratches,
+                    cancelled_orders=0,
+                    total_pnl_usdt=tot_pnl_u,
+                    total_pnl_inr=tot_pnl_i,
+                    win_rate=wr,
+                    best_trade_usdt=best_t,
+                    worst_trade_usdt=worst_t,
+                    total_fees_usdt=fees_u,
+                    total_fees_inr=fees_i
+                )
+            except Exception as se:
+                self.logger.warning(f"Failed to log session end to MongoDB: {se}")
+
         self.logger.info("Multi-Asset Engine stopped successfully.")
+
 
     def stop(self) -> None:
         """Stops coordinator and workers."""

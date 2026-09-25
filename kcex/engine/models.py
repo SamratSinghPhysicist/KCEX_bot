@@ -394,16 +394,33 @@ class TradeOutcome:
             "ml_tp_ticks": self.ml_tp_ticks,
             "ml_sl_ticks": self.ml_sl_ticks,
             "ml_atr_14": self.ml_atr_14,
-            # Smart Money Concepts Telemetry
+            # Smart Money Concepts (Order Block + Demand Strategy) Telemetry
             "smc_zone_id": self.smc_zone_id,
             "smc_zone_type": self.smc_zone_type,
             "smc_zone_high": self.smc_zone_high,
             "smc_zone_low": self.smc_zone_low,
+            "smc_zone_mid": self.smc_zone_mid,
+            "smc_zone_creation_bar_idx": self.smc_zone_creation_bar_idx,
+            "smc_zone_creation_ts": self.smc_zone_creation_ts,
+            "smc_zone_creation_time_utc": self.smc_zone_creation_time_utc,
+            "smc_bos_bar_idx": self.smc_bos_bar_idx,
+            "smc_bos_price": self.smc_bos_price,
+            "smc_trigger_candle_time_utc": self.smc_trigger_candle_time_utc,
+            "smc_trigger_bar_idx": self.smc_trigger_bar_idx,
             "smc_fvg_size": self.smc_fvg_size,
             "smc_target_1to1": self.smc_target_1to1,
             "smc_target_1to2": self.smc_target_1to2,
             "smc_partial_tp_hit": self.smc_partial_tp_hit,
+            # Tick-Constrained Market Making Telemetry
+            "mm_ofi_ratio": self.mm_ofi_ratio,
+            "mm_tick_bps": self.mm_tick_bps,
+            "mm_htf_sideways": self.mm_htf_sideways,
         }
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize this trade outcome to a standard Python dictionary."""
+        return self.to_mongo_dict()
+
 
 
 @dataclass

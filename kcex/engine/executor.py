@@ -712,7 +712,8 @@ class TradeExecutionEngine:
                 outcome.ml_atr_14 = signal.metadata.get("atr_14")
 
             # Propagate SMC Strategy Telemetry to outcome and MongoDB
-            if signal.metadata and "strategy_mode" in signal.metadata and "ORDER_BLOCK" in str(signal.metadata.get("strategy_mode")).upper():
+            is_smc_sig = ("ORDER_BLOCK" in str((signal.metadata if signal and signal.metadata else {}).get("strategy_mode", "")).upper()) or ("OrderBlock" in getattr(outcome, "sub_strategy_name", "")) or ("DEMAND" in getattr(outcome, "sub_strategy_name", "").upper()) or (getattr(self.config, "strategy_mode", "").upper() in ("ORDER_BLOCK_DEMAND", "ORDER_BOOK_DEMAND", "ORDER_BLOCK", "DEMAND_BLOCK", "SMC"))
+            if is_smc_sig and signal and signal.metadata:
                 outcome.smc_zone_id = signal.metadata.get("zone_id")
                 outcome.smc_zone_type = signal.metadata.get("zone_type")
                 outcome.smc_zone_high = signal.metadata.get("zone_high")
@@ -729,6 +730,7 @@ class TradeExecutionEngine:
                 outcome.smc_target_1to1 = signal.metadata.get("target_1to1_price")
                 outcome.smc_target_1to2 = signal.metadata.get("target_1to2_price")
                 outcome.smc_partial_tp_hit = bool(signal.metadata.get("partial_tp_hit", False))
+
 
             # Propagate Tick-Constrained Market Making Telemetry
             if signal.metadata and ("ofi_ratio" in signal.metadata or "tick_bps" in signal.metadata):
@@ -2412,11 +2414,20 @@ class TradeExecutionEngine:
             smc_zone_type=signal.metadata.get("zone_type") if is_smc and signal and signal.metadata else None,
             smc_zone_high=signal.metadata.get("zone_high") if is_smc and signal and signal.metadata else None,
             smc_zone_low=signal.metadata.get("zone_low") if is_smc and signal and signal.metadata else None,
+            smc_zone_mid=signal.metadata.get("zone_mid") if is_smc and signal and signal.metadata else None,
+            smc_zone_creation_bar_idx=signal.metadata.get("zone_creation_bar_idx") if is_smc and signal and signal.metadata else None,
+            smc_zone_creation_ts=signal.metadata.get("zone_creation_ts") if is_smc and signal and signal.metadata else None,
+            smc_zone_creation_time_utc=signal.metadata.get("zone_creation_time_utc") if is_smc and signal and signal.metadata else None,
+            smc_bos_bar_idx=signal.metadata.get("bos_bar_idx") if is_smc and signal and signal.metadata else None,
+            smc_bos_price=signal.metadata.get("bos_price") if is_smc and signal and signal.metadata else None,
+            smc_trigger_candle_time_utc=signal.metadata.get("trigger_candle_time_utc") if is_smc and signal and signal.metadata else None,
+            smc_trigger_bar_idx=signal.metadata.get("eval_bar_idx") if is_smc and signal and signal.metadata else None,
             smc_fvg_size=signal.metadata.get("fvg_size") if is_smc and signal and signal.metadata else None,
             smc_target_1to1=signal.metadata.get("target_1to1_price") if is_smc and signal and signal.metadata else None,
             smc_target_1to2=signal.metadata.get("target_1to2_price") if is_smc and signal and signal.metadata else None,
             smc_partial_tp_hit=partial_tp_executed if is_smc else False
         )
+
 
     # =========================================================================
     # MAIN ENGINE RUN LOOP
