@@ -310,6 +310,24 @@ class OrderBlockDemandStrategy(BaseStrategy):
         """Resets trade_in_progress when execution is canceled or rejected."""
         self.trade_in_progress = False
 
+    def _mark_resolved(self, ts: Optional[int]) -> None:
+        """Permanently marks an origin candle timestamp as resolved in both seconds and milliseconds."""
+        if not ts:
+            return
+        self.resolved_origin_ts.add(ts)
+        self.resolved_origin_ts.add(ts * 1000)
+        self.resolved_origin_ts.add(ts // 1000)
+
+    def _is_resolved(self, ts: Optional[int]) -> bool:
+        """Checks if an origin candle timestamp is resolved, supporting both seconds and milliseconds."""
+        if not ts:
+            return False
+        return (
+            ts in self.resolved_origin_ts
+            or (ts * 1000) in self.resolved_origin_ts
+            or (ts // 1000) in self.resolved_origin_ts
+        )
+
     def _extract_candle_series(self, raw_bars: List[Any]) -> Tuple[List[int], List[float], List[float], List[float], List[float], List[float]]:
         """Normalizes klines into parallel lists: timestamps, opens, highs, lows, closes, volumes."""
         timestamps: List[int] = []
@@ -354,7 +372,9 @@ class OrderBlockDemandStrategy(BaseStrategy):
         highs: List[float],
         lows: List[float],
         closes: List[float],
-        pivot_len: Optional[int] = None
+        pivot_len: Optional[int] = None,
+        resolved_origin_ts: Optional[Set[int]] = None,
+        max_zone_age_bars: Optional[int] = None
     ) -> Tuple[List[SmartMoneyZone], List[Dict[str, Any]]]:
         """
         Pure Python implementation of Vivek Yadav's exact KLineChart indicator:
@@ -473,6 +493,23 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     continue
                 ob.end_idx = i
 
+                if resolved_origin_ts:
+                    is_res = (
+                        ob.creation_ts in resolved_origin_ts
+                        or (ob.creation_ts * 1000) in resolved_origin_ts
+                        or (ob.creation_ts // 1000) in resolved_origin_ts
+                    )
+                    if is_res:
+                        ob.status = ZoneStatus.INVALIDATED
+                        continue
+
+                if max_zone_age_bars and max_zone_age_bars > 0 and (i - ob.creation_bar_idx) > max_zone_age_bars:
+                    ob.status = ZoneStatus.EXPIRED
+                    continue
+
+                if ob.bos_bar_idx is not None and i <= ob.bos_bar_idx:
+                    continue
+
                 if cur_close < ob.low:
                     ob.status = ZoneStatus.INVALIDATED
                 elif cur_low <= ob.high and cur_high >= ob.low:
@@ -497,6 +534,23 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 if ob.status != ZoneStatus.ACTIVE:
                     continue
                 ob.end_idx = i
+
+                if resolved_origin_ts:
+                    is_res = (
+                        ob.creation_ts in resolved_origin_ts
+                        or (ob.creation_ts * 1000) in resolved_origin_ts
+                        or (ob.creation_ts // 1000) in resolved_origin_ts
+                    )
+                    if is_res:
+                        ob.status = ZoneStatus.INVALIDATED
+                        continue
+
+                if max_zone_age_bars and max_zone_age_bars > 0 and (i - ob.creation_bar_idx) > max_zone_age_bars:
+                    ob.status = ZoneStatus.EXPIRED
+                    continue
+
+                if ob.bos_bar_idx is not None and i <= ob.bos_bar_idx:
+                    continue
 
                 if cur_close > ob.high:
                     ob.status = ZoneStatus.INVALIDATED
@@ -860,23 +914,29 @@ class OrderBlockDemandStrategy(BaseStrategy):
             highs=highs[:eval_idx + 1],
             lows=lows[:eval_idx + 1],
             closes=closes[:eval_idx + 1],
-            pivot_len=self.pivot_len
+            pivot_len=self.pivot_len,
+            resolved_origin_ts=self.resolved_origin_ts,
+            max_zone_age_bars=self.max_zone_age_bars
         )
 
         # Synchronize active zones with indicator zones: prune any invalidated / expired / mitigated
         drawn_zone_map = {z.zone_id: z for z in drawn_zones}
         drawn_ts_map = {z.creation_ts: z for z in drawn_zones}
 
-        # 1. Register all resolved / invalidated / mitigated / expired timestamps from indicator calculations
+        # 1. Register all resolved / invalidated / expired timestamps from indicator calculations
         for z in drawn_zones:
-            if z.status in (ZoneStatus.INVALIDATED, ZoneStatus.MITIGATED, ZoneStatus.EXPIRED):
-                self.resolved_origin_ts.add(z.creation_ts)
+            if z.status in (ZoneStatus.INVALIDATED, ZoneStatus.EXPIRED):
+                self._mark_resolved(z.creation_ts)
+            elif z.status == ZoneStatus.MITIGATED:
+                # Historical mitigations (prior to eval_idx) are marked resolved
+                if z.end_idx is not None and z.end_idx < eval_idx:
+                    self._mark_resolved(z.creation_ts)
 
         # 2. Prune existing active zones that have been resolved, invalidated, mitigated, or expired
         seen_creation_ts: Set[int] = set()
         for zid, az in list(self.active_zones.items()):
             # If resolved in current or prior cycles
-            if az.creation_ts in self.resolved_origin_ts:
+            if self._is_resolved(az.creation_ts):
                 del self.active_zones[zid]
                 continue
 
@@ -884,7 +944,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
             ind_z = drawn_zone_map.get(zid) or drawn_ts_map.get(az.creation_ts)
             if ind_z and ind_z.status in (ZoneStatus.INVALIDATED, ZoneStatus.MITIGATED, ZoneStatus.EXPIRED):
                 az.status = ind_z.status
-                self.resolved_origin_ts.add(az.creation_ts)
+                self._mark_resolved(az.creation_ts)
                 self.history_zones.append(az)
                 del self.active_zones[zid]
                 continue
@@ -892,7 +952,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
             # Max age expiry check
             if self.max_zone_age_bars > 0 and (eval_idx - az.creation_bar_idx) > self.max_zone_age_bars:
                 az.status = ZoneStatus.EXPIRED
-                self.resolved_origin_ts.add(az.creation_ts)
+                self._mark_resolved(az.creation_ts)
                 self.history_zones.append(az)
                 del self.active_zones[zid]
                 continue
@@ -906,10 +966,10 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
         # 3. Add genuinely new ACTIVE zones from drawn_zones (avoiding duplicate creation_ts)
         for z in drawn_zones:
-            if z.status == ZoneStatus.ACTIVE and z.creation_ts not in self.resolved_origin_ts:
+            if z.status == ZoneStatus.ACTIVE and not self._is_resolved(z.creation_ts):
                 if self.max_zone_age_bars > 0 and (eval_idx - z.creation_bar_idx) > self.max_zone_age_bars:
                     z.status = ZoneStatus.EXPIRED
-                    self.resolved_origin_ts.add(z.creation_ts)
+                    self._mark_resolved(z.creation_ts)
                     self.history_zones.append(z)
                     continue
 
@@ -920,6 +980,19 @@ class OrderBlockDemandStrategy(BaseStrategy):
         candidate_trade = None
         for t in drawn_trades:
             if t.get("start_idx") == eval_idx:
+                t_zone = t.get("zone")
+                if not t_zone:
+                    continue
+                # Invalidation check: never trade on a resolved or invalidated zone
+                if self._is_resolved(t_zone.creation_ts):
+                    continue
+                # If zone exists in active_zones, it must not be marked inactive
+                matching_az = self.active_zones.get(t_zone.zone_id) or next(
+                    (az for az in self.active_zones.values() if az.creation_ts == t_zone.creation_ts),
+                    None
+                )
+                if matching_az and matching_az.status not in (ZoneStatus.ACTIVE, ZoneStatus.TESTED):
+                    continue
                 candidate_trade = t
                 break
 
@@ -1006,7 +1079,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
                 if self.max_zone_age_bars > 0 and (eval_idx - zone.creation_bar_idx) > self.max_zone_age_bars:
                     zone.status = ZoneStatus.EXPIRED
-                    self.resolved_origin_ts.add(zone.creation_ts)
+                    self._mark_resolved(zone.creation_ts)
                     self.history_zones.append(zone)
                     del self.active_zones[zid]
                     continue
@@ -1015,7 +1088,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     # Invalidation check
                     if c_close < zone.low:
                         zone.status = ZoneStatus.INVALIDATED
-                        self.resolved_origin_ts.add(zone.creation_ts)
+                        self._mark_resolved(zone.creation_ts)
                         self.history_zones.append(zone)
                         del self.active_zones[zid]
                         continue
@@ -1024,8 +1097,9 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         continue
 
                     # Tap & Rejection check (scan recent window [eval_idx - 2, eval_idx])
+                    min_scan_bar = (zone.bos_bar_idx + 1) if zone.bos_bar_idx is not None else (zone.creation_bar_idx + 1)
                     if zone.status == ZoneStatus.ACTIVE:
-                        for bar_k in range(max(zone.creation_bar_idx + 1, eval_idx - 2), eval_idx + 1):
+                        for bar_k in range(max(min_scan_bar, eval_idx - 2), eval_idx + 1):
                             k_open = opens[bar_k]
                             k_high = highs[bar_k]
                             k_low = lows[bar_k]
@@ -1078,7 +1152,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         elif bars_since_retest >= 1 and not is_green_confirm:
                             # Confirmation candle failed to close green on next bar -> INVALIDATE
                             zone.status = ZoneStatus.INVALIDATED
-                            self.resolved_origin_ts.add(zone.creation_ts)
+                            self._mark_resolved(zone.creation_ts)
                             self.history_zones.append(zone)
                             del self.active_zones[zid]
                             logger.info(
@@ -1091,7 +1165,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                     # Invalidation check (blowout above high)
                     if c_close > zone.high:
                         zone.status = ZoneStatus.INVALIDATED
-                        self.resolved_origin_ts.add(zone.creation_ts)
+                        self._mark_resolved(zone.creation_ts)
                         self.history_zones.append(zone)
                         del self.active_zones[zid]
                         continue
@@ -1100,8 +1174,9 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         continue
 
                     # Tap & Rejection check (scan recent window [eval_idx - 2, eval_idx])
+                    min_scan_bar = (zone.bos_bar_idx + 1) if zone.bos_bar_idx is not None else (zone.creation_bar_idx + 1)
                     if zone.status == ZoneStatus.ACTIVE:
-                        for bar_k in range(max(zone.creation_bar_idx + 1, eval_idx - 2), eval_idx + 1):
+                        for bar_k in range(max(min_scan_bar, eval_idx - 2), eval_idx + 1):
                             k_open = opens[bar_k]
                             k_high = highs[bar_k]
                             k_low = lows[bar_k]
@@ -1154,7 +1229,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                         elif bars_since_retest >= 1 and not is_red_confirm:
                             # Confirmation candle failed to close red on next bar -> INVALIDATE
                             zone.status = ZoneStatus.INVALIDATED
-                            self.resolved_origin_ts.add(zone.creation_ts)
+                            self._mark_resolved(zone.creation_ts)
                             self.history_zones.append(zone)
                             del self.active_zones[zid]
                             logger.info(
@@ -1172,7 +1247,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
 
             # 1. Permanently register origin timestamp as resolved/consumed so it can never re-arm
             if traded_creation_ts:
-                self.resolved_origin_ts.add(traded_creation_ts)
+                self._mark_resolved(traded_creation_ts)
 
             # 2. Immediately mark any matching zone in active_zones as MITIGATED and purge
             for zid in list(self.active_zones.keys()):
@@ -1180,7 +1255,7 @@ class OrderBlockDemandStrategy(BaseStrategy):
                 if zid == traded_zid or (traded_creation_ts and az.creation_ts == traded_creation_ts):
                     az.status = ZoneStatus.MITIGATED
                     az.confirmation_bar_idx = eval_idx
-                    self.resolved_origin_ts.add(az.creation_ts)
+                    self._mark_resolved(az.creation_ts)
                     self.history_zones.append(az)
                     del self.active_zones[zid]
 

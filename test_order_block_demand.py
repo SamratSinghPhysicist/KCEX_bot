@@ -698,6 +698,77 @@ class TestOrderBlockDemandStrategy(unittest.TestCase):
         self.assertEqual(long_trades[0]["entry"], 9.22)
         self.assertEqual(long_trades[0]["sl"], 9.00)
 
+    def test_resolved_origin_ts_blocks_candidate_trade(self):
+        """
+        Validates that if an Order Block's origin timestamp is in resolved_origin_ts,
+        calc_indicator_zones_and_trades and generate_signal will NEVER emit a trade
+        or re-arm the zone.
+        """
+        timestamps = [1000 + i * 60 for i in range(20)]
+        opens =  [9.0, 9.1, 9.2, 9.4, 9.5, 9.7, 9.7, 9.4, 9.2, 9.3, 9.7, 9.9, 9.10, 9.30, 9.50, 9.60, 9.70, 9.80, 9.90, 10.0]
+        highs =  [9.1, 9.2, 9.3, 9.5, 9.6, 10.0, 9.8, 9.5, 9.25, 9.8, 9.9, 10.2, 9.25, 9.45, 9.65, 9.75, 9.85, 9.95, 10.05, 10.15]
+        lows =   [8.9, 9.0, 9.1, 9.3, 9.4, 9.6, 9.3, 9.1, 9.00, 9.2, 9.6, 9.8, 9.05, 9.25, 9.45, 9.55, 9.65, 9.75, 9.85, 9.95]
+        closes = [9.1, 9.2, 9.4, 9.5, 9.6, 9.8, 9.4, 9.2, 9.05, 9.7, 9.9, 10.10, 9.20, 9.40, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10]
+
+        origin_ts = timestamps[8]
+        # Pre-resolve / invalidate the origin timestamp (e.g. from failed confirmation or prior trade)
+        self.strategy.resolved_origin_ts.add(origin_ts)
+
+        # Build mock bars for generate_signal
+        mock_bars = []
+        for i in range(len(timestamps)):
+            mock_bars.append({
+                "timestamp": timestamps[i],
+                "open": opens[i],
+                "high": highs[i],
+                "low": lows[i],
+                "close": closes[i],
+                "volume": 100.0
+            })
+        self.mock_market.get_klines.return_value = mock_bars[:13] # up to bar 12 where trade would normally trigger
+
+        sig = self.strategy.generate_signal("TRUMP_USDT")
+        self.assertIsNone(sig, "Must NOT generate trade on an Order Block whose origin is in resolved_origin_ts")
+
+    def test_retest_cannot_occur_before_or_on_bos_bar(self):
+        """
+        Validates that candles occurring before or on the BOS bar (during the breakout impulse)
+        cannot be counted as retests of the Order Block. Retests can only occur after the BOS bar.
+        """
+        zone = SmartMoneyZone(
+            zone_id="OB_BULL_BOS",
+            zone_type=ZoneType.BULLISH_ORDER_BLOCK,
+            symbol="TRUMP_USDT",
+            high=2.500,
+            low=2.480,
+            body_high=2.495,
+            body_low=2.485,
+            creation_bar_idx=10,
+            creation_ts=1000,
+            bos_bar_idx=14,
+            status=ZoneStatus.ACTIVE
+        )
+        self.strategy.active_zones["OB_BULL_BOS"] = zone
+
+        # At bar 13 (before BOS bar 14), price dips into zone
+        mock_bars = []
+        for i in range(15):
+            mock_bars.append({
+                "timestamp": 1000 + i * 60,
+                "open": 2.490 if i == 13 else 2.510,
+                "high": 2.495 if i == 13 else 2.520,
+                "low": 2.482 if i == 13 else 2.505,
+                "close": 2.492 if i == 13 else 2.515,
+                "volume": 100.0
+            })
+        self.mock_market.get_klines.return_value = mock_bars
+
+        # Evaluating at bar 14 (the BOS bar)
+        sig = self.strategy.generate_signal("TRUMP_USDT")
+        self.assertIsNone(sig, "No signal should trigger on or before BOS bar")
+        # Zone must still be ACTIVE, NOT prematurely marked TESTED or INVALIDATED by bar 13
+        self.assertEqual(zone.status, ZoneStatus.ACTIVE, "Zone must remain ACTIVE and not count pre-BOS candles as retests")
+
 
 if __name__ == "__main__":
     unittest.main()
