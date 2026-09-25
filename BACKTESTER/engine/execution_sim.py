@@ -367,27 +367,27 @@ class BacktestExecutionEngine:
                     start_ms=start_ms,
                     end_ms=end_ms
                 )
-            if not self.sub_candles_1m:
-                try:
-                    from BACKTESTER.engine.downloader import ensure_market_data
-                    s_str = format_ms_to_utc(start_ms)[:10] if start_ms else "2026-07-01"
-                    e_str = format_ms_to_utc(end_ms)[:10] if end_ms else "2026-08-31"
-                    ensure_market_data(
-                        symbol=self.symbol,
-                        timeframe="1m",
-                        start_date=s_str,
-                        end_date=e_str,
-                        download_trades=False,
-                        base_dir="BACKTESTER"
-                    )
-                    self.sub_candles_1m = self.ohlcv_loader.load_candles(
-                        symbol=self.symbol,
-                        timeframe="1m",
-                        start_ms=start_ms,
-                        end_ms=end_ms
-                    )
-                except Exception as e:
-                    logger.debug("Failed to auto-download 1m candles for disambiguation: %s", e)
+                if not self.sub_candles_1m:
+                    try:
+                        from BACKTESTER.engine.downloader import ensure_market_data
+                        s_str = format_ms_to_utc(start_ms)[:10] if start_ms else "2026-07-01"
+                        e_str = format_ms_to_utc(end_ms)[:10] if end_ms else "2026-08-31"
+                        ensure_market_data(
+                            symbol=self.symbol,
+                            timeframe="1m",
+                            start_date=s_str,
+                            end_date=e_str,
+                            download_trades=False,
+                            base_dir="BACKTESTER"
+                        )
+                        self.sub_candles_1m = self.ohlcv_loader.load_candles(
+                            symbol=self.symbol,
+                            timeframe="1m",
+                            start_ms=start_ms,
+                            end_ms=end_ms
+                        )
+                    except Exception as e:
+                        logger.debug("Failed to auto-download 1m candles for disambiguation: %s", e)
             self._sub_1m_timestamps = [c.open_time_ms for c in self.sub_candles_1m]
 
         # Seed initial equity point

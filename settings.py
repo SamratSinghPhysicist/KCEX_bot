@@ -552,18 +552,26 @@ STRATEGY_PRESETS = {
         "cooldown_seconds": 10.0
     },
     "MULTI_ASSET_SMC": {
-        "name": "Multi-Asset Smart Money Concepts Portfolio (TRUMP 15m, ETH 4h, BTC 15m, DOGE 15m)",
+        "name": "Multi-Asset Smart Money Concepts Portfolio (TRUMP, ETH, BTC, DOGE, TRX, AVAX, KOMA, AIXBT, XMR)",
         "description": (
-            "Concurrent multi-asset portfolio trading Vivek Yadav SMC on optimal empirical timeframes: "
-            "TRUMP_USDT (15m), ETH_USDT (4h), BTC_USDT (15m), DOGE_USDT (15m) at 15x leverage. "
-            "50% partial exit at 1:1 R:R, Breakeven SL (+1 tick buffer), 1:2 runner, 10% margin sizing."
+            "Concurrent multi-asset portfolio trading Vivek Yadav SMC on empirically verified optimal timeframes: "
+            "TRUMP_USDT (15m), ETH_USDT (4h), BTC_USDT (15m), DOGE_USDT (15m), TRX_USDT (1h), AVAX_USDT (1h), "
+            "KOMA_USDT (4h), AIXBT_USDT (1d), XMR_USDT (15m) at 10x-15x leverage. "
+            "50% partial exit at 1:1 R:R, Breakeven SL (+1 tick buffer), 1:2 runner, 5-10% margin sizing."
         ),
         "is_multi_asset": True,
         "assets": [
+            # Existing Base Live Pairs
             {"symbol": "TRUMP_USDT", "timeframe": "Min15", "pivot_len": 3, "leverage": 15},
             {"symbol": "ETH_USDT",   "timeframe": "Hour4", "pivot_len": 5, "leverage": 15},
             {"symbol": "BTC_USDT",   "timeframe": "Min15", "pivot_len": 5, "leverage": 15},
             {"symbol": "DOGE_USDT",  "timeframe": "Min15", "pivot_len": 5, "leverage": 15},
+            # Newly Added Empirically Verified Profitable Pairs (1 Timeframe Per Pair)
+            {"symbol": "TRX_USDT",   "timeframe": "Min60", "pivot_len": 5, "leverage": 15},  # 1h: 81.8% WR, 2.64 PF, 7.8% DD
+            {"symbol": "AVAX_USDT",  "timeframe": "Min60", "pivot_len": 5, "leverage": 15},  # 1h: 54.5% WR, 2.00 PF, 6.3% DD
+            {"symbol": "KOMA_USDT",  "timeframe": "Hour4", "pivot_len": 5, "leverage": 10},  # 4h: 37.9% WR, +21.48% ROI (0% fee)
+            {"symbol": "AIXBT_USDT", "timeframe": "Day1",  "pivot_len": 5, "leverage": 10},  # 1d: 33.3% WR, +32.99% ROI (0% fee)
+            {"symbol": "XMR_USDT",   "timeframe": "Min15", "pivot_len": 5, "leverage": 10},  # 15m: 53.9% WR, 52 trades
         ],
         "strategy_mode": "ORDER_BLOCK_DEMAND",
         "leverage": 15,

@@ -1,0 +1,223 @@
+name: High-Throughput Distributed Backtesting Matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: "Target Pairs ('ALL' or comma-separated e.g. 'MELANIA_USDT,XRP_USDT')"
+        required: true
+        default: "ALL"
+        type: string
+
+      timeframes:
+        description: "Target Timeframes ('ALL' or comma-separated e.g. '5m,15m,1h,4h,1d')"
+        required: true
+        default: "ALL"
+        type: string
+
+      months:
+        description: "Historical Lookback Window in Months (6-12 months)"
+        required: true
+        default: "6"
+        type: choice
+        options:
+          - "3"
+          - "6"
+          - "9"
+          - "12"
+
+      leverage:
+        description: "Isolated Leverage Multiplier"
+        required: true
+        default: "15"
+        type: string
+
+      margin_pct:
+        description: "Compounding Margin % per Trade (Quantity = Margin * Leverage)"
+        required: true
+        default: "10.0"
+        type: string
+
+      capital:
+        description: "Initial Capital in USDT per Worker"
+        required: true
+        default: "100.0"
+        type: string
+
+concurrency:
+  group: backtest-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run-backtests:
+    name: ${{ matrix.pair }} [${{ matrix.timeframe }}]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        pair:
+          # Shortlisted KCEX Pairs (14)
+          - MELANIA_USDT
+          - DOGS_USDT
+          - MEME_USDT
+          - BOME_USDT
+          - ACT_USDT
+          - AVAAI_USDT
+          - MOG_USDT
+          - CHILLGUY_USDT
+          - GOAT_USDT
+          - PIPPIN_USDT
+          - WIF_USDT
+          - KOMA_USDT
+          - TRUMP_USDT
+          - AIXBT_USDT
+          # High-Cap & Layer-1 / DeFi Pairs (6)
+          - XRP_USDT
+          - XMR_USDT
+          - AVAX_USDT
+          - TRX_USDT
+          - HYPE_USDT
+          - LTC_USDT
+        timeframe:
+          - "5m"
+          - "15m"
+          - "1h"
+          - "4h"
+          - "1d"
+
+    steps:
+      - name: Filter Target Pairs and Timeframes
+        id: filter-check
+        shell: bash
+        run: |
+          TARGET_PAIRS="${{ inputs.pairs }}"
+          TARGET_TFS="${{ inputs.timeframes }}"
+          CURR_PAIR="${{ matrix.pair }}"
+          CURR_TF="${{ matrix.timeframe }}"
+
+          RUN_JOB="true"
+
+          # Check pair filter
+          if [ -n "$TARGET_PAIRS" ] && [ "$TARGET_PAIRS" != "ALL" ] && [ "$TARGET_PAIRS" != "all" ]; then
+            if [[ ! ",$TARGET_PAIRS," =~ ",$CURR_PAIR," ]] && [[ ! ",$TARGET_PAIRS," =~ ",${CURR_PAIR%_USDT}," ]]; then
+              RUN_JOB="false"
+            fi
+          fi
+
+          # Check timeframe filter
+          if [ -n "$TARGET_TFS" ] && [ "$TARGET_TFS" != "ALL" ] && [ "$TARGET_TFS" != "all" ]; then
+            if [[ ! ",$TARGET_TFS," =~ ",$CURR_TF," ]]; then
+              RUN_JOB="false"
+            fi
+          fi
+
+          echo "run_job=$RUN_JOB" >> $GITHUB_OUTPUT
+          if [ "$RUN_JOB" = "true" ]; then
+            echo "🚀 Scheduling backtest for $CURR_PAIR [$CURR_TF]"
+          else
+            echo "⏭️ Skipping $CURR_PAIR [$CURR_TF] per workflow filter inputs"
+          fi
+
+      - name: Checkout Repository
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        if: steps.filter-check.outputs.run_job == 'true'
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas ccxt pyarrow requests websockets
+
+      - name: Cache Historical OHLCV Data
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/cache@v4
+        with:
+          path: BACKTESTER/OHLCV_Data_Binance
+          key: ohlcv-cache-${{ matrix.pair }}-${{ matrix.timeframe }}-${{ github.run_id }}
+          restore-keys: |
+            ohlcv-cache-${{ matrix.pair }}-${{ matrix.timeframe }}-
+            ohlcv-cache-${{ matrix.pair }}-
+            ohlcv-cache-
+
+      - name: Execute Order Book + Demand Block Backtest
+        if: steps.filter-check.outputs.run_job == 'true'
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          python scripts/run_single_backtest.py \
+            --pair "${{ matrix.pair }}" \
+            --timeframe "${{ matrix.timeframe }}" \
+            --months "${{ inputs.months || '6' }}" \
+            --leverage "${{ inputs.leverage || '15' }}" \
+            --margin-pct "${{ inputs.margin_pct || '10.0' }}" \
+            --capital "${{ inputs.capital || '100.0' }}" \
+            --strategy "ORDER_BLOCK_DEMAND" \
+            --output-dir artifacts
+
+      - name: Upload Individual Worker Artifacts
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: results_${{ matrix.pair }}_${{ matrix.timeframe }}
+          path: |
+            artifacts/results_${{ matrix.pair }}_${{ matrix.timeframe }}.json
+            artifacts/results_${{ matrix.pair }}_${{ matrix.timeframe }}.csv
+          if-no-files-found: warn
+          retention-days: 14
+
+  aggregate-results:
+    name: 📊 Consolidate & Rank Matrix Reports
+    needs: [run-backtests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Report Dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas tabulate
+
+      - name: Download All Matrix Worker Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_artifacts
+          pattern: results_*
+
+      - name: Aggregate Results & Generate Step Summary
+        shell: bash
+        run: |
+          mkdir -p consolidated_reports
+          python scripts/aggregate_backtest_results.py \
+            --results-dir all_artifacts \
+            --output-dir consolidated_reports \
+            --github-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Consolidated Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: consolidated-backtest-reports
+          path: |
+            consolidated_reports/consolidated_backtest_matrix.csv
+            consolidated_reports/champion_timeframe_per_asset.csv
+            consolidated_reports/consolidated_backtest_matrix.json
+            consolidated_reports/consolidated_backtest_report.md
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,331 @@
+Total Profitable Configurations: 18
+
+==========================================================================================
+#1 TRUMP_USDT [1D] | ROI: +147.92% | Net PnL: $+147.92 | Fees: $0.00 | Gross: $+147.92
+    Trades: 2 | WR: 100.0% | PF: 999.00 | Max DD: 0.0% | Streaks (Max W: 2, Max L: 0)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: SAMPLE_SIZE_WARNING (Sparse Sample <= 3 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$  50.05 | Fees=$ 0.000
+      2026-08: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$  97.86 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W17: Trades=1  | WR=100.0% | Net PnL=$  50.05 | Fees=$ 0.000
+      2026-W34: Trades=1  | WR=100.0% | Net PnL=$  97.86 | Fees=$ 0.000
+
+==========================================================================================
+#2 TRUMP_USDT [4H] | ROI: +75.06% | Net PnL: $+75.06 | Fees: $0.00 | Gross: $+75.06
+    Trades: 17 | WR: 64.7% | PF: 2.47 | Max DD: 17.7% | Streaks (Max W: 4, Max L: 2)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: MEDIUM_CONFIDENCE (Moderate Sample 10-39 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=6  | Wins=4  | Losses=2  | WR= 66.7% | Net PnL=$   1.44 | Fees=$ 0.000
+      2026-05: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   0.06 | Fees=$ 0.000
+      2026-06: Trades=4  | Wins=3  | Losses=1  | WR= 75.0% | Net PnL=$  91.52 | Fees=$ 0.000
+      2026-07: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$ -14.51 | Fees=$ 0.000
+      2026-08: Trades=5  | Wins=3  | Losses=2  | WR= 60.0% | Net PnL=$  -3.46 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W14: Trades=2  | WR=100.0% | Net PnL=$   3.75 | Fees=$ 0.000
+      2026-W15: Trades=1  | WR=100.0% | Net PnL=$   0.11 | Fees=$ 0.000
+      2026-W16: Trades=2  | WR= 50.0% | Net PnL=$   5.73 | Fees=$ 0.000
+      2026-W18: Trades=1  | WR=  0.0% | Net PnL=$  -8.15 | Fees=$ 0.000
+      2026-W20: Trades=1  | WR=100.0% | Net PnL=$   0.06 | Fees=$ 0.000
+      2026-W23: Trades=2  | WR= 50.0% | Net PnL=$  15.72 | Fees=$ 0.000
+      2026-W24: Trades=2  | WR=100.0% | Net PnL=$  75.80 | Fees=$ 0.000
+      2026-W31: Trades=1  | WR=  0.0% | Net PnL=$ -14.51 | Fees=$ 0.000
+      2026-W32: Trades=2  | WR= 50.0% | Net PnL=$  -7.63 | Fees=$ 0.000
+      2026-W33: Trades=1  | WR=100.0% | Net PnL=$   2.86 | Fees=$ 0.000
+      2026-W34: Trades=2  | WR= 50.0% | Net PnL=$   1.31 | Fees=$ 0.000
+
+==========================================================================================
+#3 AIXBT_USDT [1D] | ROI: +32.99% | Net PnL: $+32.99 | Fees: $0.00 | Gross: $+32.99
+    Trades: 6 | WR: 33.3% | PF: 1.77 | Max DD: 24.4% | Streaks (Max W: 2, Max L: 4)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: EMERGING_ALPHA (Low Sample 4-9 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$  50.51 | Fees=$ 0.000
+      2026-05: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$  25.30 | Fees=$ 0.000
+      2026-07: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$ -11.83 | Fees=$ 0.000
+      2026-08: Trades=2  | Wins=0  | Losses=2  | WR=  0.0% | Net PnL=$ -21.39 | Fees=$ 0.000
+      2026-09: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -9.61 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W16: Trades=1  | WR=100.0% | Net PnL=$  50.51 | Fees=$ 0.000
+      2026-W18: Trades=1  | WR=100.0% | Net PnL=$  25.30 | Fees=$ 0.000
+      2026-W31: Trades=1  | WR=  0.0% | Net PnL=$ -11.83 | Fees=$ 0.000
+      2026-W32: Trades=1  | WR=  0.0% | Net PnL=$ -11.11 | Fees=$ 0.000
+      2026-W34: Trades=1  | WR=  0.0% | Net PnL=$ -10.28 | Fees=$ 0.000
+      2026-W39: Trades=1  | WR=  0.0% | Net PnL=$  -9.61 | Fees=$ 0.000
+
+==========================================================================================
+#4 KOMA_USDT [4H] | ROI: +21.48% | Net PnL: $+21.48 | Fees: $0.00 | Gross: $+21.48
+    Trades: 29 | WR: 37.9% | PF: 1.14 | Max DD: 31.9% | Streaks (Max W: 3, Max L: 5)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: MEDIUM_CONFIDENCE (Moderate Sample 10-39 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=3  | Wins=1  | Losses=2  | WR= 33.3% | Net PnL=$  -1.24 | Fees=$ 0.000
+      2026-05: Trades=2  | Wins=2  | Losses=0  | WR=100.0% | Net PnL=$  37.23 | Fees=$ 0.000
+      2026-06: Trades=4  | Wins=2  | Losses=2  | WR= 50.0% | Net PnL=$  39.88 | Fees=$ 0.000
+      2026-07: Trades=9  | Wins=3  | Losses=6  | WR= 33.3% | Net PnL=$  -4.19 | Fees=$ 0.000
+      2026-08: Trades=6  | Wins=1  | Losses=5  | WR= 16.7% | Net PnL=$ -41.82 | Fees=$ 0.000
+      2026-09: Trades=5  | Wins=2  | Losses=3  | WR= 40.0% | Net PnL=$  -8.38 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W14: Trades=1  | WR=  0.0% | Net PnL=$  -6.02 | Fees=$ 0.000
+      2026-W17: Trades=2  | WR= 50.0% | Net PnL=$   4.78 | Fees=$ 0.000
+      2026-W19: Trades=2  | WR=100.0% | Net PnL=$  37.23 | Fees=$ 0.000
+      2026-W23: Trades=2  | WR=  0.0% | Net PnL=$ -16.03 | Fees=$ 0.000
+      2026-W24: Trades=1  | WR=100.0% | Net PnL=$   3.29 | Fees=$ 0.000
+      2026-W25: Trades=1  | WR=100.0% | Net PnL=$  52.62 | Fees=$ 0.000
+      2026-W27: Trades=2  | WR=  0.0% | Net PnL=$ -21.47 | Fees=$ 0.000
+      2026-W28: Trades=2  | WR=  0.0% | Net PnL=$ -14.84 | Fees=$ 0.000
+      2026-W29: Trades=1  | WR=100.0% | Net PnL=$   4.31 | Fees=$ 0.000
+      2026-W30: Trades=2  | WR= 50.0% | Net PnL=$  -1.32 | Fees=$ 0.000
+      2026-W31: Trades=2  | WR= 50.0% | Net PnL=$  29.13 | Fees=$ 0.000
+      2026-W32: Trades=1  | WR=  0.0% | Net PnL=$ -10.34 | Fees=$ 0.000
+      2026-W33: Trades=1  | WR=  0.0% | Net PnL=$  -9.69 | Fees=$ 0.000
+      2026-W34: Trades=2  | WR=  0.0% | Net PnL=$ -17.68 | Fees=$ 0.000
+      2026-W35: Trades=2  | WR= 50.0% | Net PnL=$  -4.10 | Fees=$ 0.000
+      2026-W36: Trades=1  | WR=100.0% | Net PnL=$  14.25 | Fees=$ 0.000
+      2026-W37: Trades=1  | WR=  0.0% | Net PnL=$  -8.68 | Fees=$ 0.000
+      2026-W38: Trades=2  | WR=  0.0% | Net PnL=$ -15.75 | Fees=$ 0.000
+      2026-W39: Trades=1  | WR=100.0% | Net PnL=$   1.80 | Fees=$ 0.000
+
+==========================================================================================
+#5 TRX_USDT [1H] | ROI: +20.66% | Net PnL: $+20.66 | Fees: $0.74 | Gross: $+21.40
+    Trades: 11 | WR: 81.8% | PF: 2.64 | Max DD: 7.8% | Streaks (Max W: 5, Max L: 1)
+    Fee Schedule: 0.02% Taker | Confidence: MEDIUM_CONFIDENCE (Moderate Sample 10-39 trades)
+    MONTHLY BREAKDOWN:
+      2026-03: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   0.69 | Fees=$ 0.060
+      2026-04: Trades=3  | Wins=3  | Losses=0  | WR=100.0% | Net PnL=$   3.93 | Fees=$ 0.182
+      2026-05: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   5.64 | Fees=$ 0.064
+      2026-06: Trades=3  | Wins=2  | Losses=1  | WR= 66.7% | Net PnL=$  13.78 | Fees=$ 0.202
+      2026-08: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   6.39 | Fees=$ 0.073
+      2026-09: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$  -9.76 | Fees=$ 0.153
+    WEEKLY BREAKDOWN:
+      2026-W14: Trades=1  | WR=100.0% | Net PnL=$   0.69 | Fees=$ 0.060
+      2026-W15: Trades=2  | WR=100.0% | Net PnL=$   0.53 | Fees=$ 0.120
+      2026-W17: Trades=1  | WR=100.0% | Net PnL=$   3.39 | Fees=$ 0.062
+      2026-W18: Trades=1  | WR=100.0% | Net PnL=$   5.64 | Fees=$ 0.064
+      2026-W23: Trades=1  | WR=  0.0% | Net PnL=$  -2.40 | Fees=$ 0.066
+      2026-W24: Trades=1  | WR=100.0% | Net PnL=$   5.24 | Fees=$ 0.066
+      2026-W25: Trades=1  | WR=100.0% | Net PnL=$  10.94 | Fees=$ 0.070
+      2026-W34: Trades=1  | WR=100.0% | Net PnL=$   6.39 | Fees=$ 0.073
+      2026-W36: Trades=1  | WR=  0.0% | Net PnL=$ -10.23 | Fees=$ 0.081
+      2026-W39: Trades=1  | WR=100.0% | Net PnL=$   0.47 | Fees=$ 0.072
+
+==========================================================================================
+#6 BOME_USDT [1D] | ROI: +16.68% | Net PnL: $+16.68 | Fees: $0.00 | Gross: $+16.68
+    Trades: 2 | WR: 50.0% | PF: 2.81 | Max DD: 7.3% | Streaks (Max W: 1, Max L: 1)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: SAMPLE_SIZE_WARNING (Sparse Sample <= 3 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$  25.92 | Fees=$ 0.000
+      2026-08: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -9.24 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W15: Trades=1  | WR=100.0% | Net PnL=$  25.92 | Fees=$ 0.000
+      2026-W31: Trades=1  | WR=  0.0% | Net PnL=$  -9.24 | Fees=$ 0.000
+
+==========================================================================================
+#7 KOMA_USDT [1D] | ROI: +12.17% | Net PnL: $+12.17 | Fees: $0.00 | Gross: $+12.17
+    Trades: 4 | WR: 25.0% | PF: 1.71 | Max DD: 17.1% | Streaks (Max W: 1, Max L: 3)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: EMERGING_ALPHA (Low Sample 4-9 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -6.06 | Fees=$ 0.000
+      2026-06: Trades=2  | Wins=0  | Losses=2  | WR=  0.0% | Net PnL=$ -11.06 | Fees=$ 0.000
+      2026-09: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$  29.29 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W17: Trades=1  | WR=  0.0% | Net PnL=$  -6.06 | Fees=$ 0.000
+      2026-W25: Trades=1  | WR=  0.0% | Net PnL=$  -5.70 | Fees=$ 0.000
+      2026-W26: Trades=1  | WR=  0.0% | Net PnL=$  -5.37 | Fees=$ 0.000
+      2026-W37: Trades=1  | WR=100.0% | Net PnL=$  29.29 | Fees=$ 0.000
+
+==========================================================================================
+#8 AVAX_USDT [1H] | ROI: +11.77% | Net PnL: $+11.77 | Fees: $0.68 | Gross: $+12.45
+    Trades: 11 | WR: 54.5% | PF: 2.00 | Max DD: 6.3% | Streaks (Max W: 3, Max L: 2)
+    Fee Schedule: 0.02% Taker | Confidence: MEDIUM_CONFIDENCE (Moderate Sample 10-39 trades)
+    MONTHLY BREAKDOWN:
+      2026-03: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -3.92 | Fees=$ 0.061
+      2026-04: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   1.20 | Fees=$ 0.058
+      2026-05: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   0.88 | Fees=$ 0.058
+      2026-06: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -3.06 | Fees=$ 0.059
+      2026-07: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -1.39 | Fees=$ 0.057
+      2026-08: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   6.94 | Fees=$ 0.055
+      2026-09: Trades=5  | Wins=3  | Losses=2  | WR= 60.0% | Net PnL=$  11.13 | Fees=$ 0.330
+    WEEKLY BREAKDOWN:
+      2026-W14: Trades=1  | WR=  0.0% | Net PnL=$  -3.92 | Fees=$ 0.061
+      2026-W18: Trades=1  | WR=100.0% | Net PnL=$   1.20 | Fees=$ 0.058
+      2026-W21: Trades=1  | WR=100.0% | Net PnL=$   0.88 | Fees=$ 0.058
+      2026-W25: Trades=1  | WR=  0.0% | Net PnL=$  -3.06 | Fees=$ 0.059
+      2026-W30: Trades=1  | WR=  0.0% | Net PnL=$  -1.39 | Fees=$ 0.057
+      2026-W32: Trades=1  | WR=100.0% | Net PnL=$   6.94 | Fees=$ 0.055
+      2026-W37: Trades=1  | WR=100.0% | Net PnL=$   7.96 | Fees=$ 0.059
+      2026-W38: Trades=4  | WR= 50.0% | Net PnL=$   3.16 | Fees=$ 0.271
+
+==========================================================================================
+#9 MELANIA_USDT [1D] | ROI: +9.06% | Net PnL: $+9.06 | Fees: $0.00 | Gross: $+9.06
+    Trades: 2 | WR: 100.0% | PF: 999.00 | Max DD: 0.0% | Streaks (Max W: 2, Max L: 0)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: SAMPLE_SIZE_WARNING (Sparse Sample <= 3 trades)
+    MONTHLY BREAKDOWN:
+      2026-08: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   7.52 | Fees=$ 0.000
+      2026-09: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   1.55 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W31: Trades=1  | WR=100.0% | Net PnL=$   7.52 | Fees=$ 0.000
+      2026-W39: Trades=1  | WR=100.0% | Net PnL=$   1.55 | Fees=$ 0.000
+
+==========================================================================================
+#10 XRP_USDT [1D] | ROI: +7.34% | Net PnL: $+7.34 | Fees: $0.06 | Gross: $+7.40
+    Trades: 1 | WR: 100.0% | PF: 999.00 | Max DD: 0.0% | Streaks (Max W: 1, Max L: 0)
+    Fee Schedule: 0.02% Taker | Confidence: SAMPLE_SIZE_WARNING (Sparse Sample <= 3 trades)
+    MONTHLY BREAKDOWN:
+      2026-07: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   7.34 | Fees=$ 0.058
+    WEEKLY BREAKDOWN:
+      2026-W28: Trades=1  | WR=100.0% | Net PnL=$   7.34 | Fees=$ 0.058
+
+==========================================================================================
+#11 TRX_USDT [15M] | ROI: +6.92% | Net PnL: $+6.92 | Fees: $1.57 | Gross: $+8.49
+    Trades: 25 | WR: 52.0% | PF: 1.48 | Max DD: 8.2% | Streaks (Max W: 3, Max L: 5)
+    Fee Schedule: 0.02% Taker | Confidence: MEDIUM_CONFIDENCE (Moderate Sample 10-39 trades)
+    MONTHLY BREAKDOWN:
+      2026-03: Trades=3  | Wins=2  | Losses=1  | WR= 66.7% | Net PnL=$   0.53 | Fees=$ 0.181
+      2026-04: Trades=6  | Wins=2  | Losses=4  | WR= 33.3% | Net PnL=$   2.88 | Fees=$ 0.360
+      2026-05: Trades=3  | Wins=2  | Losses=1  | WR= 66.7% | Net PnL=$   1.83 | Fees=$ 0.185
+      2026-06: Trades=5  | Wins=3  | Losses=2  | WR= 60.0% | Net PnL=$  10.15 | Fees=$ 0.320
+      2026-08: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$  -7.96 | Fees=$ 0.137
+      2026-09: Trades=6  | Wins=3  | Losses=3  | WR= 50.0% | Net PnL=$  -0.50 | Fees=$ 0.388
+    WEEKLY BREAKDOWN:
+      2026-W13: Trades=2  | WR=100.0% | Net PnL=$   0.59 | Fees=$ 0.120
+      2026-W14: Trades=1  | WR=  0.0% | Net PnL=$  -0.06 | Fees=$ 0.061
+      2026-W15: Trades=3  | WR=  0.0% | Net PnL=$  -0.97 | Fees=$ 0.180
+      2026-W16: Trades=1  | WR=  0.0% | Net PnL=$  -0.71 | Fees=$ 0.060
+      2026-W17: Trades=2  | WR=100.0% | Net PnL=$   4.56 | Fees=$ 0.120
+      2026-W20: Trades=3  | WR= 66.7% | Net PnL=$   1.83 | Fees=$ 0.185
+      2026-W23: Trades=3  | WR= 33.3% | Net PnL=$  -0.84 | Fees=$ 0.188
+      2026-W24: Trades=1  | WR=100.0% | Net PnL=$   5.76 | Fees=$ 0.064
+      2026-W26: Trades=1  | WR=100.0% | Net PnL=$   5.22 | Fees=$ 0.067
+      2026-W34: Trades=2  | WR= 50.0% | Net PnL=$  -7.96 | Fees=$ 0.137
+      2026-W36: Trades=3  | WR= 66.7% | Net PnL=$  -0.27 | Fees=$ 0.195
+      2026-W37: Trades=1  | WR=100.0% | Net PnL=$   0.51 | Fees=$ 0.064
+      2026-W38: Trades=1  | WR=  0.0% | Net PnL=$  -0.52 | Fees=$ 0.064
+      2026-W39: Trades=1  | WR=  0.0% | Net PnL=$  -0.22 | Fees=$ 0.065
+
+==========================================================================================
+#12 LTC_USDT [1D] | ROI: +6.64% | Net PnL: $+6.64 | Fees: $0.14 | Gross: $+6.77
+    Trades: 2 | WR: 50.0% | PF: 1.73 | Max DD: 7.8% | Streaks (Max W: 1, Max L: 1)
+    Fee Schedule: 0.02% Taker | Confidence: SAMPLE_SIZE_WARNING (Sparse Sample <= 3 trades)
+    MONTHLY BREAKDOWN:
+      2026-07: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$  15.67 | Fees=$ 0.063
+      2026-09: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -9.03 | Fees=$ 0.071
+    WEEKLY BREAKDOWN:
+      2026-W31: Trades=1  | WR=100.0% | Net PnL=$  15.67 | Fees=$ 0.063
+      2026-W37: Trades=1  | WR=  0.0% | Net PnL=$  -9.03 | Fees=$ 0.071
+
+==========================================================================================
+#13 PIPPIN_USDT [1D] | ROI: +5.44% | Net PnL: $+5.44 | Fees: $0.00 | Gross: $+5.44
+    Trades: 7 | WR: 28.6% | PF: 1.16 | Max DD: 17.8% | Streaks (Max W: 1, Max L: 3)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: EMERGING_ALPHA (Low Sample 4-9 trades)
+    MONTHLY BREAKDOWN:
+      2026-05: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$  19.37 | Fees=$ 0.000
+      2026-06: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -7.58 | Fees=$ 0.000
+      2026-07: Trades=2  | Wins=0  | Losses=2  | WR=  0.0% | Net PnL=$ -13.69 | Fees=$ 0.000
+      2026-09: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$   7.33 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W19: Trades=1  | WR=  0.0% | Net PnL=$  -6.27 | Fees=$ 0.000
+      2026-W22: Trades=1  | WR=100.0% | Net PnL=$  25.65 | Fees=$ 0.000
+      2026-W26: Trades=1  | WR=  0.0% | Net PnL=$  -7.58 | Fees=$ 0.000
+      2026-W27: Trades=1  | WR=  0.0% | Net PnL=$  -6.99 | Fees=$ 0.000
+      2026-W31: Trades=1  | WR=  0.0% | Net PnL=$  -6.69 | Fees=$ 0.000
+      2026-W38: Trades=2  | WR= 50.0% | Net PnL=$   7.33 | Fees=$ 0.000
+
+==========================================================================================
+#14 XRP_USDT [4H] | ROI: +5.12% | Net PnL: $+5.12 | Fees: $0.06 | Gross: $+5.18
+    Trades: 1 | WR: 100.0% | PF: 999.00 | Max DD: 0.0% | Streaks (Max W: 1, Max L: 0)
+    Fee Schedule: 0.02% Taker | Confidence: SAMPLE_SIZE_WARNING (Sparse Sample <= 3 trades)
+    MONTHLY BREAKDOWN:
+      2026-05: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   5.12 | Fees=$ 0.059
+    WEEKLY BREAKDOWN:
+      2026-W21: Trades=1  | WR=100.0% | Net PnL=$   5.12 | Fees=$ 0.059
+
+==========================================================================================
+#15 TRX_USDT [4H] | ROI: +4.44% | Net PnL: $+4.44 | Fees: $0.53 | Gross: $+4.97
+    Trades: 9 | WR: 66.7% | PF: 1.45 | Max DD: 8.1% | Streaks (Max W: 5, Max L: 2)
+    Fee Schedule: 0.02% Taker | Confidence: EMERGING_ALPHA (Low Sample 4-9 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$   1.35 | Fees=$ 0.120
+      2026-05: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -5.68 | Fees=$ 0.059
+      2026-06: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$   0.77 | Fees=$ 0.113
+      2026-08: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   4.65 | Fees=$ 0.057
+      2026-09: Trades=3  | Wins=3  | Losses=0  | WR=100.0% | Net PnL=$   3.35 | Fees=$ 0.183
+    WEEKLY BREAKDOWN:
+      2026-W14: Trades=1  | WR=  0.0% | Net PnL=$  -1.62 | Fees=$ 0.059
+      2026-W17: Trades=1  | WR=100.0% | Net PnL=$   2.97 | Fees=$ 0.060
+      2026-W22: Trades=1  | WR=  0.0% | Net PnL=$  -5.68 | Fees=$ 0.059
+      2026-W23: Trades=2  | WR= 50.0% | Net PnL=$   0.77 | Fees=$ 0.113
+      2026-W34: Trades=1  | WR=100.0% | Net PnL=$   4.65 | Fees=$ 0.057
+      2026-W36: Trades=1  | WR=100.0% | Net PnL=$   1.23 | Fees=$ 0.061
+      2026-W37: Trades=2  | WR=100.0% | Net PnL=$   2.13 | Fees=$ 0.122
+
+==========================================================================================
+#16 HYPE_USDT [4H] | ROI: +2.74% | Net PnL: $+2.74 | Fees: $0.26 | Gross: $+3.00
+    Trades: 4 | WR: 50.0% | PF: 1.17 | Max DD: 13.8% | Streaks (Max W: 2, Max L: 2)
+    Fee Schedule: 0.02% Taker | Confidence: EMERGING_ALPHA (Low Sample 4-9 trades)
+    MONTHLY BREAKDOWN:
+      2026-04: Trades=1  | Wins=1  | Losses=0  | WR=100.0% | Net PnL=$   1.02 | Fees=$ 0.060
+      2026-07: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$   9.52 | Fees=$ 0.127
+      2026-08: Trades=1  | Wins=0  | Losses=1  | WR=  0.0% | Net PnL=$  -7.79 | Fees=$ 0.068
+    WEEKLY BREAKDOWN:
+      2026-W15: Trades=1  | WR=100.0% | Net PnL=$   1.02 | Fees=$ 0.060
+      2026-W28: Trades=1  | WR=100.0% | Net PnL=$  18.19 | Fees=$ 0.058
+      2026-W31: Trades=1  | WR=  0.0% | Net PnL=$  -8.67 | Fees=$ 0.069
+      2026-W34: Trades=1  | WR=  0.0% | Net PnL=$  -7.79 | Fees=$ 0.068
+
+==========================================================================================
+#17 DOGS_USDT [4H] | ROI: +2.07% | Net PnL: $+2.07 | Fees: $0.00 | Gross: $+2.07
+    Trades: 13 | WR: 46.1% | PF: 1.05 | Max DD: 22.6% | Streaks (Max W: 2, Max L: 4)
+    Fee Schedule: 0.00% Zero-Fee | Confidence: MEDIUM_CONFIDENCE (Moderate Sample 10-39 trades)
+    MONTHLY BREAKDOWN:
+      2026-07: Trades=5  | Wins=1  | Losses=4  | WR= 20.0% | Net PnL=$ -17.06 | Fees=$ 0.000
+      2026-08: Trades=6  | Wins=3  | Losses=3  | WR= 50.0% | Net PnL=$   3.64 | Fees=$ 0.000
+      2026-09: Trades=2  | Wins=2  | Losses=0  | WR=100.0% | Net PnL=$  15.48 | Fees=$ 0.000
+    WEEKLY BREAKDOWN:
+      2026-W27: Trades=1  | WR=100.0% | Net PnL=$   7.19 | Fees=$ 0.000
+      2026-W28: Trades=1  | WR=  0.0% | Net PnL=$  -7.23 | Fees=$ 0.000
+      2026-W29: Trades=1  | WR=  0.0% | Net PnL=$  -6.74 | Fees=$ 0.000
+      2026-W30: Trades=2  | WR=  0.0% | Net PnL=$ -10.28 | Fees=$ 0.000
+      2026-W34: Trades=2  | WR=100.0% | Net PnL=$  13.55 | Fees=$ 0.000
+      2026-W35: Trades=2  | WR= 50.0% | Net PnL=$   3.02 | Fees=$ 0.000
+      2026-W36: Trades=2  | WR=  0.0% | Net PnL=$ -12.93 | Fees=$ 0.000
+      2026-W37: Trades=1  | WR=100.0% | Net PnL=$  10.63 | Fees=$ 0.000
+      2026-W39: Trades=1  | WR=100.0% | Net PnL=$   4.85 | Fees=$ 0.000
+
+==========================================================================================
+#18 XMR_USDT [15M] | ROI: +0.94% | Net PnL: $+0.94 | Fees: $2.93 | Gross: $+3.87
+    Trades: 52 | WR: 53.9% | PF: 1.02 | Max DD: 17.3% | Streaks (Max W: 4, Max L: 4)
+    Fee Schedule: 0.02% Taker | Confidence: HIGH_CONFIDENCE (Robust Sample >= 40 trades)
+    MONTHLY BREAKDOWN:
+      2026-03: Trades=2  | Wins=1  | Losses=1  | WR= 50.0% | Net PnL=$  -0.54 | Fees=$ 0.119
+      2026-04: Trades=4  | Wins=1  | Losses=3  | WR= 25.0% | Net PnL=$  -0.85 | Fees=$ 0.240
+      2026-05: Trades=8  | Wins=5  | Losses=3  | WR= 62.5% | Net PnL=$  -3.47 | Fees=$ 0.461
+      2026-06: Trades=10 | Wins=6  | Losses=4  | WR= 60.0% | Net PnL=$  -6.81 | Fees=$ 0.535
+      2026-07: Trades=13 | Wins=8  | Losses=5  | WR= 61.5% | Net PnL=$   6.18 | Fees=$ 0.714
+      2026-08: Trades=8  | Wins=5  | Losses=3  | WR= 62.5% | Net PnL=$   1.44 | Fees=$ 0.455
+      2026-09: Trades=7  | Wins=2  | Losses=5  | WR= 28.6% | Net PnL=$   4.99 | Fees=$ 0.410
+    WEEKLY BREAKDOWN:
+      2026-W13: Trades=1  | WR=  0.0% | Net PnL=$  -0.85 | Fees=$ 0.060
+      2026-W14: Trades=1  | WR=100.0% | Net PnL=$   0.31 | Fees=$ 0.060
+      2026-W16: Trades=3  | WR= 33.3% | Net PnL=$   0.21 | Fees=$ 0.180
+      2026-W17: Trades=1  | WR=  0.0% | Net PnL=$  -1.05 | Fees=$ 0.060
+      2026-W18: Trades=1  | WR=  0.0% | Net PnL=$  -3.89 | Fees=$ 0.061
+      2026-W19: Trades=1  | WR=100.0% | Net PnL=$   1.71 | Fees=$ 0.057
+      2026-W20: Trades=1  | WR=100.0% | Net PnL=$   1.01 | Fees=$ 0.058
+      2026-W21: Trades=4  | WR= 50.0% | Net PnL=$  -3.36 | Fees=$ 0.228
+      2026-W22: Trades=1  | WR=100.0% | Net PnL=$   1.06 | Fees=$ 0.057
+      2026-W23: Trades=3  | WR= 33.3% | Net PnL=$  -2.15 | Fees=$ 0.169
+      2026-W24: Trades=4  | WR= 50.0% | Net PnL=$  -8.61 | Fees=$ 0.213
+      2026-W25: Trades=1  | WR=100.0% | Net PnL=$   0.99 | Fees=$ 0.050
+      2026-W26: Trades=2  | WR=100.0% | Net PnL=$   2.95 | Fees=$ 0.104
+      2026-W27: Trades=4  | WR= 75.0% | Net PnL=$   2.63 | Fees=$ 0.213
+      2026-W28: Trades=1  | WR=  0.0% | Net PnL=$  -1.23 | Fees=$ 0.054
+      2026-W29: Trades=2  | WR= 50.0% | Net PnL=$   0.58 | Fees=$ 0.107
+      2026-W30: Trades=3  | WR=100.0% | Net PnL=$   6.31 | Fees=$ 0.169
+      2026-W31: Trades=4  | WR= 50.0% | Net PnL=$  -1.68 | Fees=$ 0.229
+      2026-W32: Trades=4  | WR= 50.0% | Net PnL=$  -0.60 | Fees=$ 0.226
+      2026-W33: Trades=2  | WR=100.0% | Net PnL=$   2.06 | Fees=$ 0.114
+      2026-W35: Trades=1  | WR=  0.0% | Net PnL=$  -0.45 | Fees=$ 0.058
+      2026-W36: Trades=3  | WR= 33.3% | Net PnL=$   6.63 | Fees=$ 0.169
+      2026-W37: Trades=2  | WR=  0.0% | Net PnL=$  -3.92 | Fees=$ 0.123
+      2026-W38: Trades=1  | WR=  0.0% | Net PnL=$  -1.02 | Fees=$ 0.060
+      2026-W39: Trades=1  | WR=100.0% | Net PnL=$   3.30 | Fees=$ 0.059
+

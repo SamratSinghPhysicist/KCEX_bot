@@ -47,4 +47,9 @@ AI_ANALYSIS/
 # Heavy Experiment Trade-by-Trade Logs (keep matrix and md reports tracked)
 experiments/**/reports/*trades.csv
 
+# Local Matrix Runner Heavy Raw CSV Artifacts (keep final_matrix_reports tracked)
+local_matrix_artifacts/
+temp_artifacts/
+
+
 

@@ -1,11 +1,9 @@
 """
 KCEX Multi-Asset Concurrent Trading Engine
 ==========================================
-Coordinates simultaneous autonomous trading across multiple assets on distinct timeframes:
-- TRUMP_USDT (15m)
-- ETH_USDT (4h)
-- BTC_USDT (15m)
-- DOGE_USDT (15m)
+Coordinates simultaneous autonomous trading across multiple assets on distinct empirically optimal timeframes:
+- Base Pairs: TRUMP_USDT (15m), ETH_USDT (4h), BTC_USDT (15m), DOGE_USDT (15m)
+- Verified Alpha Pairs: TRX_USDT (1h), AVAX_USDT (1h), KOMA_USDT (4h), AIXBT_USDT (1d), XMR_USDT (15m)
 
 Features:
 - Dedicated worker thread per asset for non-blocking concurrent scanning & execution
@@ -949,10 +947,17 @@ class MultiAssetExecutionEngine:
 
         # Target portfolio configuration
         self.asset_configs = assets or [
+            # Existing Base Live Pairs
             {"symbol": "TRUMP_USDT", "timeframe": "Min15", "pivot_len": 3, "leverage": self.leverage},
             {"symbol": "ETH_USDT",   "timeframe": "Hour4", "pivot_len": 5, "leverage": self.leverage},
             {"symbol": "BTC_USDT",   "timeframe": "Min15", "pivot_len": 5, "leverage": self.leverage},
             {"symbol": "DOGE_USDT",  "timeframe": "Min15", "pivot_len": 5, "leverage": self.leverage},
+            # Newly Added Empirically Verified Profitable Pairs (1 Timeframe Per Pair)
+            {"symbol": "TRX_USDT",   "timeframe": "Min60", "pivot_len": 5, "leverage": self.leverage},  # 1h: 81.8% WR, 2.64 PF
+            {"symbol": "AVAX_USDT",  "timeframe": "Min60", "pivot_len": 5, "leverage": self.leverage},  # 1h: 54.5% WR, 2.00 PF
+            {"symbol": "KOMA_USDT",  "timeframe": "Hour4", "pivot_len": 5, "leverage": 10},             # 4h: 37.9% WR, +21.48% ROI (0% fee)
+            {"symbol": "AIXBT_USDT", "timeframe": "Day1",  "pivot_len": 5, "leverage": 10},             # 1d: 33.3% WR, +32.99% ROI (0% fee)
+            {"symbol": "XMR_USDT",   "timeframe": "Min15", "pivot_len": 5, "leverage": 10},             # 15m: 53.9% WR, 52 trades
         ]
 
         # Initialize workers

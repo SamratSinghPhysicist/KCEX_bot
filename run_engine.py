@@ -1991,8 +1991,14 @@ def main():
         assets = preset_cfg.get("assets", None)
         if not is_interactive and getattr(args, "symbols", None):
             sym_list = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
-            tf_defaults = {"TRUMP_USDT": "Min15", "ETH_USDT": "Hour4", "BTC_USDT": "Min15", "DOGE_USDT": "Min15"}
-            pl_defaults = {"TRUMP_USDT": 3, "ETH_USDT": 5, "BTC_USDT": 5, "DOGE_USDT": 5}
+            tf_defaults = {
+                "TRUMP_USDT": "Min15", "ETH_USDT": "Hour4", "BTC_USDT": "Min15", "DOGE_USDT": "Min15",
+                "TRX_USDT": "Min60", "AVAX_USDT": "Min60", "KOMA_USDT": "Hour4", "AIXBT_USDT": "Day1", "XMR_USDT": "Min15"
+            }
+            pl_defaults = {
+                "TRUMP_USDT": 3, "ETH_USDT": 5, "BTC_USDT": 5, "DOGE_USDT": 5,
+                "TRX_USDT": 5, "AVAX_USDT": 5, "KOMA_USDT": 5, "AIXBT_USDT": 5, "XMR_USDT": 5
+            }
             assets = [
                 {
                     "symbol": sym,
