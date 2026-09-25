@@ -1,0 +1,162 @@
+name: Experiment - OB Fee Coverage + 2 Ticks (All Coins Parallel Workers)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Start Date (YYYY-MM-DD)"
+        required: true
+        default: "2026-01-01"
+        type: string
+
+      end_date:
+        description: "End Date (YYYY-MM-DD)"
+        required: true
+        default: "2026-08-31"
+        type: string
+
+      extra_ticks:
+        description: "Extra ticks beyond fee coverage"
+        required: true
+        default: "2"
+        type: string
+
+      timeframes:
+        description: "Comma-separated Timeframes"
+        required: true
+        default: "1m,5m,15m,1h,4h,1d"
+        type: string
+
+      capital:
+        description: "Initial Capital in USDT"
+        required: true
+        default: "100.0"
+        type: string
+
+      leverage:
+        description: "Leverage Multiplier"
+        required: true
+        default: "10"
+        type: string
+
+      margin_pct:
+        description: "Margin Allocation % per trade (quantity = margin * leverage)"
+        required: true
+        default: "10.0"
+        type: string
+
+jobs:
+  coin-worker:
+    name: Worker ${{ matrix.symbol }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        symbol:
+          - "BTC_USDT"
+          - "TRUMP_USDT"
+          - "1000000MOG_USDT"
+          - "DOGE_USDT"
+          - "ETH_USDT"
+          - "SOL_USDT"
+          - "XAU_USDT"
+          - "XAG_USDT"
+          - "CL_USDT"
+          - "XRP_USDT"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install requests websockets; fi
+
+      - name: Cache Historical Market Data
+        uses: actions/cache@v4
+        with:
+          path: BACKTESTER/OHLCV_Data_Binance
+          key: all-coins-data-${{ matrix.symbol }}-${{ inputs.start_date }}-${{ inputs.end_date }}
+          restore-keys: |
+            all-coins-data-${{ matrix.symbol }}-
+            all-coins-data-
+
+      - name: Execute Coin Experiment Sweep
+        run: |
+          python experiments/ob_fee_plus_2ticks_experiment/run_experiment.py \
+            --symbol "${{ matrix.symbol }}" \
+            --timeframes "${{ inputs.timeframes }}" \
+            --start "${{ inputs.start_date }}" \
+            --end "${{ inputs.end_date }}" \
+            --extra-ticks "${{ inputs.extra_ticks }}" \
+            --capital "${{ inputs.capital }}" \
+            --leverage "${{ inputs.leverage }}" \
+            --margin-pct "${{ inputs.margin_pct }}" \
+            --fee-indices "0,1,2" \
+            --slippage-ticks "1,2,3,4,5,6,7" \
+            --tag "worker"
+
+      - name: Upload Coin Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coin-report-${{ matrix.symbol }}
+          path: |
+            experiments/ob_fee_plus_2ticks_experiment/reports/${{ matrix.symbol }}_worker_batch_matrix.csv
+            experiments/ob_fee_plus_2ticks_experiment/reports/${{ matrix.symbol }}_worker_batch_matrix.md
+            experiments/ob_fee_plus_2ticks_experiment/reports/${{ matrix.symbol }}_worker_trades.csv
+          if-no-files-found: warn
+          retention-days: 14
+
+  consolidate:
+    name: Master Cross-Coin Consolidation
+    needs: coin-worker
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install requests websockets; fi
+
+      - name: Download All Coin Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coin-report-*
+          path: experiments/ob_fee_plus_2ticks_experiment/reports/
+          merge-multiple: true
+
+      - name: Run Master Cross-Coin Consolidation
+        run: |
+          python experiments/ob_fee_plus_2ticks_experiment/run_experiment.py \
+            --consolidate \
+            --reports-dir experiments/ob_fee_plus_2ticks_experiment/reports
+
+      - name: Upload Master Consolidated Report Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-coins-experiment-master-package-run${{ github.run_id }}
+          path: |
+            experiments/ob_fee_plus_2ticks_experiment/reports/master_batch_matrix.csv
+            experiments/ob_fee_plus_2ticks_experiment/reports/master_batch_matrix.md
+            experiments/ob_fee_plus_2ticks_experiment/reports/master_all_trades.csv
+            experiments/ob_fee_plus_2ticks_experiment/reports/*_trades.csv
+            experiments/ob_fee_plus_2ticks_experiment/reports/*_batch_matrix.csv
+          if-no-files-found: warn
+          retention-days: 30
