@@ -755,4 +755,69 @@ class FilterPipeline:
             vol_mult = getattr(config, "volume_filter_multiplier", 1.2)
             pipeline.add_filter(VolumeShockFilter(enabled=vol_enabled, multiplier=vol_mult))
 
+        # 6. US Market Hours Filter (for Stock / Equity Tokens)
+        us_hours_enabled = getattr(config, "us_market_hours_filter_enabled", False)
+        if us_hours_enabled:
+            pipeline.add_filter(USMarketHoursFilter(enabled=True))
+
         return pipeline
+
+
+# =============================================================================
+# US MARKET HOURS FILTER (EQUITY & TOKENIZED STOCKS)
+# =============================================================================
+
+class USMarketHoursFilter(BaseFilter):
+    """
+    US Equities Market Regular Trading Hours Gate.
+    Restricts trade entries strictly to US regular market trading hours:
+    Monday through Friday, 09:30 AM to 04:00 PM US Eastern Time (ET).
+    Essential for crypto-equivalent tokenized stocks that trade 24/7 on exchanges
+    to only take positions when the underlying US cash market is actively trading.
+    """
+
+    def __init__(self, enabled: bool = False):
+        self._enabled = enabled
+
+    @property
+    def name(self) -> str:
+        return "USMarketHoursFilter"
+
+    @property
+    def is_enabled(self) -> bool:
+        return self._enabled
+
+    def is_allowed(
+        self,
+        signal: TradeSignal,
+        candles: List[Any],
+        current_time: float
+    ) -> Tuple[bool, Optional[str]]:
+        if not self._enabled:
+            return True, None
+
+        try:
+            import zoneinfo
+            ny_tz = zoneinfo.ZoneInfo("America/New_York")
+            dt = datetime.fromtimestamp(current_time, tz=ny_tz)
+        except Exception:
+            dt = datetime.fromtimestamp(current_time, tz=timezone(timedelta(hours=-4)))
+
+        # 0 = Monday, 4 = Friday, 5 = Saturday, 6 = Sunday
+        if dt.weekday() >= 5:
+            return False, f"US Market Closed: Weekend ({dt.strftime('%A')})"
+
+        market_open_min = 9 * 60 + 30   # 09:30 ET
+        market_close_min = 16 * 60      # 16:00 ET
+        current_min = dt.hour * 60 + dt.minute
+
+        if current_min < market_open_min or current_min >= market_close_min:
+            return False, f"US Market Closed: Outside regular hours ({dt.strftime('%H:%M:%S ET')}, open is 09:30-16:00 ET)"
+
+        return True, None
+
+    def get_parameters(self) -> Dict[str, Any]:
+        return {
+            "us_market_hours_filter_enabled": self._enabled
+        }
+

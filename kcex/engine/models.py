@@ -109,6 +109,7 @@ class ExecutionConfig:
     hourly_filter_enabled: bool = False         # Blacklist low-liquidity UTC hours
     hourly_blacklist_utc: List[int] = field(default_factory=list) # e.g. [2, 3, 4, 5, 17]
     direction_bias: str = "BOTH"                # "BOTH", "LONG_ONLY", or "SHORT_ONLY"
+    us_market_hours_filter_enabled: bool = False # Gate entries strictly to US regular market hours (Mon-Fri 09:30-16:00 ET)
     # Smart Strategy Configuration (Regime-Adaptive Architecture)
     smart_atr_filter_enabled: bool = True       # Suppress entries during sub-ATR compression
     smart_min_atr_ticks: float = 2.5            # Min ATR in ticks required to ensure target feasibility

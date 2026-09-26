@@ -641,8 +641,11 @@ class BacktestMarket:
         norm_tf = normalize_timeframe(timeframe)
         canonical = canonicalize_symbol(symbol)
         key = f"{canonical}_{norm_tf}"
+        key_colon = f"{canonical}:{norm_tf}"
         self._candle_cache[key] = candles
+        self._candle_cache[key_colon] = candles
         self._candle_timestamps[key] = [c.open_time_ms for c in candles]
+        self._candle_timestamps[key_colon] = [c.open_time_ms for c in candles]
         if candles:
             last = candles[-1]
             self.current_price = last.close

@@ -333,6 +333,11 @@ HOURLY_BLACKLIST_UTC = [2, 3, 4, 5, 17]  # UTC hours to block (e.g. 02:00-05:00,
 # "SHORT_ONLY" -> Restricts all trades strictly to Short positions
 DIRECTION_BIAS = "BOTH"
 
+# 6. US Market Regular Hours Filter (For US Stock / Equity Token Pairs)
+# Restricts trades strictly to Mon-Fri 09:30-16:00 US Eastern Time.
+US_MARKET_HOURS_FILTER_ENABLED = False
+
+
 
 # =============================================================================
 # 9. LOGGING DIRECTORIES & AUDIT FILES
@@ -790,7 +795,8 @@ def get_active_preset_config(preset_name: str = None) -> dict:
         "tp_atr_mult": 3.0,
         "sl_atr_mult": 1.5,
         "confidence_threshold": 0.38,
-        "confidence_threshold_sell": 0.38
+        "confidence_threshold_sell": 0.38,
+        "us_market_hours_filter_enabled": US_MARKET_HOURS_FILTER_ENABLED
     }
 
 

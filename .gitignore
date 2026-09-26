@@ -37,6 +37,7 @@ htmlcov/
 # Backtester Data & Output Artifacts
 BACKTESTER/Historical_Trades_Data_Binance/
 BACKTESTER/OHLCV_Data_Binance/
+BACKTESTER/OHLCV_Data_Stocks/
 BACKTESTER/reports/*
 !BACKTESTER/reports/.gitkeep
 BACKTESTER/BookTicker_Data_Binance/
@@ -50,6 +51,10 @@ experiments/**/reports/*trades.csv
 # Local Matrix Runner Heavy Raw CSV Artifacts (keep final_matrix_reports tracked)
 local_matrix_artifacts/
 temp_artifacts/
+stock_artifacts/
+stock_backtest_local_results/
+scratch/
+
 
 
 

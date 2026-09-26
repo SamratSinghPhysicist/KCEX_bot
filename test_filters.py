@@ -313,5 +313,54 @@ class TestStrategyTradeRejectedReset(unittest.TestCase):
         self.assertFalse(sub_strat.trade_in_progress)
 
 
+class TestUSMarketHoursFilter(unittest.TestCase):
+    """Verifies US regular market hours (Mon-Fri 09:30 - 16:00 ET) gating."""
+
+    def test_market_hours_validation(self):
+        from strategies.filters import USMarketHoursFilter
+        import zoneinfo
+
+        ny_tz = zoneinfo.ZoneInfo("America/New_York")
+        f = USMarketHoursFilter(enabled=True)
+
+        signal = TradeSignal(
+            symbol="AAPL_USDT",
+            direction=OrderDirection.LONG,
+            sub_strategy_name="ORDER_BLOCK_DEMAND",
+            timestamp=0.0
+        )
+
+        # 1. Monday at 10:00 AM ET (Regular Market Hours -> Allowed)
+        mon_open = datetime(2026, 9, 21, 10, 0, 0, tzinfo=ny_tz).timestamp()
+        allowed, reason = f.is_allowed(signal, [], mon_open)
+        self.assertTrue(allowed)
+        self.assertIsNone(reason)
+
+        # 2. Monday at 09:15 AM ET (Pre-Market -> Blocked)
+        mon_pre = datetime(2026, 9, 21, 9, 15, 0, tzinfo=ny_tz).timestamp()
+        allowed, reason = f.is_allowed(signal, [], mon_pre)
+        self.assertFalse(allowed)
+        self.assertIn("US Market Closed", reason)
+
+        # 3. Monday at 16:30 PM ET (After-Hours -> Blocked)
+        mon_post = datetime(2026, 9, 21, 16, 30, 0, tzinfo=ny_tz).timestamp()
+        allowed, reason = f.is_allowed(signal, [], mon_post)
+        self.assertFalse(allowed)
+        self.assertIn("US Market Closed", reason)
+
+        # 4. Saturday at 12:00 PM ET (Weekend -> Blocked)
+        sat_noon = datetime(2026, 9, 26, 12, 0, 0, tzinfo=ny_tz).timestamp()
+        allowed, reason = f.is_allowed(signal, [], sat_noon)
+        self.assertFalse(allowed)
+        self.assertIn("Weekend", reason)
+
+        # 5. Disabled filter allows all
+        f_disabled = USMarketHoursFilter(enabled=False)
+        allowed, reason = f_disabled.is_allowed(signal, [], sat_noon)
+        self.assertTrue(allowed)
+        self.assertIsNone(reason)
+
+
 if __name__ == "__main__":
     unittest.main()
+

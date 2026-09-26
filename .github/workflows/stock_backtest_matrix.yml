@@ -1,0 +1,267 @@
+name: Top 50 US Equities Distributed Backtesting Matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      stocks:
+        description: "Target Stocks ('ALL', 'BATCH_1'..'BATCH_5', or comma-separated e.g. 'AAPL,NVDA,TSLA')"
+        required: true
+        default: "ALL"
+        type: string
+
+      timeframes:
+        description: "Target Timeframes ('ALL' or comma-separated e.g. '1m,3m,5m,15m,30m,1h,4h,1d')"
+        required: true
+        default: "ALL"
+        type: string
+
+      fees:
+        description: "Fee Tiers ('ALL' or comma-separated 'tier1,tier2,tier3')"
+        required: true
+        default: "ALL"
+        type: string
+
+      slippages:
+        description: "Slippage in ticks ('ALL' for 1-7 ticks or comma-separated e.g. '1,2,3')"
+        required: true
+        default: "ALL"
+        type: string
+
+      leverage:
+        description: "Isolated Leverage Multiplier (1-25x)"
+        required: true
+        default: "15"
+        type: string
+
+      margin_pct:
+        description: "Compounding Margin % per Trade (Quantity = Margin * Leverage)"
+        required: true
+        default: "10.0"
+        type: string
+
+      capital:
+        description: "Initial Capital in USDT per Stock Worker"
+        required: true
+        default: "100.0"
+        type: string
+
+      lookback_years:
+        description: "Historical Lookback in Years for Daily Bars"
+        required: true
+        default: "15"
+        type: choice
+        options:
+          - "5"
+          - "10"
+          - "15"
+
+concurrency:
+  group: stock-backtest-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run-stock-matrix:
+    name: 🏛️ ${{ matrix.stock }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        stock:
+          # BATCH 1: Mega-Cap Tech & Semis (10)
+          - AAPL
+          - MSFT
+          - NVDA
+          - AMZN
+          - GOOGL
+          - META
+          - TSLA
+          - AVGO
+          - ORCL
+          - ADBE
+          # BATCH 2: Financials, Conglomerates & Payments (10)
+          - BRK-B
+          - JPM
+          - V
+          - MA
+          - BAC
+          - WFC
+          - GS
+          - BKNG
+          - CSCO
+          - TXN
+          # BATCH 3: Healthcare, Pharma & Retail Staples (10)
+          - LLY
+          - UNH
+          - JNJ
+          - ABBV
+          - MRK
+          - TMO
+          - ISRG
+          - WMT
+          - PG
+          - COST
+          # BATCH 4: Consumer, Media, Energy & Industrials (10)
+          - HD
+          - NFLX
+          - CRM
+          - CVX
+          - XOM
+          - KO
+          - PEP
+          - DIS
+          - PM
+          - CAT
+          # BATCH 5: High-Beta Tech, Semis, Telecom & Growth (10)
+          - AMD
+          - QCOM
+          - AMAT
+          - INTC
+          - IBM
+          - NOW
+          - PLTR
+          - GE
+          - LIN
+          - VZ
+
+    steps:
+      - name: Filter Target Stock
+        id: filter-check
+        shell: bash
+        run: |
+          TARGET_STOCKS="${{ inputs.stocks }}"
+          CURR_STOCK="${{ matrix.stock }}"
+          RUN_JOB="true"
+
+          if [ -n "$TARGET_STOCKS" ] && [ "$TARGET_STOCKS" != "ALL" ] && [ "$TARGET_STOCKS" != "all" ]; then
+            # Batch mappings
+            BATCH_1="AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,AVGO,ORCL,ADBE"
+            BATCH_2="BRK-B,JPM,V,MA,BAC,WFC,GS,BKNG,CSCO,TXN"
+            BATCH_3="LLY,UNH,JNJ,ABBV,MRK,TMO,ISRG,WMT,PG,COST"
+            BATCH_4="HD,NFLX,CRM,CVX,XOM,KO,PEP,DIS,PM,CAT"
+            BATCH_5="AMD,QCOM,AMAT,INTC,IBM,NOW,PLTR,GE,LIN,VZ"
+
+            MATCH="false"
+            if [ "$TARGET_STOCKS" = "BATCH_1" ] && [[ ",$BATCH_1," =~ ",$CURR_STOCK," ]]; then MATCH="true"; fi
+            if [ "$TARGET_STOCKS" = "BATCH_2" ] && [[ ",$BATCH_2," =~ ",$CURR_STOCK," ]]; then MATCH="true"; fi
+            if [ "$TARGET_STOCKS" = "BATCH_3" ] && [[ ",$BATCH_3," =~ ",$CURR_STOCK," ]]; then MATCH="true"; fi
+            if [ "$TARGET_STOCKS" = "BATCH_4" ] && [[ ",$BATCH_4," =~ ",$CURR_STOCK," ]]; then MATCH="true"; fi
+            if [ "$TARGET_STOCKS" = "BATCH_5" ] && [[ ",$BATCH_5," =~ ",$CURR_STOCK," ]]; then MATCH="true"; fi
+
+            # Direct comma-separated matching
+            if [[ ",$TARGET_STOCKS," =~ ",$CURR_STOCK," ]] || [[ ",$TARGET_STOCKS," =~ ",${CURR_STOCK}_USDT," ]]; then
+              MATCH="true"
+            fi
+
+            if [ "$MATCH" = "false" ]; then
+              RUN_JOB="false"
+            fi
+          fi
+
+          echo "run_job=$RUN_JOB" >> $GITHUB_OUTPUT
+          if [ "$RUN_JOB" = "true" ]; then
+            echo "🚀 Scheduling stock matrix backtest for $CURR_STOCK"
+          else
+            echo "⏭️ Skipping $CURR_STOCK per workflow filter inputs"
+          fi
+
+      - name: Checkout Repository
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        if: steps.filter-check.outputs.run_job == 'true'
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas requests tabulate
+
+      - name: Cache Historical OHLCV Stock Data
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/cache@v4
+        with:
+          path: BACKTESTER/OHLCV_Data_Stocks/${{ matrix.stock }}
+          key: stock-cache-${{ matrix.stock }}-${{ github.run_id }}
+          restore-keys: |
+            stock-cache-${{ matrix.stock }}-
+            stock-cache-
+
+      - name: Execute Stock Matrix Backtests
+        if: steps.filter-check.outputs.run_job == 'true'
+        shell: bash
+        run: |
+          mkdir -p artifacts_${{ matrix.stock }}
+          PYTHONPATH=. python scripts/run_stock_matrix_backtest.py \
+            --stock "${{ matrix.stock }}" \
+            --timeframes "${{ inputs.timeframes || 'ALL' }}" \
+            --fees "${{ inputs.fees || 'ALL' }}" \
+            --slippages "${{ inputs.slippages || 'ALL' }}" \
+            --leverage "${{ inputs.leverage || '15' }}" \
+            --margin-pct "${{ inputs.margin_pct || '10.0' }}" \
+            --capital "${{ inputs.capital || '100.0' }}" \
+            --lookback-years "${{ inputs.lookback_years || '15' }}" \
+            --output-dir "artifacts_${{ matrix.stock }}"
+
+      - name: Upload Stock Worker Artifacts
+        if: steps.filter-check.outputs.run_job == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock_results_${{ matrix.stock }}
+          path: artifacts_${{ matrix.stock }}/*
+          if-no-files-found: warn
+          retention-days: 14
+
+  aggregate-stock-matrix:
+    name: 📊 Consolidate & Rank Top 50 Equities
+    needs: [run-stock-matrix]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Report Dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas tabulate
+
+      - name: Download All Stock Worker Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_stock_artifacts
+          pattern: stock_results_*
+
+      - name: Aggregate Stock Results & Generate Report
+        shell: bash
+        run: |
+          mkdir -p consolidated_stock_reports
+          PYTHONPATH=. python scripts/aggregate_stock_matrix.py \
+            --results-dir all_stock_artifacts \
+            --output-dir consolidated_stock_reports \
+            --github-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Consolidated Stock Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: consolidated-stock-matrix-reports
+          path: |
+            consolidated_stock_reports/consolidated_stock_matrix.csv
+            consolidated_stock_reports/champion_stock_timeframe_matrix.csv
+            consolidated_stock_reports/consolidated_stock_matrix.json
+            consolidated_stock_reports/stock_backtest_executive_report.md
+          if-no-files-found: warn
+          retention-days: 30
