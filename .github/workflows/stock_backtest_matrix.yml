@@ -181,7 +181,8 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install numpy pandas requests tabulate
+          pip install numpy pandas ccxt requests tabulate websockets
+
 
       - name: Cache Historical OHLCV Stock Data
         if: steps.filter-check.outputs.run_job == 'true'
