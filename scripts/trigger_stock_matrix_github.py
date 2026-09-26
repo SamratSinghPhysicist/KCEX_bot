@@ -26,6 +26,14 @@ import argparse
 import requests
 from typing import Optional, Dict, Any, List
 
+# Reconfigure stdout/stderr for utf-8 on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Ensure project root is in sys.path
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))

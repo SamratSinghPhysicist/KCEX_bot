@@ -16,9 +16,17 @@ import sys
 import json
 import zipfile
 import shutil
-import argparse
 import subprocess
 import urllib.request
+import argparse
+from typing import Optional, Dict, Any, List
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 REPO_SLUG = "SamratSinghPhysicist/KCEX_bot"
 DEFAULT_TARGET_DIR = "stock_backtest_local_results"
