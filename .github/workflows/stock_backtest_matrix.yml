@@ -123,6 +123,7 @@ jobs:
           - GE
           - LIN
           - VZ
+          - SPCX
 
     steps:
       - name: Filter Target Stock
