@@ -67,7 +67,8 @@ class AssetWorker:
         cooldown_seconds: float = 30.0,
         buffer_ticks: int = 1,
         breakeven_buffer_ticks: int = 1,
-        shared_outcomes: Optional[List[TradeOutcome]] = None
+        shared_outcomes: Optional[List[TradeOutcome]] = None,
+        is_stock: bool = False
     ):
         self.symbol = symbol.upper()
         self.timeframe = timeframe
@@ -84,6 +85,10 @@ class AssetWorker:
         self.buffer_ticks = buffer_ticks
         self.breakeven_buffer_ticks = breakeven_buffer_ticks
         self.shared_outcomes = shared_outcomes if shared_outcomes is not None else []
+        self.is_stock = is_stock
+
+        from strategies.filters import USMarketHoursFilter
+        self.us_market_filter = USMarketHoursFilter(enabled=self.is_stock)
 
         # Thread-safe private API clients
         self.client = KCEXClient()
@@ -193,7 +198,15 @@ class AssetWorker:
                     time.sleep(2.0)
                     continue
 
-                # 3. Valid Signal Received! Check position concurrency before executing
+                # 3. Check US Market Hours filter for stock equivalent assets
+                if getattr(self, "us_market_filter", None) and self.us_market_filter.is_enabled:
+                    allowed, reason = self.us_market_filter.is_allowed(signal, [], time.time())
+                    if not allowed:
+                        self.last_status_msg = f"Market Hours Gated: {reason}"
+                        time.sleep(5.0)
+                        continue
+
+                # 4. Valid Signal Received! Check position concurrency before executing
                 direction = signal.direction
                 self.logger.info(
                     f"⚡ [{self.symbol}] Valid {direction.value} Signal Detected! "
@@ -954,17 +967,32 @@ class MultiAssetExecutionEngine:
             {"symbol": "DOGE_USDT",  "timeframe": "Min15", "pivot_len": 5, "leverage": self.leverage},
             # Newly Added Empirically Verified Profitable Pairs (1 Timeframe Per Pair)
             {"symbol": "TRX_USDT",   "timeframe": "Min60", "pivot_len": 5, "leverage": self.leverage},  # 1h: 81.8% WR, 2.64 PF
-            {"symbol": "AVAX_USDT",  "timeframe": "Min60", "pivot_len": 5, "leverage": self.leverage},  # 1h: 54.5% WR, 2.00 PF
-            {"symbol": "AIXBT_USDT", "timeframe": "Day1",  "pivot_len": 5, "leverage": 10},             # 1d: 33.3% WR, +32.99% ROI (0% fee)
+            # Confirmed KCEX Active US Equities (Strict US Cash Market Hours: Mon-Fri 09:30-16:00 ET)
+            {"symbol": "AMAT_USDT",  "timeframe": "Min5",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 5m: 69.2% WR, 4.63 PF, 2.3% DD (+8.14%/mo)
+            {"symbol": "GS_USDT",    "timeframe": "Min5",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 5m: 83.3% WR, 5.49 PF, 0.99% DD (+2.73%/mo)
+            {"symbol": "GOOGL_USDT", "timeframe": "Day1",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 1d: 70.0% WR, 4.65 PF, 6.0% DD (15-yr Alpha Robust)
+            {"symbol": "MSFT_USDT",  "timeframe": "Min60", "pivot_len": 5, "leverage": 15, "is_stock": True},  # 1h: 59.3% WR, 1.67 PF, 9.5% DD (35-mo swing)
+            {"symbol": "NOW_USDT",   "timeframe": "Hour4", "pivot_len": 5, "leverage": 15, "is_stock": True},  # 4h: 66.7% WR, 3.09 PF, 11.7% DD (Alpha Robust)
         ]
+
+        # Automatic stock detection set
+        KNOWN_STOCK_SYMBOLS = {
+            "AMAT_USDT", "GS_USDT", "GOOGL_USDT", "MSFT_USDT", "NOW_USDT", "AVGO_USDT",
+            "AAPL_USDT", "NVDA_USDT", "TSLA_USDT", "AMD_USDT", "META_USDT", "NFLX_USDT",
+            "BRKB_USDT", "JPM_USDT", "V_USDT", "COST_USDT", "WMT_USDT", "CVX_USDT",
+            "XOM_USDT", "ADBE_USDT", "JNJ_USDT", "UNH_USDT", "ORCL_USDT", "HD_USDT",
+            "KO_USDT", "CSCO_USDT", "AMZN_USDT", "CRM_USDT", "MRK_USDT", "CAT_USDT",
+            "ISRG_USDT", "TXN_USDT", "LLY_USDT", "IBM_USDT", "PLTR_USDT", "INTC_USDT", "QCOM_USDT"
+        }
 
         # Initialize workers
         self.workers: Dict[str, AssetWorker] = {}
         for cfg in self.asset_configs:
-            sym = cfg["symbol"]
+            sym = cfg["symbol"].upper()
             tf = cfg["timeframe"]
             plen = cfg.get("pivot_len", 5)
             lev = cfg.get("leverage", self.leverage)
+            is_stk = cfg.get("is_stock", (sym in KNOWN_STOCK_SYMBOLS))
 
             worker = AssetWorker(
                 symbol=sym,
@@ -978,7 +1006,8 @@ class MultiAssetExecutionEngine:
                 shared_outcome_logger=self.outcome_logger,
                 shared_mongo_logger=self.mongo_logger,
                 order_lock=self.order_lock,
-                shared_outcomes=self.outcomes
+                shared_outcomes=self.outcomes,
+                is_stock=is_stk
             )
             self.workers[sym] = worker
 
