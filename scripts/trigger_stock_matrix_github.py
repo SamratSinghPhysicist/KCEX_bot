@@ -143,13 +143,16 @@ class GitHubStockMatrixRunner:
         print(f"{Style.YELLOW}[!] Workflow triggered, but could not automatically detect Run ID. Please check repository Actions tab.{Style.RESET}")
         return None
 
-    def monitor(self, run_id: int, poll_interval_sec: int = 15) -> bool:
+    def monitor(self, run_id: int, poll_interval_sec: int = 30) -> bool:
         """Polls run progress and prints live matrix status."""
         run_url = f"{self.api_base}/actions/runs/{run_id}"
         jobs_url = f"{self.api_base}/actions/runs/{run_id}/jobs?per_page=100"
 
         print(f"\n[*] Monitoring execution for Run #{run_id} (polling every {poll_interval_sec}s)...")
         start_time = time.time()
+        last_completed = -1
+        last_status = ""
+        last_print_time = 0.0
 
         while True:
             try:
@@ -170,7 +173,15 @@ class GitHubStockMatrixRunner:
                 completed_jobs = sum(1 for j in jobs if j.get("status") == "completed")
                 total_jobs = len(jobs)
 
-                print(f"[{elapsed//60:02d}:{elapsed%60:02d}] Run Status: {status.upper()} | Jobs Completed: {completed_jobs}/{total_jobs}")
+                now = time.time()
+                if (completed_jobs != last_completed or 
+                    status != last_status or 
+                    now - last_print_time >= 60.0 or 
+                    status == "completed"):
+                    print(f"[{elapsed//60:02d}:{elapsed%60:02d}] Run Status: {status.upper()} | Jobs Completed: {completed_jobs}/{total_jobs}")
+                    last_completed = completed_jobs
+                    last_status = status
+                    last_print_time = now
 
                 if status == "completed":
                     if conclusion == "success":
