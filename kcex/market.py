@@ -272,6 +272,46 @@ class KCEXMarket:
             List[Dict]: Standardized candle records with timestamp, open, high, low, close, volume.
         """
         interval = normalize_kcex_interval(interval)
+
+        # Synthetic timeframe resampling:
+        # KCEX API only supports Min1, Min5, Min15, Min30, Min60, Hour4, Day1, Week1, Month1.
+        # Intervals like Min3 or Min2 are rejected by KCEX with '[KCEX Error 600] Type mismatch error!'.
+        # Transparently fetch Min1 candles and aggregate into synthetic bucketted candles.
+        if interval in ("Min3", "Min2"):
+            factor = 3 if interval == "Min3" else 2
+            bucket_sec = factor * 60
+            raw_candles = self.get_klines(
+                symbol=symbol,
+                interval="Min1",
+                start_time=start_time,
+                end_time=end_time,
+                limit=limit * factor
+            )
+            if not raw_candles:
+                return []
+
+            buckets: Dict[int, List[Dict[str, Any]]] = {}
+            for c in raw_candles:
+                ts = int(c["timestamp"])
+                b_ts = (ts // bucket_sec) * bucket_sec
+                if b_ts not in buckets:
+                    buckets[b_ts] = []
+                buckets[b_ts].append(c)
+
+            aggregated: List[Dict[str, Any]] = []
+            for b_ts in sorted(buckets.keys()):
+                group = buckets[b_ts]
+                aggregated.append({
+                    "timestamp": b_ts,
+                    "open": group[0]["open"],
+                    "high": max(x["high"] for x in group),
+                    "low": min(x["low"] for x in group),
+                    "close": group[-1]["close"],
+                    "volume": sum(x.get("volume", 0.0) for x in group),
+                    "amount": sum(x.get("amount", 0.0) for x in group)
+                })
+            return aggregated
+
         now = int(time.time())
         if end_time is None:
             end_time = now
