@@ -970,6 +970,9 @@ class MultiAssetExecutionEngine:
             # Confirmed KCEX Active US Equities (Strict US Cash Market Hours: Mon-Fri 09:30-16:00 ET)
             {"symbol": "AMAT_USDT",  "timeframe": "Min5",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 5m: 69.2% WR, 4.63 PF, 2.3% DD (+8.14%/mo)
             {"symbol": "GS_USDT",    "timeframe": "Min5",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 5m: 83.3% WR, 5.49 PF, 0.99% DD (+2.73%/mo)
+            {"symbol": "SPCX_USDT",  "timeframe": "Min3",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 3m: 60.0% WR, 2.30 PF, 1.78% DD (+2.81%/25d -> ~6-8% in 3mo)
+            {"symbol": "TSLA_USDT",  "timeframe": "Min1",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 1m: 57.9% WR, 1.58 PF, 3.04% DD (+3.51%/25d, 19 trades)
+            {"symbol": "AMZN_USDT",  "timeframe": "Min5",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 5m: 60.0% WR, 1.24 PF, 1.18% DD (+0.48% in 85d, ultra-safe)
             {"symbol": "GOOGL_USDT", "timeframe": "Day1",  "pivot_len": 5, "leverage": 15, "is_stock": True},  # 1d: 70.0% WR, 4.65 PF, 6.0% DD (15-yr Alpha Robust)
             {"symbol": "MSFT_USDT",  "timeframe": "Min60", "pivot_len": 5, "leverage": 15, "is_stock": True},  # 1h: 59.3% WR, 1.67 PF, 9.5% DD (35-mo swing)
             {"symbol": "NOW_USDT",   "timeframe": "Hour4", "pivot_len": 5, "leverage": 15, "is_stock": True},  # 4h: 66.7% WR, 3.09 PF, 11.7% DD (Alpha Robust)
@@ -982,7 +985,8 @@ class MultiAssetExecutionEngine:
             "BRKB_USDT", "JPM_USDT", "V_USDT", "COST_USDT", "WMT_USDT", "CVX_USDT",
             "XOM_USDT", "ADBE_USDT", "JNJ_USDT", "UNH_USDT", "ORCL_USDT", "HD_USDT",
             "KO_USDT", "CSCO_USDT", "AMZN_USDT", "CRM_USDT", "MRK_USDT", "CAT_USDT",
-            "ISRG_USDT", "TXN_USDT", "LLY_USDT", "IBM_USDT", "PLTR_USDT", "INTC_USDT", "QCOM_USDT"
+            "ISRG_USDT", "TXN_USDT", "LLY_USDT", "IBM_USDT", "PLTR_USDT", "INTC_USDT", "QCOM_USDT",
+            "SPCX_USDT"
         }
 
         # Initialize workers

@@ -1994,19 +1994,25 @@ def main():
             tf_defaults = {
                 "TRUMP_USDT": "Min15", "ETH_USDT": "Hour4", "BTC_USDT": "Min15", "DOGE_USDT": "Min15",
                 "TRX_USDT": "Min60", "AVAX_USDT": "Min60", "AIXBT_USDT": "Day1",
-                "AMAT_USDT": "Min5", "GS_USDT": "Min5", "GOOGL_USDT": "Day1", "MSFT_USDT": "Min60", "NOW_USDT": "Hour4"
+                "AMAT_USDT": "Min5", "GS_USDT": "Min5", "SPCX_USDT": "Min3", "TSLA_USDT": "Min1", "AMZN_USDT": "Min5",
+                "GOOGL_USDT": "Day1", "MSFT_USDT": "Min60", "NOW_USDT": "Hour4"
             }
             pl_defaults = {
                 "TRUMP_USDT": 3, "ETH_USDT": 5, "BTC_USDT": 5, "DOGE_USDT": 5,
                 "TRX_USDT": 5, "AVAX_USDT": 5, "AIXBT_USDT": 5,
-                "AMAT_USDT": 5, "GS_USDT": 5, "GOOGL_USDT": 5, "MSFT_USDT": 5, "NOW_USDT": 5
+                "AMAT_USDT": 5, "GS_USDT": 5, "SPCX_USDT": 5, "TSLA_USDT": 5, "AMZN_USDT": 5,
+                "GOOGL_USDT": 5, "MSFT_USDT": 5, "NOW_USDT": 5
             }
             assets = [
                 {
                     "symbol": sym,
                     "timeframe": tf_defaults.get(sym, getattr(config, "timeframe", "Min15")),
                     "pivot_len": pl_defaults.get(sym, getattr(config, "pivot_len", 5)),
-                    "leverage": config.leverage
+                    "leverage": config.leverage,
+                    "is_stock": sym in {
+                        "AMAT_USDT", "GS_USDT", "SPCX_USDT", "TSLA_USDT", "AMZN_USDT",
+                        "GOOGL_USDT", "MSFT_USDT", "NOW_USDT"
+                    }
                 }
                 for sym in sym_list
             ]
