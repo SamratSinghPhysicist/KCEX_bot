@@ -76,9 +76,15 @@ def download_run_artifacts(run_id: int, target_dir: str = DEFAULT_TARGET_DIR) ->
         print(f"[!] 'gh run download' encountered an error: {e}")
 
     if not download_success:
-        print(f"[!] Please ensure GitHub CLI ('gh') is authenticated, or manually download artifacts from:")
-        print(f"    https://github.com/{REPO_SLUG}/actions/runs/{run_id}")
-        return
+        try:
+            from scripts.trigger_stock_matrix_github import GitHubStockMatrixRunner
+            runner = GitHubStockMatrixRunner()
+            runner.download_and_extract_artifacts(run_id, target_dir)
+            return
+        except Exception as e:
+            print(f"[!] Please ensure GitHub CLI ('gh') is authenticated, or GITHUB_TOKEN is set: {e}")
+            print(f"    Manual download URL: https://github.com/{REPO_SLUG}/actions/runs/{run_id}")
+            return
 
     # Organize files
     trades_dir = os.path.join(target_dir, "trades_csv")

@@ -267,7 +267,7 @@ def main():
     parser.add_argument("--slippages", type=str, default="ALL",
                         help="Slippages in ticks: 'ALL' (1-7) or comma-separated e.g. '1,2,3'")
     parser.add_argument("--leverage", type=str, default="15", help="Leverage multiplier (default: 15)")
-    parser.add_argument("--margin-pct", type=str, default="10.0", help="Compounding margin % (default: 10.0)")
+    parser.add_argument("--margin-pct", type=str, default="10.0", help="Compounding margin percentage (default: 10.0)")
     parser.add_argument("--capital", type=str, default="100.0", help="Initial capital in USDT (default: 100.0)")
     parser.add_argument("--lookback-years", type=str, default="15", help="Max lookback years (default: 15)")
     parser.add_argument("--auto-download", action="store_true", help="Automatically monitor and download artifacts")
