@@ -1,0 +1,8 @@
+year,regime_context,total_cycles,win_rate_pct,profit_factor,net_profit_usd,net_profit_pct,max_trailing_dd_usd,max_trailing_dd_pct,worst_daily_dd_usd,expectancy_usd
+2020,Bull Market Start / DeFi Summer,6401,40.59,0.337,-7301.77,-730.18,7303.12,729.33,87.23,-1.1407
+2021,Peak Bull Market / High Volatility ATH,8082,38.91,0.315,-9838.05,-983.8,9839.4,982.61,74.85,-1.2173
+2022,Severe Bear Market (Luna/FTX Collapse),6511,41.28,0.352,-7065.52,-706.55,7071.97,704.92,54.22,-1.0852
+2023,Macro Recovery / Banking Crisis Rally,4110,43.53,0.395,-4051.87,-405.19,4054.2,404.87,43.05,-0.9859
+2024,Bitcoin Spot ETF Inflows & Halving,5731,43.87,0.386,-5750.02,-575.0,5762.48,569.92,51.45,-1.0033
+2025,Post-Halving Cycles & Distribution,4977,40.91,0.351,-5599.05,-559.9,5601.53,558.77,50.85,-1.125
+2026,Macro Consolidation (Through Sept 2026),3666,42.31,0.36,-3827.4,-382.74,3827.4,382.74,47.33,-1.044

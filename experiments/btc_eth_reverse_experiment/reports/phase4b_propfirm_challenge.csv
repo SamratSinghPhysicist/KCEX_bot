@@ -1,0 +1,4 @@
+fee_tier,round_trip_fee_pct,windows_tested,passed,pass_rate_pct,avg_days_to_pass,failed_daily_dd,failed_max_dd,timed_out
+Maker / Maker,0.030%,348,0,0.0,0.0,36,312,0
+Maker / Taker (Primary),0.060%,348,0,0.0,0.0,78,270,0
+Taker / Taker (Stress),0.090%,348,0,0.0,0.0,129,219,0

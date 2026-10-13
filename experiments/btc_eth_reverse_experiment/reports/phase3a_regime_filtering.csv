@@ -1,0 +1,4 @@
+name,total_trades,wins,losses,win_rate_pct,net_profit_usd,net_profit_pct,final_equity,profit_factor,avg_win_usd,avg_loss_usd,win_loss_payoff_ratio,expectancy_usd,expectancy_pct,max_trailing_dd_usd,max_trailing_dd_pct,worst_daily_dd_usd,worst_daily_dd_pct,daily_dd_breaches_3pct,max_dd_breached_5pct,rolling_pass_rate_pct,rolling_avg_days_to_pass,rolling_fail_daily_dd,rolling_fail_max_dd
+Exp 3A: Regime Filtered via BTC 1H 200 EMA,39348,16646,22702,42.3,-41463.08,-4146.31,-40463.08,0.367,1.45,2.89,0.501,-1.0538,-0.1054,41463.08,4146.31,83.1,8.31,390,True,0.0,0.0,0,0
+Exp 3A: Regime Filtered via BTC 4H 200 EMA,39335,16489,22846,41.92,-42179.25,-4217.93,-41179.25,0.361,1.44,2.89,0.5,-1.0723,-0.1072,42179.25,4217.93,83.1,8.31,406,True,0.0,0.0,0,0
+Exp 3A: Regime Filtered via ETH/BTC Ratio 200 EMA,39400,16761,22639,42.54,-41223.42,-4122.34,-40223.42,0.369,1.44,2.88,0.498,-1.0463,-0.1046,41226.08,4122.61,87.23,8.72,402,True,0.0,0.0,0,0
