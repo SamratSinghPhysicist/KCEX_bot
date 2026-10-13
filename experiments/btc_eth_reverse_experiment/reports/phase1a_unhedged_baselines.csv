@@ -1,0 +1,5 @@
+name,total_trades,wins,losses,win_rate_pct,net_profit_usd,net_profit_pct,final_equity,profit_factor,avg_win_usd,avg_loss_usd,win_loss_payoff_ratio,expectancy_usd,expectancy_pct,max_trailing_dd_usd,max_trailing_dd_pct,worst_daily_dd_usd,worst_daily_dd_pct,daily_dd_breaches_3pct,max_dd_breached_5pct,rolling_pass_rate_pct,rolling_avg_days_to_pass,rolling_fail_daily_dd,rolling_fail_max_dd
+Exp 1A: BTCUSDT Always LONG (TP 1.5% / SL 1.5%),7693,3881,3812,50.45,-2676.37,-267.64,-1676.37,0.94,10.79,11.69,0.923,-0.3479,-0.0348,2934.19,259.36,131.34,13.13,276,True,0.0,0.0,0,0
+Exp 1A: BTCUSDT Always SHORT (TP 1.5% / SL 1.5%),7693,3809,3884,49.51,-4314.8,-431.48,-3314.8,0.905,10.79,11.69,0.923,-0.5609,-0.0561,4377.18,428.47,118.75,11.87,257,True,0.0,0.0,0,0
+Exp 1A: ETHUSDT Always LONG (TP 1.5% / SL 1.5%),11875,5944,5931,50.05,-5206.55,-520.66,-4206.55,0.925,10.79,11.69,0.923,-0.4384,-0.0438,5749.83,441.54,178.12,17.81,434,True,0.0,0.0,0,0
+Exp 1A: ETHUSDT Always SHORT (TP 1.5% / SL 1.5%),11875,5928,5947,49.92,-5548.42,-554.84,-4548.42,0.92,10.79,11.69,0.923,-0.4672,-0.0467,5569.99,557.0,123.25,12.32,398,True,0.0,0.0,0,0

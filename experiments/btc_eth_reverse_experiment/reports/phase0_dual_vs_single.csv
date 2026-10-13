@@ -1,0 +1,9 @@
+architecture,case,acct_a_symbol,acct_a_start,acct_a_final,acct_a_max_dd,acct_a_worst_daily_dd,acct_a_blown_up,acct_b_symbol,acct_b_start,acct_b_final,acct_b_max_dd,acct_b_worst_daily_dd,acct_b_blown_up,combined_start,combined_final,combined_net_pnl,combined_max_dd,combined_worst_daily_dd,total_cycles
+Two Accounts (Synchronized),Case 1 (Long BTC / Short ETH),BTC,1000.0,-19649.23,20651.78,49.8,True,ETH,1000.0,-21783.73,22785.75,58.05,True,2000.0,-41432.95,-43432.95,43434.3,87.23,39478
+Two Accounts (Independent Re-entry),Case 1 (Long BTC / Short ETH),BTC,1000.0,-20633.83,21635.85,0.0,True,ETH,1000.0,-26254.4,27267.6,0.0,True,2000.0,-46888.23,-48888.23,48903.45,0.0,90278
+Two Accounts (Synchronized),Case 2 (Short BTC / Long ETH),BTC,1000.0,-19037.22,20038.73,49.8,True,ETH,1000.0,-21479.88,22483.8,53.93,True,2000.0,-40517.1,-42517.1,42520.5,83.1,39622
+Two Accounts (Independent Re-entry),Case 2 (Short BTC / Long ETH),BTC,1000.0,-19969.92,20972.1,0.0,True,ETH,1000.0,-26372.35,27377.48,0.0,True,2000.0,-46342.27,-48342.27,48349.58,0.0,90418
+"Single Account ($500 per leg, Cross-Margined)",Case 1 (Long BTC / Short ETH),BTC+ETH Unified,1000.0,-27955.3,28956.2,58.15,True,N/A,0.0,0.0,0.0,0.0,False,1000.0,-27955.3,-28955.3,28956.2,58.15,39478
+"Single Account ($750 per leg, Cross-Margined)",Case 1 (Long BTC / Short ETH),BTC+ETH Unified,1000.0,-42432.95,43434.3,87.23,True,N/A,0.0,0.0,0.0,0.0,False,1000.0,-42432.95,-43432.95,43434.3,87.23,39478
+"Single Account ($500 per leg, Cross-Margined)",Case 2 (Short BTC / Long ETH),BTC+ETH Unified,1000.0,-27344.73,28347.0,55.4,True,N/A,0.0,0.0,0.0,0.0,False,1000.0,-27344.73,-28344.73,28347.0,55.4,39622
+"Single Account ($750 per leg, Cross-Margined)",Case 2 (Short BTC / Long ETH),BTC+ETH Unified,1000.0,-41517.1,42520.5,83.1,True,N/A,0.0,0.0,0.0,0.0,False,1000.0,-41517.1,-42517.1,42520.5,83.1,39622
