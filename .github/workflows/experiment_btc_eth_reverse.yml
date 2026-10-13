@@ -1,0 +1,102 @@
+name: Experiment - Dual Account Reverse Trading (BTC vs ETH)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Backtest Start Date (YYYY-MM-DD)"
+        required: true
+        default: "2025-01-01"
+        type: string
+
+      end_date:
+        description: "Backtest End Date (YYYY-MM-DD)"
+        required: true
+        default: "2026-08-31"
+        type: string
+
+      capital:
+        description: "Initial Capital in USDT per account"
+        required: true
+        default: "1000.0"
+        type: string
+
+      leverage:
+        description: "Leverage Multiplier"
+        required: true
+        default: "2.0"
+        type: string
+
+      fee_rate:
+        description: "Total roundtrip fee rate (e.g. 0.0004 = 0.04%)"
+        required: true
+        default: "0.0004"
+        type: string
+
+      timeframes:
+        description: "Timeframes to test (comma-separated)"
+        required: true
+        default: "1m,5m,15m,1h,4h,1d"
+        type: string
+
+      cases:
+        description: "Cases to test (comma-separated)"
+        required: true
+        default: "Case 1,Case 2"
+        type: string
+
+jobs:
+  run-reverse-experiment:
+    name: Dual Reverse Backtest (${{ inputs.start_date }} to ${{ inputs.end_date }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests
+
+      - name: Run Unit Tests
+        run: |
+          python -m unittest experiments/btc_eth_reverse_experiment/test_experiment.py
+
+      - name: Execute Dual-Account Reverse Sweep
+        run: |
+          python experiments/btc_eth_reverse_experiment/run_experiment.py \
+            --start-date "${{ inputs.start_date }}" \
+            --end-date "${{ inputs.end_date }}" \
+            --capital "${{ inputs.capital }}" \
+            --leverage "${{ inputs.leverage }}" \
+            --fee-rate "${{ inputs.fee_rate }}" \
+            --timeframes "${{ inputs.timeframes }}" \
+            --cases "${{ inputs.cases }}" \
+            --output-dir "experiments/btc_eth_reverse_experiment/reports"
+
+      - name: Publish Step Summary
+        if: always()
+        run: |
+          if [ -f experiments/btc_eth_reverse_experiment/reports/EXPERIMENT_REPORT.md ]; then
+            cat experiments/btc_eth_reverse_experiment/reports/EXPERIMENT_REPORT.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Experiment Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btc-eth-reverse-experiment-reports
+          path: |
+            experiments/btc_eth_reverse_experiment/reports/summary_matrix.csv
+            experiments/btc_eth_reverse_experiment/reports/all_trades.csv
+            experiments/btc_eth_reverse_experiment/reports/EXPERIMENT_REPORT.md
+          retention-days: 30
