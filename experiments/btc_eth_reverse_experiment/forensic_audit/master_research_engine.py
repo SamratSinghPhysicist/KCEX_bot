@@ -1889,8 +1889,8 @@ This research sweep provides an exhaustive, ground-truth quantitative re-evaluat
 """
     for m in p2b_metrics:
         w_frac = m.wins / m.total_trades if m.total_trades > 0 else 0
-        l_frac = m.losses / m.total_trades if m.total_trades > 0 else 0
-        report += f"| {m.name.split(':')[1].strip()} | {m.win_rate_pct:.2f}% | {100 - m.win_rate_pct:.2f}% | ${m.avg_win_usd:.2f} | ${m.avg_loss_usd:.2f} | {m.win_loss_payoff_ratio:.2f} | **${m.expectancy_usd:+.4f}** | ${m.net_profit_usd:+,.2f} | ${m.max_trailing_dd_usd:,.2f} |\n"
+        lbl = m.name.split(":", 1)[1].strip() if ":" in m.name else m.name
+        report += f"| {lbl} | {m.win_rate_pct:.2f}% | {100 - m.win_rate_pct:.2f}% | ${m.avg_win_usd:.2f} | ${m.avg_loss_usd:.2f} | {m.win_loss_payoff_ratio:.2f} | **${m.expectancy_usd:+.4f}** | ${m.net_profit_usd:+,.2f} | ${m.max_trailing_dd_usd:,.2f} |\n"
 
     report += """
 ### Mathematical Takeaway from Phase 2:
@@ -1964,7 +1964,7 @@ This research sweep provides an exhaustive, ground-truth quantitative re-evaluat
 |---|---|---|---|---|---|---|---|---|
 """
     for r in p5_results:
-        report += f"| {r['year']} | {r['regime_context']} | {r['total_cycles']} | {r['win_rate_pct']:.2f}% | {r['profit_factor']:.3f} | ${r['net_profit_usd:+,.2f']} | ${r['max_trailing_dd_usd']:,.2f} | ${r['worst_daily_dd_usd']:.2f} | ${r['expectancy_usd']:+.4f} |\n"
+        report += f"| {r['year']} | {r['regime_context']} | {r['total_cycles']} | {r['win_rate_pct']:.2f}% | {r['profit_factor']:.3f} | ${r['net_profit_usd']:+,.2f} | ${r['max_trailing_dd_usd']:,.2f} | ${r['worst_daily_dd_usd']:.2f} | ${r['expectancy_usd']:+.4f} |\n"
 
     report += """
 ---
