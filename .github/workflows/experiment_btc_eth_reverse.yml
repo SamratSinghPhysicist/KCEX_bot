@@ -91,9 +91,16 @@ jobs:
             --data-dir "BACKTESTER/OHLCV_Data_Binance" \
             --output-dir "experiments/btc_eth_reverse_experiment/reports"
 
+      - name: Execute MFE TP1 & Breakeven Runner Experiment
+        run: |
+          python -u experiments/btc_eth_reverse_experiment/mfe_tp1_be_experiment.py
+
       - name: Publish Step Summary
         if: always()
         run: |
+          if [ -f experiments/btc_eth_reverse_experiment/reports/MFE_TP1_BE_EXPERIMENT_REPORT.md ]; then
+            cat experiments/btc_eth_reverse_experiment/reports/MFE_TP1_BE_EXPERIMENT_REPORT.md >> $GITHUB_STEP_SUMMARY
+          fi
           if [ -f experiments/btc_eth_reverse_experiment/reports/COMPREHENSIVE_RESEARCH_REPORT.md ]; then
             cat experiments/btc_eth_reverse_experiment/reports/COMPREHENSIVE_RESEARCH_REPORT.md >> $GITHUB_STEP_SUMMARY
           elif [ -f experiments/btc_eth_reverse_experiment/reports/EXPERIMENT_REPORT.md ]; then
@@ -109,4 +116,5 @@ jobs:
             experiments/btc_eth_reverse_experiment/reports/*.csv
             experiments/btc_eth_reverse_experiment/reports/*.md
             COMPREHENSIVE_RESEARCH_REPORT.md
+            MFE_TP1_BE_EXPERIMENT_REPORT.md
           retention-days: 30
