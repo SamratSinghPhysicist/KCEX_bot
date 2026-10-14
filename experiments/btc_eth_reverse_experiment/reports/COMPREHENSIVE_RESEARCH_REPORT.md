@@ -1,6 +1,6 @@
 # 🔬 MASTER RESEARCH REPORT: SYSTEMATIC QUANTITATIVE RE-EVALUATION OF BTC/ETH DUAL-ACCOUNT & HEDGED STRATEGIES (2020–2026)
 
-> **Execution Timestamp:** 2026-10-13 22:40:21 UTC  
+> **Execution Timestamp:** 2026-10-14 11:56:09 UTC  
 > **Auditor:** Master Forensic Backtester (Zero-Tolerance Engine v2.0)  
 > **Dataset:** Binance Vision 1-Hour OHLCV (`BTCUSDT` & `ETHUSDT`) from `2020-01-01 00:00:00 UTC` to `2026-09-30 23:59:59 UTC` (59,160 candles / 2,465 days)  
 > **1-Minute Disambiguation:** 100% physically resolved via chronological Binance Vision 1-minute data (93 monthly archives per symbol). Ties strictly declared Stop Loss.  

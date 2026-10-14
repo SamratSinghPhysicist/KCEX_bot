@@ -1,6 +1,6 @@
 # 🔬 FORENSIC AUDIT REPORT: BTC/ETH Hedged Pairs Strategy
 
-> **Generated:** 2026-10-13 22:40:33 UTC
+> **Generated:** 2026-10-14 11:56:26 UTC
 > **Auditor:** Independent Ground-Truth Backtester (v1.0)
 > **Data Range:** 2020-01-01 to 2026-09-30 (59160 aligned 1H candles)
 
