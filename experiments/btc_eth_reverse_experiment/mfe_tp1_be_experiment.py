@@ -277,7 +277,7 @@ def run_mfe_tp1_experiment(
     # Sample representative rows for clean presentation
     dual_rows = [r for r in matrix_rows if r["category"] == "Dual Hedged Pair (Long BTC / Short ETH)"]
     for r in dual_rows:
-        report += f"| -{r['base_sl_pct']:.2f}% | +{r['tp1_pct']:.2f}% | +{r['be_pct']:.2f}% | +{r['tp2_pct']:.2f}% | {r['trades']:,} | {r['win_rate_pct']:.2f}% | {r['profit_factor']:.3f} | ${r['net_profit_usd:+,.2f']} | ${r['max_trailing_dd_usd']:,.2f} | ${r['worst_daily_dd_usd']:.2f} | ${r['expectancy_usd']:+.4f} |\n"
+        report += f"| -{r['base_sl_pct']:.2f}% | +{r['tp1_pct']:.2f}% | +{r['be_pct']:.2f}% | +{r['tp2_pct']:.2f}% | {r['trades']:,} | {r['win_rate_pct']:.2f}% | {r['profit_factor']:.3f} | ${r['net_profit_usd']:+,.2f} | ${r['max_trailing_dd_usd']:,.2f} | ${r['worst_daily_dd_usd']:.2f} | ${r['expectancy_usd']:+.4f} |\n"
 
     report += """
 ---
@@ -291,7 +291,7 @@ def run_mfe_tp1_experiment(
 """
     btc_rows = [r for r in matrix_rows if r["category"] == "BTC Isolated Long"]
     for r in btc_rows:
-        report += f"| BTC Long | +{r['tp1_pct']:.2f}% | +{r['be_pct']:.2f}% | +{r['tp2_pct']:.2f}% | {r['trades']:,} | {r['win_rate_pct']:.2f}% | {r['profit_factor']:.3f} | ${r['net_profit_usd:+,.2f']} | ${r['max_trailing_dd_usd']:,.2f} | ${r['expectancy_usd']:+.4f} |\n"
+        report += f"| BTC Long | +{r['tp1_pct']:.2f}% | +{r['be_pct']:.2f}% | +{r['tp2_pct']:.2f}% | {r['trades']:,} | {r['win_rate_pct']:.2f}% | {r['profit_factor']:.3f} | ${r['net_profit_usd']:+,.2f} | ${r['max_trailing_dd_usd']:,.2f} | ${r['expectancy_usd']:+.4f} |\n"
 
     report += """
 ---
