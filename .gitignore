@@ -37,7 +37,11 @@ htmlcov/
 # Backtester Data & Output Artifacts
 BACKTESTER/Historical_Trades_Data_Binance/
 BACKTESTER/OHLCV_Data_Binance/
-BACKTESTER/OHLCV_Data_Stocks/
+BACKTESTER/OHLCV_Data_Crypto/*/*
+!BACKTESTER/OHLCV_Data_Crypto/*/1h.csv
+BACKTESTER/OHLCV_Data_Stocks/*/*
+!BACKTESTER/OHLCV_Data_Stocks/*/1h.csv
+results_*.csv
 BACKTESTER/reports/*
 !BACKTESTER/reports/.gitkeep
 BACKTESTER/BookTicker_Data_Binance/
@@ -58,3 +62,4 @@ scratch/
 
 
 
+backtest_output.txt

@@ -1,287 +1,60 @@
-name: Run Strategy Backtest
+name: Quantitative Backtest Suite
 
 on:
   workflow_dispatch:
-    inputs:
-      symbol:
-        description: "Trading Pair Symbol (e.g. TRUMP_USDT, DOGE_USDT, BTC_USDT)"
-        required: true
-        default: "TRUMP_USDT"
-        type: string
+  push:
+    branches:
+      - main
 
-      timeframe:
-        description: "Candle Timeframe"
-        required: true
-        default: "1m"
-        type: choice
-        options:
-          - "1m"
-          - "3m"
-          - "5m"
-          - "15m"
-          - "30m"
-          - "1h"
-          - "2h"
-          - "4h"
-          - "6h"
-          - "8h"
-          - "12h"
-          - "1d"
-
-      strategy:
-        description: "Strategy"
-        required: true
-        default: "ML_1M_MODEL"
-        type: choice
-        options:
-          - "ML_1M_MODEL"
-          - "ORDER_BLOCK_DEMAND"
-          - "STOCH_RSI"
-          - "EMA_CROSSOVER"
-          - "SMART_STRATEGY"
-          - "TICK_CONSTRAINED_MM"
-
-      ema_preset:
-        description: "EMA Preset (if EMA_CROSSOVER)"
-        required: false
-        default: "5/13"
-        type: choice
-        options:
-          - "5/13"
-          - "9/21"
-          - "3/8"
-
-      stoch_preset:
-        description: "Stoch Preset (if STOCH_RSI)"
-        required: false
-        default: "FAST_SCALP"
-        type: choice
-        options:
-          - "FAST_SCALP"
-          - "STANDARD"
-          - "MICRO_BURST"
-
-      start_date:
-        description: "Start Date (YYYY-MM-DD)"
-        required: true
-        default: "2026-01-01"
-        type: string
-
-      end_date:
-        description: "End Date (YYYY-MM-DD)"
-        required: true
-        default: "2026-08-31"
-        type: string
-
-      use_ticks:
-        description: "Simulation Data Fidelity: true = Ticker Trades (ms tick stream); false = OHLCV only (1m sub-candle disambiguation & conservative SL)"
-        required: true
-        default: true
-        type: boolean
-
-      fee_mode:
-        description: "Fee Schedule Mode (LIVE = KCEX API, ZERO = 0%, MANUAL = custom)"
-        required: true
-        default: "LIVE"
-        type: choice
-        options:
-          - "LIVE"
-          - "ZERO"
-          - "MANUAL"
-
-      maker_fee:
-        description: "Custom Maker Fee % (if MANUAL, e.g. 0.0 or 0.02)"
-        required: false
-        default: "0.0"
-        type: string
-
-      taker_fee:
-        description: "Custom Taker Fee % (if MANUAL, e.g. 0.0 or 0.05)"
-        required: false
-        default: "0.0"
-        type: string
-
-      volume_mode:
-        description: "Trade Volume Mode (CONTRACTS, MULTIPLIER, MIN, MARGIN_PCT, FIXED_MARGIN)"
-        required: true
-        default: "MULTIPLIER"
-        type: choice
-        options:
-          - "MULTIPLIER"
-          - "CONTRACTS"
-          - "MIN"
-          - "MARGIN_PCT"
-          - "FIXED_MARGIN"
-
-      volume_value:
-        description: "Volume Value (e.g. 2.0 for 2x min, 5 for 5 contracts, 10 for 10% margin, or 5.0 for 5 USDT fixed margin)"
-        required: false
-        default: "1.0"
-        type: string
-
-      tp_ticks:
-        description: "Take Profit in ticks (pu away from entry)"
-        required: true
-        default: "2"
-        type: string
-
-      sl_mode:
-        description: "Stop Loss Mode"
-        required: true
-        default: "ROE"
-        type: choice
-        options:
-          - "ROE"
-          - "TICKS"
-          - "PRICE_PCT"
-
-      sl_ticks:
-        description: "Stop Loss distance in ticks (if TICKS mode)"
-        required: false
-        default: "10"
-        type: string
-
-      sl_roe:
-        description: "Stop Loss ROE % on Margin (if ROE mode)"
-        required: false
-        default: "25.0"
-        type: string
-
-      leverage:
-        description: "Leverage Multiplier"
-        required: true
-        default: "75"
-        type: string
-
-      capital:
-        description: "Initial Capital in USDT"
-        required: true
-        default: "100.0"
-        type: string
-
-      max_trades:
-        description: "Max Trades Limit (0 = entire period)"
-        required: false
-        default: "0"
-        type: string
-
-      quant_params_json:
-        description: "Quantitative Parameters JSON (inversion, ratchet, slippage, execution style)"
-        required: false
-        default: "{}"
-        type: string
-
-      sl_price:
-        description: "Stop Loss Price % (if PRICE_PCT mode)"
-        required: false
-        default: "0.5"
-        type: string
-
-      filters_json:
-        description: "Filters JSON Configuration (Duration, ADX, HTF 200 EMA, Hourly, Directional Bias)"
-        required: false
-        default: "{}"
-        type: string
+concurrency:
+  group: backtest-suite-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  run-backtest:
-    name: Backtest ${{ inputs.symbol }} (${{ inputs.strategy }} ${{ inputs.timeframe }})
+  run-backtests:
+    name: Execute Full Backtest Suite
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      # Step 1: Check out repository full source code and data files
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
+      # Step 2: Set up Python 3.11 runtime environment with pip caching
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.11"
           cache: "pip"
 
-      - name: Install Python Dependencies
+      # Step 3: Install project dependencies from requirements.txt or fallback list
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install requests websockets; fi
-
-      - name: Cache Historical Market Data
-        uses: actions/cache@v4
-        with:
-          path: |
-            BACKTESTER/OHLCV_Data_Binance
-            BACKTESTER/Historical_Trades_Data_Binance
-          key: market-data-${{ inputs.symbol }}-${{ inputs.timeframe }}-${{ inputs.start_date }}-${{ inputs.end_date }}-${{ inputs.use_ticks }}
-          restore-keys: |
-            market-data-${{ inputs.symbol }}-${{ inputs.timeframe }}-
-            market-data-${{ inputs.symbol }}-
-            market-data-
-
-      - name: Prepare Historical Market Data
-        run: |
-          TICKS_FLAG="--ticks"
-          if [ "${{ inputs.use_ticks }}" != "true" ]; then
-            TICKS_FLAG="--no-ticks"
-          fi
-          python BACKTESTER/engine/downloader.py \
-            --symbol "${{ inputs.symbol }}" \
-            --timeframe "${{ inputs.timeframe }}" \
-            --start "${{ inputs.start_date }}" \
-            --end "${{ inputs.end_date }}" \
-            $TICKS_FLAG
-
-      - name: Execute Backtest
-        run: |
-          # Clean any stale report files so only this run's artifacts are produced
-          rm -f BACKTESTER/reports/*.csv BACKTESTER/reports/*.jsonl BACKTESTER/reports/*.md
-
-          TICKS_FLAG="--ticks"
-          if [ "${{ inputs.use_ticks }}" != "true" ]; then
-            TICKS_FLAG="--no-ticks"
-          fi
-
-          python BACKTESTER/run_backtest.py \
-            --symbol "${{ inputs.symbol }}" \
-            --timeframe "${{ inputs.timeframe }}" \
-            --strategy "${{ inputs.strategy }}" \
-            --ema-preset "${{ inputs.ema_preset }}" \
-            --stoch-preset "${{ inputs.stoch_preset }}" \
-            --start "${{ inputs.start_date }}" \
-            --end "${{ inputs.end_date }}" \
-            $TICKS_FLAG \
-            --fee-mode "${{ inputs.fee_mode }}" \
-            --maker-fee "${{ inputs.maker_fee }}" \
-            --taker-fee "${{ inputs.taker_fee }}" \
-            --volume-mode "${{ inputs.volume_mode }}" \
-            --volume-value "${{ inputs.volume_value }}" \
-            --tp-ticks "${{ inputs.tp_ticks }}" \
-            --sl-mode "${{ inputs.sl_mode }}" \
-            --sl-ticks "${{ inputs.sl_ticks }}" \
-            --sl-roe "${{ inputs.sl_roe }}" \
-            --sl-price "${{ inputs.sl_price }}" \
-            --leverage "${{ inputs.leverage }}" \
-            --capital "${{ inputs.capital }}" \
-            --max-trades "${{ inputs.max_trades }}" \
-            --filters-json '${{ inputs.filters_json }}' \
-            --quant-params-json '${{ inputs.quant_params_json }}'
-
-      - name: Publish Summary to GitHub Job Summary
-        if: always()
-        run: |
-          SUMMARY_FILE=$(ls -t BACKTESTER/reports/*_summary.md 2>/dev/null | head -n 1)
-          if [ -f "$SUMMARY_FILE" ]; then
-            cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
           else
-            echo "## 📊 Backtest Results" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ No summary markdown report generated. The run may have encountered an execution failure or data error." >> $GITHUB_STEP_SUMMARY
+            pip install pandas numpy matplotlib ta scipy requests yfinance
           fi
 
-      - name: Upload Generated Reports & Artifacts
-        if: always()
+      # Step 4: Execute the complete back-test suite sequentially across Scenarios A through E
+      - name: Execute full back‑test suite
+        run: python -u experiments/run_full_backtest.py
+
+      # Step 5: Upload captured console output log as an artifact named backtest_output.txt
+      - name: Upload backtest output log
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: backtest-${{ inputs.symbol }}-${{ inputs.strategy }}-${{ inputs.timeframe }}-${{ inputs.leverage }}x-tp${{ inputs.tp_ticks }}pu-sl${{ inputs.sl_mode }}${{ inputs.sl_mode == 'ROE' && inputs.sl_roe || inputs.sl_ticks }}-run${{ github.run_id }}
-          path: |
-            BACKTESTER/reports/*.csv
-            BACKTESTER/reports/*.jsonl
-            BACKTESTER/reports/*.md
+          name: backtest_output.txt
+          path: backtest_output.txt
           if-no-files-found: warn
-          retention-days: 30
+
+      # Step 6: Upload all scenario CSV result files from results/ as a single artifact called backtest_results
+      - name: Upload backtest CSV results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backtest_results
+          path: results/
+          if-no-files-found: warn
